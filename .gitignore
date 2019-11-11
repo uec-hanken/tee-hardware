@@ -1,0 +1,16 @@
+/Makefrag.pkgs
+target
+*.jar
+*.stamp
+*.vcd
+*.swp
+*.log
+*#
+*~
+.idea
+.DS_Store
+env.sh
+riscv-tools-install
+esp-tools-install
+tags
+*~
