@@ -110,9 +110,13 @@ lazy val testchipip = (project in file("hardware/chipyard/generators/testchipip"
   .dependsOn(rocketchip)
   .settings(commonSettings)
 
-lazy val example = (project in file("hardware/chipyard/generators/example"))
-  .dependsOn(boom, hwacha, sifive_blocks, sifive_cache, utilities, sha3, testchipip)
-  .settings(commonSettings)
+lazy val keystoneAcc = (project in file("hardware/keystoneAcc")).
+  dependsOn(rocketchip, utilities).
+  settings(commonSettings)
+
+//lazy val example = (project in file("hardware/chipyard/generators/example"))
+//  .dependsOn(boom, hwacha, sifive_blocks, sifive_cache, utilities, sha3, testchipip)
+//  .settings(commonSettings)
 
 lazy val tracegen = (project in file("hardware/chipyard/generators/tracegen"))
   .dependsOn(rocketchip, sifive_cache, testchipip)
@@ -134,13 +138,13 @@ lazy val boom = (project in file("hardware/chipyard/generators/boom"))
   .dependsOn(rocketchip)
   .settings(commonSettings)
 
-lazy val sha3 = (project in file("hardware/chipyard/generators/sha3"))
-  .dependsOn(rocketchip, chisel_testers)
-  .settings(commonSettings)
+//lazy val sha3 = (project in file("hardware/chipyard/generators/sha3"))
+//  .dependsOn(rocketchip, chisel_testers)
+//  .settings(commonSettings)
 
-lazy val tapeout = (project in file("./hardware/chipyard/tools/barstools/tapeout/"))
-  .dependsOn(chisel_testers, example, testchipip)
-  .settings(commonSettings)
+//lazy val tapeout = (project in file("./hardware/chipyard/tools/barstools/tapeout/"))
+//  .dependsOn(chisel_testers, example, testchipip)
+//  .settings(commonSettings)
 
 lazy val mdf = (project in file("./hardware/chipyard/tools/barstools/mdf/scalalib/"))
   .settings(commonSettings)
