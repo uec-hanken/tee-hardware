@@ -142,9 +142,9 @@ lazy val boom = (project in file("hardware/chipyard/generators/boom"))
 //  .dependsOn(rocketchip, chisel_testers)
 //  .settings(commonSettings)
 
-//lazy val tapeout = (project in file("./hardware/chipyard/tools/barstools/tapeout/"))
-//  .dependsOn(chisel_testers, example, testchipip)
-//  .settings(commonSettings)
+lazy val tapeout = (project in file("./hardware/chipyard/tools/barstools/tapeout/"))
+  .dependsOn(chisel_testers, keystoneAcc, testchipip)
+  .settings(commonSettings)
 
 lazy val mdf = (project in file("./hardware/chipyard/tools/barstools/mdf/scalalib/"))
   .settings(commonSettings)
