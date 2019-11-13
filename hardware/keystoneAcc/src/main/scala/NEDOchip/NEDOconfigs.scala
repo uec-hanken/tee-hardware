@@ -56,7 +56,7 @@ class ChipConfig extends Config(
   new ChipDefaultConfig().alter((site,here,up) => {
     case SystemBusKey => up(SystemBusKey).copy(
       errorDevice = Some(DevNullParams(
-        Seq(AddressSet(0x3000, 0xfff)),
+        Seq(AddressSet(0x4000, 0xfff)),
         maxAtomic=site(XLen)/8,
         maxTransfer=128,
         region = RegionType.TRACKED)))

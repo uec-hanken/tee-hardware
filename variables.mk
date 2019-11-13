@@ -81,7 +81,7 @@ ifeq ($(SUB_PROJECT),NEDOFPGA)
 	CONFIG_PACKAGE    ?= uec.keystoneAcc.nedochip
 	GENERATOR_PACKAGE ?= uec.keystoneAcc.exampletop
 	TB                ?= TestDriver
-	TOP               ?= NEDOFPGA
+	TOP               ?= NEDOSystem
 	ADD_VSRC          ?= $(SHA3_HIGHPERF_DIR)/rtl/f_permutation.v \
 	$(SHA3_HIGHPERF_DIR)/rtl/round2in1.v \
 	$(SHA3_HIGHPERF_DIR)/rtl/padder1.v \
