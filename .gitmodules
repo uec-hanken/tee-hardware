@@ -1,3 +1,9 @@
 [submodule "chipyard"]
 	path = hardware/chipyard
 	url = https://github.com/ucb-bar/chipyard.git
+[submodule "software/freedom-u540-c000-bootloader"]
+	path = software/freedom-u540-c000-bootloader
+	url = https://github.com/thuchoang90/freedom-u540-c000-bootloader.git
+[submodule "hardware/fpga-shells"]
+	path = hardware/fpga-shells
+	url = https://github.com/sifive/fpga-shells.git

@@ -110,10 +110,6 @@ lazy val testchipip = (project in file("hardware/chipyard/generators/testchipip"
   .dependsOn(rocketchip)
   .settings(commonSettings)
 
-lazy val keystoneAcc = (project in file("hardware/keystoneAcc")).
-  dependsOn(rocketchip, utilities).
-  settings(commonSettings)
-
 //lazy val example = (project in file("hardware/chipyard/generators/example"))
 //  .dependsOn(boom, hwacha, sifive_blocks, sifive_cache, utilities, sha3, testchipip)
 //  .settings(commonSettings)
@@ -178,6 +174,14 @@ lazy val sifive_cache = (project in file("hardware/chipyard/generators/sifive-ca
     commonSettings,
     scalaSource in Compile := baseDirectory.value / "craft"
   ).dependsOn(rocketchip)
+
+lazy val fpga_shells = (project in file("hardware/fpga-shells")).
+  dependsOn(rocketchip, sifive_blocks, utilities).
+  settings(commonSettings)
+
+lazy val keystoneAcc = (project in file("hardware/keystoneAcc")).
+  dependsOn(rocketchip, sifive_blocks, fpga_shells, utilities).
+  settings(commonSettings)
 
 // Library components of FireSim
 //lazy val midas      = ProjectRef(firesimDir, "midas")

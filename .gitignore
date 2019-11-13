@@ -15,3 +15,9 @@ riscv-tools-install
 esp-tools-install
 tags
 *~
+*.o
+*.dump
+*.elf
+*.bin
+*.hex
+*.map
