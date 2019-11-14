@@ -50,7 +50,8 @@ class NEDOSystem(implicit p: Parameters) extends RocketSubsystem
     beatBytes = p(ExtMem).get.master.beatBytes
   )
   val memTLNode = TLManagerNode(Seq(mainMemParam))
-  memTLNode := mbus.toDRAMController(Some("tl"))()
+  val buffer  = LazyModule(new TLBuffer) // We removed a buffer in the TOP
+  memTLNode := buffer.node := mbus.toDRAMController(Some("tl"))()
 
   // SPI to MMC conversion. TODO: There is an intention from Sifive to do MMC, but has to be manual
   val spiDevs = p(PeripherySPIKey).map { ps => SPI.attach(SPIAttachParams(ps, pbus, ibus.fromAsync))}
