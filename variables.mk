@@ -107,6 +107,41 @@ ifeq ($(SUB_PROJECT),NEDOFPGA)
 	$(ED25519_DIR)/rtl/adder32_generic.v \
 	$(ED25519_DIR)/rtl/multiword_mover.v
 endif
+ifeq ($(SUB_PROJECT),NEDOFPGAQuartus)
+	SBT_PROJECT       ?= keystoneAcc
+	MODEL             ?= NEDOFPGAQuartus
+	VLOG_MODEL        ?= NEDOFPGAQuartus
+	MODEL_PACKAGE     ?= uec.keystoneAcc.nedochip
+	CONFIG            ?= ChipConfig
+	CONFIG_PACKAGE    ?= uec.keystoneAcc.nedochip
+	GENERATOR_PACKAGE ?= uec.keystoneAcc.exampletop
+	TB                ?= TestDriver
+	TOP               ?= NEDOSystem
+	ADD_VSRC          ?= $(SHA3_HIGHPERF_DIR)/rtl/f_permutation.v \
+	$(SHA3_HIGHPERF_DIR)/rtl/round2in1.v \
+	$(SHA3_HIGHPERF_DIR)/rtl/padder1.v \
+	$(SHA3_HIGHPERF_DIR)/rtl/keccak.v \
+	$(SHA3_HIGHPERF_DIR)/rtl/padder.v \
+	$(SHA3_HIGHPERF_DIR)/rtl/rconst2in1.v \
+	$(ED25519_DIR)/rtl/mac16_generic.v \
+	$(ED25519_DIR)/rtl/ed25519_microcode_rom.v \
+	$(ED25519_DIR)/rtl/ed25519_operand_bank.v \
+	$(ED25519_DIR)/rtl/adder47_generic.v \
+	$(ED25519_DIR)/rtl/ed25519_uop_worker.v \
+	$(ED25519_DIR)/rtl/subtractor32_generic.v \
+	$(ED25519_DIR)/rtl/ed25519_wrapper.v \
+	$(ED25519_DIR)/rtl/ed25519_core_top.v \
+	$(ED25519_DIR)/rtl/bram_1rw_1ro_readfirst.v \
+	$(ED25519_DIR)/rtl/bram_1rw_readfirst.v \
+	$(ED25519_DIR)/rtl/bram_1wo_1ro_readfirst.v \
+	$(ED25519_DIR)/rtl/ed25519_base_point_multiplier.v \
+	$(ED25519_DIR)/rtl/curve25519_modular_multiplier.v \
+	$(ED25519_DIR)/rtl/ed25519_banks_array.v \
+	$(ED25519_DIR)/rtl/modular_adder.v \
+	$(ED25519_DIR)/rtl/modular_subtractor.v \
+	$(ED25519_DIR)/rtl/adder32_generic.v \
+	$(ED25519_DIR)/rtl/multiword_mover.v
+endif
 ifeq ($(SUB_PROJECT),tracegen)
 	SBT_PROJECT       ?= tracegen
 	MODEL             ?= TestHarness
