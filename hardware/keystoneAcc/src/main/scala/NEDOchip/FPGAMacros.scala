@@ -329,7 +329,7 @@ class QuartusIsland(c : Seq[AddressSet], cacheBlockBytes: Int, val crossing: Clo
     })
 
     childClock := io.ckrst.dimmclk_clk
-    childReset := io.ckrst.reset_reset_n
+    childReset := !io.ckrst.reset_reset_n
 
     //MIG black box instantiation
     val blackbox = Module(new QuartusPlatformBlackBox)

@@ -254,7 +254,7 @@ class NEDOchip(implicit override val p :Parameters) extends NEDObase {
   tlportw.get.d <> tlport.d
   // Clock and reset connection
   clock := sys_clk
-  reset := !rst_n | ndreset
+  reset := !rst_n || ndreset
   areset := !jrst_n
 }
 
@@ -317,7 +317,7 @@ class NEDOFPGA(implicit override val p :Parameters) extends NEDObase {
     ila0.m.io.probe(1) := tlportw.get.a.ready
 
     // PLL instance
-    val c = new PLLParameters(
+    /*val c = new PLLParameters(
       name ="pll",
       input = PLLInClockParameters(
         freqMHz = 50.0,
@@ -331,7 +331,7 @@ class NEDOFPGA(implicit override val p :Parameters) extends NEDObase {
     )
     val pll = Module(new Series7MMCM(c))
     pll.io.clk_in1 := sys_clk_i
-    pll.io.reset := reset_0
+    pll.io.reset := reset_0*/
 
     gpio_out := Cat(reset_0, reset_1, reset_2, reset_3, mod.io.ddrport.init_calib_complete)
 
@@ -341,7 +341,7 @@ class NEDOFPGA(implicit override val p :Parameters) extends NEDObase {
     mod.io.ddrport.sys_rst := reset_1
 
     // Main clock and reset assignments
-    clock := pll.io.clk_out1.get
+    clock := sys_clk_i//pll.io.clk_out1.get
     reset := reset_2
     areset := reset_3
   }

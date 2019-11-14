@@ -55,6 +55,7 @@ include $(sim_dir)/stratixIV.mk
 $(ROM_FILE): $(ROM_CONF_FILE) $(BOOT_FILE) $(ROMGEN)
 	$(ROMGEN) $(ROM_CONF_FILE) $(BOOT_FILE) > $(ROM_FILE)
 
+.PHONY: $(BOOT_FILE)
 $(BOOT_FILE): $(bootrom_dir)/Makefile
 	awk '/tlclk {/ && !f{f=1; next}; f && match($$0, /^.*clock-frequency.*<(.*)>.*/, arr) { print "#define TL_CLK " arr[1] "UL"}' $(DTS_FILE) > $(bootrom_dir)/tl_clock.h
 	cp $(DTS_FILE) $(bootrom_dir)/zsbl/ux00_zsbl.dts
