@@ -29,6 +29,7 @@ object Generator extends GeneratorApp {
   // generate files
   generateFirrtl
   generateAnno
+  generateROMs
   generateTestSuiteMakefrags
   generateArtefacts
 }
