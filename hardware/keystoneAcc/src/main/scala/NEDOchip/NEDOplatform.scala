@@ -68,6 +68,7 @@ class NEDOSystem(implicit p: Parameters) extends RocketSubsystem
 
 class NEDOSystemModule[+L <: NEDOSystem](_outer: L)
   extends RocketSubsystemModuleImp(_outer)
+    with HasRTCModuleImp
     with HasPeripheryDebugModuleImp
     with HasPeripheryUARTModuleImp
 //    with HasPeripherySPIModuleImp
