@@ -36,7 +36,7 @@ class XilinxVC707MIG(c : XilinxVC707MIGParams, slaveParam: AXI4SlavePortParamete
   val depth = ranges.head.size
   require((depth<=0x100000000L),"vc707mig supports upto 4GB depth configuraton")
 
-  val buffer  = LazyModule(new TLBuffer)
+  //val buffer  = LazyModule(new TLBuffer)
   val toaxi4  = LazyModule(new TLToAXI4(adapterName = Some("mem"), stripBits = 1))
   val indexer = LazyModule(new AXI4IdIndexer(idBits = 4))
   val deint   = LazyModule(new AXI4Deinterleaver(p(CacheBlockBytes)))
@@ -44,7 +44,7 @@ class XilinxVC707MIG(c : XilinxVC707MIGParams, slaveParam: AXI4SlavePortParamete
   val axi4node = AXI4SlaveNode(Seq(slaveParam))
 
   val node: TLInwardNode =
-    axi4node := yank.node := deint.node := indexer.node := toaxi4.node := buffer.node
+    axi4node := yank.node := deint.node := indexer.node := toaxi4.node// := buffer.node
 
   lazy val module = new LazyRawModuleImp(this) {
     val io = IO(new Bundle {
@@ -194,13 +194,18 @@ class TLULtoMIG(cacheBlockBytes: Int, TLparams: TLBundleParameters, device: Memo
     //val mem_tl = Wire(HeterogeneousBag.fromNode(node.in))
     node.out.foreach {
       case  (bundle, _) =>
-        bundle.a <> io.tlport.a
-        io.tlport.d <> bundle.d
+        bundle.a.valid := io.tlport.a.valid
+        io.tlport.a.ready := bundle.a.ready
+        bundle.a.bits := io.tlport.a.bits
+
+        io.tlport.d.valid := bundle.d.valid
+        bundle.d.ready := io.tlport.d.ready
+        io.tlport.d.bits := bundle.d.bits
         //bundle.b.bits := (new TLBundleB(TLparams)).fromBits(0.U)
-        //bundle.b.ready := false.B
-        //bundle.c.valid := false.B
+        bundle.b.ready := true.B
+        bundle.c.valid := false.B
         //bundle.c.bits := 0.U.asTypeOf(new TLBundleC(TLparams))
-        //bundle.e.valid := false.B
+        bundle.e.valid := false.B
         //bundle.e.bits := 0.U.asTypeOf(new TLBundleE(TLparams))
     }
 
@@ -417,7 +422,7 @@ class QuartusPlatform(c : Seq[AddressSet], cacheBlockBytes: Int, crossing: Clock
   val ranges = AddressRange.fromSets(c)
   val depth = ranges.head.size
 
-  val buffer  = LazyModule(new TLBuffer)
+  //val buffer  = LazyModule(new TLBuffer)
   val toaxi4  = LazyModule(new TLToAXI4(adapterName = Some("mem"), stripBits = 1))
   val indexer = LazyModule(new AXI4IdIndexer(idBits = 4))
   val deint   = LazyModule(new AXI4Deinterleaver(p(CacheBlockBytes)))
@@ -425,7 +430,7 @@ class QuartusPlatform(c : Seq[AddressSet], cacheBlockBytes: Int, crossing: Clock
   val island  = LazyModule(new QuartusIsland(c, cacheBlockBytes, crossing))
 
   val node: TLInwardNode =
-    island.crossAXI4In(island.node) := yank.node := deint.node := indexer.node := toaxi4.node := buffer.node
+    island.crossAXI4In(island.node) := yank.node := deint.node := indexer.node := toaxi4.node// := buffer.node
 
   lazy val module = new LazyModuleImp(this) {
     val io = IO(new Bundle {
@@ -478,13 +483,18 @@ class TLULtoQuartusPlatform(cacheBlockBytes: Int, TLparams: TLBundleParameters)(
     //val mem_tl = Wire(HeterogeneousBag.fromNode(node.in))
     node.out.foreach {
       case  (bundle, _) =>
-        bundle.a <> io.tlport.a
-        io.tlport.d <> bundle.d
+        bundle.a.valid := io.tlport.a.valid
+        io.tlport.a.ready := bundle.a.ready
+        bundle.a.bits := io.tlport.a.bits
+
+        io.tlport.d.valid := bundle.d.valid
+        bundle.d.ready := io.tlport.d.ready
+        io.tlport.d.bits := bundle.d.bits
         //bundle.b.bits := (new TLBundleB(TLparams)).fromBits(0.U)
-        //bundle.b.ready := false.B
-        //bundle.c.valid := false.B
+        bundle.b.ready := true.B
+        bundle.c.valid := false.B
         //bundle.c.bits := 0.U.asTypeOf(new TLBundleC(TLparams))
-        //bundle.e.valid := false.B
+        bundle.e.valid := false.B
         //bundle.e.bits := 0.U.asTypeOf(new TLBundleE(TLparams))
     }
 

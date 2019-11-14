@@ -145,7 +145,13 @@ class NEDOPlatform(implicit val p: Parameters) extends Module {
   sys.mem_tl.foreach{
     case ioi:TLBundle =>
       // Connect outside the ones that can be untied
-      io.tlport <> ioi
+      io.tlport.a.valid := ioi.a.valid
+      ioi.a.ready := io.tlport.a.ready
+      io.tlport.a.bits := ioi.a.bits
+
+      ioi.d.valid := io.tlport.d.valid
+      io.tlport.d.ready := ioi.d.ready
+      ioi.d.bits := io.tlport.d.bits
       // Tie off the channels we dont need...
       // ... I mean, we did tell the TLNodeParams that we only want Get and Put
 

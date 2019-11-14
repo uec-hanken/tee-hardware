@@ -293,6 +293,13 @@ class NEDOFPGA(implicit override val p :Parameters) extends NEDObase {
     // TileLink Interface from platform
     mod.io.tlport.a <> tlportw.get.a
     tlportw.get.d <> mod.io.tlport.d
+    mod.io.tlport.a.valid := tlportw.get.a.valid
+    tlportw.get.a.ready := mod.io.tlport.a.ready
+    mod.io.tlport.a.bits := tlportw.get.a.bits
+
+    tlportw.get.d.valid := mod.io.tlport.d.valid
+    mod.io.tlport.d.ready := tlportw.get.d.ready
+    tlportw.get.d.bits := mod.io.tlport.d.bits
 
     // Debug the bloddy TL
     val ila0 = new ilaBuild(
