@@ -17,22 +17,25 @@ import sifive.blocks.devices.spi._
 import sifive.blocks.devices.uart._
 import sifive.blocks.devices.i2c._
 import sifive.blocks.devices.jtag._
+import uec.keystoneAcc.devices.ed25519._
+import uec.keystoneAcc.devices.sha3._
 import uec.rocketchip.subsystem._
 
 class NEDOSystem(implicit p: Parameters) extends RocketSubsystem
     with HasHierarchicalBusTopology
-//    with HasPeripheryMaskROMSlave // NOTE: This is already included inside the RocketSubsystem
     with HasPeripheryDebug
     with HasPeripheryUART
-//    with HasPeripherySPI
     with HasPeripherySPIFlash
     with HasPeripheryGPIO
-//    with HasPeripheryI2C
-//    with CanHaveMasterAXI4MemPort
-//    with CanHaveMasterTLMemPort
+    with HasPeripherySHA3
+    with HasPeripheryed25519
+    //    with HasPeripheryI2C
+    //    with HasPeripherySPI // NOTE: Already included
+    //    with HasPeripheryMaskROMSlave // NOTE: This is already included inside the RocketSubsystem
+    //    with CanHaveMasterAXI4MemPort // NOTE: A TL->Axi4 is already done outside the system
+    //    with CanHaveMasterTLMemPort // NOTE: Manually created the TL port
 {
-  // Main memory controller
-
+  // Main memory controller (TL memory controller)
   val memdevice = new MemoryDevice
   val mainMemParam = TLManagerPortParameters(
     managers = Seq(TLManagerParameters(
@@ -60,9 +63,11 @@ class NEDOSystem(implicit p: Parameters) extends RocketSubsystem
   ResourceBinding {
     Resource(mmc, "reg").bind(ResourceAddress(0))
   }
-  val tlclock = new FixedClockResource("tlclk", 50) // 50 is in MHz
 
-  // Regular module creation
+  // The clock resource. This is just for put in the DTS the tlclock
+  val tlclock = new FixedClockResource("tlclk", p(FreqKeyMHz))
+
+  // System module creation
   override lazy val module = new NEDOSystemModule(this)
 }
 
@@ -71,12 +76,14 @@ class NEDOSystemModule[+L <: NEDOSystem](_outer: L)
     with HasRTCModuleImp
     with HasPeripheryDebugModuleImp
     with HasPeripheryUARTModuleImp
-//    with HasPeripherySPIModuleImp
     with HasPeripherySPIFlashModuleImp
     with HasPeripheryGPIOModuleImp
-//    with HasPeripheryI2CModuleImp
-//    with CanHaveMasterAXI4MemPortModuleImp
-//    with CanHaveMasterTLMemPortModuleImp
+    with HasPeripherySHA3ModuleImp
+    with HasPeripheryed25519ModuleImp
+    //    with HasPeripheryI2CModuleImp
+    //    with HasPeripherySPIModuleImp // NOTE: Already included
+    //    with CanHaveMasterAXI4MemPortModuleImp // NOTE: A TL->Axi4 is already done outside the system
+    //    with CanHaveMasterTLMemPortModuleImp // NOTE: Manually created the TL port
 {
   // Main memory controller
   val mem_tl = IO(HeterogeneousBag.fromNode(outer.memTLNode.in))
@@ -85,8 +92,8 @@ class NEDOSystemModule[+L <: NEDOSystem](_outer: L)
   // SPI to MMC conversion
   val spi  = outer.spiNodes.zipWithIndex.map  { case(n,i) => n.makeIO()(ValName(s"spi_$i")) }
 
-  // Regular module creation
-  // Reset vector is set to the location of the mask rom
+  // System module creation
+  // Reset vector is set to the location of the first mask rom
   val maskROMParams = p(PeripheryMaskROMKey)
   global_reset_vector := maskROMParams(0).address.U
 }
@@ -133,14 +140,6 @@ class NEDOPlatform(implicit val p: Parameters) extends Module {
   // Add in debug-controlled reset.
   sys.reset := ResetCatchAndSync(clock, reset.toBool, 20)
 
-  // The AXI4 memory port. This is a configurable one for the address space
-  // and the ports are exposed inside the "foreach". Do not worry, there is
-  // only one memory (unless you configure multiple memories).
-  /*sys.mem_axi4.foreach{ case i =>
-    i.foreach{ case io: AXI4Bundle =>
-    }
-  }*/
-
   // The TL memory port. This is a configurable one for the address space
   // and the ports are exposed inside the "foreach". Do not worry, there is
   // only one memory (unless you configure multiple memories).
@@ -154,9 +153,9 @@ class NEDOPlatform(implicit val p: Parameters) extends Module {
       ioi.d.valid := io.tlport.d.valid
       io.tlport.d.ready := ioi.d.ready
       ioi.d.bits := io.tlport.d.bits
+
       // Tie off the channels we dont need...
       // ... I mean, we did tell the TLNodeParams that we only want Get and Put
-
       ioi.b.bits := 0.U.asTypeOf(new TLBundleB(sys.outer.memTLNode.in.head._1.params))
       ioi.b.valid := false.B
       ioi.c.ready := false.B

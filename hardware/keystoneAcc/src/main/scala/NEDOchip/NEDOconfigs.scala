@@ -11,10 +11,15 @@ import sifive.blocks.devices.gpio._
 import sifive.blocks.devices.spi._
 import sifive.blocks.devices.uart._
 import sifive.blocks.devices.i2c._
+import uec.keystoneAcc.devices.ed25519._
+import uec.keystoneAcc.devices.sha3._
 //import sifive.freedom.unleashed.DevKitFPGAFrequencyKey
 
 // The number of gpios that we want as input
 case object GPIOInKey extends Field[Int]
+
+// Frequency
+case object FreqKeyMHz extends Field[Double]
 
 // Default Config
 class ChipDefaultConfig extends Config(
@@ -26,6 +31,8 @@ class ChipDefaultConfig extends Config(
 
 // Chip Peripherals
 class ChipPeripherals extends Config((site, here, up) => {
+  case PeripheryMaskROMKey => List(
+    MaskROMParams(address = 0x10000, name = "BootROM"))
   case PeripheryUARTKey => List(
     UARTParams(address = BigInt(0x64000000L)))
   case PeripherySPIKey => List(
@@ -33,15 +40,17 @@ class ChipPeripherals extends Config((site, here, up) => {
   case PeripheryGPIOKey => List(
     GPIOParams(address = BigInt(0x64002000L), width = 16))
   case GPIOInKey => 8
-  //case PeripheryI2CKey => List(
-  //  I2CParams(address = 0x64003000))
+  case PeripherySHA3Key =>
+    SHA3Params(address = BigInt(0x64003000L), width = 0)
+  case Peripheryed25519Key =>
+    ed25519Params(address = BigInt(0x64004000L), width = 0)
   case PeripherySPIFlashKey => List(
     SPIFlashParams(
       fAddress = 0x20000000,
-      rAddress = 0x64004000,
+      rAddress = 0x64005000,
       defaultSampleDel = 3))
-  case PeripheryMaskROMKey => List(
-    MaskROMParams(address = 0x78000000, name = "BootROM"))
+  case PeripheryI2CKey => List(
+    I2CParams(address = 0x64006000))
   case ExtMem => Some(MemoryPortParams(MasterPortParams(
     base = x"0_8000_0000",
     size = x"0_4000_0000",
@@ -61,7 +70,7 @@ class ChipConfig extends Config(
         maxTransfer=128,
         region = RegionType.TRACKED)))
     case PeripheryBusKey => up(PeripheryBusKey, site).copy(frequency =
-      BigDecimal(50*1000000).setScale(0, BigDecimal.RoundingMode.HALF_UP).toBigInt, // TODO: Change the "50" with a configuration
+      BigDecimal(site(FreqKeyMHz)*1000000).setScale(0, BigDecimal.RoundingMode.HALF_UP).toBigInt,
       errorDevice = None)
     case DTSTimebase => BigInt(1000000)
     case JtagDTMKey => new JtagDTMConfig (
@@ -69,5 +78,12 @@ class ChipConfig extends Config(
       idcodePartNum = 0x000,  // Decided to simplify.
       idcodeManufId = 0x489,  // As Assigned by JEDEC to SiFive. Only used in wrappers / test harnesses.
       debugIdleCycles = 5)    // Reasonable guess for synchronization
+    case FreqKeyMHz => 50.0
+  })
+)
+
+class ChipConfigDE4 extends Config(
+  new ChipConfig().alter((site,here,up) => {
+    case FreqKeyMHz => 100.0
   })
 )

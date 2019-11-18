@@ -112,7 +112,7 @@ ifeq ($(SUB_PROJECT),NEDOFPGAQuartus)
 	MODEL             ?= NEDOFPGAQuartus
 	VLOG_MODEL        ?= NEDOFPGAQuartus
 	MODEL_PACKAGE     ?= uec.keystoneAcc.nedochip
-	CONFIG            ?= ChipConfig
+	CONFIG            ?= ChipConfigDE4
 	CONFIG_PACKAGE    ?= uec.keystoneAcc.nedochip
 	GENERATOR_PACKAGE ?= uec.keystoneAcc.exampletop
 	TB                ?= TestDriver

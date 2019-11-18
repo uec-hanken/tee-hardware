@@ -218,8 +218,8 @@ class NEDObase(implicit val p :Parameters) extends RawModule {
     // QSPI (SPI as flash memory)
     qspi.qspi_cs := BasePinToRegular(system.io.pins.qspi.cs)
     qspi.qspi_sck := BasePinToRegular(system.io.pins.qspi.sck)
-    BasePinToRegular(system.io.pins.qspi.dq(0), qspi.qspi_miso)
-    qspi.qspi_mosi := BasePinToRegular(system.io.pins.qspi.dq(1))
+    qspi.qspi_mosi := BasePinToRegular(system.io.pins.qspi.dq(0))
+    BasePinToRegular(system.io.pins.qspi.dq(1), qspi.qspi_miso)
     qspi.qspi_wp := BasePinToRegular(system.io.pins.qspi.dq(2))
     qspi.qspi_hold := BasePinToRegular(system.io.pins.qspi.dq(3))
 
@@ -517,18 +517,18 @@ class NEDOFPGAQuartus(implicit val p :Parameters) extends RawModule {
   //val GPIO0_D = IO(Output(Bits((35+1).W)))
   //val GPIO1_D = IO(Analog((35+1).W))
   val jtag = IO(new Bundle {
-    val jtag_TDI = (Input(Bool()))
-    val jtag_TDO = (Output(Bool()))
-    val jtag_TCK = (Input(Bool()))
-    val jtag_TMS = (Input(Bool()))
+    val jtag_TDI = (Input(Bool())) // GPIO1_D[4]
+    val jtag_TDO = (Output(Bool())) // GPIO1_D[10]
+    val jtag_TCK = (Input(Bool())) // GPIO1_D[8]
+    val jtag_TMS = (Input(Bool())) // GPIO1_D[6]
   })
   val qspi = IO(new Bundle {
-    val qspi_cs = (Output(UInt(p(PeripherySPIFlashKey).head.csWidth.W)))
-    val qspi_sck = (Output(Bool()))
-    val qspi_miso = (Input(Bool()))
-    val qspi_mosi = (Output(Bool()))
-    val qspi_wp = (Output(Bool()))
-    val qspi_hold = (Output(Bool()))
+    val qspi_cs = (Output(UInt(p(PeripherySPIFlashKey).head.csWidth.W))) // GPIO1_D[1]
+    val qspi_sck = (Output(Bool())) // GPIO1_D[3]
+    val qspi_miso = (Input(Bool())) // GPIO1_D[5]
+    val qspi_mosi = (Output(Bool())) // GPIO1_D[7]
+    val qspi_wp = (Output(Bool())) // GPIO1_D[9]
+    val qspi_hold = (Output(Bool())) // GPIO1_D[11]
   })
 
   ///////////  EXT_IO /////////
