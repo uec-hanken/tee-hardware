@@ -226,8 +226,8 @@ class NEDObase(implicit val p :Parameters) extends RawModule {
     // SPI (SPI as SD?)
     sdio.sdio_dat_3 := BasePinToRegular(system.io.pins.spi.cs.head)
     sdio.sdio_clk := BasePinToRegular(system.io.pins.spi.sck)
-    BasePinToRegular(system.io.pins.spi.dq(0), RegNext(RegNext(sdio.sdio_dat_0))) // NOTE: We saw like this on SDIOOverlay
-    sdio.sdio_cmd := BasePinToRegular(system.io.pins.spi.dq(1))
+    sdio.sdio_cmd := BasePinToRegular(system.io.pins.spi.dq(0))
+    BasePinToRegular(system.io.pins.spi.dq(1), RegNext(RegNext(sdio.sdio_dat_0))) // NOTE: We saw like this on SDIOOverlay
     BasePinToRegular(system.io.pins.spi.dq(2)) // Ignored
     BasePinToRegular(system.io.pins.spi.dq(3)) // Ignored
 
