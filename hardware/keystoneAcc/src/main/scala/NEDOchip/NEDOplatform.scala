@@ -24,17 +24,20 @@ import uec.rocketchip.subsystem._
 class NEDOSystem(implicit p: Parameters) extends RocketSubsystem
     with HasHierarchicalBusTopology
     with HasPeripheryDebug
-    with HasPeripheryUART
-    with HasPeripherySPIFlash
     with HasPeripheryGPIO
     with HasPeripherySHA3
     with HasPeripheryed25519
     //    with HasPeripheryI2C
+    //    with HasPeripheryUART // NOTE: Already included
+    //    with HasPeripherySPIFlash // NOTE: Already included
     //    with HasPeripherySPI // NOTE: Already included
     //    with HasPeripheryMaskROMSlave // NOTE: This is already included inside the RocketSubsystem
     //    with CanHaveMasterAXI4MemPort // NOTE: A TL->Axi4 is already done outside the system
     //    with CanHaveMasterTLMemPort // NOTE: Manually created the TL port
 {
+  // The clock resource. This is just for put in the DTS the tlclock
+  val tlclock = new FixedClockResource("tlclk", p(FreqKeyMHz))
+
   // Main memory controller (TL memory controller)
   val memdevice = new MemoryDevice
   val mainMemParam = TLManagerPortParameters(
@@ -56,16 +59,45 @@ class NEDOSystem(implicit p: Parameters) extends RocketSubsystem
   val buffer  = LazyModule(new TLBuffer) // We removed a buffer in the TOP
   memTLNode := buffer.node := mbus.toDRAMController(Some("tl"))()
 
-  // SPI to MMC conversion. TODO: There is an intention from Sifive to do MMC, but has to be manual
+  // SPI to MMC conversion.
+  // TODO: There is an intention from Sifive to do MMC, but has to be manual
+  // TODO: Also the tlclock binding is manual
   val spiDevs = p(PeripherySPIKey).map { ps => SPI.attach(SPIAttachParams(ps, pbus, ibus.fromAsync))}
   val spiNodes = spiDevs.map { ps => ps.ioNode.makeSink() }
-  val mmc = new MMCDevice(spiDevs.head.device)
+  val mmc = new MMCDevice(spiDevs.head.device) // Only the first one is mmc
   ResourceBinding {
     Resource(mmc, "reg").bind(ResourceAddress(0))
   }
+  spiDevs.foreach { case ps =>
+    tlclock.bind(ps.device)
+  }
 
-  // The clock resource. This is just for put in the DTS the tlclock
-  val tlclock = new FixedClockResource("tlclk", p(FreqKeyMHz))
+  // UART implementation. This is the same as HasPeripheryUART
+  // TODO: This is done this way instead of "HasPeripheryUART" because we need to do a bind to tlclock
+  val uartDevs = p(PeripheryUARTKey).map{
+    val divinit = (p(PeripheryBusKey).frequency / 115200).toInt
+    ps => UART.attach(UARTAttachParams(ps, divinit, pbus, ibus.fromAsync))
+  }
+  val uartNodes = uartDevs.map { ps => ps.ioNode.makeSink }
+  uartDevs.foreach{ case ps =>
+    tlclock.bind(ps.device)
+  }
+
+  // QSPI flash implementation. This is the same as HasPeripherySPIFlash
+  // TODO: This is done this way instead of "HasPeripherySPIFlash" because we need to do a bind to tlclock
+  val qspiDevs = p(PeripherySPIFlashKey).map { ps =>
+    SPI.attachFlash(SPIFlashAttachParams(ps, pbus, pbus, ibus.fromAsync, fBufferDepth = 8))
+  }
+  val qspiNodes = qspiDevs.map { ps => ps.ioNode.makeSink() }
+  ResourceBinding {
+    qspiDevs.foreach{ case ps =>
+      val flash = new FlashDevice(ps.device)
+      Resource(flash, "reg").bind(ResourceAddress(0)) // NOTE: This is new. Maybe is not intended in this way.
+    }
+  }
+  qspiDevs.foreach { case ps =>
+    tlclock.bind(ps.device)
+  }
 
   // System module creation
   override lazy val module = new NEDOSystemModule(this)
@@ -75,12 +107,12 @@ class NEDOSystemModule[+L <: NEDOSystem](_outer: L)
   extends RocketSubsystemModuleImp(_outer)
     with HasRTCModuleImp
     with HasPeripheryDebugModuleImp
-    with HasPeripheryUARTModuleImp
-    with HasPeripherySPIFlashModuleImp
     with HasPeripheryGPIOModuleImp
     with HasPeripherySHA3ModuleImp
     with HasPeripheryed25519ModuleImp
     //    with HasPeripheryI2CModuleImp
+    //    with HasPeripheryUARTModuleImp // NOTE: Already included
+    //    with HasPeripherySPIFlashModuleImp // NOTE: Already included
     //    with HasPeripherySPIModuleImp // NOTE: Already included
     //    with CanHaveMasterAXI4MemPortModuleImp // NOTE: A TL->Axi4 is already done outside the system
     //    with CanHaveMasterTLMemPortModuleImp // NOTE: Manually created the TL port
@@ -91,6 +123,12 @@ class NEDOSystemModule[+L <: NEDOSystem](_outer: L)
 
   // SPI to MMC conversion
   val spi  = outer.spiNodes.zipWithIndex.map  { case(n,i) => n.makeIO()(ValName(s"spi_$i")) }
+
+  // UART implementation
+  val uart = outer.uartNodes.zipWithIndex.map { case(n,i) => n.makeIO()(ValName(s"uart_$i")) }
+
+  // QSPI flash implementation.
+  val qspi = outer.qspiNodes.zipWithIndex.map { case(n,i) => n.makeIO()(ValName(s"qspi_$i")) }
 
   // System module creation
   // Reset vector is set to the location of the first mask rom
