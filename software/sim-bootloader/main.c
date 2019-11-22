@@ -130,6 +130,13 @@ void hwsha3_final(byte* hash, void* data, size_t size) {
   }
 }
 
+// Trap handler
+void handle_trap(void) {
+  printstr("Trap: ");
+  printhex32(read_csr(mcause));
+  tohost_exit(0);
+}
+
 // Declaration of the sbox program
 uint64_t do_sbox(uint64_t a);
 

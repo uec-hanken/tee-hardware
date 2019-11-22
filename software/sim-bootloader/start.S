@@ -10,6 +10,10 @@ _start:
 	.cfi_undefined ra
 .option push
 .option norelax
+  la t0, trap_entry
+  csrw mtvec, t0
+  li t0, MSTATUS_FS | MSTATUS_XS
+  csrs mstatus, t0
   // A LOT of memory, but helps to have consistent the simulations
   addi x1, zero, 0
   addi x2, zero, 0
@@ -137,6 +141,9 @@ do_sbox:
   //      X, xd, xs1, xs2, rd, rs1, rs2, funct
   .word CUSTOMX(0,  1,   1,   0, 10,  10,   0,     0)
   ret
+.align 2
+trap_entry:
+  call handle_trap
 
 	.cfi_endproc
 

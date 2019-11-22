@@ -15,15 +15,29 @@ class AESROCCModuleImp(outer: AESROCC)(implicit p: Parameters) extends LazyRoCCM
   with MemoryOpConstants
 {
   val cmd = Queue(io.cmd)
-  val funct = cmd.bits.inst.funct
 
-  cmd.ready := true.B
   // The command always is ready here. Is just like an ALU
+  cmd.ready := true.B
+  when(cmd.valid) {
+    printf("AES ROCC triggered. Sending response")
+  }
+
+  // Functions I want to save
+  val rdd = RegEnable(sboxGated(cmd.bits.rs1), cmd.fire())
+  val funct = RegEnable(cmd.bits.inst.funct, cmd.fire())
+  val rd = RegEnable(cmd.bits.inst.rd, cmd.fire())
+  val resp_valid = RegInit(false.B)
+
+  when(cmd.fire() && !resp_valid) {
+    resp_valid := true.B
+  } .elsewhen(io.resp.ready && resp_valid) {
+    resp_valid := false.B
+  }
 
   // PROC RESPONSE INTERFACE
-  io.resp.valid := cmd.valid
-  io.resp.bits.rd := cmd.bits.inst.rd
-  io.resp.bits.data := sboxGated(cmd.bits.rs1) // rs2 is ignored.. totally
+  io.resp.valid := resp_valid
+  io.resp.bits.rd := rd
+  io.resp.bits.data := rdd // rs2 is ignored.. totally
   io.busy := cmd.valid
   // Be busy when have pending memory requests or committed possibility of pending requests
   io.interrupt := false.B
@@ -33,7 +47,7 @@ class AESROCCModuleImp(outer: AESROCC)(implicit p: Parameters) extends LazyRoCCM
   io.mem.req.valid := false.B
   io.mem.req.bits.addr := 0.U
   io.mem.req.bits.tag := 0.U
-  io.mem.req.bits.cmd := 0.U // perform a load (M_XWR for stores)
+  io.mem.req.bits.cmd := 0.U
   io.mem.req.bits.size := 0.U
   io.mem.req.bits.signed := false.B
   io.mem.req.bits.data := 0.U // we're not performing any stores...

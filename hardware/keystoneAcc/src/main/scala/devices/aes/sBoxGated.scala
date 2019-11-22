@@ -45,7 +45,7 @@ object sboxGated {
       m.io.A := A((i+1)*8 - 1, i*8)
       m.io.B
     }
-    B := B_seq.foldLeft(0.U(8.W))(Cat(_, _))
+    B := B_seq.reverse.reduce(Cat(_, _))
     B
   }
 }

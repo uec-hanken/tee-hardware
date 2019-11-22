@@ -37,12 +37,16 @@ class WithAESAccel extends Config ((site, here, up) => {
 })
 
 class KeystoneDefaultConfig extends Config(
-    new WithNBigCores(1) ++
-    new WithNBreakpoints(4) ++
-    new WithJtagDTM ++
     new KeystoneDefaultPeripherals ++
     new WithAESAccel ++
-    new BaseConfig().alter((site,here,up) => {
+    new WithNBigCores(1) ++
+    new BaseConfig
+)
+
+class KeystoneJTAGConfig extends Config(
+    new WithNBreakpoints(4) ++
+    new WithJtagDTM ++
+    new KeystoneDefaultConfig().alter((site,here,up) => {
       case DTSTimebase => BigInt(1000000)
       case JtagDTMKey => new JtagDTMConfig (
         idcodeVersion = 2,      // 1 was legacy (FE310-G000, Acai).
