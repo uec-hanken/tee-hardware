@@ -61,6 +61,7 @@ class ChipPeripherals extends Config((site, here, up) => {
 // Chip Configs
 class ChipConfig extends Config(
   new WithNExtTopInterrupts(0)   ++
+  new WithNBreakpoints(4)    ++
   new ChipPeripherals ++
   new ChipDefaultConfig().alter((site,here,up) => {
     case SystemBusKey => up(SystemBusKey).copy(

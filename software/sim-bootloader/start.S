@@ -112,6 +112,32 @@ _start:
 1:
 	j 1b
 
+#define STR1(x) #x
+#define STR(x) STR1(x)
+#define EXTRACT(a, size, offset) (((~(~0 << size) << offset) & a) >> offset)
+
+#define CUSTOMX_OPCODE(x) CUSTOM_ ## x
+#define CUSTOM_0 0b0001011
+#define CUSTOM_1 0b0101011
+#define CUSTOM_2 0b1011011
+#define CUSTOM_3 0b1111011
+
+#define CUSTOMX(X, xd, xs1, xs2, rd, rs1, rs2, funct) \
+  CUSTOMX_OPCODE(X)                     |             \
+  (rd                 << (7))           |             \
+  (xs2                << (7+5))         |             \
+  (xs1                << (7+5+1))       |             \
+  (xd                 << (7+5+2))       |             \
+  (rs1                << (7+5+3))       |             \
+  (rs2                << (7+5+3+5))     |             \
+  (EXTRACT(funct, 7, 0) << (7+5+3+5+5))
+
+	.globl do_sbox
+do_sbox:
+  //      X, xd, xs1, xs2, rd, rs1, rs2, funct
+  .word CUSTOMX(0,  1,   1,   0, 10,  10,   0,     0)
+  ret
+
 	.cfi_endproc
 
 .section ".tohost","aw",@progbits

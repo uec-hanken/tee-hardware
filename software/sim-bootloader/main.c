@@ -130,11 +130,19 @@ void hwsha3_final(byte* hash, void* data, size_t size) {
   }
 }
 
+// Declaration of the sbox program
+uint64_t do_sbox(uint64_t a);
+
 // Main program
 
 int main(int argc, char** argv) {
-  //sha3_ctx_t hash_ctx;
   printstr("Hello world, FSBL\r\n");
+  
+  // Do the SBOX acc
+  uint64_t k = do_sbox((uint64_t) 0xdeadbeef);
+  printstr("SBOX of 0xdeadbeef: ");
+  printhex32(k);
+  printstr("\r\n");
   
   // Test the hardware with the software SHA3
   byte hash[64];

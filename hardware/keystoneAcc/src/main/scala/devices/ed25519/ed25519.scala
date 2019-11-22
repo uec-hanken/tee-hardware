@@ -227,7 +227,7 @@ abstract class ed25519(busWidthBytes: Int, val c: ed25519Params)
     // The actual base multiplier
     val mult = Module(new ed25519_base_point_multiplier)
     mult.io.clk := clock
-    mult.io.rst_n := !reset.toBool
+    mult.io.rst_n := !reset.asBool
     mult.io.ena := ena
     rdy := mult.io.rdy
     fromacc_k.addr := mult.io.k_addr
@@ -248,7 +248,7 @@ abstract class ed25519(busWidthBytes: Int, val c: ed25519Params)
     // The actual modular multiplier
     val mult2 = Module(new curve25519_modular_multiplier)
     mult2.io.clk := clock
-    mult2.io.rst_n := !reset.toBool
+    mult2.io.rst_n := !reset.asBool
     mult2.io.ena := ena2
     rdy2 := mult2.io.rdy
     fromacc_a.addr := mult2.io.a_addr

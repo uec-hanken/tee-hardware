@@ -91,7 +91,7 @@ abstract class SHA3(busWidthBytes: Int, val c: SHA3Params, divisorInit: Int = 0)
     // The Verilog module instantiation
     val core = Module(new keccak)
     core.io.clk := clock
-    core.io.reset := reset.toBool() || rst
+    core.io.reset := reset.asBool() || rst
     core.io.in := datab.asUInt
     core.io.in_ready := commit
     core.io.is_last := last
