@@ -37,6 +37,7 @@ void hw_ed25519_create_keypair(unsigned char *public_key, unsigned char *private
     SHA3_REG(SHA3_REG_STATUS) = 1 << 16;
     SHA3_REG(SHA3_REG_STATUS) = 3 << 16;
     while(SHA3_REG(SHA3_REG_STATUS) & (1 << 10)); // Wait for SHA3
+#ifndef ED25519_DIR
     for(int i = 0; i < 8; i++) {
         ED25519_REG(ED25519_REG_ADDR_K) = i;
         if(i == 0) // TODO: This is really necessary? 
@@ -55,4 +56,22 @@ void hw_ed25519_create_keypair(unsigned char *public_key, unsigned char *private
         ED25519_REG(ED25519_REG_ADDR_QY) = i;
         pub[i] = ED25519_REG(ED25519_REG_DATA_QY);
     }
+#else
+    for(int i = 0; i < 8; i++) {
+        if(i == 0) // TODO: This is really necessary? 
+            ED25519_REG(ED25519_REG_DATA_K + i*4) = *(priv+i) = *(((uint32_t*)(SHA3_CTRL_ADDR+SHA3_REG_HASH_0)) + i) & 0xFFFFFFF8;
+        else if(i == 7)
+            ED25519_REG(ED25519_REG_DATA_K + i*4) = *(priv+i) = *(((uint32_t*)(SHA3_CTRL_ADDR+SHA3_REG_HASH_0)) + i) & 0x3FFFFFFF | 0x40000000;
+        else
+            ED25519_REG(ED25519_REG_DATA_K + i*4) = *(priv+i) = *(((uint32_t*)(SHA3_CTRL_ADDR+SHA3_REG_HASH_0)) + i);
+    }
+    for(int i = 8; i < 16; i++) {
+        *(priv+i) = *(((uint32_t*)(SHA3_CTRL_ADDR+SHA3_REG_HASH_0)) + i);
+    }
+    ED25519_REG(ED25519_REG_STATUS) = 1; // Use the K memory
+    while(!(ED25519_REG(ED25519_REG_STATUS) & 0x4)); // Wait
+    for(int i = 0; i < 8; i++) {
+        pub[i] = ED25519_REG(ED25519_REG_DATA_QY + i*4);
+    }
+#endif
 }

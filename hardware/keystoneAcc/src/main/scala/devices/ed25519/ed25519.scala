@@ -86,27 +86,27 @@ abstract class ed25519(busWidthBytes: Int, val c: ed25519Params)
       memio.we := false.B
       memio.en := true.B // Always active
       memio.d := 0.U
-      /*val ohaddr = WireInit(VecInit(Seq.fill(adepth)(false.B)))
+      val ohaddr = WireInit(VecInit(Seq.fill(adepth)(false.B)))
       memio.addr := OHToUInt(ohaddr)
       // Creation of RegFields
       for(i <- 0 until adepth) yield {
         // Read function. We just capture the address here
-        val readFcn = RegReadFn((ivalid, oready) => {
-          when(ivalid) { ohaddr(i) := true.B }
-          (true.B, RegNext(ivalid), memio.q)
+        val readFcn = RegReadFn(ready => {
+          when(ready) { ohaddr(i) := true.B }
+          (true.B, memio.q)
         })
         // Write function. We also capture the addressm and put the we
-        val writeFcn = RegWriteFn((ivalid, oready, data) => {
-          when(ivalid) {
+        val writeFcn = RegWriteFn((valid, data) => {
+          when(valid) {
             ohaddr(i) := true.B
             memio.we := true.B
             memio.d := data
           }
-          (true.B, RegNext(ivalid))
+          true.B
         })
         RegField(32, readFcn, writeFcn)
-      }*/
-      val addr = RegInit(0.U(memio.abits.W))
+      }
+      /*val addr = RegInit(0.U(memio.abits.W))
       memio.addr := addr
       // The read function. Just put q always
       val readFcn = RegReadFn((ready) => {
@@ -123,7 +123,7 @@ abstract class ed25519(busWidthBytes: Int, val c: ed25519Params)
       Seq(
         RegField(32, readFcn, writeFcn),
         RegField(memio.abits, addr)
-      )
+      )*/
     }
 
     def mem32IOtomem(io: mem32IO, mem: SyncReadMem[UInt]): Unit = {
