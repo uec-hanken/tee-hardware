@@ -7,3 +7,6 @@
 [submodule "hardware/fpga-shells"]
 	path = hardware/fpga-shells
 	url = https://github.com/sifive/fpga-shells.git
+[submodule "hardware/keystoneAcc/vsrc/ed25519_sign"]
+	path = hardware/keystoneAcc/vsrc/ed25519_sign
+	url = https://github.com/ckdur/ed25519_fpga.git

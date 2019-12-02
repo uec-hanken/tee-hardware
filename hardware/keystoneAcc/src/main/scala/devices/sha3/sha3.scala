@@ -9,8 +9,7 @@ import freechips.rocketchip.tilelink._
 import freechips.rocketchip.util._
 
 case class SHA3Params(
-                       address: BigInt,
-                       width: Int)
+                       address: BigInt)
 
 class SHA3PortIO extends Bundle {
 }

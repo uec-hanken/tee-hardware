@@ -41,9 +41,9 @@ class ChipPeripherals extends Config((site, here, up) => {
     GPIOParams(address = BigInt(0x64002000L), width = 16))
   case GPIOInKey => 8
   case PeripherySHA3Key =>
-    SHA3Params(address = BigInt(0x64003000L), width = 0)
+    SHA3Params(address = BigInt(0x64003000L))
   case Peripheryed25519Key =>
-    ed25519Params(address = BigInt(0x64004000L), width = 0)
+    ed25519Params(address = BigInt(0x64004000L), incl_curve = false)
   case PeripherySPIFlashKey => List(
     SPIFlashParams(
       fAddress = 0x20000000,

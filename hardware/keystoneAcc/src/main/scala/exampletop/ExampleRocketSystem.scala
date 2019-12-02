@@ -20,9 +20,9 @@ import uec.keystoneAcc.devices.aes._
 // Just like DefaultConfig for now, but with the peripherals
 class KeystoneDefaultPeripherals extends Config((site, here, up) => {
   case PeripherySHA3Key =>
-    SHA3Params(address = BigInt(0x10003000L), width = 0)
+    SHA3Params(address = BigInt(0x10003000L))
   case Peripheryed25519Key =>
-    ed25519Params(address = BigInt(0x10004000L), width = 0)
+    ed25519Params(address = BigInt(0x10004000L))
   case BootROMParams =>
     BootROMParams(contentFileName = "./hardware/chipyard/generators/rocket-chip/bootrom/bootrom.img")
 })

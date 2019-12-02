@@ -12,7 +12,9 @@ import freechips.rocketchip.util._
 
 case class ed25519Params(
                        address: BigInt,
-                       width: Int)
+                       incl_curve: Boolean = false,
+                       incl_base: Boolean = true,
+                       incl_sign: Boolean = true)
 
 class ed25519PortIO extends Bundle {
 }
@@ -47,6 +49,19 @@ class curve25519_modular_multiplier extends BlackBox {
   })
 }
 
+class ed25519_sign_S_core extends BlackBox {
+  val io = IO(new Bundle {
+    val clk = Input(Clock())
+    val rst = Input(Bool())
+    val core_ena = Input(Bool())
+    val core_ready = Output(Bool())
+    val core_comp_done = Output(Bool())
+    val hashd_key = Input(UInt(512.W))
+    val hashd_ram = Input(UInt(512.W))
+    val hashd_sm = Input(UInt(512.W))
+    val core_S = Output(UInt(256.W))
+  })
+}
 
 abstract class ed25519(busWidthBytes: Int, val c: ed25519Params)
                    (implicit p: Parameters)
@@ -148,135 +163,161 @@ abstract class ed25519(busWidthBytes: Int, val c: ed25519Params)
       io2.q := out.q
     }
 
-    // Put actual hardware
-    val busy = RegInit(false.B)
-    val busy2 = RegInit(false.B)
+    val regs_base: Seq[(Int, Seq[RegField])] = if(true) {
+      // Everything about the base multiplier is here
+      val busy = RegInit(false.B)
+      // The memories
+      val mem_k = SyncReadMem(8, UInt(32.W)) // Key memory
+      val mem_k2 = SyncReadMem(8, UInt(32.W)) // Key2 memory
+      val mem_qy = SyncReadMem(8, UInt(32.W)) // Result memory
+      // Ports for the memories
+      val tobram_k = Wire(new mem32IO) // Mem port to Key memory
+      val tobram_k2 = Wire(new mem32IO) // Mem port to Key2 memory
+      val tobram_qy = Wire(new mem32IO) // Mem port to Result memory
+      val fromrmap_k = Wire(new mem32IO) // Register router to Key memory
+      val fromrmap_k2 = Wire(new mem32IO) // Register router to Key2 memory
+      val fromrmap_qy = Wire(new mem32IO) // Register router to Result memory
+      val fromacc_k = Wire(new mem32IO) // From accelerator to Key memory
+      val fromacc_k2 = Wire(new mem32IO) // From accelerator to Key2 memory
+      val fromacc_qy = Wire(new mem32IO) // From accelerator to Result memory
+      // Interconnections and muxing
+      mem32mux(busy, fromacc_k, fromrmap_k, tobram_k)
+      mem32mux(busy, fromacc_k2, fromrmap_k2, tobram_k2)
+      mem32mux(busy, fromacc_qy, fromrmap_qy, tobram_qy)
+      fromrmap_k.q := BigInt(0xdeadce11L).U // Make the reading inaccessible for the key
+      fromrmap_k2.q := BigInt(0xdeadce11L).U // Make the reading inaccessible for the key
+      mem32IOtomem(tobram_k, mem_k)
+      mem32IOtomem(tobram_k2, mem_k2)
+      mem32IOtomem(tobram_qy, mem_qy)
+      // RegMaps
+      val k_regmap = memAndMap(fromrmap_k)
+      val k2_regmap = memAndMap(fromrmap_k2)
+      val qy_regmap = memAndMap(fromrmap_qy)
+      val ena = WireInit(false.B)
+      val rdy = Wire(Bool())
+      val wk = RegInit(false.B)
+      val reg_and_status = Seq(
+        RegField(1, ena, RegFieldDesc("ena", "Enable", reset = Some(0))),
+        RegField.r(1, busy, RegFieldDesc("busy", "Busy", volatile = true)),
+        RegField.r(1, rdy, RegFieldDesc("rdy", "Ready", volatile = true)),
+        RegField(1, wk, RegFieldDesc("wk", "Which k", reset = Some(0))),
+      )
+      // Busy logic
+      when(ena) {
+        busy := true.B
+      }.elsewhen(rdy) {
+        busy := false.B
+      }
+      // The actual base multiplier
+      val mult = Module(new ed25519_base_point_multiplier)
+      mult.io.clk := clock
+      mult.io.rst_n := !reset.asBool
+      mult.io.ena := ena
+      rdy := mult.io.rdy
+      fromacc_k.addr := mult.io.k_addr
+      fromacc_k.en := true.B
+      fromacc_k.we := false.B
+      fromacc_k.d := BigInt(0xdeadbeefL).U
+      fromacc_k2.addr := mult.io.k_addr
+      fromacc_k2.en := true.B
+      fromacc_k2.we := false.B
+      fromacc_k2.d := BigInt(0xdeadbeefL).U
+      mult.io.k_din := Mux(wk, fromacc_k2.q, fromacc_k.q)
+      fromacc_qy.addr := mult.io.qy_addr
+      fromacc_qy.we := mult.io.qy_wren
+      fromacc_qy.d := mult.io.qy_dout
+      fromacc_qy.en := true.B
+      // fromacc_qy.q ignored
 
-    // The memories
-    val mem_k = SyncReadMem(8, UInt(32.W)) // Key memory
-    val mem_k2 = SyncReadMem(8, UInt(32.W)) // Key2 memory
-    val mem_qy = SyncReadMem(8, UInt(32.W)) // Result memory
-    val mem_a = SyncReadMem(8, UInt(32.W)) // A memory
-    val mem_b = SyncReadMem(8, UInt(32.W)) // B memory
-    val mem_c = SyncReadMem(8, UInt(32.W)) // C memory
+      // The register mapping with address.
+      Seq(
+        ed25519CtrlRegs.key -> k_regmap,
+        ed25519CtrlRegs.key2 -> k2_regmap,
+        ed25519CtrlRegs.qy -> qy_regmap,
+        ed25519CtrlRegs.regstatus -> reg_and_status
+      )
+    } else {
+      Seq()
+    }
 
-    // Ports for the memories
-    val tobram_k = Wire(new mem32IO) // Mem port to Key memory
-    val tobram_k2 = Wire(new mem32IO) // Mem port to Key2 memory
-    val tobram_qy = Wire(new mem32IO) // Mem port to Result memory
-    val tobram_a = Wire(new mem32IO) // Mem port to A memory
-    val tobram_b = Wire(new mem32IO) // Mem port to B memory
-    val tobram_c = Wire(new mem32IO) // Mem port to C memory
-    val fromrmap_k = Wire(new mem32IO) // Register router to Key memory
-    val fromrmap_k2 = Wire(new mem32IO) // Register router to Key2 memory
-    val fromrmap_qy = Wire(new mem32IO) // Register router to Result memory
-    val fromrmap_a = Wire(new mem32IO) // Register router to A memory
-    val fromrmap_b = Wire(new mem32IO) // Register router to B memory
-    val fromrmap_c = Wire(new mem32IO) // Register router to C memory
-    val fromacc_k = Wire(new mem32IO) // From accelerator to Key memory
-    val fromacc_k2 = Wire(new mem32IO) // From accelerator to Key2 memory
-    val fromacc_qy = Wire(new mem32IO) // From accelerator to Result memory
-    val fromacc_a = Wire(new mem32IO) // From accelerator to A memory
-    val fromacc_b = Wire(new mem32IO) // From accelerator to B memory
-    val fromacc_c = Wire(new mem32IO) // From accelerator to C memory
+    val regs_curve: Seq[(Int, Seq[RegField])] = if(c.incl_curve) {
+      // Everything about the curve multiplier is here
+      val busy2 = RegInit(false.B)
+      // Memories
+      val mem_a = SyncReadMem(8, UInt(32.W)) // A memory
+      val mem_b = SyncReadMem(8, UInt(32.W)) // B memory
+      val mem_c = SyncReadMem(8, UInt(32.W)) // C memory
+      // Ports for memories
+      val tobram_a = Wire(new mem32IO) // Mem port to A memory
+      val tobram_b = Wire(new mem32IO) // Mem port to B memory
+      val tobram_c = Wire(new mem32IO) // Mem port to C memory
+      val fromrmap_a = Wire(new mem32IO) // Register router to A memory
+      val fromrmap_b = Wire(new mem32IO) // Register router to B memory
+      val fromrmap_c = Wire(new mem32IO) // Register router to C memory
+      val fromacc_a = Wire(new mem32IO) // From accelerator to A memory
+      val fromacc_b = Wire(new mem32IO) // From accelerator to B memory
+      val fromacc_c = Wire(new mem32IO) // From accelerator to C memory
+      // Interconnections and muxing
+      mem32mux(busy2, fromacc_a, fromrmap_a, tobram_a)
+      mem32mux(busy2, fromacc_b, fromrmap_b, tobram_b)
+      mem32mux(busy2, fromacc_c, fromrmap_c, tobram_c)
+      mem32IOtomem(tobram_a, mem_a)
+      mem32IOtomem(tobram_b, mem_b)
+      mem32IOtomem(tobram_c, mem_c)
+      // RegMaps
+      val a_regmap = memAndMap(fromrmap_a)
+      val b_regmap = memAndMap(fromrmap_b)
+      val c_regmap = memAndMap(fromrmap_c)
+      val ena2 = WireInit(false.B)
+      val rdy2 = Wire(Bool())
+      val reg_and_status2 = Seq(
+        RegField(1, ena2, RegFieldDesc("ena2", "Enable", reset = Some(0))),
+        RegField.r(1, busy2, RegFieldDesc("busy2", "Busy", volatile = true)),
+        RegField.r(1, rdy2, RegFieldDesc("rdy2", "Ready", volatile = true)),
+      )
+      // Busy logic
+      when(ena2) {
+        busy2 := true.B
+      }.elsewhen(rdy2) {
+        busy2 := false.B
+      }
+      // The actual modular multiplier
+      val mult2 = Module(new curve25519_modular_multiplier)
+      mult2.io.clk := clock
+      mult2.io.rst_n := !reset.asBool
+      mult2.io.ena := ena2
+      rdy2 := mult2.io.rdy
+      fromacc_a.addr := mult2.io.a_addr
+      mult2.io.a_din := fromacc_a.q
+      fromacc_a.en := true.B
+      fromacc_a.we := false.B
+      fromacc_a.d := BigInt(0xdeadbeefL).U
+      fromacc_b.addr := mult2.io.b_addr
+      mult2.io.b_din := fromacc_b.q
+      fromacc_b.en := true.B
+      fromacc_b.we := false.B
+      fromacc_b.d := BigInt(0xdeadbeefL).U
+      fromacc_c.addr := mult2.io.p_addr
+      fromacc_c.we := mult2.io.p_wren
+      fromacc_c.d := mult2.io.p_dout
+      fromacc_c.en := true.B
+      // fromacc_c.q ignored
 
-    // Interconnections and muxing
-    mem32mux(busy, fromacc_k, fromrmap_k, tobram_k)
-    mem32mux(busy, fromacc_k2, fromrmap_k2, tobram_k2)
-    mem32mux(busy, fromacc_qy, fromrmap_qy, tobram_qy)
-    mem32mux(busy2, fromacc_a, fromrmap_a, tobram_a)
-    mem32mux(busy2, fromacc_b, fromrmap_b, tobram_b)
-    mem32mux(busy2, fromacc_c, fromrmap_c, tobram_c)
-    fromrmap_k.q := BigInt(0xdeadce11L).U // Make the reading inaccessible for the key
-    fromrmap_k2.q := BigInt(0xdeadce11L).U // Make the reading inaccessible for the key
-    mem32IOtomem(tobram_k, mem_k)
-    mem32IOtomem(tobram_k2, mem_k2)
-    mem32IOtomem(tobram_qy, mem_qy)
-    mem32IOtomem(tobram_a, mem_a)
-    mem32IOtomem(tobram_b, mem_b)
-    mem32IOtomem(tobram_c, mem_c)
-
-    // Create the RegMaps
-    val k_regmap = memAndMap(fromrmap_k)
-    val k2_regmap = memAndMap(fromrmap_k2)
-    val qy_regmap = memAndMap(fromrmap_qy)
-    val a_regmap = memAndMap(fromrmap_a)
-    val b_regmap = memAndMap(fromrmap_b)
-    val c_regmap = memAndMap(fromrmap_c)
-    val ena = WireInit(false.B)
-    val ena2 = WireInit(false.B)
-    val rdy = Wire(Bool())
-    val rdy2 = Wire(Bool())
-    val wk = RegInit(false.B)
-    val reg_and_status = Seq(
-      RegField(1, ena, RegFieldDesc("ena","Enable", reset = Some(0))),
-      RegField.r(1, busy, RegFieldDesc("busy","Busy", volatile=true)),
-      RegField.r(1, rdy, RegFieldDesc("rdy","Ready", volatile=true)),
-      RegField(1, wk, RegFieldDesc("wk","Which k", reset = Some(0))),
-    )
-    val reg_and_status2 = Seq(
-      RegField(1, ena2, RegFieldDesc("ena2","Enable", reset = Some(0))),
-      RegField.r(1, busy2, RegFieldDesc("busy2","Busy", volatile=true)),
-      RegField.r(1, rdy2, RegFieldDesc("rdy2","Ready", volatile=true)),
-    )
-
-    // Busy logic
-    when(ena) { busy := true.B } .elsewhen(rdy) { busy := false.B }
-    when(ena2) { busy2 := true.B } .elsewhen(rdy2) { busy2 := false.B }
-
-    // The actual base multiplier
-    val mult = Module(new ed25519_base_point_multiplier)
-    mult.io.clk := clock
-    mult.io.rst_n := !reset.asBool
-    mult.io.ena := ena
-    rdy := mult.io.rdy
-    fromacc_k.addr := mult.io.k_addr
-    fromacc_k.en := true.B
-    fromacc_k.we := false.B
-    fromacc_k.d := BigInt(0xdeadbeefL).U
-    fromacc_k2.addr := mult.io.k_addr
-    fromacc_k2.en := true.B
-    fromacc_k2.we := false.B
-    fromacc_k2.d := BigInt(0xdeadbeefL).U
-    mult.io.k_din := Mux(wk, fromacc_k2.q, fromacc_k.q)
-    fromacc_qy.addr := mult.io.qy_addr
-    fromacc_qy.we := mult.io.qy_wren
-    fromacc_qy.d := mult.io.qy_dout
-    fromacc_qy.en := true.B
-    // fromacc_qy.q ignored
-
-    // The actual modular multiplier
-    val mult2 = Module(new curve25519_modular_multiplier)
-    mult2.io.clk := clock
-    mult2.io.rst_n := !reset.asBool
-    mult2.io.ena := ena2
-    rdy2 := mult2.io.rdy
-    fromacc_a.addr := mult2.io.a_addr
-    mult2.io.a_din := fromacc_a.q
-    fromacc_a.en := true.B
-    fromacc_a.we := false.B
-    fromacc_a.d := BigInt(0xdeadbeefL).U
-    fromacc_b.addr := mult2.io.b_addr
-    mult2.io.b_din := fromacc_b.q
-    fromacc_b.en := true.B
-    fromacc_b.we := false.B
-    fromacc_b.d := BigInt(0xdeadbeefL).U
-    fromacc_c.addr := mult2.io.p_addr
-    fromacc_c.we := mult2.io.p_wren
-    fromacc_c.d := mult2.io.p_dout
-    fromacc_c.en := true.B
-    // fromacc_c.q ignored
+      // The register mapping with address.
+      Seq(
+        ed25519CtrlRegs.a -> a_regmap,
+        ed25519CtrlRegs.b -> b_regmap,
+        ed25519CtrlRegs.c -> c_regmap,
+        ed25519CtrlRegs.regstatus2 -> reg_and_status2
+      )
+    }
+    else {
+      Seq()
+    }
 
     // Memory map registers
     regmap(
-      ed25519CtrlRegs.key -> k_regmap,
-      ed25519CtrlRegs.key2 -> k2_regmap,
-      ed25519CtrlRegs.qy -> qy_regmap,
-      ed25519CtrlRegs.a -> a_regmap,
-      ed25519CtrlRegs.b -> b_regmap,
-      ed25519CtrlRegs.c -> c_regmap,
-      ed25519CtrlRegs.regstatus2 -> reg_and_status2,
-      ed25519CtrlRegs.regstatus -> reg_and_status
+      (regs_base ++ regs_curve):_*
     )
   }
 }
