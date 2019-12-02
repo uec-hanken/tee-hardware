@@ -62,6 +62,9 @@ VERILATOR_NONCC_OPTS = \
 	--output-split 10000 \
 	--output-split-cfuncs 100 \
 	-I$(ED25519_DIR)/rtl \
+	-I$(ED25519_SIGN_DIR)/src/rtl/ \
+	-I$(ED25519_SIGN_DIR)/src/rtl/multiplier/ \
+	-I$(ED25519_SIGN_DIR)/src/rtl/modular_reduce/ \
 	-Wno-STMTDLY -Wno-WIDTH --x-assign unique \
 	$(sim_vsrcs) \
 	-f $(sim_common_files)

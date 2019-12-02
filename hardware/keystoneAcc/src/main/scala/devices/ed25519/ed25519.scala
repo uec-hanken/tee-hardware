@@ -315,9 +315,54 @@ abstract class ed25519(busWidthBytes: Int, val c: ed25519Params)
       Seq()
     }
 
+    val regs_sign: Seq[(Int, Seq[RegField])] = if(c.incl_sign) {
+      // The signals to interface
+      val hashd_key_v = Reg(Vec(16, UInt(32.W)))
+      val hashd_ram_v = Reg(Vec(16, UInt(32.W)))
+      val hashd_sm_v = Reg(Vec(16, UInt(32.W)))
+      val core_S = Wire(UInt(256.W))
+      val core_ena = WireInit(false.B)
+      val core_ready = Wire(Bool())
+      val core_comp_done = Wire(Bool())
+
+      // The actual ed25519_sign instantiation
+      val sign_core = Module(new ed25519_sign_S_core)
+      sign_core.io.clk := clock
+      sign_core.io.rst := reset
+      sign_core.io.core_ena := core_ena
+      core_ready := sign_core.io.core_ready
+      core_comp_done := sign_core.io.core_comp_done
+      sign_core.io.hashd_key := (for(i <- 0 until 64) yield hashd_key_v.asUInt()((64-i)*8-1, (63-i)*8)).reduce(Cat(_,_))
+      sign_core.io.hashd_ram := (for(i <- 0 until 64) yield hashd_ram_v.asUInt()((64-i)*8-1, (63-i)*8)).reduce(Cat(_,_))
+      sign_core.io.hashd_sm := (for(i <- 0 until 64) yield hashd_sm_v.asUInt()((64-i)*8-1, (63-i)*8)).reduce(Cat(_,_))
+      core_S := sign_core.io.core_S
+
+      // The regmaps
+      val hkey_regmap: Seq[RegField] = hashd_key_v.map{ i => RegField(32, i) }
+      val hram_regmap: Seq[RegField] = hashd_ram_v.map{ i => RegField(32, i) }
+      val hsm_regmap: Seq[RegField] = hashd_sm_v.map{ i => RegField(32, i) }
+      val sign_regmap: Seq[RegField] = for(i <- 0 until 8) yield RegField.r(32, core_S((i+1)*32-1,i*32))
+      val reg_and_status3 = Seq(
+        RegField(1, core_ena, RegFieldDesc("ena2", "Enable", reset = Some(0))),
+        RegField.r(1, !core_ready, RegFieldDesc("busy2", "Busy", volatile = true)),
+        RegField.r(1, !core_comp_done, RegFieldDesc("rdy2", "Comp Busy", volatile = true)),
+      )
+
+      Seq(
+        ed25519CtrlRegs.hkey -> hkey_regmap,
+        ed25519CtrlRegs.hram -> hram_regmap,
+        ed25519CtrlRegs.hsm -> hsm_regmap,
+        ed25519CtrlRegs.sign -> sign_regmap,
+        ed25519CtrlRegs.regstatus3 -> reg_and_status3
+      )
+    }
+    else {
+      Seq()
+    }
+
     // Memory map registers
     regmap(
-      (regs_base ++ regs_curve):_*
+      (regs_base ++ regs_curve ++ regs_sign):_*
     )
   }
 }

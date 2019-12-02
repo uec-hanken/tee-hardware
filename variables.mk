@@ -36,6 +36,7 @@ KEYSTONE_ACC_DIR ?= $(base_dir)/hardware/keystoneAcc
 SHA3_DIR ?= $(KEYSTONE_ACC_DIR)/vsrc/sha3
 SHA3_HIGHPERF_DIR ?= $(SHA3_DIR)/trunk/high_throughput_core
 ED25519_DIR ?= $(KEYSTONE_ACC_DIR)/vsrc/ed25519
+ED25519_SIGN_DIR ?= $(KEYSTONE_ACC_DIR)/vsrc/ed25519_sign
 
 ifeq ($(SUB_PROJECT),keystoneAcc)
 	SBT_PROJECT       ?= keystoneAcc
@@ -70,7 +71,9 @@ ifeq ($(SUB_PROJECT),keystoneAcc)
 	$(ED25519_DIR)/rtl/modular_adder.v \
 	$(ED25519_DIR)/rtl/modular_subtractor.v \
 	$(ED25519_DIR)/rtl/adder32_generic.v \
-	$(ED25519_DIR)/rtl/multiword_mover.v
+	$(ED25519_DIR)/rtl/multiword_mover.v \
+	$(ED25519_SIGN_DIR)/src/rtl/ed25519_sign_core_S.v \
+	$(ED25519_SIGN_DIR)/src/rtl/multiplier/MULT_MACRO.v
 endif
 ifeq ($(SUB_PROJECT),NEDOFPGA)
 	SBT_PROJECT       ?= keystoneAcc
@@ -105,7 +108,9 @@ ifeq ($(SUB_PROJECT),NEDOFPGA)
 	$(ED25519_DIR)/rtl/modular_adder.v \
 	$(ED25519_DIR)/rtl/modular_subtractor.v \
 	$(ED25519_DIR)/rtl/adder32_generic.v \
-	$(ED25519_DIR)/rtl/multiword_mover.v
+	$(ED25519_DIR)/rtl/multiword_mover.v \
+	$(ED25519_SIGN_DIR)/src/rtl/ed25519_sign_core_S.v \
+	$(ED25519_SIGN_DIR)/src/rtl/multiplier/MULT_MACRO.v
 endif
 ifeq ($(SUB_PROJECT),NEDOFPGAQuartus)
 	SBT_PROJECT       ?= keystoneAcc
@@ -140,7 +145,9 @@ ifeq ($(SUB_PROJECT),NEDOFPGAQuartus)
 	$(ED25519_DIR)/rtl/modular_adder.v \
 	$(ED25519_DIR)/rtl/modular_subtractor.v \
 	$(ED25519_DIR)/rtl/adder32_generic.v \
-	$(ED25519_DIR)/rtl/multiword_mover.v
+	$(ED25519_DIR)/rtl/multiword_mover.v \
+	$(ED25519_SIGN_DIR)/src/rtl/ed25519_sign_core_S.v \
+	$(ED25519_SIGN_DIR)/src/rtl/multiplier/MULT_MACRO.v
 endif
 ifeq ($(SUB_PROJECT),tracegen)
 	SBT_PROJECT       ?= tracegen
