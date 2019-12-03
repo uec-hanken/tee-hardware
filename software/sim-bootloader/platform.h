@@ -6,7 +6,7 @@
 #ifndef _SIFIVE_PLATFORM_H
 #define _SIFIVE_PLATFORM_H
 
-#define ED25519_DIR
+//#define ED25519_DIR
 
 #include "const.h"
 #include "devices/sha3.h"

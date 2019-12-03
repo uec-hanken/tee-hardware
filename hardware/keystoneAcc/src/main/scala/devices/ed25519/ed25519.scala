@@ -104,7 +104,7 @@ abstract class ed25519(busWidthBytes: Int, val c: ed25519Params)
       val ohaddr = WireInit(VecInit(Seq.fill(adepth)(false.B)))
       memio.addr := OHToUInt(ohaddr)
       // Creation of RegFields
-      for(i <- 0 until adepth) yield {
+      /*for(i <- 0 until adepth) yield {
         // Read function. We just capture the address here
         val readFcn = RegReadFn(ready => {
           when(ready) { ohaddr(i) := true.B }
@@ -120,8 +120,8 @@ abstract class ed25519(busWidthBytes: Int, val c: ed25519Params)
           true.B
         })
         RegField(32, readFcn, writeFcn)
-      }
-      /*val addr = RegInit(0.U(memio.abits.W))
+      }*/
+      val addr = RegInit(0.U(memio.abits.W))
       memio.addr := addr
       // The read function. Just put q always
       val readFcn = RegReadFn((ready) => {
@@ -138,7 +138,7 @@ abstract class ed25519(busWidthBytes: Int, val c: ed25519Params)
       Seq(
         RegField(32, readFcn, writeFcn),
         RegField(memio.abits, addr)
-      )*/
+      )
     }
 
     def mem32IOtomem(io: mem32IO, mem: SyncReadMem[UInt]): Unit = {
@@ -320,10 +320,11 @@ abstract class ed25519(busWidthBytes: Int, val c: ed25519Params)
       val hashd_key_v = Reg(Vec(16, UInt(32.W)))
       val hashd_ram_v = Reg(Vec(16, UInt(32.W)))
       val hashd_sm_v = Reg(Vec(16, UInt(32.W)))
-      val core_S = Wire(UInt(256.W))
+      val core_S = Reg(UInt(256.W))
       val core_ena = WireInit(false.B)
       val core_ready = Wire(Bool())
       val core_comp_done = Wire(Bool())
+      val busy3 = RegInit(false.B)
 
       // The actual ed25519_sign instantiation
       val sign_core = Module(new ed25519_sign_S_core)
@@ -332,20 +333,27 @@ abstract class ed25519(busWidthBytes: Int, val c: ed25519Params)
       sign_core.io.core_ena := core_ena
       core_ready := sign_core.io.core_ready
       core_comp_done := sign_core.io.core_comp_done
-      sign_core.io.hashd_key := (for(i <- 0 until 64) yield hashd_key_v.asUInt()((64-i)*8-1, (63-i)*8)).reduce(Cat(_,_))
-      sign_core.io.hashd_ram := (for(i <- 0 until 64) yield hashd_ram_v.asUInt()((64-i)*8-1, (63-i)*8)).reduce(Cat(_,_))
-      sign_core.io.hashd_sm := (for(i <- 0 until 64) yield hashd_sm_v.asUInt()((64-i)*8-1, (63-i)*8)).reduce(Cat(_,_))
-      core_S := sign_core.io.core_S
+      sign_core.io.hashd_key := (for(i <- 0 until 64) yield hashd_key_v.asUInt()((1+i)*8-1, (0+i)*8)).reduce(Cat(_,_))//hashd_key_v.asUInt()
+      sign_core.io.hashd_ram := hashd_ram_v.asUInt()//(for(i <- 0 until 64) yield hashd_ram_v.asUInt()((1+i)*8-1, (0+i)*8)).reduce(Cat(_,_))
+      sign_core.io.hashd_sm := hashd_sm_v.asUInt()//(for(i <- 0 until 64) yield hashd_sm_v.asUInt()((1+i)*8-1, (0+i)*8)).reduce(Cat(_,_))
+      when(core_comp_done) {core_S := sign_core.io.core_S}
+
+      when(core_ena) {
+        busy3 := true.B
+      }.elsewhen(core_ready) {
+        busy3 := false.B
+      }
 
       // The regmaps
       val hkey_regmap: Seq[RegField] = hashd_key_v.map{ i => RegField(32, i) }
       val hram_regmap: Seq[RegField] = hashd_ram_v.map{ i => RegField(32, i) }
       val hsm_regmap: Seq[RegField] = hashd_sm_v.map{ i => RegField(32, i) }
-      val sign_regmap: Seq[RegField] = for(i <- 0 until 8) yield RegField.r(32, core_S((i+1)*32-1,i*32))
+      val sign_regmap: Seq[RegField] = for(i <- 0 until 8) yield RegField.r(32, core_S((8-i)*32-1,(7-i)*32))
       val reg_and_status3 = Seq(
-        RegField(1, core_ena, RegFieldDesc("ena2", "Enable", reset = Some(0))),
-        RegField.r(1, !core_ready, RegFieldDesc("busy2", "Busy", volatile = true)),
-        RegField.r(1, !core_comp_done, RegFieldDesc("rdy2", "Comp Busy", volatile = true)),
+        RegField(1, core_ena, RegFieldDesc("ena3", "Enable", reset = Some(0))),
+        RegField.r(1, busy3, RegFieldDesc("busy3", "Busy", volatile = true)),
+        RegField.r(1, core_ready, RegFieldDesc("rdy3", "Ready", volatile = true)),
+        RegField.r(1, core_comp_done, RegFieldDesc("comprdy3", "Comp Busy", volatile = true)),
       )
 
       Seq(

@@ -169,11 +169,12 @@ module ed25519_base_point_multiplier
             //
             if (k_bit_index == 5'd0)
                 //
-                case (k_addr)
+               /* case (k_addr)
                     3'd0:       k_din_shreg <= {k_din[31:3], 3'b000};
                     3'd7:       k_din_shreg <= {2'b01, k_din[29:0]};
                     default:    k_din_shreg <= k_din;
-                endcase
+                endcase*/
+                k_din_shreg <= k_din; // NOTE: CKDUR: The bit filter will be made on software
                 //
             else                k_din_shreg <= {k_din_shreg[0], k_din_shreg[31:1]};
     
