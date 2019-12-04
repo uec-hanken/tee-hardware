@@ -34,6 +34,7 @@ void ed25519_sign(unsigned char *signature, const unsigned char *message, size_t
 void hw_ed25519_sign(unsigned char *signature, const unsigned char *message, size_t message_len, const unsigned char *public_key, const unsigned char *private_key, char red) {
     unsigned char hram[64];
     unsigned char r[64];
+    unsigned char rred[64];
     uint32_t *sig = (uint32_t*)signature;
     
     // Remember that private_key is already hashed (hashkey)
@@ -42,13 +43,16 @@ void hw_ed25519_sign(unsigned char *signature, const unsigned char *message, siz
     hwsha3_init();
     hwsha3_update(private_key + 32, 32);
     hwsha3_final(r, message, message_len);
-    if(red) sc_reduce(r);
+    for(int i = 0; i < 16; i++) {
+        *(((uint32_t*)(rred)) + i) = *(((uint32_t*)(r)) + i);
+    }
+    if(red) sc_reduce(rred);
     
     // Calculate the R part with a base-point multiplier (in hw)
 #ifndef ED25519_DIR
     for(int i = 0; i < 8; i++) {
         ED25519_REG(ED25519_REG_ADDR_K) = i;
-        ED25519_REG(ED25519_REG_DATA_K) = *(((uint32_t*)(r)) + i);
+        ED25519_REG(ED25519_REG_DATA_K) = *(((uint32_t*)(rred)) + i);
     }
     ED25519_REG(ED25519_REG_STATUS) = 1; // Use the K memory
     while(!(ED25519_REG(ED25519_REG_STATUS) & 0x4)); // Wait

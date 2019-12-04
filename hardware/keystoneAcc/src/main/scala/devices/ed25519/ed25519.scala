@@ -348,7 +348,8 @@ abstract class ed25519(busWidthBytes: Int, val c: ed25519Params)
       val hkey_regmap: Seq[RegField] = hashd_key_v.map{ i => RegField(32, i) }
       val hram_regmap: Seq[RegField] = hashd_ram_v.map{ i => RegField(32, i) }
       val hsm_regmap: Seq[RegField] = hashd_sm_v.map{ i => RegField(32, i) }
-      val sign_regmap: Seq[RegField] = for(i <- 0 until 8) yield RegField.r(32, core_S((8-i)*32-1,(7-i)*32))
+      val sign_regmap: Seq[RegField] = for(i <- 0 until 8) yield
+        RegField.r(32, (for(j <- 0 until 4) yield core_S((7-i)*32 + (1+j)*8 -1,(7-i)*32 + (0+j)*8)).reduce(Cat(_,_))        )
       val reg_and_status3 = Seq(
         RegField(1, core_ena, RegFieldDesc("ena3", "Enable", reset = Some(0))),
         RegField.r(1, busy3, RegFieldDesc("busy3", "Busy", volatile = true)),
