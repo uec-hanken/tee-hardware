@@ -228,7 +228,6 @@ class NEDObase(implicit val p :Parameters) extends RawModule {
     sdio.sdio_clk := BasePinToRegular(system.io.pins.spi.sck)
     sdio.sdio_cmd := BasePinToRegular(system.io.pins.spi.dq(0))
     BasePinToRegular(system.io.pins.spi.dq(1), sdio.sdio_dat_0)
-    //BasePinToRegular(system.io.pins.spi.dq(1), RegNext(RegNext(sdio.sdio_dat_0))) // NOTE: We saw like this on SDIOOverlay
     BasePinToRegular(system.io.pins.spi.dq(2)) // Ignored
     BasePinToRegular(system.io.pins.spi.dq(3)) // Ignored
 
@@ -241,7 +240,7 @@ class NEDObase(implicit val p :Parameters) extends RawModule {
     tlportw = Some(system.io.tlport)
     memdevice = Some(system.sys.outer.memdevice)
   }
-  val cacheBlockBytes = 128//cacheBlockBytesOpt.get
+  val cacheBlockBytes = cacheBlockBytesOpt.get
 }
 
 class NEDOchip(implicit override val p :Parameters) extends NEDObase {

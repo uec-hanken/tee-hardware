@@ -54,7 +54,7 @@ class ChipPeripherals extends Config((site, here, up) => {
   case ExtMem => Some(MemoryPortParams(MasterPortParams(
     base = x"0_8000_0000",
     size = x"0_4000_0000",
-    beatBytes = site(MemoryBusKey).beatBytes,
+    beatBytes = 4,//site(MemoryBusKey).beatBytes,
     idBits = 4), 1))
 })
 

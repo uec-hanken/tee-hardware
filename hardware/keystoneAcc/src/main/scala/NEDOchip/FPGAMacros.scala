@@ -272,8 +272,8 @@ class QuartusPlatformBlackBox(implicit val p:Parameters) extends BlackBox {
     val axi4_awvalid = Input(Bool())
     val axi4_awready = Output(Bool())
     //slave interface write data ports
-    val axi4_wdata = Input(Bits((64).W))
-    val axi4_wstrb = Input(Bits((8).W))
+    val axi4_wdata = Input(Bits((32).W))
+    val axi4_wstrb = Input(Bits((4).W))
     val axi4_wlast = Input(Bool())
     val axi4_wvalid = Input(Bool())
     val axi4_wready = Output(Bool())
@@ -297,7 +297,7 @@ class QuartusPlatformBlackBox(implicit val p:Parameters) extends BlackBox {
     //slave interface read data ports
     val axi4_rready = Input(Bool())
     val axi4_rid = Output(Bits((4).W))
-    val axi4_rdata = Output(Bits((64).W))
+    val axi4_rdata = Output(Bits((32).W))
     val axi4_rresp = Output(Bits((2).W))
     val axi4_rlast = Output(Bool())
     val axi4_rvalid = Output(Bool())
@@ -320,7 +320,7 @@ class QuartusIsland(c : Seq[AddressSet], cacheBlockBytes: Int, val crossing: Clo
       executable    = true,
       supportsWrite = TransferSizes(1, cacheBlockBytes),
       supportsRead  = TransferSizes(1, cacheBlockBytes))),
-    beatBytes = 8)))
+    beatBytes = p(ExtMem).head.master.beatBytes)))
 
   lazy val module = new LazyRawModuleImp(this) {
     val io = IO(new Bundle {
