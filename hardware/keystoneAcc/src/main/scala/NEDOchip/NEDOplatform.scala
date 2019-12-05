@@ -20,6 +20,7 @@ import sifive.blocks.devices.jtag._
 import uec.keystoneAcc.devices.aes._
 import uec.keystoneAcc.devices.ed25519._
 import uec.keystoneAcc.devices.sha3._
+import uec.keystoneAcc.devices.usb11hs._
 import uec.rocketchip.subsystem._
 
 class NEDOSystem(implicit p: Parameters) extends RocketSubsystem
@@ -29,6 +30,7 @@ class NEDOSystem(implicit p: Parameters) extends RocketSubsystem
     with HasPeripherySHA3
     with HasPeripheryed25519
     with HasPeripheryAES
+    with HasPeripheryUSB11HS
     //    with HasPeripheryI2C
     //    with HasPeripheryUART // NOTE: Already included
     //    with HasPeripherySPIFlash // NOTE: Already included
@@ -113,6 +115,7 @@ class NEDOSystemModule[+L <: NEDOSystem](_outer: L)
     with HasPeripherySHA3ModuleImp
     with HasPeripheryed25519ModuleImp
     with HasPeripheryAESModuleImp
+    with HasPeripheryUSB11HSModuleImp
     //    with HasPeripheryI2CModuleImp
     //    with HasPeripheryUARTModuleImp // NOTE: Already included
     //    with HasPeripherySPIFlashModuleImp // NOTE: Already included
@@ -165,6 +168,7 @@ class NEDOPlatformIO(val params: TLBundleParameters)(implicit val p: Parameters)
     //val i2c = new I2CPins(() => PinGen())
     val spi = new SPIPins(() => PinGen(), p(PeripherySPIKey)(0))
   }
+  val usb11hs = new USB11HSPortIO
   val jtag_reset = Input(Bool())
   val ndreset = Output(Bool())
   val tlport = new TLUL(params)
@@ -205,11 +209,14 @@ class NEDOPlatform(implicit val p: Parameters) extends Module {
       // and there is no usage of channels B, C and E (except for some TL Monitors)
   }
 
+  // Connect the USB to the outside
+  io.usb11hs <> sys.usb11hs
+
   //-----------------------------------------------------------------------
   // Check for unsupported rocket-chip connections
   //-----------------------------------------------------------------------
 
-  require (p(NExtTopInterrupts) == 0, "No Top-level interrupts supported");
+  require (p(NExtTopInterrupts) == 0, "No Top-level interrupts supported")
 
   // I2C
   //I2CPinsFromPort(io.pins.i2c, sys.i2c(0), clock = sys.clock, reset = sys.reset.toBool, syncStages = 0)

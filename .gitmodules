@@ -13,3 +13,6 @@
 [submodule "hardware/keystoneAcc/vsrc/aes"]
 	path = hardware/keystoneAcc/vsrc/aes
 	url = https://github.com/secworks/aes.git
+[submodule "hardware/keystoneAcc/vsrc/wb2axip"]
+	path = hardware/keystoneAcc/vsrc/wb2axip
+	url = https://github.com/ZipCPU/wb2axip.git

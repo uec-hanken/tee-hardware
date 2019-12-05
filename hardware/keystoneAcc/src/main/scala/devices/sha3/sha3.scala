@@ -28,7 +28,7 @@ class keccak extends BlackBox {
   })
 }
 
-abstract class SHA3(busWidthBytes: Int, val c: SHA3Params, divisorInit: Int = 0)
+abstract class SHA3(busWidthBytes: Int, val c: SHA3Params)
                    (implicit p: Parameters)
   extends IORegisterRouter(
     RegisterRouterParams(

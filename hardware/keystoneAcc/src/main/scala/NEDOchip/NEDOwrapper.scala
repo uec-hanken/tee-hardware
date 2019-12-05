@@ -2,7 +2,7 @@ package uec.keystoneAcc.nedochip
 
 import chisel3._
 import chisel3.util._
-import chisel3.experimental.{Analog, IO, attach, RawModule}
+import chisel3.experimental.{Analog, IO, RawModule, attach}
 import freechips.rocketchip.config._
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.util._
@@ -10,6 +10,7 @@ import sifive.blocks.devices.pinctrl._
 import sifive.blocks.devices.gpio._
 import sifive.blocks.devices.spi._
 import sifive.fpgashells.clocks._
+import uec.keystoneAcc.devices.usb11hs._
 
 // *********************************************************************************
 // NEDO wrapper - for doing a wrapper with actual ports (tri-state buffers at least)
@@ -179,6 +180,7 @@ class NEDObase(implicit val p :Parameters) extends RawModule {
   val uart_rxd = IO(Input(Bool()))
   val uart_rtsn = IO(Output(Bool()))
   val uart_ctsn = IO(Input(Bool()))
+  val usb11hs = IO(new USB11HSPortIO)
   // These are later connected
   val clock = Wire(Clock())
   val reset = Wire(Bool()) // System reset (for cores)
@@ -235,6 +237,9 @@ class NEDObase(implicit val p :Parameters) extends RawModule {
     BasePinToRegular(system.io.pins.uart.rxd, uart_rxd)
     uart_txd := BasePinToRegular(system.io.pins.uart.txd)
     uart_rtsn := false.B
+
+    // USB11
+    usb11hs <> system.io.usb11hs
 
     // The memory port
     tlportw = Some(system.io.tlport)
@@ -530,6 +535,7 @@ class NEDOFPGAQuartus(implicit val p :Parameters) extends RawModule {
     val qspi_wp = (Output(Bool())) // GPIO1_D[9]
     val qspi_hold = (Output(Bool())) // GPIO1_D[11]
   })
+  val usb11hs = IO(new USB11HSPortIO)
 
   ///////////  EXT_IO /////////
   //val EXT_IO = IO(Analog(1.W))
@@ -649,5 +655,6 @@ class NEDOFPGAQuartus(implicit val p :Parameters) extends RawModule {
     chip.sdio.sdio_dat_0 := SD_MISO 	// input
     SD_CS_N := chip.sdio.sdio_dat_3 	// output
     chip.jrst_n := !SLIDE_SW(2)
+    usb11hs <> chip.usb11hs
   }
 }
