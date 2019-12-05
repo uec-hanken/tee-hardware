@@ -17,6 +17,7 @@ import sifive.blocks.devices.spi._
 import sifive.blocks.devices.uart._
 import sifive.blocks.devices.i2c._
 import sifive.blocks.devices.jtag._
+import uec.keystoneAcc.devices.aes._
 import uec.keystoneAcc.devices.ed25519._
 import uec.keystoneAcc.devices.sha3._
 import uec.rocketchip.subsystem._
@@ -27,6 +28,7 @@ class NEDOSystem(implicit p: Parameters) extends RocketSubsystem
     with HasPeripheryGPIO
     with HasPeripherySHA3
     with HasPeripheryed25519
+    with HasPeripheryAES
     //    with HasPeripheryI2C
     //    with HasPeripheryUART // NOTE: Already included
     //    with HasPeripherySPIFlash // NOTE: Already included
@@ -110,6 +112,7 @@ class NEDOSystemModule[+L <: NEDOSystem](_outer: L)
     with HasPeripheryGPIOModuleImp
     with HasPeripherySHA3ModuleImp
     with HasPeripheryed25519ModuleImp
+    with HasPeripheryAESModuleImp
     //    with HasPeripheryI2CModuleImp
     //    with HasPeripheryUARTModuleImp // NOTE: Already included
     //    with HasPeripherySPIFlashModuleImp // NOTE: Already included

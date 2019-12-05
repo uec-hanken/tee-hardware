@@ -23,6 +23,8 @@ class KeystoneDefaultPeripherals extends Config((site, here, up) => {
     SHA3Params(address = BigInt(0x10003000L))
   case Peripheryed25519Key =>
     ed25519Params(address = BigInt(0x10004000L))
+  case PeripheryAESKey =>
+    AESParams(address = BigInt(0x10007000L))
   case BootROMParams =>
     BootROMParams(contentFileName = "./hardware/chipyard/generators/rocket-chip/bootrom/bootrom.img")
 })
@@ -66,6 +68,7 @@ class ExampleRocketSystem(implicit p: Parameters) extends RocketSubsystem
     with CanHaveSlaveAXI4Port
     with HasPeripherySHA3
     with HasPeripheryed25519
+    with HasPeripheryAES
     with HasPeripheryBootROM {
   override lazy val module = new ExampleRocketSystemModuleImp(this)
 }
@@ -79,5 +82,6 @@ class ExampleRocketSystemModuleImp[+L <: ExampleRocketSystem](_outer: L) extends
     with CanHaveSlaveAXI4PortModuleImp
     with HasPeripherySHA3ModuleImp
     with HasPeripheryed25519ModuleImp
+    with HasPeripheryAESModuleImp
     with HasPeripheryBootROMModuleImp
     with DontTouch

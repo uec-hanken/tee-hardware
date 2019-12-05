@@ -11,6 +11,7 @@ import sifive.blocks.devices.gpio._
 import sifive.blocks.devices.spi._
 import sifive.blocks.devices.uart._
 import sifive.blocks.devices.i2c._
+import uec.keystoneAcc.devices.aes._
 import uec.keystoneAcc.devices.ed25519._
 import uec.keystoneAcc.devices.sha3._
 //import sifive.freedom.unleashed.DevKitFPGAFrequencyKey
@@ -43,7 +44,7 @@ class ChipPeripherals extends Config((site, here, up) => {
   case PeripherySHA3Key =>
     SHA3Params(address = BigInt(0x64003000L))
   case Peripheryed25519Key =>
-    ed25519Params(address = BigInt(0x64004000L), incl_curve = false)
+    ed25519Params(address = BigInt(0x64004000L))
   case PeripherySPIFlashKey => List(
     SPIFlashParams(
       fAddress = 0x20000000,
@@ -51,6 +52,8 @@ class ChipPeripherals extends Config((site, here, up) => {
       defaultSampleDel = 3))
   case PeripheryI2CKey => List(
     I2CParams(address = 0x64006000))
+  case PeripheryAESKey =>
+    AESParams(address = BigInt(0x64007000L))
   case ExtMem => Some(MemoryPortParams(MasterPortParams(
     base = x"0_8000_0000",
     size = x"0_4000_0000",

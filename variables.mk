@@ -37,6 +37,7 @@ SHA3_DIR ?= $(KEYSTONE_ACC_DIR)/vsrc/sha3
 SHA3_HIGHPERF_DIR ?= $(SHA3_DIR)/trunk/high_throughput_core
 ED25519_DIR ?= $(KEYSTONE_ACC_DIR)/vsrc/ed25519
 ED25519_SIGN_DIR ?= $(KEYSTONE_ACC_DIR)/vsrc/ed25519_sign
+AES_DIR ?= $(KEYSTONE_ACC_DIR)/vsrc/aes
 
 ifeq ($(SUB_PROJECT),keystoneAcc)
 	SBT_PROJECT       ?= keystoneAcc
@@ -73,7 +74,13 @@ ifeq ($(SUB_PROJECT),keystoneAcc)
 	$(ED25519_DIR)/rtl/adder32_generic.v \
 	$(ED25519_DIR)/rtl/multiword_mover.v \
 	$(ED25519_SIGN_DIR)/src/rtl/ed25519_sign_core_S.v \
-	$(ED25519_SIGN_DIR)/src/rtl/multiplier/MULT_MACRO.v
+	$(ED25519_SIGN_DIR)/src/rtl/multiplier/MULT_MACRO.v \
+	$(AES_DIR)/src/rtl/aes_core.v \
+	$(AES_DIR)/src/rtl/aes_decipher_block.v \
+	$(AES_DIR)/src/rtl/aes_encipher_block.v \
+	$(AES_DIR)/src/rtl/aes_inv_sbox.v \
+	$(AES_DIR)/src/rtl/aes_key_mem.v \
+	$(AES_DIR)/src/rtl/aes_sbox.v
 endif
 ifeq ($(SUB_PROJECT),NEDOFPGA)
 	SBT_PROJECT       ?= keystoneAcc
@@ -110,7 +117,13 @@ ifeq ($(SUB_PROJECT),NEDOFPGA)
 	$(ED25519_DIR)/rtl/adder32_generic.v \
 	$(ED25519_DIR)/rtl/multiword_mover.v \
 	$(ED25519_SIGN_DIR)/src/rtl/ed25519_sign_core_S.v \
-	$(ED25519_SIGN_DIR)/src/rtl/multiplier/MULT_MACRO.v
+	$(ED25519_SIGN_DIR)/src/rtl/multiplier/MULT_MACRO.v \
+	$(AES_DIR)/src/rtl/aes_core.v \
+	$(AES_DIR)/src/rtl/aes_decipher_block.v \
+	$(AES_DIR)/src/rtl/aes_encipher_block.v \
+	$(AES_DIR)/src/rtl/aes_inv_sbox.v \
+	$(AES_DIR)/src/rtl/aes_key_mem.v \
+	$(AES_DIR)/src/rtl/aes_sbox.v
 endif
 ifeq ($(SUB_PROJECT),NEDOFPGAQuartus)
 	SBT_PROJECT       ?= keystoneAcc
@@ -147,7 +160,13 @@ ifeq ($(SUB_PROJECT),NEDOFPGAQuartus)
 	$(ED25519_DIR)/rtl/adder32_generic.v \
 	$(ED25519_DIR)/rtl/multiword_mover.v \
 	$(ED25519_SIGN_DIR)/src/rtl/ed25519_sign_core_S.v \
-	$(ED25519_SIGN_DIR)/src/rtl/multiplier/MULT_MACRO.v
+	$(ED25519_SIGN_DIR)/src/rtl/multiplier/MULT_MACRO.v \
+	$(AES_DIR)/src/rtl/aes_core.v \
+	$(AES_DIR)/src/rtl/aes_decipher_block.v \
+	$(AES_DIR)/src/rtl/aes_encipher_block.v \
+	$(AES_DIR)/src/rtl/aes_inv_sbox.v \
+	$(AES_DIR)/src/rtl/aes_key_mem.v \
+	$(AES_DIR)/src/rtl/aes_sbox.v
 endif
 ifeq ($(SUB_PROJECT),tracegen)
 	SBT_PROJECT       ?= tracegen
