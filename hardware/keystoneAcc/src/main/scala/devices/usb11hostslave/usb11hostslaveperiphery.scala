@@ -8,7 +8,7 @@ import freechips.rocketchip.subsystem.BaseSubsystem
 case object PeripheryUSB11HSKey extends Field[USB11HSParams]
 
 trait HasPeripheryUSB11HS { this: BaseSubsystem =>
-  val usb11hsDev = USB11HS.attach(USB11HSAttachParams(p(PeripheryUSB11HSKey), pbus, ibus.fromAsync))
+  val usb11hsDev = USB11HS.attach(USB11HSAttachParams(p(PeripheryUSB11HSKey), sbus, ibus.fromAsync))
 }
 
 trait HasPeripheryUSB11HSBundle {

@@ -14,6 +14,7 @@ import sifive.blocks.devices.i2c._
 import uec.keystoneAcc.devices.aes._
 import uec.keystoneAcc.devices.ed25519._
 import uec.keystoneAcc.devices.sha3._
+import uec.keystoneAcc.devices.usb11hs._
 //import sifive.freedom.unleashed.DevKitFPGAFrequencyKey
 
 // The number of gpios that we want as input
@@ -54,6 +55,8 @@ class ChipPeripherals extends Config((site, here, up) => {
     I2CParams(address = 0x64006000))
   case PeripheryAESKey =>
     AESParams(address = BigInt(0x64007000L))
+  case PeripheryUSB11HSKey =>
+    USB11HSParams(address = BigInt(0x64008000L))
   case ExtMem => Some(MemoryPortParams(MasterPortParams(
     base = x"0_8000_0000",
     size = x"0_4000_0000",

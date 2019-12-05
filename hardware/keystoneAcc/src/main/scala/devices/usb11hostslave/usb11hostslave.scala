@@ -6,6 +6,7 @@ import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.interrupts._
 import freechips.rocketchip.regmapper._
+import freechips.rocketchip.subsystem._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.util._
 import uec.keystoneAcc.devices.wb2axip._
@@ -66,7 +67,6 @@ class USB11HS(blockBytes: Int, params: USB11HSParams)(implicit p: Parameters) ex
 
   // Create our interrupt node
   val intnode = IntSourceNode(IntSourcePortSimple(num = 10, resources = Seq(Resource(device, "int"))))
-  val (interrupts, _) = intnode.out(0) // Expose the interrupt signals
 
   // Create the tilelink node
   /*val peripheralParam = TLManagerPortParameters(
@@ -92,7 +92,8 @@ class USB11HS(blockBytes: Int, params: USB11HSParams)(implicit p: Parameters) ex
       regionType    = RegionType.GET_EFFECTS,
       executable    = true,
       supportsWrite = TransferSizes(1, blockBytes),
-      supportsRead  = TransferSizes(1, blockBytes))),
+      supportsRead  = TransferSizes(1, blockBytes)
+    )),
     beatBytes = 1 // 8-bit AXI-4-lite here
   )
   val axi4peripheralNode = AXI4SlaveNode(Seq(axi4peripheralParam))
@@ -100,6 +101,7 @@ class USB11HS(blockBytes: Int, params: USB11HSParams)(implicit p: Parameters) ex
   lazy val module = new LazyModuleImp(this) {
 
     val io = IO(new USB11HSPortIO)
+    val (interrupts, _) = intnode.out(0) // Expose the interrupt signals
 
     // Instance the USB black box
     val blackbox = Module(new usbHostSlave)
@@ -181,7 +183,7 @@ class USB11HS(blockBytes: Int, params: USB11HSParams)(implicit p: Parameters) ex
 
 case class USB11HSAttachParams(
                              usbpar: USB11HSParams,
-                             controlBus: TLBusWrapper,
+                             sysBus: SystemBus,
                              intNode: IntInwardNode,
                              controlXType: ClockCrossingType = NoCrossing,
                              intXType: ClockCrossingType = NoCrossing,
@@ -199,18 +201,18 @@ object USB11HS {
   def attach(params: USB11HSAttachParams): USB11HS = {
     implicit val p = params.p
     val name = s"usb11hs ${nextId()}"
-    val cbus = params.controlBus
-    val usb11hs = LazyModule(new USB11HS(cbus.beatBytes, params.usbpar))
+    val sbus = params.sysBus
+    val usb11hs = LazyModule(new USB11HS(sbus.blockBytes, params.usbpar))
     //sha3.suggestName(name)
 
     // Connect the nodes to the control bus
-    cbus.coupleTo(s"device_named_$name") {
-      usb11hs.axi4peripheralNode :=
-        AXI4Fragmenter() :=
+    usb11hs.axi4peripheralNode := sbus.toFixedWidthPort(Some(s"device_named_$name")) {
+      (AXI4Buffer() :=
+        //AXI4Fragmenter() :=
         AXI4UserYanker() :=
-        AXI4Deinterleaver(cbus.blockBytes) :=
+        AXI4Deinterleaver(sbus.blockBytes) :=
         AXI4IdIndexer(4) :=
-        TLToAXI4() := _
+        TLToAXI4())
     }
 
     // Connect the interruptions
