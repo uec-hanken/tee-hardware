@@ -2,3 +2,6 @@
 !.gitignore
 !Makefile
 !vc707.mk
+!jumpqspi.mk
+!sdload.mk
+!stratixIV.mk

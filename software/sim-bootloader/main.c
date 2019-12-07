@@ -191,7 +191,7 @@ int main(int argc, char** argv) {
   
   // Software keypair
   unsigned long start_mcycle = read_csr(mcycle);
-  //ed25519_create_keypair(public_key_1, private_key, seed);
+  ed25519_create_keypair(public_key_1, private_key, seed);
   unsigned long delta_mcycle = read_csr(mcycle) - start_mcycle;
   printstr("\r\nSoftware public key\r\n");
   for(int i = 0; i < 8; i++) 
