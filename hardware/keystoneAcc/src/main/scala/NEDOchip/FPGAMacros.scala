@@ -242,6 +242,7 @@ trait QuartusClocksReset extends Bundle {
   val refclk_clk               = Input(Bool())
   val reset_reset_n         = Input(Bool())
   val dimmclk_clk           = Output(Clock())
+  val usb_clk_clk           = Output(Clock())
 }
 
 trait QuartusUserSignals extends Bundle {
@@ -360,6 +361,7 @@ class QuartusIsland(c : Seq[AddressSet], cacheBlockBytes: Int, val crossing: Clo
     blackbox.io.refclk_clk       := io.ckrst.refclk_clk
     blackbox.io.reset_reset_n := io.ckrst.reset_reset_n
     io.ckrst.dimmclk_clk       := blackbox.io.dimmclk_clk
+    io.ckrst.usb_clk_clk       := blackbox.io.usb_clk_clk
     blackbox.io.oct_rdn       := io.port.oct_rdn
     blackbox.io.oct_rup       := io.port.oct_rup
     io.port.mem_status_local_init_done := blackbox.io.mem_status_local_init_done

@@ -5,3 +5,6 @@
 !jumpqspi.mk
 !sdload.mk
 !stratixIV.mk
+!./DE4/main.qsys
+!./DE4/NEDOFPGAQuartus.qpf
+!./DE4/NEDOFPGAQuartus.qsf

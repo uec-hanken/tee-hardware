@@ -535,7 +535,15 @@ class NEDOFPGAQuartus(implicit val p :Parameters) extends RawModule {
     val qspi_wp = (Output(Bool())) // GPIO1_D[9]
     val qspi_hold = (Output(Bool())) // GPIO1_D[11]
   })
-  val usb11hs = IO(new USB11HSPortIO)
+  val USBWireDataIn = IO(Input(Bits(2.W)))
+  val USBWireDataOut = IO(Output(Bits(2.W)))
+  val USBWireDataOutTick = IO(Output(Bool()))
+  val USBWireDataInTick = IO(Output(Bool()))
+  val USBWireCtrlOut = IO(Output(Bool()))
+  val USBFullSpeed = IO(Output(Bool()))
+  val USBDPlusPullup = IO(Output(Bool()))
+  val USBDMinusPullup = IO(Output(Bool()))
+  val vBusDetect = IO(Input(Bool()))
 
   ///////////  EXT_IO /////////
   //val EXT_IO = IO(Analog(1.W))
@@ -655,6 +663,18 @@ class NEDOFPGAQuartus(implicit val p :Parameters) extends RawModule {
     chip.sdio.sdio_dat_0 := SD_MISO 	// input
     SD_CS_N := chip.sdio.sdio_dat_3 	// output
     chip.jrst_n := !SLIDE_SW(2)
-    usb11hs <> chip.usb11hs
+
+    // USB phy connections
+    chip.usb11hs.USBWireDataIn := USBWireDataIn
+    USBWireDataOut := chip.usb11hs.USBWireDataOut
+    USBWireDataOutTick := chip.usb11hs.USBWireDataOutTick
+    USBWireDataInTick := chip.usb11hs.USBWireDataInTick
+    USBWireCtrlOut := chip.usb11hs.USBWireCtrlOut
+    USBFullSpeed := chip.usb11hs.USBFullSpeed
+    USBDPlusPullup := chip.usb11hs.USBDPlusPullup
+    USBDMinusPullup := chip.usb11hs.USBDMinusPullup
+    chip.usb11hs.vBusDetect := vBusDetect
+
+    chip.usb11hs.usbClk := mod.io.ckrst.usb_clk_clk
   }
 }
