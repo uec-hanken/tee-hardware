@@ -358,12 +358,12 @@ class NEDOFPGA(implicit override val p :Parameters) extends NEDObase {
 
 class NEDOFPGAQuartus(implicit val p :Parameters) extends RawModule {
   ///////// CLOCKS /////////
-  val OSC_50_BANK2 = IO(Input(Clock()))
-  val OSC_50_BANK3 = IO(Input(Clock()))
-  val OSC_50_BANK4 = IO(Input(Clock()))
-  val OSC_50_BANK5 = IO(Input(Clock()))
-  val OSC_50_BANK6 = IO(Input(Clock()))
-  val OSC_50_BANK7 = IO(Input(Clock()))
+  val OSC_50_BANK2 = IO(Input(Clock())) //HSMA + UART + ext_pll
+  val OSC_50_BANK3 = IO(Input(Clock())) //DIMM1		<-- most used
+  val OSC_50_BANK4 = IO(Input(Clock())) //SDCARD
+  val OSC_50_BANK5 = IO(Input(Clock())) //GPIO0 + GPIO1
+  val OSC_50_BANK6 = IO(Input(Clock())) //HSMB + Ethernet
+  val OSC_50_BANK7 = IO(Input(Clock())) //DIMM2 + USB + FSM + Flash
   val GCLKIN = IO(Input(Clock()))
   //val GCLKOUT_FPGA = IO(Output(Clock()))
   //val SMA_CLKOUT_p = IO(Output(Clock()))
@@ -635,8 +635,10 @@ class NEDOFPGAQuartus(implicit val p :Parameters) extends RawModule {
     M1_DDR2_odt := mod.io.qport.memory_mem_odt
     mod.io.qport.oct_rdn := M1_DDR2_oct_rdn
     mod.io.qport.oct_rup := M1_DDR2_oct_rup
-    mod.io.ckrst.refclk_clk := OSC_50_BANK3.asUInt()
-    mod.io.ckrst.reset_reset_n := CPU_RESET_n
+    mod.io.ckrst.refclk_sys_clk := OSC_50_BANK3.asUInt()
+    mod.io.ckrst.refclk_usb_clk := OSC_50_BANK5.asUInt()
+    mod.io.ckrst.reset_sys_reset_n := CPU_RESET_n
+    mod.io.ckrst.reset_usb_reset_n := CPU_RESET_n
 
     // TileLink Interface from platform
     mod.io.tlport.a <> chip.tlport.a

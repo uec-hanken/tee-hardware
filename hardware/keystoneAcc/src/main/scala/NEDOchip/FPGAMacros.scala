@@ -239,8 +239,10 @@ class QuartusDDR extends Bundle {
 trait QuartusClocksReset extends Bundle {
   //inputs
   //"NO_BUFFER" clock source (must be connected to IBUF outside of IP)
-  val refclk_clk               = Input(Bool())
-  val reset_reset_n         = Input(Bool())
+  val refclk_sys_clk        = Input(Bool())
+  val refclk_usb_clk        = Input(Bool())
+  val reset_usb_reset_n     = Input(Bool())
+  val reset_sys_reset_n     = Input(Bool())
   val dimmclk_clk           = Output(Clock())
   val usb_clk_clk           = Output(Clock())
 }
@@ -330,7 +332,7 @@ class QuartusIsland(c : Seq[AddressSet], cacheBlockBytes: Int, val crossing: Clo
     })
 
     childClock := io.ckrst.dimmclk_clk
-    childReset := !io.ckrst.reset_reset_n
+    childReset := !io.ckrst.reset_sys_reset_n
 
     //MIG black box instantiation
     val blackbox = Module(new QuartusPlatformBlackBox)
@@ -358,15 +360,17 @@ class QuartusIsland(c : Seq[AddressSet], cacheBlockBytes: Int, val crossing: Clo
 
     //inputs
     //NO_BUFFER clock
-    blackbox.io.refclk_clk       := io.ckrst.refclk_clk
-    blackbox.io.reset_reset_n := io.ckrst.reset_reset_n
-    io.ckrst.dimmclk_clk       := blackbox.io.dimmclk_clk
-    io.ckrst.usb_clk_clk       := blackbox.io.usb_clk_clk
-    blackbox.io.oct_rdn       := io.port.oct_rdn
-    blackbox.io.oct_rup       := io.port.oct_rup
-    io.port.mem_status_local_init_done := blackbox.io.mem_status_local_init_done
-    io.port.mem_status_local_cal_success := blackbox.io.mem_status_local_cal_success
-    io.port.mem_status_local_cal_fail := blackbox.io.mem_status_local_cal_fail
+    blackbox.io.refclk_sys_clk      := io.ckrst.refclk_sys_clk
+    blackbox.io.refclk_usb_clk      := io.ckrst.refclk_usb_clk
+    blackbox.io.reset_sys_reset_n   := io.ckrst.reset_sys_reset_n
+    blackbox.io.reset_usb_reset_n   := io.ckrst.reset_usb_reset_n
+    io.ckrst.dimmclk_clk            := blackbox.io.dimmclk_clk
+    io.ckrst.usb_clk_clk            := blackbox.io.usb_clk_clk
+    blackbox.io.oct_rdn             := io.port.oct_rdn
+    blackbox.io.oct_rup             := io.port.oct_rup
+    io.port.mem_status_local_init_done    := blackbox.io.mem_status_local_init_done
+    io.port.mem_status_local_cal_success  := blackbox.io.mem_status_local_cal_success
+    io.port.mem_status_local_cal_fail     := blackbox.io.mem_status_local_cal_fail
 
     val awaddr = axi_async.aw.bits.addr - offset.U
     val araddr = axi_async.ar.bits.addr - offset.U

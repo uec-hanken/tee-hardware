@@ -28,6 +28,7 @@ sim = $(sim_dir)/$(sim_prefix)-$(MODEL_PACKAGE)-$(CONFIG)
 sim_debug = $(sim_dir)/$(sim_prefix)-$(MODEL_PACKAGE)-$(CONFIG)-debug
 ROM_FILE = $(build_dir)/$(long_name).rom.v
 ROM_CONF_FILE = $(build_dir)/$(long_name).rom.conf
+DTS_FILE = $(build_dir)/$(long_name).dts
 
 PERMISSIVE_ON=
 PERMISSIVE_OFF=
@@ -48,10 +49,11 @@ include $(sim_dir)/stratixIV.mk
 #########################################################################################
 # ROM generation
 #########################################################################################
-#include $(sim_dir)/sdload.mk
+include $(sim_dir)/sdload.mk
 include $(sim_dir)/jumpqspi.mk
+.PHONY: $(BOOT_FILE) $(SDLOAD_FILE)
 
-$(ROM_FILE): $(ROM_CONF_FILE) $(BOOT_FILE) $(ROMGEN)
+$(ROM_FILE): $(ROM_CONF_FILE) $(BOOT_FILE) $(ROMGEN) $(SDLOAD_FILE)
 	$(ROMGEN) $(ROM_CONF_FILE) $(BOOT_FILE) > $(ROM_FILE)
 
 #########################################################################################
