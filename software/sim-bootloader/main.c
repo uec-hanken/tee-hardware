@@ -2,6 +2,7 @@
 #include "sha3.h"
 #include "platform.h"
 #include "ed25519.h"
+#include "aes.h"
 #include "ge.h"
 #include "ed25519_test_vectors_rfc8032.h"
 #include "encoding.h"
@@ -143,6 +144,8 @@ uint64_t do_sbox(uint64_t a);
 // Main program
 
 int main(int argc, char** argv) {
+  unsigned long start_mcycle;
+  unsigned long delta_mcycle;
   printstr("Hello world, FSBL\r\n");
   
   // Do the SBOX acc
@@ -190,9 +193,9 @@ int main(int argc, char** argv) {
   unsigned char *signature_2 = (unsigned char*) sign2;
   
   // Software keypair
-  unsigned long start_mcycle = read_csr(mcycle);
+  start_mcycle = read_csr(mcycle);
   ed25519_create_keypair(public_key_1, private_key, seed);
-  unsigned long delta_mcycle = read_csr(mcycle) - start_mcycle;
+  delta_mcycle = read_csr(mcycle) - start_mcycle;
   printstr("\r\nSoftware public key\r\n");
   for(int i = 0; i < 8; i++) 
     printhex32(*(pub1+i));
@@ -226,14 +229,14 @@ int main(int argc, char** argv) {
   printhex32(delta_mcycle);
   
   // Hardware sign
-  start_mcycle = read_csr(mcycle);
+  /*start_mcycle = read_csr(mcycle);
   hw_ed25519_sign(signature_2, "hello", 5, public_key_2, private_key_2, 0);
   delta_mcycle = read_csr(mcycle) - start_mcycle;
   printstr("\r\nHardware signature (not reduced)\r\n");
   for(int i = 0; i < 16; i++) 
     printhex32(*(sign2+i));
   printstr("\r\nTime calculation: ");
-  printhex32(delta_mcycle);
+  printhex32(delta_mcycle);*/
   
   start_mcycle = read_csr(mcycle);
   hw_ed25519_sign(signature_2, "hello", 5, public_key_2, private_key_2, 1);
@@ -241,6 +244,49 @@ int main(int argc, char** argv) {
   printstr("\r\nHardware signature (reduced)\r\n");
   for(int i = 0; i < 16; i++) 
     printhex32(*(sign2+i));
+  printstr("\r\nTime calculation: ");
+  printhex32(delta_mcycle);
+  
+  // Vectors extracted from the tiny AES test.c file in AES128 mode
+  uint8_t aeskey[] = { 0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6, 0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c };
+  uint8_t aesout[] = { 0x3a, 0xd7, 0x7b, 0xb4, 0x0d, 0x7a, 0x36, 0x60, 0xa8, 0x9e, 0xca, 0xf3, 0x24, 0x66, 0xef, 0x97 };
+  uint8_t aesin1[] = { 0x6b, 0xc1, 0xbe, 0xe2, 0x2e, 0x40, 0x9f, 0x96, 0xe9, 0x3d, 0x7e, 0x11, 0x73, 0x93, 0x17, 0x2a };
+  uint8_t aesin2[] = { 0x6b, 0xc1, 0xbe, 0xe2, 0x2e, 0x40, 0x9f, 0x96, 0xe9, 0x3d, 0x7e, 0x11, 0x73, 0x93, 0x17, 0x2a };
+  struct AES_ctx ctx;
+  
+  // Software encrypt AES128
+  start_mcycle = read_csr(mcycle);
+  AES_init_ctx(&ctx, aeskey);
+  AES_ECB_encrypt(&ctx, aesin1);
+  delta_mcycle = read_csr(mcycle) - start_mcycle;
+  printstr("\r\nSoftware encrypt (AES128)\r\n");
+  for(int i = 0; i < 4; i++) 
+    printhex32(*((uint32_t*)aesin1+i));
+  printstr("\r\nTime calculation: ");
+  printhex32(delta_mcycle);
+  
+  // Hardware encrypt AES128
+  start_mcycle = read_csr(mcycle);
+  // Put the key (only 128 bits lower)
+  for(int i = 0; i < 4; i++) 
+    AES_REG(AES_REG_KEY + i*4) = *((uint32_t*)aeskey+i);
+  for(int i = 4; i < 8; i++) 
+    AES_REG(AES_REG_KEY + i*4) = 0; // Clean the "other part" of the key, "just in case"
+  AES_REG(AES_REG_CONFIG) = 1; // AES128, encrypt
+  AES_REG(AES_REG_STATUS) = 1; // Key Expansion Enable
+  while(!(AES_REG(AES_REG_STATUS) & 0x4)); // Wait for ready
+  // Put the data
+  for(int i = 0; i < 4; i++) 
+    AES_REG(AES_REG_BLOCK + i*4) = *((uint32_t*)aesin2+i);
+  AES_REG(AES_REG_STATUS) = 2; // Data enable
+  while(!(AES_REG(AES_REG_STATUS) & 0x4)); // Wait for ready
+  // Copy back the data to the pointer
+  for(int i = 0; i < 4; i++) 
+    *((uint32_t*)aesin2+i) = AES_REG(AES_REG_RESULT + i*4);
+  delta_mcycle = read_csr(mcycle) - start_mcycle;
+  printstr("\r\nHardware encrypt (AES128)\r\n");
+  for(int i = 0; i < 4; i++) 
+    printhex32(*((uint32_t*)aesin2+i));
   printstr("\r\nTime calculation: ");
   printhex32(delta_mcycle);
   

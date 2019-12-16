@@ -96,7 +96,7 @@ abstract class AES(busWidthBytes: Int, val c: AESParams, divisorInit: Int = 0)
       RegField.r(1, ready, RegFieldDesc("ready", "Ready", volatile = true))
     )
 
-    Seq(
+    regmap(
       AESCtrlRegs.key -> key_regmap,
       AESCtrlRegs.block -> block_regmap,
       AESCtrlRegs.result -> result_regmap,

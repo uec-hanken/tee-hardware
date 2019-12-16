@@ -9,8 +9,8 @@ OBJDUMP = riscv64-unknown-elf-objdump
 OBJCOPY = riscv64-unknown-elf-objcopy
 
 exe = sim-bootloader.elf
-OBJS = start.o main.o memcpy.o strlen.o sha3/sha3.o ed25519/fe.o ed25519/ge.o ed25519/keypair.o ed25519/sc.o ed25519/sign.o ed25519/verify.o
-INCLUDE = -I. -I./sha3 -I./ed25519 -I../../hardware/chipyard/tests
+OBJS = start.o main.o memcpy.o strlen.o tiny-AES-c/aes.o sha3/sha3.o ed25519/fe.o ed25519/ge.o ed25519/keypair.o ed25519/sc.o ed25519/sign.o ed25519/verify.o
+INCLUDE = -I. -I./tiny-AES-c -I./sha3 -I./ed25519 -I../../hardware/chipyard/tests
 CFLAGS = -march=rv64imafdc -mabi=lp64d -mcmodel=medany
 LDFLAGS = -march=rv64imafdc -mabi=lp64d -Os -nostartfiles -nostdlib -Wl,-Bstatic,-T,./ram.lds,-Map,$(addsuffix .map, $(basename $(exe))),--strip-debug
 

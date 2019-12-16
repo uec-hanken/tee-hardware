@@ -16,3 +16,6 @@
 [submodule "hardware/keystoneAcc/vsrc/wb2axip"]
 	path = hardware/keystoneAcc/vsrc/wb2axip
 	url = https://github.com/ZipCPU/wb2axip.git
+[submodule "software/sim-bootloader/tiny-AES-c"]
+	path = software/sim-bootloader/tiny-AES-c
+	url = https://github.com/kokke/tiny-AES-c.git
