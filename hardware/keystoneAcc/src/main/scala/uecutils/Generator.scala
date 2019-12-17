@@ -58,8 +58,8 @@ sealed trait GenerateTopAndHarnessApp extends LazyLogging { this: App =>
       new ReParentCircuit(harnessTop.get),
       new ConvertToExtMod((m) => m.name == synTop.get),
       new RemoveUnusedModules,
-      new AvoidExtModuleCollisions(topExtModules)//,
-      //new RenameModulesAndInstances((old) => if (externals contains old) old else (old + "_in" + harnessTop.get))
+      new AvoidExtModuleCollisions(topExtModules),
+      new RenameModulesAndInstances((old) => if (externals contains old) old else (old + "_in" + harnessTop.get))
     )
   }
 

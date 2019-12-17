@@ -168,39 +168,39 @@ abstract class ed25519(busWidthBytes: Int, val c: ed25519Params)
       val busy = RegInit(false.B)
       // The memories
       val mem_k = SyncReadMem(8, UInt(32.W)) // Key memory
-      val mem_k2 = SyncReadMem(8, UInt(32.W)) // Key2 memory
+      //val mem_k2 = SyncReadMem(8, UInt(32.W)) // Key2 memory
       val mem_qy = SyncReadMem(8, UInt(32.W)) // Result memory
       // Ports for the memories
       val tobram_k = Wire(new mem32IO) // Mem port to Key memory
-      val tobram_k2 = Wire(new mem32IO) // Mem port to Key2 memory
+      //val tobram_k2 = Wire(new mem32IO) // Mem port to Key2 memory
       val tobram_qy = Wire(new mem32IO) // Mem port to Result memory
       val fromrmap_k = Wire(new mem32IO) // Register router to Key memory
-      val fromrmap_k2 = Wire(new mem32IO) // Register router to Key2 memory
+      //val fromrmap_k2 = Wire(new mem32IO) // Register router to Key2 memory
       val fromrmap_qy = Wire(new mem32IO) // Register router to Result memory
       val fromacc_k = Wire(new mem32IO) // From accelerator to Key memory
-      val fromacc_k2 = Wire(new mem32IO) // From accelerator to Key2 memory
+      //val fromacc_k2 = Wire(new mem32IO) // From accelerator to Key2 memory
       val fromacc_qy = Wire(new mem32IO) // From accelerator to Result memory
       // Interconnections and muxing
       mem32mux(busy, fromacc_k, fromrmap_k, tobram_k)
-      mem32mux(busy, fromacc_k2, fromrmap_k2, tobram_k2)
+      //mem32mux(busy, fromacc_k2, fromrmap_k2, tobram_k2)
       mem32mux(busy, fromacc_qy, fromrmap_qy, tobram_qy)
       fromrmap_k.q := BigInt(0xdeadce11L).U // Make the reading inaccessible for the key
-      fromrmap_k2.q := BigInt(0xdeadce11L).U // Make the reading inaccessible for the key
+      //fromrmap_k2.q := BigInt(0xdeadce11L).U // Make the reading inaccessible for the key
       mem32IOtomem(tobram_k, mem_k)
-      mem32IOtomem(tobram_k2, mem_k2)
+      //mem32IOtomem(tobram_k2, mem_k2)
       mem32IOtomem(tobram_qy, mem_qy)
       // RegMaps
       val k_regmap = memAndMap(fromrmap_k)
-      val k2_regmap = memAndMap(fromrmap_k2)
+      //val k2_regmap = memAndMap(fromrmap_k2)
       val qy_regmap = memAndMap(fromrmap_qy)
       val ena = WireInit(false.B)
       val rdy = Wire(Bool())
-      val wk = RegInit(false.B)
+      //val wk = RegInit(false.B)
       val reg_and_status = Seq(
         RegField(1, ena, RegFieldDesc("ena", "Enable", reset = Some(0))),
         RegField.r(1, busy, RegFieldDesc("busy", "Busy", volatile = true)),
-        RegField.r(1, rdy, RegFieldDesc("rdy", "Ready", volatile = true)),
-        RegField(1, wk, RegFieldDesc("wk", "Which k", reset = Some(0))),
+        RegField.r(1, rdy, RegFieldDesc("rdy", "Ready", volatile = true))//,
+        //RegField(1, wk, RegFieldDesc("wk", "Which k", reset = Some(0))),
       )
       // Busy logic
       when(ena) {
@@ -218,11 +218,11 @@ abstract class ed25519(busWidthBytes: Int, val c: ed25519Params)
       fromacc_k.en := true.B
       fromacc_k.we := false.B
       fromacc_k.d := BigInt(0xdeadbeefL).U
-      fromacc_k2.addr := mult.io.k_addr
-      fromacc_k2.en := true.B
-      fromacc_k2.we := false.B
-      fromacc_k2.d := BigInt(0xdeadbeefL).U
-      mult.io.k_din := Mux(wk, fromacc_k2.q, fromacc_k.q)
+      //fromacc_k2.addr := mult.io.k_addr
+      //fromacc_k2.en := true.B
+      //fromacc_k2.we := false.B
+      //fromacc_k2.d := BigInt(0xdeadbeefL).U
+      mult.io.k_din := fromacc_k.q//Mux(wk, fromacc_k2.q, fromacc_k.q)
       fromacc_qy.addr := mult.io.qy_addr
       fromacc_qy.we := mult.io.qy_wren
       fromacc_qy.d := mult.io.qy_dout
@@ -232,7 +232,7 @@ abstract class ed25519(busWidthBytes: Int, val c: ed25519Params)
       // The register mapping with address.
       Seq(
         ed25519CtrlRegs.key -> k_regmap,
-        ed25519CtrlRegs.key2 -> k2_regmap,
+        //ed25519CtrlRegs.key2 -> k2_regmap,
         ed25519CtrlRegs.qy -> qy_regmap,
         ed25519CtrlRegs.regstatus -> reg_and_status
       )
