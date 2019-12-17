@@ -35,8 +35,15 @@ PERMISSIVE_OFF=
 
 WAVEFORM_FLAG=-v$(sim_out_name).vcd
 
+test_dir=$(sim_dir)/chip/
+
 .PHONY: default
+# NOTE: We are going to add the true tapeout stuff here
 default: verilog
+	mkdir -p $(test_dir)
+	# We already had a compilation where the MODEL is the harness and the RocketTile is the top
+	# In this case: The TOP is the harness, the RocketTile is the top
+	cd $(base_dir) && $(SBT) "project keystoneAcc" "runMain uec.keystoneAcc.uecutils.GenerateTopAndHarness -o $(test_dir)/RocketTile.v -tho $(test_dir)/$(TOP).v -i $(FIRRTL_FILE) --syn-top RocketTile --harness-top $(TOP) -faf $(ANNO_FILE) -tsaof $(test_dir)/top.anno.json -tdf $(test_dir)/RocketTile.top.f -tsf $(test_dir)/RocketTile.fir -thaof $(test_dir)/top.anno.json -hdf $(test_dir)/top.harness.f -thf $(test_dir)/top.fir --infer-rw --repl-seq-mem -c:$(TOP):-o:$(test_dir)/RocketTile.mems.conf -thconf $(test_dir)/top.mems.conf -td $(test_dir)"
 
 verilog: $(TOP_FILE) $(HARNESS_FILE) $(ROM_FILE)
 
@@ -61,4 +68,4 @@ $(ROM_FILE): $(ROM_CONF_FILE) $(BOOT_FILE) $(ROMGEN) $(SDLOAD_FILE)
 #########################################################################################
 .PHONY: clean
 clean:
-	rm -rf $(gen_dir) $(sim_prefix)-*
+	rm -rf $(gen_dir) $(sim_prefix)-* $(test_dir) 

@@ -269,7 +269,46 @@ class NEDOchip(implicit override val p :Parameters) extends NEDObase {
 import sifive.fpgashells.ip.xilinx.vc707mig._
 import sifive.fpgashells.ip.xilinx._
 
-class NEDOFPGA(implicit override val p :Parameters) extends NEDObase {
+class NEDOFPGA(implicit val p :Parameters) extends RawModule {
+  val gpio_in = IO(Input(UInt(p(GPIOInKey).W)))
+  val gpio_out = IO(Output(UInt((p(PeripheryGPIOKey).head.width-p(GPIOInKey)).W)))
+  val jtag = IO(new Bundle {
+    val jtag_TDI = (Input(Bool()))
+    val jtag_TDO = (Output(Bool()))
+    val jtag_TCK = (Input(Bool()))
+    val jtag_TMS = (Input(Bool()))
+  })
+  val sdio = IO(new Bundle {
+    val sdio_clk = (Output(Bool()))
+    val sdio_cmd = (Output(Bool()))
+    val sdio_dat_0 = (Input(Bool()))
+    val sdio_dat_1 = (Analog(1.W))
+    val sdio_dat_2 = (Analog(1.W))
+    val sdio_dat_3 = (Output(Bool()))
+  })
+  val qspi = IO(new Bundle {
+    val qspi_cs = (Output(UInt(p(PeripherySPIFlashKey).head.csWidth.W)))
+    val qspi_sck = (Output(Bool()))
+    val qspi_miso = (Input(Bool()))
+    val qspi_mosi = (Output(Bool()))
+    val qspi_wp = (Output(Bool()))
+    val qspi_hold = (Output(Bool()))
+  })
+  val uart_txd = IO(Output(Bool()))
+  val uart_rxd = IO(Input(Bool()))
+  val uart_rtsn = IO(Output(Bool()))
+  val uart_ctsn = IO(Input(Bool()))
+
+  val USBWireDataIn = IO(Input(Bits(2.W)))
+  val USBWireDataOut = IO(Output(Bits(2.W)))
+  val USBWireDataOutTick = IO(Output(Bool()))
+  val USBWireDataInTick = IO(Output(Bool()))
+  val USBWireCtrlOut = IO(Output(Bool()))
+  val USBFullSpeed = IO(Output(Bool()))
+  val USBDPlusPullup = IO(Output(Bool()))
+  val USBDMinusPullup = IO(Output(Bool()))
+  val vBusDetect = IO(Input(Bool()))
+
   var ddr: Option[VC707MIGIODDR] = None
   val sys_clock_p = IO(Input(Clock()))
   val sys_clock_n = IO(Input(Clock()))
@@ -286,43 +325,34 @@ class NEDOFPGA(implicit override val p :Parameters) extends NEDObase {
   val reset_2 = IBUF(rst_2)
   val reset_3 = IBUF(rst_3)
 
+  val clock = Wire(Clock())
+  val reset = Wire(Bool())
 
   withClockAndReset(clock, reset) {
     // Instance our converter, and connect everything
-    val mod = Module(LazyModule(new TLULtoMIG(cacheBlockBytes, tlportw.get.params, memdevice.get)).module)
+    val chip = Module(new NEDOchip)
+    val mod = Module(LazyModule(new TLULtoMIG(chip.cacheBlockBytes, chip.tlportw.get.params, chip.memdevice.get)).module)
+
+    // Main clock and reset assignments
+    clock := sys_clk_i//pll.io.clk_out1.get
+    reset := reset_2
+    chip.sys_clk := sys_clk_i
+    chip.rst_n := !reset_2
 
     // DDR port only
     ddr = Some(IO(new VC707MIGIODDR(mod.depth)))
     ddr.get <> mod.io.ddrport
+    // MIG connections, like resets and stuff
+    mod.io.ddrport.sys_clk_i := sys_clk_i.asUInt()
+    mod.io.ddrport.aresetn := reset_0
+    mod.io.ddrport.sys_rst := reset_1
 
     // TileLink Interface from platform
-    mod.io.tlport.a <> tlportw.get.a
-    tlportw.get.d <> mod.io.tlport.d
-    mod.io.tlport.a.valid := tlportw.get.a.valid
-    tlportw.get.a.ready := mod.io.tlport.a.ready
-    mod.io.tlport.a.bits := tlportw.get.a.bits
-
-    tlportw.get.d.valid := mod.io.tlport.d.valid
-    mod.io.tlport.d.ready := tlportw.get.d.ready
-    tlportw.get.d.bits := mod.io.tlport.d.bits
-
-    // Debug the bloddy TL
-    val ila0 = new ilaBuild(
-      ilaConf(
-        id = 0,
-        wt = IndexedSeq(
-          (1,1),
-          (1,1),
-        ),
-        storCtl = true,
-        advTrig = true
-      )
-    )
-    ila0.m.io.probe(0) := tlportw.get.a.valid
-    ila0.m.io.probe(1) := tlportw.get.a.ready
+    mod.io.tlport.a <> chip.tlport.a
+    chip.tlport.d <> mod.io.tlport.d
 
     // PLL instance
-    /*val c = new PLLParameters(
+    val c = new PLLParameters(
       name ="pll",
       input = PLLInClockParameters(
         freqMHz = 50.0,
@@ -330,25 +360,40 @@ class NEDOFPGA(implicit override val p :Parameters) extends NEDObase {
       ),
       req = Seq(
         PLLOutClockParameters(
-          freqMHz = 50.0
+          freqMHz = 48.0
         )
       )
     )
     val pll = Module(new Series7MMCM(c))
     pll.io.clk_in1 := sys_clk_i
-    pll.io.reset := reset_0*/
+    pll.io.reset := reset_0
 
+    // The rest of the platform connections
     gpio_out := Cat(reset_0, reset_1, reset_2, reset_3, mod.io.ddrport.init_calib_complete)
+    chip.gpio_in := gpio_in
+    jtag <> chip.jtag
+    qspi <> chip.qspi
+    chip.uart_rxd := uart_rxd	// UART_TXD
+    uart_txd := chip.uart_txd 	// UART_RXD
+    // := chip.uart_rtsn 			// output: not used
+    chip.uart_ctsn := false.B 		// input:  notused
+    // := uart_ctsn 			// input: not used
+    uart_rtsn := false.B 		// output:  notused
+    sdio <> chip.sdio
+    chip.jrst_n := reset_3
 
-    // MIG connections, like resets and stuff
-    mod.io.ddrport.sys_clk_i := sys_clk_i.asUInt()
-    mod.io.ddrport.aresetn := reset_0
-    mod.io.ddrport.sys_rst := reset_1
+    // USB phy connections
+    chip.usb11hs.USBWireDataIn := USBWireDataIn
+    USBWireDataOut := chip.usb11hs.USBWireDataOut
+    USBWireDataOutTick := chip.usb11hs.USBWireDataOutTick
+    USBWireDataInTick := chip.usb11hs.USBWireDataInTick
+    USBWireCtrlOut := chip.usb11hs.USBWireCtrlOut
+    USBFullSpeed := chip.usb11hs.USBFullSpeed
+    USBDPlusPullup := chip.usb11hs.USBDPlusPullup
+    USBDMinusPullup := chip.usb11hs.USBDMinusPullup
+    chip.usb11hs.vBusDetect := vBusDetect
 
-    // Main clock and reset assignments
-    clock := sys_clk_i//pll.io.clk_out1.get
-    reset := reset_2
-    areset := reset_3
+    chip.usb11hs.usbClk := pll.io.clk_out1.getOrElse(false.B)
   }
 }
 

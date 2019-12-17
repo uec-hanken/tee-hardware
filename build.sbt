@@ -139,7 +139,7 @@ lazy val boom = (project in file("hardware/chipyard/generators/boom"))
 //  .settings(commonSettings)
 
 lazy val tapeout = (project in file("./hardware/chipyard/tools/barstools/tapeout/"))
-  .dependsOn(chisel_testers, keystoneAcc, testchipip)
+  .dependsOn(chisel_testers, testchipip)
   .settings(commonSettings)
 
 lazy val mdf = (project in file("./hardware/chipyard/tools/barstools/mdf/scalalib/"))
@@ -180,7 +180,7 @@ lazy val fpga_shells = (project in file("hardware/fpga-shells")).
   settings(commonSettings)
 
 lazy val keystoneAcc = (project in file("hardware/keystoneAcc")).
-  dependsOn(rocketchip, sifive_blocks, fpga_shells, utilities).
+  dependsOn(rocketchip, sifive_blocks, fpga_shells, utilities, tapeout).
   settings(commonSettings)
 
 // Library components of FireSim
