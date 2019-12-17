@@ -181,6 +181,8 @@ class NEDObase(implicit val p :Parameters) extends RawModule {
   val uart_rtsn = IO(Output(Bool()))
   val uart_ctsn = IO(Input(Bool()))
   val usb11hs = IO(new USB11HSPortIO)
+  val ChildClock = IO(Input(Clock()))
+  val ChildReset = IO(Input(Bool()))
   // These are later connected
   val clock = Wire(Clock())
   val reset = Wire(Bool()) // System reset (for cores)
@@ -244,6 +246,8 @@ class NEDObase(implicit val p :Parameters) extends RawModule {
     // The memory port
     tlportw = Some(system.io.tlport)
     memdevice = Some(system.sys.outer.memdevice)
+    system.io.ChildClock := ChildClock
+    system.io.ChildReset := ChildReset
   }
   val cacheBlockBytes = cacheBlockBytesOpt.get
 }
@@ -361,6 +365,9 @@ class NEDOFPGA(implicit val p :Parameters) extends RawModule {
       req = Seq(
         PLLOutClockParameters(
           freqMHz = 48.0
+        ),
+        PLLOutClockParameters(
+          freqMHz = 10.0
         )
       )
     )
@@ -394,6 +401,8 @@ class NEDOFPGA(implicit val p :Parameters) extends RawModule {
     chip.usb11hs.vBusDetect := vBusDetect
 
     chip.usb11hs.usbClk := pll.io.clk_out1.getOrElse(false.B)
+    chip.ChildClock := pll.io.clk_out2.getOrElse(false.B)
+    chip.ChildReset := reset_2
   }
 }
 
@@ -723,5 +732,7 @@ class NEDOFPGAQuartus(implicit val p :Parameters) extends RawModule {
     chip.usb11hs.vBusDetect := vBusDetect
 
     chip.usb11hs.usbClk := mod.io.ckrst.usb_clk_clk
+    chip.ChildClock := mod.io.ckrst.ext_clk_clk
+    chip.ChildReset := SLIDE_SW(3)
   }
 }

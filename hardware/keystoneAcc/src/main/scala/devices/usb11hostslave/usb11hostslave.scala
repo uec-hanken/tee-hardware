@@ -90,7 +90,7 @@ class USB11HS(blockBytes: Int, params: USB11HSParams)(implicit p: Parameters) ex
       address       = AddressSet.misaligned(params.address,  0x1000),
       resources     = device.reg,
       regionType    = RegionType.GET_EFFECTS,
-      executable    = true,
+      executable    = false,
       supportsWrite = TransferSizes(1, blockBytes),
       supportsRead  = TransferSizes(1, blockBytes)
     )),

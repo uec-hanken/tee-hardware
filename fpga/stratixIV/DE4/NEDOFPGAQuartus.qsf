@@ -2016,7 +2016,8 @@ set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/vsrc/sha3
 set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/vsrc/sha3/trunk/high_throughput_core/rtl/padder.v
 set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/vsrc/sha3/trunk/high_throughput_core/rtl/keccak.v
 set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/vsrc/sha3/trunk/high_throughput_core/rtl/f_permutation.v
-set_global_assignment -name VERILOG_FILE "../generated-src/uec.keystoneAcc.nedochip.NEDOFPGAQuartus.ChipConfigDE4/uec.keystoneAcc.nedochip.NEDOFPGAQuartus.ChipConfigDE4.top.v"
+set_global_assignment -name VERILOG_FILE ../chip/RocketTile.v
+set_global_assignment -name VERILOG_FILE ../chip/NEDOchip.v
 set_global_assignment -name VERILOG_FILE "../generated-src/uec.keystoneAcc.nedochip.NEDOFPGAQuartus.ChipConfigDE4/uec.keystoneAcc.nedochip.NEDOFPGAQuartus.ChipConfigDE4.top.mems.v"
 set_global_assignment -name VERILOG_FILE "../generated-src/uec.keystoneAcc.nedochip.NEDOFPGAQuartus.ChipConfigDE4/uec.keystoneAcc.nedochip.NEDOFPGAQuartus.ChipConfigDE4.rom.v"
 set_global_assignment -name VERILOG_FILE "../generated-src/uec.keystoneAcc.nedochip.NEDOFPGAQuartus.ChipConfigDE4/uec.keystoneAcc.nedochip.NEDOFPGAQuartus.ChipConfigDE4.harness.v"
