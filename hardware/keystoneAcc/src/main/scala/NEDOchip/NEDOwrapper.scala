@@ -403,6 +403,7 @@ class NEDOFPGA(implicit val p :Parameters) extends RawModule {
     chip.usb11hs.usbClk := pll.io.clk_out1.getOrElse(false.B)
     chip.ChildClock := pll.io.clk_out2.getOrElse(false.B)
     chip.ChildReset := reset_2
+    mod.clock := pll.io.clk_out2.getOrElse(false.B)
   }
 }
 
@@ -671,6 +672,9 @@ class NEDOFPGAQuartus(implicit val p :Parameters) extends RawModule {
     reset := SLIDE_SW(3)
     chip.sys_clk := mod.io.ckrst.dimmclk_clk
     chip.rst_n := !SLIDE_SW(3)
+    chip.ChildClock := mod.io.ckrst.ext_clk_clk
+    chip.ChildReset := SLIDE_SW(3)
+    mod.clock := mod.io.ckrst.ext_clk_clk
 
     // Quartus Platform connections
     M1_DDR2_addr := mod.io.qport.memory_mem_a
@@ -732,7 +736,5 @@ class NEDOFPGAQuartus(implicit val p :Parameters) extends RawModule {
     chip.usb11hs.vBusDetect := vBusDetect
 
     chip.usb11hs.usbClk := mod.io.ckrst.usb_clk_clk
-    chip.ChildClock := mod.io.ckrst.ext_clk_clk
-    chip.ChildReset := SLIDE_SW(3)
   }
 }
