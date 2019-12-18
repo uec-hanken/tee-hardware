@@ -590,15 +590,15 @@ class NEDOFPGAQuartus(implicit val p :Parameters) extends RawModule {
     val qspi_wp = (Output(Bool())) // GPIO1_D[9]
     val qspi_hold = (Output(Bool())) // GPIO1_D[11]
   })
-  val USBWireDataIn = IO(Input(Bits(2.W)))
-  val USBWireDataOut = IO(Output(Bits(2.W)))
-  val USBWireDataOutTick = IO(Output(Bool()))
-  val USBWireDataInTick = IO(Output(Bool()))
-  val USBWireCtrlOut = IO(Output(Bool()))
-  val USBFullSpeed = IO(Output(Bool()))
-  val USBDPlusPullup = IO(Output(Bool()))
-  val USBDMinusPullup = IO(Output(Bool()))
-  val vBusDetect = IO(Input(Bool()))
+  val USBWireDataIn = IO(Input(Bits(2.W))) // GPIO0_D[1:0]
+  val USBWireDataOut = IO(Output(Bits(2.W))) // GPIO0_D[3:2]
+  val USBWireDataOutTick = IO(Output(Bool())) // GPIO0_D[4]
+  val USBWireDataInTick = IO(Output(Bool())) // GPIO0_D[5]
+  val USBWireCtrlOut = IO(Output(Bool())) // GPIO0_D[6]
+  val USBFullSpeed = IO(Output(Bool())) // GPIO0_D[7]
+  val USBDPlusPullup = IO(Output(Bool())) // GPIO0_D[8]
+  val USBDMinusPullup = IO(Output(Bool()))  // GPIO0_D[9]
+  val vBusDetect = IO(Input(Bool()))  // GPIO0_D[10]
 
   ///////////  EXT_IO /////////
   //val EXT_IO = IO(Analog(1.W))

@@ -97,7 +97,7 @@ class NEDOSystem(implicit p: Parameters) extends RocketSubsystem
   val source = LazyModule(new TLAsyncCrossingSource())
   val sink = LazyModule(new TLAsyncCrossingSink(AsyncQueueParams.singleton()))
   val buffer  = LazyModule(new TLBuffer) // We removed a buffer in the TOP
-  memTLNode := sink.node := source.node := buffer.node := mbus.toDRAMController(Some("tl"))()
+  memTLNode := buffer.node := sink.node := source.node := mbus.toDRAMController(Some("tl"))()
 
   // SPI to MMC conversion.
   // TODO: There is an intention from Sifive to do MMC, but has to be manual
