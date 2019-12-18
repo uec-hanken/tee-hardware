@@ -12,6 +12,7 @@
 #include "devices/sha3.h"
 #include "devices/ed25519.h"
 #include "devices/aes.h"
+#include "devices/random.h"
 
 #define SHA3_CTRL_ADDR   _AC(0x10003000,UL)
 #define SHA3_CTRL_SIZE   _AC(0x1000,UL)
@@ -19,6 +20,8 @@
 #define ED25519_CTRL_SIZE   _AC(0x1000,UL)
 #define AES_CTRL_ADDR   _AC(0x10007000,UL)
 #define AES_CTRL_SIZE   _AC(0x1000,UL)
+#define RANDOM_CTRL_ADDR   _AC(0x10009000,UL)
+#define RANDOM_CTRL_SIZE   _AC(0x1000,UL)
 
 
 // Helper functions
@@ -37,6 +40,8 @@
 #define ED25519_REG64(offset) _REG64(ED25519_CTRL_ADDR, offset)
 #define AES_REG(offset) _REG32(AES_CTRL_ADDR, offset)
 #define AES_REG64(offset) _REG64(AES_CTRL_ADDR, offset)
+#define RANDOM_REG(offset) _REG32(RANDOM_CTRL_ADDR, offset)
+#define RANDOM_REG64(offset) _REG64(RANDOM_CTRL_ADDR, offset)
 
 // Helpers for getting and setting individual bit fields, shifting the values
 // for you.

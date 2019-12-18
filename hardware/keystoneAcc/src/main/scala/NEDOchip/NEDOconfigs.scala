@@ -15,6 +15,7 @@ import uec.keystoneAcc.devices.aes._
 import uec.keystoneAcc.devices.ed25519._
 import uec.keystoneAcc.devices.sha3._
 import uec.keystoneAcc.devices.usb11hs._
+import uec.keystoneAcc.devices.random._
 //import sifive.freedom.unleashed.DevKitFPGAFrequencyKey
 
 // The number of gpios that we want as input
@@ -57,6 +58,8 @@ class ChipPeripherals extends Config((site, here, up) => {
     AESParams(address = BigInt(0x64007000L))
   case PeripheryUSB11HSKey =>
     USB11HSParams(address = BigInt(0x64008000L))
+  case PeripheryRandomKey =>
+    RandomParams(address = BigInt(0x64009000L))
   case ExtMem => Some(MemoryPortParams(MasterPortParams(
     base = x"0_8000_0000",
     size = x"0_4000_0000",

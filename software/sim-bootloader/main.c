@@ -157,14 +157,6 @@ int main(int argc, char** argv) {
   // Test the hardware with the software SHA3
   byte hash[64];
   uint32_t* hs = (uint32_t*)hash;
-  /*sha3_init(&hash_ctx, 64);
-  sha3_update(&hash_ctx, (void*)"FOX1FOX2", 8);
-  sha3_update(&hash_ctx, (void*)"FOX3FOX4", 8);
-  sha3_final(hash, &hash_ctx);
-  for(int i = 0; i < 16; i++) 
-     printhex32(*(hs+i));
-  printstr("\r\n");*/
-    
   hwsha3_init();
   hwsha3_update((void*)"FOX1FOX2", 8);
   hwsha3_final(hash, (void*)"FOX3FOX4", 8);
@@ -229,15 +221,6 @@ int main(int argc, char** argv) {
   printhex32(delta_mcycle);
   
   // Hardware sign
-  /*start_mcycle = read_csr(mcycle);
-  hw_ed25519_sign(signature_2, "hello", 5, public_key_2, private_key_2, 0);
-  delta_mcycle = read_csr(mcycle) - start_mcycle;
-  printstr("\r\nHardware signature (not reduced)\r\n");
-  for(int i = 0; i < 16; i++) 
-    printhex32(*(sign2+i));
-  printstr("\r\nTime calculation: ");
-  printhex32(delta_mcycle);*/
-  
   start_mcycle = read_csr(mcycle);
   hw_ed25519_sign(signature_2, "hello", 5, public_key_2, private_key_2, 1);
   delta_mcycle = read_csr(mcycle) - start_mcycle;
@@ -289,6 +272,29 @@ int main(int argc, char** argv) {
     printhex32(*((uint32_t*)aesin2+i));
   printstr("\r\nTime calculation: ");
   printhex32(delta_mcycle);
+  
+  // Random number generation
+  // Reset first the TRNG
+  printstr("\r\nEntering RNG test:\r\n");
+  RANDOM_REG(RANDOM_RND_SOURCE_ENABLE) = 0;
+  RANDOM_REG(RANDOM_TRNG_SW_RESET) = 1;
+  while(RANDOM_REG(RANDOM_TRNG_BUSY));
+  // Put the sampling to a odd number (remember that is a LFSR16 anyways)
+  RANDOM_REG(RANDOM_SAMPLE_CNT1) = 29;
+  for(int ii = 0; ii < 20; ii++) {
+    printstr("\r\nRandom:\r\n");
+    // Enable the random number generator
+    RANDOM_REG(RANDOM_RND_SOURCE_ENABLE) = 1;
+    // Wait until we have the random number
+    while(!RANDOM_REG(RANDOM_TRNG_VALID));
+    // Get our random
+    for(int i = 0; i < 6; i++) 
+      printhex32(RANDOM_REG(RANDOM_EHR_DATA0 + i*4));
+    // Reset the sampling counters only
+    RANDOM_REG(RANDOM_RND_SOURCE_ENABLE) = 0;
+    RANDOM_REG(RANDOM_RST_BITS_COUNTER) = 1;
+    while(RANDOM_REG(RANDOM_TRNG_BUSY));
+  }
   
   printstr("\r\n");
   
