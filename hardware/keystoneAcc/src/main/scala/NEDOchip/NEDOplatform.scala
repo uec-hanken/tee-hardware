@@ -27,23 +27,8 @@ import uec.rocketchip.subsystem._
 class SlowMemIsland(blockBytes: Int, val crossing: ClockCrossingType = AsynchronousCrossing(8))(implicit p: Parameters)
     extends LazyModule
     with CrossesToOnlyOneClockDomain {
-  val device = new MemoryDevice
-  val param = TLManagerPortParameters(
-    managers = Seq(TLManagerParameters(
-      address = AddressSet.misaligned(p(ExtMem).get.master.base,  p(ExtMem).get.master.size),
-      resources = device.reg,
-      regionType = RegionType.UNCACHED, // cacheable
-      executable = true,
-      supportsGet = TransferSizes(1, blockBytes),
-      supportsPutFull = TransferSizes(1, blockBytes),
-      supportsPutPartial = TransferSizes(1, blockBytes),
-      fifoId             = Some(0),
-      mayDenyPut         = true,
-      mayDenyGet         = true
-    )),
-    beatBytes = p(ExtMem).get.master.beatBytes
-  )
-  val node = TLManagerNode(Seq(param))
+
+  val node = TLBuffer()
 
   lazy val module = new LazyRawModuleImp(this) {
     val io = IO(new Bundle {
@@ -61,7 +46,7 @@ class NEDOSystem(implicit p: Parameters) extends RocketSubsystem
     with HasPeripheryDebug
     with HasPeripheryGPIO
     with HasPeripherySHA3
-    with HasPeripheryed25519
+    //with HasPeripheryed25519
     with HasPeripheryAES
     with HasPeripheryUSB11HS
     with HasPeripheryRandom
@@ -94,10 +79,13 @@ class NEDOSystem(implicit p: Parameters) extends RocketSubsystem
     beatBytes = p(ExtMem).get.master.beatBytes
   )
   val memTLNode = TLManagerNode(Seq(mainMemParam))
-  val source = LazyModule(new TLAsyncCrossingSource())
-  val sink = LazyModule(new TLAsyncCrossingSink(AsyncQueueParams(depth = 16, sync = 3, safe = true, narrow = false)))
-  val buffer  = LazyModule(new TLBuffer) // We removed a buffer in the TOP
-  memTLNode := buffer.node := sink.node := source.node := mbus.toDRAMController(Some("tl"))()
+  //val source = LazyModule(new TLAsyncCrossingSource())
+  //val sink = LazyModule(new TLAsyncCrossingSink(AsyncQueueParams(depth = 1, sync = 3, safe = true, narrow = false)))
+  //val buffer  = LazyModule(new TLBuffer) // We removed a buffer in the TOP
+  val island = LazyModule(new SlowMemIsland(mbus.blockBytes))
+  //memTLNode := buffer.node := island.node := mbus.toDRAMController(Some("tl"))()
+  island.crossTLIn(island.node) := mbus.toDRAMController(Some("tl"))()
+  memTLNode := island.node
 
   // SPI to MMC conversion.
   // TODO: There is an intention from Sifive to do MMC, but has to be manual
@@ -149,7 +137,7 @@ class NEDOSystemModule[+L <: NEDOSystem](_outer: L)
     with HasPeripheryDebugModuleImp
     with HasPeripheryGPIOModuleImp
     with HasPeripherySHA3ModuleImp
-    with HasPeripheryed25519ModuleImp
+    //with HasPeripheryed25519ModuleImp
     with HasPeripheryAESModuleImp
     with HasPeripheryUSB11HSModuleImp
     with HasPeripheryRandomModuleImp
@@ -165,8 +153,10 @@ class NEDOSystemModule[+L <: NEDOSystem](_outer: L)
     val ChildClock = Input(Clock())
     val ChildReset = Input(Bool())
   })
-  outer.sink.module.clock := slowmemck.ChildClock
-  outer.sink.module.reset := slowmemck.ChildReset
+  //outer.sink.module.clock := slowmemck.ChildClock
+  //outer.sink.module.reset := slowmemck.ChildReset
+  outer.island.module.io.ChildClock := slowmemck.ChildClock
+  outer.island.module.io.ChildReset := slowmemck.ChildReset
   val mem_tl = IO(HeterogeneousBag.fromNode(outer.memTLNode.in))
   (mem_tl zip outer.memTLNode.in).foreach { case (io, (bundle, _)) => io <> bundle }
 

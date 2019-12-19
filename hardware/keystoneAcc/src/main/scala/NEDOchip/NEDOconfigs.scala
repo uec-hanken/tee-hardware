@@ -29,8 +29,8 @@ case object FreqKeyMHz extends Field[Double]
 class ChipDefaultConfig extends Config(
   new WithJtagDTM            ++
   new WithNMemoryChannels(1) ++
-  //new WithNBigCores(2)       ++
-  new BaseConfig().alter((site,here,up) => {
+  new WithNBigCores(2)       ++
+  new BaseConfig()/*.alter((site,here,up) => {
     case RocketTilesKey => {
       val big = RocketTileParams(
         core = RocketCoreParams(mulDiv = Some(MulDivParams(
@@ -43,21 +43,21 @@ class ChipDefaultConfig extends Config(
         // CacheBlockBytes = (default) 64;
         // => default cache size = 64 * 4 * 64 = 16KBytes
         dcache = Some(DCacheParams(
-          // => dcache size = 32 * 2 * 64 = 4KBytes
-          nSets = 32,
-          nWays = 2,
+          // => dcache size = 16 * 1 * 64 = 1KBytes
+          nSets = 16,
+          nWays = 1,
           rowBits = site(SystemBusKey).beatBits,
           nMSHRs = 0,
           blockBytes = site(CacheBlockBytes))),
         icache = Some(ICacheParams(
-          // => icache size = 32 * 2 * 64 = 4KBytes
-          nSets = 32,
-          nWays = 2,
+          // => icache size = 16 * 1 * 64 = 1KBytes
+          nSets = 16,
+          nWays = 1,
           rowBits = site(SystemBusKey).beatBits,
           blockBytes = site(CacheBlockBytes))))
       List.tabulate(2)(i => big.copy(hartId = i))
     }
-  })
+  })*/
 )
 
 // Chip Peripherals
