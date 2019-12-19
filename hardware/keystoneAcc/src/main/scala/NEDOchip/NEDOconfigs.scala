@@ -5,6 +5,7 @@ import freechips.rocketchip.subsystem._
 import freechips.rocketchip.devices.debug._
 import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.diplomacy._
+import freechips.rocketchip.rocket._
 import freechips.rocketchip.system._
 import freechips.rocketchip.tile._
 import sifive.blocks.devices.gpio._
@@ -28,8 +29,35 @@ case object FreqKeyMHz extends Field[Double]
 class ChipDefaultConfig extends Config(
   new WithJtagDTM            ++
   new WithNMemoryChannels(1) ++
-  new WithNBigCores(2)       ++
-  new BaseConfig
+  //new WithNBigCores(2)       ++
+  new BaseConfig().alter((site,here,up) => {
+    case RocketTilesKey => {
+      val big = RocketTileParams(
+        core = RocketCoreParams(mulDiv = Some(MulDivParams(
+          mulUnroll = 8,
+          mulEarlyOut = true,
+          divEarlyOut = true))),
+        // Cache size = nSets * nWays * CacheBlockBytes
+        // nSets = (default) 64;
+        // nWays = (default) 4;
+        // CacheBlockBytes = (default) 64;
+        // => default cache size = 64 * 4 * 64 = 16KBytes
+        dcache = Some(DCacheParams(
+          // => dcache size = 32 * 2 * 64 = 4KBytes
+          nSets = 32,
+          nWays = 2,
+          rowBits = site(SystemBusKey).beatBits,
+          nMSHRs = 0,
+          blockBytes = site(CacheBlockBytes))),
+        icache = Some(ICacheParams(
+          // => icache size = 32 * 2 * 64 = 4KBytes
+          nSets = 32,
+          nWays = 2,
+          rowBits = site(SystemBusKey).beatBits,
+          blockBytes = site(CacheBlockBytes))))
+      List.tabulate(2)(i => big.copy(hartId = i))
+    }
+  })
 )
 
 // Chip Peripherals

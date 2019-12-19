@@ -95,7 +95,7 @@ class NEDOSystem(implicit p: Parameters) extends RocketSubsystem
   )
   val memTLNode = TLManagerNode(Seq(mainMemParam))
   val source = LazyModule(new TLAsyncCrossingSource())
-  val sink = LazyModule(new TLAsyncCrossingSink(AsyncQueueParams.singleton()))
+  val sink = LazyModule(new TLAsyncCrossingSink(AsyncQueueParams(depth = 16, sync = 3, safe = true, narrow = false)))
   val buffer  = LazyModule(new TLBuffer) // We removed a buffer in the TOP
   memTLNode := buffer.node := sink.node := source.node := mbus.toDRAMController(Some("tl"))()
 
