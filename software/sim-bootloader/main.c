@@ -298,8 +298,12 @@ int main(int argc, char** argv) {
   
   printstr("\r\nUSB Write: ");
   *((unsigned char*)0x10008000) = 0xEA;
+  *((unsigned char*)0x10008001) = 0xEA;
+  *((unsigned char*)0x10008002) = 0xEA;
   printstr("\r\nUSB Read: ");
   printhex32(*((unsigned char*)0x10008000));
+  printhex32(*((unsigned char*)0x10008001));
+  printhex32(*((unsigned char*)0x10008002));
   printstr("\r\n");
   
   tohost_exit(0);

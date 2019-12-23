@@ -73,7 +73,7 @@ class ExampleRocketSystem(implicit p: Parameters) extends RocketSubsystem
     with CanHaveMasterAXI4MMIOPort
     with CanHaveSlaveAXI4Port
     with HasPeripherySHA3
-    //with HasPeripheryed25519
+    with HasPeripheryed25519
     with HasPeripheryAES
     with HasPeripheryRandom
     with HasPeripheryUSB11HS
@@ -89,7 +89,7 @@ class ExampleRocketSystemModuleImp[+L <: ExampleRocketSystem](_outer: L) extends
     with CanHaveMasterAXI4MMIOPortModuleImp
     with CanHaveSlaveAXI4PortModuleImp
     with HasPeripherySHA3ModuleImp
-    //with HasPeripheryed25519ModuleImp
+    with HasPeripheryed25519ModuleImp
     with HasPeripheryAESModuleImp
     with HasPeripheryBootROMModuleImp
     with HasPeripheryRandomModuleImp

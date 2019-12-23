@@ -46,7 +46,7 @@ class NEDOSystem(implicit p: Parameters) extends RocketSubsystem
     with HasPeripheryDebug
     with HasPeripheryGPIO
     with HasPeripherySHA3
-    //with HasPeripheryed25519
+    with HasPeripheryed25519
     with HasPeripheryAES
     with HasPeripheryUSB11HS
     with HasPeripheryRandom
@@ -137,7 +137,7 @@ class NEDOSystemModule[+L <: NEDOSystem](_outer: L)
     with HasPeripheryDebugModuleImp
     with HasPeripheryGPIOModuleImp
     with HasPeripherySHA3ModuleImp
-    //with HasPeripheryed25519ModuleImp
+    with HasPeripheryed25519ModuleImp
     with HasPeripheryAESModuleImp
     with HasPeripheryUSB11HSModuleImp
     with HasPeripheryRandomModuleImp

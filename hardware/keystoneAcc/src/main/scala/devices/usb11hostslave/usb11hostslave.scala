@@ -140,6 +140,7 @@ class USB11HS(blockBytes: Int, beatBytes: Int, params: USB11HSParams)(implicit p
     val d_valid_held = RegInit(false.B) // Held valid of D channel if not ready
     val d_size = Reg(UInt()) // Saved size
     val d_source = Reg(UInt()) // Saved source
+    val d_hasData = Reg(Bool()) // Saved source
 
     // d_full logic: It is full if there is 1 transaction not completed
     // this is, of course, waiting until D responses for every individual A transaction
@@ -166,11 +167,12 @@ class USB11HS(blockBytes: Int, beatBytes: Int, params: USB11HSParams)(implicit p
     when (tl_in.a.fire()) {
       d_size   := tl_in.a.bits.size
       d_source := tl_in.a.bits.source
+      d_hasData := hasData
     }
 
     // Response characteristics
     tl_in.d.bits := tl_edge.AccessAck(d_source, d_size, d_data)
-    tl_in.d.bits.opcode := Mux(hasData, TLMessages.AccessAck, TLMessages.AccessAckData)
+    tl_in.d.bits.opcode := Mux(d_hasData, TLMessages.AccessAck, TLMessages.AccessAckData)
 
     // Blackbox connections
     blackbox.io.strobe_i := tl_in.a.fire() // We trigger the transaction only here
