@@ -17,6 +17,7 @@ import uec.keystoneAcc.devices.sha3._
 import uec.keystoneAcc.devices.ed25519._
 import uec.keystoneAcc.devices.aes._
 import uec.keystoneAcc.devices.random._
+import uec.keystoneAcc.devices.usb11hs._
 
 // Just like DefaultConfig for now, but with the peripherals
 class KeystoneDefaultPeripherals extends Config((site, here, up) => {
@@ -26,6 +27,8 @@ class KeystoneDefaultPeripherals extends Config((site, here, up) => {
     ed25519Params(address = BigInt(0x10004000L))
   case PeripheryAESKey =>
     AESParams(address = BigInt(0x10007000L))
+  case PeripheryUSB11HSKey =>
+    USB11HSParams(address = BigInt(0x10008000L))
   case PeripheryRandomKey =>
     RandomParams(address = BigInt(0x10009000L))
   case BootROMParams =>
@@ -70,9 +73,10 @@ class ExampleRocketSystem(implicit p: Parameters) extends RocketSubsystem
     with CanHaveMasterAXI4MMIOPort
     with CanHaveSlaveAXI4Port
     with HasPeripherySHA3
-    with HasPeripheryed25519
+    //with HasPeripheryed25519
     with HasPeripheryAES
     with HasPeripheryRandom
+    with HasPeripheryUSB11HS
     with HasPeripheryBootROM {
   override lazy val module = new ExampleRocketSystemModuleImp(this)
 }
@@ -85,8 +89,9 @@ class ExampleRocketSystemModuleImp[+L <: ExampleRocketSystem](_outer: L) extends
     with CanHaveMasterAXI4MMIOPortModuleImp
     with CanHaveSlaveAXI4PortModuleImp
     with HasPeripherySHA3ModuleImp
-    with HasPeripheryed25519ModuleImp
+    //with HasPeripheryed25519ModuleImp
     with HasPeripheryAESModuleImp
     with HasPeripheryBootROMModuleImp
     with HasPeripheryRandomModuleImp
+    with HasPeripheryUSB11HSModuleImp
     with DontTouch

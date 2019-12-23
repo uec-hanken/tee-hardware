@@ -140,7 +140,7 @@ begin : hstCntrl_NextState
   next_sendPacketWEn <= sendPacketWEn;
   next_getPacketREn <= getPacketREn;
   next_sendPacketPID <= sendPacketPID;
-  case (CurrState_hstCntrl) // synopsys parallel_case full_case
+  case (CurrState_hstCntrl)
     `START_HC:
       NextState_hstCntrl <= `TX_REQ;
     `TX_REQ:

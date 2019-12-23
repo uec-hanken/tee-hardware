@@ -1,6 +1,7 @@
 package uec.keystoneAcc.devices.usb11hs
 
 import chisel3._
+import chisel3.util._
 import freechips.rocketchip.amba.axi4._
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.diplomacy._
@@ -53,7 +54,7 @@ class usbHostSlave extends BlackBox {
   })
 }
 
-class USB11HS(blockBytes: Int, params: USB11HSParams)(implicit p: Parameters) extends LazyModule {
+class USB11HS(blockBytes: Int, beatBytes: Int, params: USB11HSParams)(implicit p: Parameters) extends LazyModule {
 
   // Create a simple device for this peripheral
   val device = new SimpleDevice("usb11hs", Seq("uec,usb11hs-0")) {
@@ -68,35 +69,31 @@ class USB11HS(blockBytes: Int, params: USB11HSParams)(implicit p: Parameters) ex
   // Create our interrupt node
   val intnode = IntSourceNode(IntSourcePortSimple(num = 10, resources = Seq(Resource(device, "int"))))
 
-  // Create the tilelink node
-  /*val peripheralParam = TLManagerPortParameters(
+  val peripheralParam = TLManagerPortParameters(
     managers = Seq(TLManagerParameters(
       address = AddressSet.misaligned(params.address,  0x1000),
       resources = device.reg,
       regionType = RegionType.GET_EFFECTS, // NOT cacheable
       executable = false,
-      supportsGet = TransferSizes(1, blockBytes),
-      supportsPutFull = TransferSizes(1, blockBytes),
-      supportsPutPartial = TransferSizes(1, blockBytes),
+      supportsGet = TransferSizes(1, 1),
+      supportsPutFull = TransferSizes(1, 1),
+      supportsPutPartial = TransferSizes(1, 1),
       fifoId             = Some(0)
     )),
     beatBytes = 1 // Because I will connect a 8-bit AXI-4-lite here
   )
-  val peripheralNode = TLManagerNode(Seq(peripheralParam))*/
+  val peripheralNode = TLManagerNode(Seq(peripheralParam))
 
-  // Create the axi4 node
-  val axi4peripheralParam = AXI4SlavePortParameters(
-    slaves = Seq(AXI4SlaveParameters(
-      address       = AddressSet.misaligned(params.address,  0x1000),
-      resources     = device.reg,
-      regionType    = RegionType.GET_EFFECTS,
-      executable    = false,
-      supportsWrite = TransferSizes(1, blockBytes),
-      supportsRead  = TransferSizes(1, blockBytes)
-    )),
-    beatBytes = 1 // 8-bit AXI-4-lite here
-  )
-  val axi4peripheralNode = AXI4SlaveNode(Seq(axi4peripheralParam))
+  // Conversion nodes
+  //val axifrag = LazyModule(new AXI4Fragmenter())
+  val tlwidth = LazyModule(new TLWidthWidget(beatBytes))
+  val tlfrag = LazyModule(new TLFragmenter(1, blockBytes))
+  val node = TLBuffer()
+
+  peripheralNode :=
+    tlfrag.node :=
+    tlwidth.node :=
+    node
 
   lazy val module = new LazyModuleImp(this) {
 
@@ -106,15 +103,12 @@ class USB11HS(blockBytes: Int, params: USB11HSParams)(implicit p: Parameters) ex
     // Instance the USB black box
     val blackbox = Module(new usbHostSlave)
 
-    // Instance also the AXI4 -> WB converter
-    val (axi_async, _) = axi4peripheralNode.in(0) // Extract the port from the node
-    val axlite2wbsp = Module(new axlite2wbsp(axi_async.params))
+    // Obtain the TL bundle
+    val (tl_in, tl_edge) = peripheralNode.in(0) // Extract the port from the node
 
     // Clocks and resets
     blackbox.io.clk_i := clock
     blackbox.io.rst_i := reset
-    axlite2wbsp.io.i_clk := clock
-    axlite2wbsp.io.i_axi_reset_n := !reset.asBool()
 
     // Connect the phy to the outer
     blackbox.io.USBWireDataIn := io.USBWireDataIn
@@ -140,50 +134,60 @@ class USB11HS(blockBytes: Int, params: USB11HSParams)(implicit p: Parameters) ex
     interrupts(8) := blackbox.io.slaveNAKSentIntOut
     interrupts(9) := blackbox.io.slaveVBusDetIntOut
 
-    // Connect the AXI4 node to the converter
-    axi_async.aw.ready := axlite2wbsp.io.o_axi_awready
-    axlite2wbsp.io.i_axi_awaddr := axi_async.aw.bits.addr
-    axlite2wbsp.io.i_axi_awcache := axi_async.aw.bits.cache
-    axlite2wbsp.io.i_axi_awprot := axi_async.aw.bits.prot
-    axlite2wbsp.io.i_axi_awvalid := axi_async.aw.valid
+    // Connect the TL bundle to the WishBone
+    // Flow control
+    val d_full = RegInit(false.B) // Transaction pending
+    val d_valid_held = RegInit(false.B) // Held valid of D channel if not ready
+    val d_size = Reg(UInt()) // Saved size
+    val d_source = Reg(UInt()) // Saved source
 
-    axi_async.w.ready := axlite2wbsp.io.o_axi_wready
-    axlite2wbsp.io.i_axi_wdata := axi_async.w.bits.data
-    axlite2wbsp.io.i_axi_wstrb := axi_async.w.bits.strb
-    axlite2wbsp.io.i_axi_wvalid := axi_async.w.valid
+    // d_full logic: It is full if there is 1 transaction not completed
+    // this is, of course, waiting until D responses for every individual A transaction
+    when (tl_in.d.fire()) { d_full := false.B }
+    when (tl_in.a.fire()) { d_full := true.B }
 
-    axlite2wbsp.io.i_axi_bready := axi_async.b.ready
-    axi_async.b.bits.resp := axlite2wbsp.io.o_axi_bresp
-    axi_async.b.valid := axlite2wbsp.io.o_axi_bvalid
+    // The D valid is the WB ack and the valid held (if D not ready yet)
+    tl_in.d.valid := d_valid_held
+    // Try to latch true the D valid held.
+    // If we use fire for the "false" latch, it lasts at least 1 cycle
+    when(blackbox.io.ack_o) { d_valid_held := true.B }
+    when(tl_in.d.fire()) { d_valid_held := false.B }
 
-    axi_async.ar.ready := axlite2wbsp.io.o_axi_arready
-    axlite2wbsp.io.i_axi_araddr := axi_async.ar.bits.addr
-    axlite2wbsp.io.i_axi_arcache := axi_async.ar.bits.cache
-    axlite2wbsp.io.i_axi_arprot := axi_async.ar.bits.prot
-    axlite2wbsp.io.i_axi_arvalid := axi_async.ar.valid
+    // The A ready should be 1 only if there is no transaction
+    tl_in.a.ready := !d_full
 
-    axlite2wbsp.io.i_axi_rready := axi_async.r.ready
-    axi_async.r.bits.data := axlite2wbsp.io.o_axi_rdata
-    axi_async.r.bits.resp := axlite2wbsp.io.o_axi_rresp
-    axi_async.r.valid := axlite2wbsp.io.o_axi_rvalid
+    // hasData helds if there is a write transaction
+    val hasData = tl_edge.hasData(tl_in.a.bits)
 
-    // Connect the WB to the blackbox
-    // axlite2wbsp.io.o_reset ignored
-    // axlite2wbsp.io.o_wb_cyc ignored (Already fragmented transactions)
-    blackbox.io.strobe_i := axlite2wbsp.io.o_wb_stb
-    blackbox.io.we_i := axlite2wbsp.io.o_wb_we
-    blackbox.io.address_i := axlite2wbsp.io.o_wb_addr
-    blackbox.io.data_i := axlite2wbsp.io.o_wb_data
-    // axlite2wbsp.io.o_wb_sel ignored (1-byte transactions)
-    axlite2wbsp.io.i_wb_ack := blackbox.io.ack_o
-    axlite2wbsp.io.i_wb_data := blackbox.io.data_o
-    axlite2wbsp.io.i_wb_err := false.B // No error transactions
+    // Response data to D
+    val d_data = RegEnable(blackbox.io.data_o, blackbox.io.ack_o)
+
+    // Save the size and the source from the A channel for the D channel
+    when (tl_in.a.fire()) {
+      d_size   := tl_in.a.bits.size
+      d_source := tl_in.a.bits.source
+    }
+
+    // Response characteristics
+    tl_in.d.bits := tl_edge.AccessAck(d_source, d_size, d_data)
+    tl_in.d.bits.opcode := Mux(hasData, TLMessages.AccessAck, TLMessages.AccessAckData)
+
+    // Blackbox connections
+    blackbox.io.strobe_i := tl_in.a.fire() // We trigger the transaction only here
+    blackbox.io.we_i := hasData // Is write?
+    blackbox.io.address_i := tl_in.a.bits.address(7, 0) // Only the LSB
+    blackbox.io.data_i := tl_in.a.bits.data // The data (should be 8 bits tho)
+
+    // Tie off unused channels
+    tl_in.b.valid := false.B
+    tl_in.c.ready := true.B
+    tl_in.e.ready := true.B
   }
 }
 
 case class USB11HSAttachParams(
                              usbpar: USB11HSParams,
-                             sysBus: SystemBus,
+                             perBus: PeripheryBus,
                              intNode: IntInwardNode,
                              controlXType: ClockCrossingType = NoCrossing,
                              intXType: ClockCrossingType = NoCrossing,
@@ -201,18 +205,12 @@ object USB11HS {
   def attach(params: USB11HSAttachParams): USB11HS = {
     implicit val p = params.p
     val name = s"usb11hs ${nextId()}"
-    val sbus = params.sysBus
-    val usb11hs = LazyModule(new USB11HS(sbus.blockBytes, params.usbpar))
-    //sha3.suggestName(name)
+    val pbus = params.perBus
+    val usb11hs = LazyModule(new USB11HS(pbus.blockBytes, pbus.beatBytes, params.usbpar))
 
     // Connect the nodes to the control bus
-    usb11hs.axi4peripheralNode := sbus.toFixedWidthPort(Some(s"device_named_$name")) {
-      (AXI4Buffer() :=
-        //AXI4Fragmenter() :=
-        AXI4UserYanker() :=
-        AXI4Deinterleaver(sbus.blockBytes) :=
-        AXI4IdIndexer(4) :=
-        TLToAXI4())
+    pbus.coupleTo( s"device_named_$name" ) {
+      usb11hs.node := _
     }
 
     // Connect the interruptions
