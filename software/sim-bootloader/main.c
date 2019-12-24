@@ -149,7 +149,7 @@ int main(int argc, char** argv) {
   printstr("Hello world, FSBL\r\n");
   
   // Do the SBOX acc
-  /*uint64_t k = do_sbox((uint64_t) 0xdeadbeef);
+  uint64_t k = do_sbox((uint64_t) 0xdeadbeef);
   printstr("SBOX of 0xdeadbeef: ");
   printhex32(k);
   printstr("\r\n");
@@ -294,7 +294,7 @@ int main(int argc, char** argv) {
     RANDOM_REG(RANDOM_RND_SOURCE_ENABLE) = 0;
     RANDOM_REG(RANDOM_RST_BITS_COUNTER) = 1;
     while(RANDOM_REG(RANDOM_TRNG_BUSY));
-  }*/
+  }
   
   printstr("\r\nUSB Write: ");
   *((unsigned char*)0x10008000) = 0xEA;
