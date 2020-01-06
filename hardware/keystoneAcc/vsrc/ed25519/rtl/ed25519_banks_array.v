@@ -70,7 +70,7 @@ module ed25519_banks_array
     assign src1_dout = !banks ? bank_lo1_dout : bank_hi1_dout;
     assign src2_dout = !banks ? bank_lo2_dout : bank_hi2_dout;
     
-    ed25519_operand_bank bank_operand_lo1
+    ed25519_operand_bank_wconst bank_operand_lo1
     (
         .clk     (clk),
         .a_addr  ({dst_operand, dst_addr}),
@@ -80,7 +80,7 @@ module ed25519_banks_array
         .b_out   (bank_lo1_dout)
     );
     
-    ed25519_operand_bank bank_operand_lo2
+    ed25519_operand_bank_wconst bank_operand_lo2
     (
         .clk     (clk),
         .a_addr  ({dst_operand, dst_addr}),
@@ -90,7 +90,7 @@ module ed25519_banks_array
         .b_out   (bank_lo2_dout)
     );
 
-    ed25519_operand_bank bank_operand_hi1
+    ed25519_operand_bank_wconst bank_operand_hi1
     (
         .clk     (clk),
         .a_addr  ({dst_operand, dst_addr}),
@@ -100,7 +100,7 @@ module ed25519_banks_array
         .b_out   (bank_hi1_dout)
     );
 
-    ed25519_operand_bank bank_operand_hi2
+    ed25519_operand_bank_wconst bank_operand_hi2
     (
         .clk     (clk),
         .a_addr  ({dst_operand, dst_addr}),
