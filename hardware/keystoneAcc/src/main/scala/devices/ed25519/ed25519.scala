@@ -20,6 +20,7 @@ class ed25519PortIO extends Bundle {
 }
 
 class ed25519_base_point_multiplier extends BlackBox {
+  override def desiredName = "ed25519_base_point_multiplier_TOP_wrapper"
   val io = IO(new Bundle {
     val clk = Input(Clock())
     val rst_n = Input(Bool())
@@ -34,6 +35,7 @@ class ed25519_base_point_multiplier extends BlackBox {
 }
 
 class curve25519_modular_multiplier extends BlackBox {
+  override def desiredName = "curve25519_modular_multiplier_TOP_wrapper"
   val io = IO(new Bundle {
     val clk = Input(Clock())
     val rst_n = Input(Bool())
@@ -50,6 +52,7 @@ class curve25519_modular_multiplier extends BlackBox {
 }
 
 class ed25519_sign_S_core extends BlackBox {
+  override def desiredName = "ed25519_sign_S_core_TOP_wrapper"
   val io = IO(new Bundle {
     val clk = Input(Clock())
     val rst = Input(Bool())

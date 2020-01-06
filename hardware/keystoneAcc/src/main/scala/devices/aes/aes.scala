@@ -15,6 +15,7 @@ class AESPortIO extends Bundle {
 }
 
 class aes_core extends BlackBox {
+  override def desiredName = "aes_core_TOP_wrapper"
   val io = IO(new Bundle {
     val clk = Input(Clock())
     val reset_n = Input(Bool())

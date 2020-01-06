@@ -15,6 +15,7 @@ class SHA3PortIO extends Bundle {
 }
 
 class keccak extends BlackBox {
+  override def desiredName = "SHA3_TOP_wrapper"
   val io = IO(new Bundle {
     val clk = Input(Clock())
     val reset = Input(Bool())
