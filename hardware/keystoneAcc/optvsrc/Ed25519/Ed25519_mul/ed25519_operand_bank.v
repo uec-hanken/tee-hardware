@@ -5,7 +5,7 @@ module ram_2kb_32x512 (
 	input	[31:0]	iWrData,
 	output	[31:0]	oRdData
 );
-/*
+
  reg	[31:0]	mem[0:511];
  reg	[31:0]	rd_data;
  
@@ -19,10 +19,10 @@ module ram_2kb_32x512 (
  end
  
  assign oRdData = rd_data;
-*/
+
 
  //512words x 32bits = 2KBytes
- rspb18_512x32m4_g1 #(.MES_ALL("OFF")) _512w32b (
+/* rspb18_512x32m4_g1 #(.MES_ALL("OFF")) _512w32b (
 	.CLK	(iClk),
 	.ME		(1'b1),		//input			: Master Enable (ChipSelect)
 	.ADR	(iAddr),	//input [8:0]	: Address
@@ -31,7 +31,7 @@ module ram_2kb_32x512 (
 	.D		(iWrData),	//input [31:0]	: Write Data
 	.OE		(1'b1),		//input			: Output Enable
 	.Q		(oRdData)	//output [31:0]	: Read Data
- );
+ );*/
 
 endmodule
 

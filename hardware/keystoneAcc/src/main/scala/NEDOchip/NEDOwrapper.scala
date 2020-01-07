@@ -277,10 +277,10 @@ class NEDOFPGA(implicit val p :Parameters) extends RawModule {
   val gpio_in = IO(Input(UInt(p(GPIOInKey).W)))
   val gpio_out = IO(Output(UInt((p(PeripheryGPIOKey).head.width-p(GPIOInKey)).W)))
   val jtag = IO(new Bundle {
-    val jtag_TDI = (Input(Bool()))
-    val jtag_TDO = (Output(Bool()))
-    val jtag_TCK = (Input(Bool()))
-    val jtag_TMS = (Input(Bool()))
+    val jtag_TDI = (Input(Bool())) // J19_20 / XADC_GPIO_2
+    val jtag_TDO = (Output(Bool())) // J19_17 / XADC_GPIO_1
+    val jtag_TCK = (Input(Bool())) // J19_19 / XADC_GPIO_3
+    val jtag_TMS = (Input(Bool())) // J19_18 / XADC_GPIO_0
   })
   val sdio = IO(new Bundle {
     val sdio_clk = (Output(Bool()))
@@ -291,27 +291,27 @@ class NEDOFPGA(implicit val p :Parameters) extends RawModule {
     val sdio_dat_3 = (Output(Bool()))
   })
   val qspi = IO(new Bundle {
-    val qspi_cs = (Output(UInt(p(PeripherySPIFlashKey).head.csWidth.W)))
-    val qspi_sck = (Output(Bool()))
-    val qspi_miso = (Input(Bool()))
-    val qspi_mosi = (Output(Bool()))
-    val qspi_wp = (Output(Bool()))
-    val qspi_hold = (Output(Bool()))
+    val qspi_cs = (Output(UInt(p(PeripherySPIFlashKey).head.csWidth.W))) // C14 / LA10_P / J1_2
+    val qspi_sck = (Output(Bool())) // C15 / LA10_N / J1_4
+    val qspi_miso = (Input(Bool())) // H16 / LA11_P / J1_6
+    val qspi_mosi = (Output(Bool())) // H17 / LA11_N / J1_8
+    val qspi_wp = (Output(Bool())) // G15 / LA12_P / J1_10
+    val qspi_hold = (Output(Bool())) // G16 / LA12_N / J1_12
   })
   val uart_txd = IO(Output(Bool()))
   val uart_rxd = IO(Input(Bool()))
   val uart_rtsn = IO(Output(Bool()))
   val uart_ctsn = IO(Input(Bool()))
 
-  val USBWireDataIn = IO(Input(Bits(2.W)))
-  val USBWireDataOut = IO(Output(Bits(2.W)))
-  val USBWireDataOutTick = IO(Output(Bool()))
-  val USBWireDataInTick = IO(Output(Bool()))
-  val USBWireCtrlOut = IO(Output(Bool()))
-  val USBFullSpeed = IO(Output(Bool()))
-  val USBDPlusPullup = IO(Output(Bool()))
-  val USBDMinusPullup = IO(Output(Bool()))
-  val vBusDetect = IO(Input(Bool()))
+  val USBWireDataIn = IO(Input(Bits(2.W))) // H7 / LA02_P / J1_9 // H8 / LA02_N / J1_11
+  val USBWireDataOut = IO(Output(Bits(2.W))) // G9 / LA03_P / J1_13 // G10 / LA03_N / J1_15
+  val USBWireDataOutTick = IO(Output(Bool())) // H10 / LA04_P / J1_17
+  val USBWireDataInTick = IO(Output(Bool())) // H11 / LA04_N / J1_19
+  val USBWireCtrlOut = IO(Output(Bool())) // D11 / LA05_P / J1_21
+  val USBFullSpeed = IO(Output(Bool())) // D12 / LA05_N / J1_23
+  val USBDPlusPullup = IO(Output(Bool())) // C10 / LA06_P / J1_25
+  val USBDMinusPullup = IO(Output(Bool())) // C11 / LA06_N / J1_27
+  val vBusDetect = IO(Input(Bool())) // H13 / LA07_P / J1_29
 
   var ddr: Option[VC707MIGIODDR] = None
   val sys_clock_p = IO(Input(Clock()))
@@ -337,12 +337,6 @@ class NEDOFPGA(implicit val p :Parameters) extends RawModule {
     val chip = Module(new NEDOchip)
     val mod = Module(LazyModule(new TLULtoMIG(chip.cacheBlockBytes, chip.tlportw.get.params, chip.memdevice.get)).module)
 
-    // Main clock and reset assignments
-    clock := sys_clk_i//pll.io.clk_out1.get
-    reset := reset_2
-    chip.sys_clk := sys_clk_i
-    chip.rst_n := !reset_2
-
     // DDR port only
     ddr = Some(IO(new VC707MIGIODDR(mod.depth)))
     ddr.get <> mod.io.ddrport
@@ -359,7 +353,7 @@ class NEDOFPGA(implicit val p :Parameters) extends RawModule {
     val c = new PLLParameters(
       name ="pll",
       input = PLLInClockParameters(
-        freqMHz = 50.0,
+        freqMHz = 200.0,
         feedback = true
       ),
       req = Seq(
@@ -368,12 +362,21 @@ class NEDOFPGA(implicit val p :Parameters) extends RawModule {
         ),
         PLLOutClockParameters(
           freqMHz = 10.0
+        ),
+        PLLOutClockParameters(
+          freqMHz = 100.0
         )
       )
     )
     val pll = Module(new Series7MMCM(c))
     pll.io.clk_in1 := sys_clk_i
     pll.io.reset := reset_0
+
+    // Main clock and reset assignments
+    clock := pll.io.clk_out3.get
+    reset := reset_2
+    chip.sys_clk := pll.io.clk_out3.get
+    chip.rst_n := !reset_2
 
     // The rest of the platform connections
     gpio_out := Cat(reset_0, reset_1, reset_2, reset_3, mod.io.ddrport.init_calib_complete)
@@ -387,7 +390,7 @@ class NEDOFPGA(implicit val p :Parameters) extends RawModule {
     // := uart_ctsn 			// input: not used
     uart_rtsn := false.B 		// output:  notused
     sdio <> chip.sdio
-    chip.jrst_n := reset_3
+    chip.jrst_n := !reset_3
 
     // USB phy connections
     chip.usb11hs.USBWireDataIn := USBWireDataIn

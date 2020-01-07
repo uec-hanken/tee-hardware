@@ -13,6 +13,7 @@ import sifive.blocks.devices.pinctrl._
 import sifive.blocks.devices.gpio._
 import sifive.blocks.devices.spi._
 import sifive.fpgashells.clocks._
+import uec.keystoneAcc.vc707mig32._
 
 // ******* For Xilinx FPGAs
 import sifive.fpgashells.ip.xilinx.vc707mig._
@@ -51,7 +52,7 @@ class XilinxVC707MIG(c : XilinxVC707MIGParams, slaveParam: AXI4SlavePortParamete
       val port = new XilinxVC707MIGIO(depth)
     })
 
-    val blackbox = Module(new vc707mig(depth))
+    val blackbox = Module(new vc707mig32(depth))
     val (axi_async, _) = axi4node.in(0) // TODO: Name wrong. Not really async but I do not want to rename
 
     //pins to top level

@@ -23,6 +23,6 @@ ed25519_sign_S_core_TOP U1_TOP (
 	.IHASHD_SM		(hashd_sm),
 	.OSIGN			(sign)
 );
-assign core_S = {Sign[252:5], 3'b0, Sign[4:0]};
+assign core_S = {sign[252:5], 3'b0, sign[4:0]};
  
 endmodule
