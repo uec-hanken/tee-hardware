@@ -2,3 +2,5 @@
 !.gitignore
 !Makefile
 !vc707.mk
+!keystone-NEDOFPGA/*
+!keystone-NEDOFPGA/**/*
