@@ -116,7 +116,7 @@ class ChipConfig extends Config(
       idcodePartNum = 0x000,  // Decided to simplify.
       idcodeManufId = 0x489,  // As Assigned by JEDEC to SiFive. Only used in wrappers / test harnesses.
       debugIdleCycles = 5)    // Reasonable guess for synchronization
-    case FreqKeyMHz => 50.0
+    case FreqKeyMHz => 100.0
   })
 )
 

@@ -18,42 +18,41 @@ import uec.keystoneAcc.vc707mig32._
 // ******* For Xilinx FPGAs
 import sifive.fpgashells.ip.xilinx.vc707mig._
 
-case class XilinxVC707MIGParams
-(
-  address : Seq[AddressSet]
-)
-
-class XilinxVC707MIGPads(depth : BigInt) extends VC707MIGIODDR(depth) {
-  def this(c : XilinxVC707MIGParams) {
-    this(AddressRange.fromSets(c.address).head.size)
-  }
+class XilinxVC707MIGIO(depth : BigInt) extends VC707MIGIODDR(depth) with VC707MIGIOClocksReset {
 }
 
-class XilinxVC707MIGIO(depth : BigInt) extends VC707MIGIODDR(depth) with VC707MIGIOClocksReset
-
-class XilinxVC707MIG(c : XilinxVC707MIGParams, slaveParam: AXI4SlavePortParameters)(implicit p: Parameters) extends LazyModule {
-  val ranges = AddressRange.fromSets(c.address)
+class XilinxVC707MIG(c : Seq[AddressSet], cacheBlockBytes: Int, val crossing: ClockCrossingType = AsynchronousCrossing(8))(implicit p: Parameters) extends LazyModule
+  with CrossesToOnlyOneClockDomain {
+  val ranges = AddressRange.fromSets(c)
+  require (ranges.size == 1, "DDR range must be contiguous")
   val offset = ranges.head.base
   val depth = ranges.head.size
   require((depth<=0x100000000L),"vc707mig supports upto 4GB depth configuraton")
 
-  //val buffer  = LazyModule(new TLBuffer)
-  val toaxi4  = LazyModule(new TLToAXI4(adapterName = Some("mem"), stripBits = 1))
-  val indexer = LazyModule(new AXI4IdIndexer(idBits = 4))
-  val deint   = LazyModule(new AXI4Deinterleaver(p(CacheBlockBytes)))
-  val yank    = LazyModule(new AXI4UserYanker)
-  val axi4node = AXI4SlaveNode(Seq(slaveParam))
-
-  val node: TLInwardNode =
-    axi4node := yank.node := deint.node := indexer.node := toaxi4.node// := buffer.node
+  val device = new MemoryDevice
+  val node = AXI4SlaveNode(Seq( AXI4SlavePortParameters(
+    slaves = Seq(AXI4SlaveParameters(
+      address       = c,
+      resources     = device.reg,
+      regionType    = RegionType.UNCACHED,
+      executable    = true,
+      supportsWrite = TransferSizes(1, cacheBlockBytes),
+      supportsRead  = TransferSizes(1, cacheBlockBytes)
+    )),
+    beatBytes = p(ExtMem).head.master.beatBytes)
+  ))
 
   lazy val module = new LazyRawModuleImp(this) {
     val io = IO(new Bundle {
       val port = new XilinxVC707MIGIO(depth)
     })
 
+    //MIG black box instantiation
     val blackbox = Module(new vc707mig32(depth))
-    val (axi_async, _) = axi4node.in(0) // TODO: Name wrong. Not really async but I do not want to rename
+    val (axi_async, _) = node.in(0)
+
+    childClock := blackbox.io.ui_clk //io.port.sys_clk_i.asClock()
+    childReset := io.port.sys_rst
 
     //pins to top level
 
@@ -148,35 +147,50 @@ class XilinxVC707MIG(c : XilinxVC707MIGParams, slaveParam: AXI4SlavePortParamete
   }
 }
 
-class TLULtoMIG(cacheBlockBytes: Int, TLparams: TLBundleParameters, device: MemoryDevice)(implicit p :Parameters) extends LazyModule {
+
+class XilinxVC707MIGPlatform(c : Seq[AddressSet], cacheBlockBytes: Int)(implicit p: Parameters) extends LazyModule {
+  val ranges = AddressRange.fromSets(c)
+  require (ranges.size == 1, "DDR range must be contiguous")
+  val offset = ranges.head.base
+  val depth = ranges.head.size
+
+  //val buffer  = LazyModule(new TLBuffer)
+  val toaxi4 = LazyModule(new TLToAXI4(adapterName = Some("mem"), stripBits = 1))
+  val indexer = LazyModule(new AXI4IdIndexer(idBits = 4))
+  val deint = LazyModule(new AXI4Deinterleaver(p(CacheBlockBytes)))
+  val yank = LazyModule(new AXI4UserYanker)
+  val island  = LazyModule(new XilinxVC707MIG(c, cacheBlockBytes))
+
+  val node: TLInwardNode =
+    island.crossAXI4In(island.node) := yank.node := deint.node := indexer.node := toaxi4.node // := buffer.node
+
+  lazy val module = new LazyModuleImp(this) {
+    val io = IO(new Bundle {
+      val port = new XilinxVC707MIGIO(island.depth)
+    })
+
+    io.port <> island.module.io.port
+  }
+}
+
+class TLULtoMIG(cacheBlockBytes: Int, TLparams: TLBundleParameters)(implicit p :Parameters) extends LazyModule {
   // Create the DDR
-  val c = AddressSet.misaligned(
-    p(ExtMem).get.master.base,
-    0x40000000L * 1 // 1GiB for the VC707DDR
-  )
   val ddr = LazyModule(
-    new XilinxVC707MIG(
-      XilinxVC707MIGParams(c),
-      AXI4SlavePortParameters(
-        slaves = Seq(AXI4SlaveParameters(
-          address       = c,
-          resources     = device.reg,
-          regionType    = RegionType.UNCACHED,
-          executable    = true,
-          supportsWrite = TransferSizes(1, cacheBlockBytes),
-          supportsRead  = TransferSizes(1, cacheBlockBytes)
-        )),
-        beatBytes = p(ExtMem).head.master.beatBytes)
+    new XilinxVC707MIGPlatform(
+      AddressSet.misaligned(
+        p(ExtMem).get.master.base,
+        0x40000000L * 1 // 1GiB for the VC707DDR,
+      ),
+      cacheBlockBytes
     )
   )
 
   // Create a dummy node where we can attach our silly TL port
-  //val device = new MemoryDevice
   val node = TLClientNode(Seq.tabulate(1) { channel =>
     TLClientPortParameters(
       clients = Seq(TLClientParameters(
         name = "dummy",
-        sourceId = IdRange(0, 64) // TODO: What is this?
+        sourceId = IdRange(0, 64) // CKDUR: The maximum ID possible goes here.
       ))
     )
   })
@@ -314,7 +328,7 @@ class QuartusIsland(c : Seq[AddressSet], cacheBlockBytes: Int, val crossing: Clo
   require (ranges.size == 1, "DDR range must be contiguous")
   val offset = ranges.head.base
   val depth = ranges.head.size
-  require((depth<=0x100000000L),"vc707mig supports upto 4GB depth configuraton")
+  require((depth<=0x100000000L),"QuartusIsland supports upto 4GB depth configuraton")
 
   val device = new MemoryDevice
   val node = AXI4SlaveNode(Seq(AXI4SlavePortParameters(
@@ -427,8 +441,10 @@ class QuartusIsland(c : Seq[AddressSet], cacheBlockBytes: Int, val crossing: Clo
   }
 }
 
-class QuartusPlatform(c : Seq[AddressSet], cacheBlockBytes: Int, crossing: ClockCrossingType = AsynchronousCrossing(8))(implicit p: Parameters) extends LazyModule {
+class QuartusPlatform(c : Seq[AddressSet], cacheBlockBytes: Int)(implicit p: Parameters) extends LazyModule {
   val ranges = AddressRange.fromSets(c)
+  require (ranges.size == 1, "DDR range must be contiguous")
+  val offset = ranges.head.base
   val depth = ranges.head.size
 
   //val buffer  = LazyModule(new TLBuffer)
@@ -436,7 +452,7 @@ class QuartusPlatform(c : Seq[AddressSet], cacheBlockBytes: Int, crossing: Clock
   val indexer = LazyModule(new AXI4IdIndexer(idBits = 4))
   val deint   = LazyModule(new AXI4Deinterleaver(p(CacheBlockBytes)))
   val yank    = LazyModule(new AXI4UserYanker)
-  val island  = LazyModule(new QuartusIsland(c, cacheBlockBytes, crossing))
+  val island  = LazyModule(new QuartusIsland(c, cacheBlockBytes))
 
   val node: TLInwardNode =
     island.crossAXI4In(island.node) := yank.node := deint.node := indexer.node := toaxi4.node// := buffer.node
@@ -467,12 +483,11 @@ class TLULtoQuartusPlatform(cacheBlockBytes: Int, TLparams: TLBundleParameters)(
   )
 
   // Create a dummy node where we can attach our silly TL port
-  val device = new MemoryDevice
   val node = TLClientNode(Seq.tabulate(1) { channel =>
     TLClientPortParameters(
       clients = Seq(TLClientParameters(
         name = "dummy",
-        sourceId = IdRange(0, 64), // TODO: What is this? Maybe 64 is not the right one
+        sourceId = IdRange(0, 64), // CKDUR: The maximum ID possible goes here.
       ))
     )
   })

@@ -335,7 +335,7 @@ class NEDOFPGA(implicit val p :Parameters) extends RawModule {
   withClockAndReset(clock, reset) {
     // Instance our converter, and connect everything
     val chip = Module(new NEDOchip)
-    val mod = Module(LazyModule(new TLULtoMIG(chip.cacheBlockBytes, chip.tlportw.get.params, chip.memdevice.get)).module)
+    val mod = Module(LazyModule(new TLULtoMIG(chip.cacheBlockBytes, chip.tlportw.get.params)).module)
 
     // DDR port only
     ddr = Some(IO(new VC707MIGIODDR(mod.depth)))
