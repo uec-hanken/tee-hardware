@@ -1,4 +1,4 @@
-module ed25519_base_point_multiplier_TOP_wrapper (
+module ed25519_mul_TOP_wrapper (
 	input			clk,
 	input			rst_n,
 	
@@ -12,7 +12,7 @@ module ed25519_base_point_multiplier_TOP_wrapper (
 	output	[31:0]	qy_dout
 );
 
- ed25519_base_point_multiplier_TOP U1_TOP (
+ ed25519_mul_TOP U1_TOP (
 	.ICLK		(clk),
 	.IRSTN		(rst_n),
 	 

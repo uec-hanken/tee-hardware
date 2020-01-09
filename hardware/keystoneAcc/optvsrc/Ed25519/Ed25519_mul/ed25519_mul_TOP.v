@@ -1,4 +1,4 @@
-module ed25519_base_point_multiplier_TOP (
+module ed25519_mul_TOP (
 	input			ICLK,
 	input			IRSTN,
 	
@@ -12,7 +12,7 @@ module ed25519_base_point_multiplier_TOP (
 	output	[31:0]	OQY
 );
 
- ed25519_base_point_multiplier U1 (
+ ed25519_mul U1 (
 	.iClk		(ICLK),
 	.iRstn		(IRSTN),
 	

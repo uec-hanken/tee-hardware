@@ -20,7 +20,7 @@ class ed25519PortIO extends Bundle {
 }
 
 class ed25519_base_point_multiplier extends BlackBox {
-  override def desiredName = "ed25519_base_point_multiplier_TOP_wrapper"
+  override def desiredName = "ed25519_mul_TOP_wrapper"
   val io = IO(new Bundle {
     val clk = Input(Clock())
     val rst_n = Input(Bool())

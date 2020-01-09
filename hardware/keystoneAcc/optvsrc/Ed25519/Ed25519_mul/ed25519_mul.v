@@ -36,7 +36,7 @@
 //
 //------------------------------------------------------------------------------
 
-module ed25519_base_point_multiplier (
+module ed25519_mul (
 	input			iClk,	// system clock
 	input			iRstn,	// active-low async reset
 	
