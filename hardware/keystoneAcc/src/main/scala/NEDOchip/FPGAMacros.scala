@@ -13,7 +13,7 @@ import sifive.blocks.devices.pinctrl._
 import sifive.blocks.devices.gpio._
 import sifive.blocks.devices.spi._
 import sifive.fpgashells.clocks._
-import uec.keystoneAcc.vc707mig32._
+//import uec.keystoneAcc.vc707mig32._
 
 // ******* For Xilinx FPGAs
 import sifive.fpgashells.ip.xilinx.vc707mig._
@@ -36,8 +36,8 @@ class XilinxVC707MIG(c : Seq[AddressSet], cacheBlockBytes: Int, val crossing: Cl
       resources     = device.reg,
       regionType    = RegionType.UNCACHED,
       executable    = true,
-      supportsWrite = TransferSizes(1, cacheBlockBytes),
-      supportsRead  = TransferSizes(1, cacheBlockBytes)
+      supportsWrite = TransferSizes(1, 128),
+      supportsRead  = TransferSizes(1, 128)
     )),
     beatBytes = p(ExtMem).head.master.beatBytes)
   ))
@@ -48,11 +48,16 @@ class XilinxVC707MIG(c : Seq[AddressSet], cacheBlockBytes: Int, val crossing: Cl
     })
 
     //MIG black box instantiation
-    val blackbox = Module(new vc707mig32(depth))
+    val blackbox = Module(new vc707mig(depth))
     val (axi_async, _) = node.in(0)
 
-    childClock := blackbox.io.ui_clk //io.port.sys_clk_i.asClock()
-    childReset := io.port.sys_rst
+    // Debug AXI
+    //val ila = Module(new ilaaxi())
+    //ila.io.clk := childClock
+    //ila.connectAxi(axi_async)
+
+    childClock := io.port.ui_clk
+    childReset := io.port.ui_clk_sync_rst
 
     //pins to top level
 
@@ -161,13 +166,48 @@ class XilinxVC707MIGPlatform(c : Seq[AddressSet], cacheBlockBytes: Int)(implicit
   val yank = LazyModule(new AXI4UserYanker)
   val island  = LazyModule(new XilinxVC707MIG(c, cacheBlockBytes))
 
-  val node: TLInwardNode =
-    island.crossAXI4In(island.node) := yank.node := deint.node := indexer.node := toaxi4.node // := buffer.node
+  val indexernode = new AXI4IdentityNode
+  val deintnode = new AXI4IdentityNode
+  val yanknode = new AXI4IdentityNode
+  val islandnode = new AXI4IdentityNode
+
+  val node: TLInwardNode = indexernode := toaxi4.node // := buffer.node
+  indexer.node := indexernode
+  deintnode := indexer.node
+  deint.node := deintnode
+  yanknode := deint.node
+  yank.node := yanknode
+  islandnode := yank.node
+  island.crossAXI4In(island.node) := islandnode
 
   lazy val module = new LazyModuleImp(this) {
     val io = IO(new Bundle {
       val port = new XilinxVC707MIGIO(island.depth)
     })
+
+    // Debug AXI indexer
+    /*val (axiindexer, _) = indexernode.in(0)
+    val ilaindexer = Module(new ilaaxi())
+    ilaindexer.io.clk := clock
+    ilaindexer.connectAxi(axiindexer)
+
+    // Debug AXI deinterlaver
+    val (axideint, _) = deintnode.in(0)
+    val iladeint = Module(new ilaaxi())
+    iladeint.io.clk := clock
+    iladeint.connectAxi(axideint)
+
+    // Debug AXI user yanker
+    val (axiyank, _) = yanknode.in(0)
+    val ilayank = Module(new ilaaxi())
+    ilayank.io.clk := clock
+    ilayank.connectAxi(axiyank)
+
+    // Debug AXI island
+    val (axiisland, _) = yanknode.out(0)
+    val ilaisland = Module(new ilaaxi())
+    ilaisland.io.clk := clock
+    ilaisland.connectAxi(axiisland)*/
 
     io.port <> island.module.io.port
   }
@@ -209,6 +249,11 @@ class TLULtoMIG(cacheBlockBytes: Int, TLparams: TLBundleParameters)(implicit p :
     //val mem_tl = Wire(HeterogeneousBag.fromNode(node.in))
     node.out.foreach {
       case  (bundle, _) =>
+        // Debug TL
+        //val ilatoaxi = Module(new ilatl())
+        //ilatoaxi.io.clk := clock
+        //ilatoaxi.connectAxi(bundle)
+
         bundle.a.valid := io.tlport.a.valid
         io.tlport.a.ready := bundle.a.ready
         bundle.a.bits := io.tlport.a.bits
@@ -339,7 +384,8 @@ class QuartusIsland(c : Seq[AddressSet], cacheBlockBytes: Int, val crossing: Clo
       executable    = true,
       supportsWrite = TransferSizes(1, cacheBlockBytes),
       supportsRead  = TransferSizes(1, cacheBlockBytes))),
-    beatBytes = p(ExtMem).head.master.beatBytes)))
+    beatBytes = p(ExtMem).head.master.beatBytes
+  )))
 
   lazy val module = new LazyRawModuleImp(this) {
     val io = IO(new Bundle {

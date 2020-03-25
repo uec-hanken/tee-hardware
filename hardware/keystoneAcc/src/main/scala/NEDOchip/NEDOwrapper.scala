@@ -342,7 +342,7 @@ class NEDOFPGA(implicit val p :Parameters) extends RawModule {
     ddr.get <> mod.io.ddrport
     // MIG connections, like resets and stuff
     mod.io.ddrport.sys_clk_i := sys_clk_i.asUInt()
-    mod.io.ddrport.aresetn := reset_0
+    mod.io.ddrport.aresetn := !reset_0
     mod.io.ddrport.sys_rst := reset_1
 
     // TileLink Interface from platform
@@ -361,7 +361,7 @@ class NEDOFPGA(implicit val p :Parameters) extends RawModule {
           freqMHz = 48.0
         ),
         PLLOutClockParameters(
-          freqMHz = 10.0
+          freqMHz = 50.0
         ),
         PLLOutClockParameters(
           freqMHz = 100.0
