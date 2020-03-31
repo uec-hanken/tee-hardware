@@ -13,7 +13,8 @@ import sifive.blocks.devices.pinctrl._
 import sifive.blocks.devices.gpio._
 import sifive.blocks.devices.spi._
 import sifive.fpgashells.clocks._
-//import uec.keystoneAcc.vc707mig32._
+import sifive.fpgashells.devices.xilinx.xilinxvc707pciex1._
+import uec.keystoneAcc.vc707mig32._
 
 // ******* For Xilinx FPGAs
 import sifive.fpgashells.ip.xilinx.vc707mig._
@@ -48,7 +49,7 @@ class XilinxVC707MIG(c : Seq[AddressSet], cacheBlockBytes: Int, val crossing: Cl
     })
 
     //MIG black box instantiation
-    val blackbox = Module(new vc707mig(depth))
+    val blackbox = Module(new vc707mig32(depth))
     val (axi_async, _) = node.in(0)
 
     // Debug AXI
@@ -271,6 +272,109 @@ class TLULtoMIG(cacheBlockBytes: Int, TLparams: TLBundleParameters)(implicit p :
 
     // Create the actual module, and attach the DDR port
     io.ddrport <> ddr.module.io.port
+  }
+
+}
+
+class TLtoPCIe(cacheBlockBytes: Int,
+               TLparamsMaster: TLBundleParameters,
+               TLparamsSlave: TLBundleParameters)(implicit p :Parameters)
+  extends LazyModule {
+  // Create the pcie
+
+  val pcie = LazyModule(new XilinxVC707PCIeX1)
+
+  // Create dummy nodes where we can attach our silly TL ports
+  val nodeSlave = TLClientNode(Seq.tabulate(1) { channel =>
+    TLClientPortParameters(
+      clients = Seq(TLClientParameters(
+        name = "dummy",
+        sourceId = IdRange(0, 64), // CKDUR: The maximum ID possible goes here.
+      ))
+    )
+  })
+
+  // TODO: MODIFY EVERYTHING
+  val device = new MemoryDevice
+  val nodeMaster = TLManagerNode(Seq(TLManagerPortParameters(
+    managers = Seq(TLManagerParameters(
+      address = AddressSet.misaligned(0x0, -1), // TODO The whole space, I think
+      resources = pcie.axi_to_pcie_x1.device.reg,
+      regionType = RegionType.UNCACHED, // cacheable
+      executable = true,
+      supportsGet = TransferSizes(1, cacheBlockBytes),
+      supportsPutFull = TransferSizes(1, cacheBlockBytes),
+      supportsPutPartial = TransferSizes(1, cacheBlockBytes),
+      fifoId             = Some(0),
+      mayDenyPut         = true,
+      mayDenyGet         = true
+    )),
+    beatBytes = p(SystemBusKey).beatBytes
+  )))
+
+  // Attach to the PCIe
+  pcie.crossTLIn(pcie.slave) := nodeSlave
+  pcie.crossTLIn(pcie.control) := nodeSlave
+  nodeMaster := pcie.crossTLOut(pcie.master)
+
+  // The interrupt node
+  val intnode = pcie.crossIntOut(pcie.intnode)
+
+  lazy val module = new LazyModuleImp(this) {
+    val io = IO(new Bundle {
+      val tlportMaster = Flipped(new TLBundle(TLparamsMaster))
+      val tlportSlave = Flipped(new TLBundle(TLparamsSlave))
+      var port = new XilinxVC707PCIeX1IO
+    })
+
+    nodeSlave.out.foreach {
+      case  (bundle, _) =>
+        bundle.a.valid := io.tlportSlave.a.valid
+        io.tlportSlave.a.ready := bundle.a.ready
+        bundle.a.bits := io.tlportSlave.a.bits
+
+        io.tlportSlave.b.valid := bundle.b.valid
+        bundle.b.ready := io.tlportSlave.b.ready
+        io.tlportSlave.b.bits := bundle.b.bits
+        
+        bundle.c.valid := io.tlportSlave.c.valid
+        io.tlportSlave.c.ready := bundle.c.ready
+        bundle.c.bits := io.tlportSlave.c.bits
+
+        io.tlportSlave.d.valid := bundle.d.valid
+        bundle.d.ready := io.tlportSlave.d.ready
+        io.tlportSlave.d.bits := bundle.d.bits
+
+        bundle.e.valid := io.tlportSlave.e.valid
+        io.tlportSlave.e.ready := bundle.e.ready
+        bundle.e.bits := io.tlportSlave.e.bits
+    }
+
+    nodeMaster.out.foreach {
+      case  (bundle, _) =>
+        io.tlportMaster.a.valid := bundle.a.valid
+        bundle.a.ready := io.tlportMaster.a.ready
+        io.tlportMaster.a.bits := bundle.a.bits
+
+        bundle.b.valid := io.tlportMaster.b.valid
+        io.tlportMaster.b.ready := bundle.b.ready
+        bundle.b.bits := io.tlportMaster.b.bits
+
+        io.tlportMaster.c.valid := bundle.c.valid
+        bundle.c.ready := io.tlportMaster.c.ready
+        io.tlportMaster.c.bits := bundle.c.bits
+
+        bundle.d.valid := io.tlportMaster.d.valid
+        io.tlportMaster.d.ready := bundle.d.ready
+        bundle.d.bits := io.tlportMaster.d.bits
+
+        io.tlportMaster.e.valid := bundle.e.valid
+        bundle.e.ready := io.tlportMaster.e.ready
+        io.tlportMaster.e.bits := bundle.e.bits
+    }
+
+    // Create the actual module, and attach the port
+    io.port <> pcie.module.io.port
   }
 
 }

@@ -1,10 +1,10 @@
 -- Copyright 1986-2016 Xilinx, Inc. All Rights Reserved.
 -- --------------------------------------------------------------------------------
 -- Tool Version: Vivado v.2016.4 (lin64) Build 1756540 Mon Jan 23 19:11:19 MST 2017
--- Date        : Tue Jan  7 10:07:21 2020
--- Host        : ckdur-VirtualBox running 64-bit Ubuntu 18.04.3 LTS
--- Command     : write_vhdl -force -mode funcsim
---               /home/ckdur/Documents/keystone-NEDOFPGA/keystone-NEDOFPGA.srcs/sources_1/ip/pll/pll_sim_netlist.vhdl
+-- Date        : Thu Mar 19 19:13:48 2020
+-- Host        : ckdur-VirtualBox running 64-bit Ubuntu 18.04.4 LTS
+-- Command     : write_vhdl -force -mode funcsim -rename_top pll -prefix
+--               pll_ pll_sim_netlist.vhdl
 -- Design      : pll
 -- Purpose     : This VHDL netlist is a functional simulation representation of the design and should not be modified or
 --               synthesized. This netlist cannot be used for SDF annotated simulation.
@@ -23,8 +23,6 @@ entity pll_pll_clk_wiz is
     locked : out STD_LOGIC;
     clk_in1 : in STD_LOGIC
   );
-  attribute ORIG_REF_NAME : string;
-  attribute ORIG_REF_NAME of pll_pll_clk_wiz : entity is "pll_clk_wiz";
 end pll_pll_clk_wiz;
 
 architecture STRUCTURE of pll_pll_clk_wiz is
@@ -86,7 +84,7 @@ mmcm_adv_inst: unisim.vcomponents.MMCME2_ADV
       CLKOUT0_DUTY_CYCLE => 0.500000,
       CLKOUT0_PHASE => 0.000000,
       CLKOUT0_USE_FINE_PS => false,
-      CLKOUT1_DIVIDE => 90,
+      CLKOUT1_DIVIDE => 18,
       CLKOUT1_DUTY_CYCLE => 0.500000,
       CLKOUT1_PHASE => 0.000000,
       CLKOUT1_USE_FINE_PS => false,

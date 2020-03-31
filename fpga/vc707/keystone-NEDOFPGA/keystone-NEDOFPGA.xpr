@@ -3,7 +3,7 @@
 <!--                                                         -->
 <!-- Copyright 1986-2016 Xilinx, Inc. All Rights Reserved.   -->
 
-<Project Version="7" Minor="17" Path="keystone-NEDOFPGA.xpr">
+<Project Version="7" Minor="17" Path="/home/ckdur/Documents/keystone-hardware/fpga/vc707/keystone-NEDOFPGA/keystone-NEDOFPGA.xpr">
   <DefaultLaunch Dir="$PRUNDIR"/>
   <Configuration>
     <Option Name="Id" Val="9705bb3b443f48bd8a7616401cc59a87"/>
@@ -36,13 +36,13 @@
     <Option Name="WTVcsLaunchSim" Val="0"/>
     <Option Name="WTRivieraLaunchSim" Val="0"/>
     <Option Name="WTActivehdlLaunchSim" Val="0"/>
-    <Option Name="WTXSimExportSim" Val="0"/>
-    <Option Name="WTModelSimExportSim" Val="0"/>
-    <Option Name="WTQuestaExportSim" Val="0"/>
-    <Option Name="WTIesExportSim" Val="0"/>
-    <Option Name="WTVcsExportSim" Val="0"/>
-    <Option Name="WTRivieraExportSim" Val="0"/>
-    <Option Name="WTActivehdlExportSim" Val="0"/>
+    <Option Name="WTXSimExportSim" Val="1"/>
+    <Option Name="WTModelSimExportSim" Val="1"/>
+    <Option Name="WTQuestaExportSim" Val="1"/>
+    <Option Name="WTIesExportSim" Val="1"/>
+    <Option Name="WTVcsExportSim" Val="1"/>
+    <Option Name="WTRivieraExportSim" Val="1"/>
+    <Option Name="WTActivehdlExportSim" Val="1"/>
     <Option Name="GenerateIPUpgradeLog" Val="TRUE"/>
     <Option Name="XSimRadix" Val="hex"/>
     <Option Name="XSimTimeUnit" Val="ns"/>
@@ -52,14 +52,7 @@
   <FileSets Version="1" Minor="31">
     <FileSet Name="sources_1" Type="DesignSrcs" RelSrcDir="$PSRCDIR/sources_1">
       <Filter Type="Srcs"/>
-      <File Path="$PPRDIR/../../../hardware/keystoneAcc/optvsrc/Ed25519/Ed25519_mul/adder32_generic.v">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../../../hardware/keystoneAcc/optvsrc/AES/aes_sub_inv_sbox.v">
+      <File Path="$PPRDIR/../../../hardware/keystoneAcc/optvsrc/Ed25519/Ed25519_mul/subtractor32_generic.v">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
@@ -80,13 +73,6 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../../hardware/keystoneAcc/optvsrc/Ed25519/Ed25519_mul/subtractor32_generic.v">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
       <File Path="$PPRDIR/../../../hardware/keystoneAcc/optvsrc/Ed25519/Ed25519_mul/adder47_generic.v">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
@@ -94,14 +80,42 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../../hardware/keystoneAcc/optvsrc/SHA3/padder1.v">
+      <File Path="$PPRDIR/../../../hardware/keystoneAcc/optvsrc/Ed25519/Ed25519_mul/adder32_generic.v">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../../hardware/keystoneAcc/optvsrc/Ed25519/Ed25519_mul/curve25519_modular_multiplier.v">
+      <File Path="$PPRDIR/../../../hardware/keystoneAcc/optvsrc/AES/aes_sub_inv_sbox.v">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/../../../hardware/keystoneAcc/optvsrc/Ed25519/Ed25519_mul/multiword_mover.v">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/../../../hardware/keystoneAcc/optvsrc/Ed25519/Ed25519_mul/modular_subtractor.v">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/../../../hardware/keystoneAcc/optvsrc/Ed25519/Ed25519_mul/modular_adder.v">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/../../../hardware/keystoneAcc/optvsrc/Ed25519/Ed25519_mul/ed25519_microcode_rom.v">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
@@ -115,7 +129,14 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../../hardware/keystoneAcc/optvsrc/Ed25519/Ed25519_mul/modular_adder.v">
+      <File Path="$PPRDIR/../../../hardware/keystoneAcc/optvsrc/Ed25519/Ed25519_mul/curve25519_modular_multiplier.v">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/../../../hardware/keystoneAcc/optvsrc/SHA3/padder1.v">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
@@ -143,28 +164,7 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../../hardware/keystoneAcc/optvsrc/Ed25519/Ed25519_mul/modular_subtractor.v">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
       <File Path="$PPRDIR/../../../hardware/keystoneAcc/optvsrc/SHA3/rconst2in1.v">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../../../hardware/keystoneAcc/optvsrc/Ed25519/Ed25519_mul/multiword_mover.v">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../../../hardware/keystoneAcc/optvsrc/Ed25519/Ed25519_mul/ed25519_microcode_rom.v">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
@@ -179,6 +179,13 @@
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../../../hardware/keystoneAcc/optvsrc/SHA3/round2in1.v">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/../../../hardware/keystoneAcc/optvsrc/Ed25519/Ed25519_mul/ed25519_uop_worker.v">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
@@ -200,13 +207,6 @@
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../../../hardware/keystoneAcc/optvsrc/Ed25519/Ed25519_sign/barrett.v">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../../../hardware/keystoneAcc/optvsrc/Ed25519/Ed25519_mul/ed25519_uop_worker.v">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
@@ -263,13 +263,6 @@
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../../../hardware/keystoneAcc/optvsrc/SHA3/keccak.v">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/../../../hardware/keystoneAcc/optvsrc/Ed25519/Ed25519_mul/ed25519_base_point_multiplier.v">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
@@ -528,21 +521,21 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../generated-src/uec.keystoneAcc.nedochip.NEDOFPGA.ChipConfig/uec.keystoneAcc.nedochip.NEDOFPGA.ChipConfig.top.mems.v">
+      <File Path="$PPRDIR/../../../hardware/keystoneAcc/optvsrc/Ed25519/Ed25519_mul/ed25519_mul.v">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../generated-src/uec.keystoneAcc.nedochip.NEDOFPGA.ChipConfig/plusarg_reader.v">
+      <File Path="$PPRDIR/../generated-src/uec.keystoneAcc.nedochip.NEDOFPGA.ChipConfigVC707/uec.keystoneAcc.nedochip.NEDOFPGA.ChipConfigVC707.top.mems.v">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../../hardware/keystoneAcc/optvsrc/Ed25519/Ed25519_mul/ed25519_base_point_multiplier_TOP.v">
+      <File Path="$PPRDIR/../generated-src/uec.keystoneAcc.nedochip.NEDOFPGA.ChipConfigVC707/plusarg_reader.v">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
@@ -619,6 +612,13 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
+      <File Path="$PPRDIR/../../../hardware/keystoneAcc/optvsrc/Ed25519/Ed25519_mul/ed25519_mul_TOP.v">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
       <File Path="$PPRDIR/../chip/RocketTile.v">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
@@ -626,21 +626,21 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../generated-src/uec.keystoneAcc.nedochip.NEDOFPGA.ChipConfig/uec.keystoneAcc.nedochip.NEDOFPGA.ChipConfig.rom.v">
+      <File Path="$PPRDIR/../generated-src/uec.keystoneAcc.nedochip.NEDOFPGA.ChipConfigVC707/uec.keystoneAcc.nedochip.NEDOFPGA.ChipConfigVC707.rom.v">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../generated-src/uec.keystoneAcc.nedochip.NEDOFPGA.ChipConfig/AsyncResetReg.v">
+      <File Path="$PPRDIR/../generated-src/uec.keystoneAcc.nedochip.NEDOFPGA.ChipConfigVC707/AsyncResetReg.v">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../generated-src/uec.keystoneAcc.nedochip.NEDOFPGA.ChipConfig/EICG_wrapper.v">
+      <File Path="$PPRDIR/../generated-src/uec.keystoneAcc.nedochip.NEDOFPGA.ChipConfigVC707/EICG_wrapper.v">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
@@ -668,14 +668,21 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../../hardware/keystoneAcc/optvsrc/Ed25519/Ed25519_mul/ed25519_base_point_multiplier_TOP_wrapper.v">
+      <File Path="$PPRDIR/../../../hardware/keystoneAcc/optvsrc/SHA3/SHA3_TOP_wrapper.v">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../../../hardware/keystoneAcc/optvsrc/SHA3/SHA3_TOP_wrapper.v">
+      <File Path="$PPRDIR/../../../hardware/keystoneAcc/optvsrc/Ed25519/Ed25519_mul/ed25519_mul_TOP_wrapper.v">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PSRCDIR/sources_1/ip/vc707axi_to_pcie_x1/vc707axi_to_pcie_x1.xci">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
@@ -689,14 +696,21 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../generated-src/uec.keystoneAcc.nedochip.NEDOFPGA.ChipConfig/uec.keystoneAcc.nedochip.NEDOFPGA.ChipConfig.harness.v">
+      <File Path="$PSRCDIR/sources_1/ip/pll/pll.xci">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../generated-src/uec.keystoneAcc.nedochip.NEDOFPGA.ChipConfig/uec.keystoneAcc.nedochip.NEDOFPGA.ChipConfig.harness.mems.v">
+      <File Path="$PPRDIR/../generated-src/uec.keystoneAcc.nedochip.NEDOFPGA.ChipConfigVC707/uec.keystoneAcc.nedochip.NEDOFPGA.ChipConfigVC707.harness.v">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/../generated-src/uec.keystoneAcc.nedochip.NEDOFPGA.ChipConfigVC707/uec.keystoneAcc.nedochip.NEDOFPGA.ChipConfigVC707.harness.mems.v">
         <FileInfo>
           <Attr Name="AutoDisabled" Val="1"/>
           <Attr Name="UsedIn" Val="synthesis"/>
@@ -768,131 +782,9 @@
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/axi/mig_7series_v4_0_ddr_carry_and.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/axi/mig_7series_v4_0_ddr_carry_latch_or.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/axi/mig_7series_v4_0_ddr_carry_or.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb_stub.vhdl"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/phy/mig_7series_v4_0_ddr_phy_oclkdelay_cal.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb_sim_netlist.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/axi/mig_7series_v4_0_axi_mc_r_channel.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/ecc/mig_7series_v4_0_fi_xor.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/ecc/mig_7series_v4_0_ecc_dec_fix.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/ecc/mig_7series_v4_0_ecc_gen.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/ecc/mig_7series_v4_0_ecc_merge_enc.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/ecc/mig_7series_v4_0_ecc_buf.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/axi/mig_7series_v4_0_axi_mc_fifo.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/phy/mig_7series_v4_0_ddr_phy_ocd_data.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/constraints/vc707mig1gb_ooc.xdc"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/constraints/vc707mig1gb.xdc"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/phy/mig_7series_v4_0_poc_cc.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/axi/mig_7series_v4_0_axi_ctrl_write.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb.xml"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="/home/ckdur/Documents/keystone-NEDOFPGA/mig.prj"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/controller/mig_7series_v4_0_rank_mach.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/phy/mig_7series_v4_0_poc_meta.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/controller/mig_7series_v4_0_arb_mux.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/controller/mig_7series_v4_0_arb_row_col.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/ui/mig_7series_v4_0_ui_cmd.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/phy/mig_7series_v4_0_ddr_byte_group_io.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/phy/mig_7series_v4_0_ddr_phy_prbs_rdlvl.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/controller/mig_7series_v4_0_bank_common.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/axi/mig_7series_v4_0_axi_ctrl_addr_decode.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/controller/mig_7series_v4_0_bank_compare.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/clocking/mig_7series_v4_0_infrastructure.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/controller/mig_7series_v4_0_col_mach.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/axi/mig_7series_v4_0_axi_mc_wrap_cmd.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/phy/mig_7series_v4_0_ddr_phy_ocd_mux.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/phy/mig_7series_v4_0_ddr_skip_calib_tap.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/phy/mig_7series_v4_0_ddr_phy_ocd_edge.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/ui/mig_7series_v4_0_ui_rd_data.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/phy/mig_7series_v4_0_ddr_phy_ocd_samp.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/clocking/mig_7series_v4_0_clk_ibuf.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/controller/mig_7series_v4_0_bank_state.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/axi/mig_7series_v4_0_axi_mc_wr_cmd_fsm.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/phy/mig_7series_v4_0_ddr_phy_wrlvl.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/vc707mig1gb.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/vc707mig1gb_mig.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/axi/mig_7series_v4_0_ddr_comparator.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/phy/mig_7series_v4_0_ddr_byte_lane.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/controller/mig_7series_v4_0_bank_mach.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/axi/mig_7series_v4_0_ddr_w_upsizer.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/phy/mig_7series_v4_0_ddr_phy_tempmon.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/phy/mig_7series_v4_0_poc_pd.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/axi/mig_7series_v4_0_ddr_r_upsizer.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/ip_top/mig_7series_v4_0_mem_intfc.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/phy/mig_7series_v4_0_ddr_phy_dqs_found_cal.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/phy/mig_7series_v4_0_ddr_phy_wrlvl_off_delay.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/phy/mig_7series_v4_0_ddr_phy_init.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb_stub.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/phy/mig_7series_v4_0_ddr_phy_top.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/controller/mig_7series_v4_0_mc.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/axi/mig_7series_v4_0_axi_mc_aw_channel.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/axi/mig_7series_v4_0_ddr_comparator_sel_static.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/axi/mig_7series_v4_0_axi_mc_simple_fifo.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/clocking/mig_7series_v4_0_tempmon.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/axi/mig_7series_v4_0_axi_mc_cmd_fsm.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/axi/mig_7series_v4_0_axi_mc_cmd_arbiter.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/phy/mig_7series_v4_0_ddr_phy_ck_addr_cmd_delay.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/phy/mig_7series_v4_0_ddr_calib_top.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/axi/mig_7series_v4_0_axi_mc.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/controller/mig_7series_v4_0_bank_cntrl.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/phy/mig_7series_v4_0_ddr_mc_phy.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/phy/mig_7series_v4_0_poc_edge_store.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/phy/mig_7series_v4_0_poc_top.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/phy/mig_7series_v4_0_ddr_mc_phy_wrapper.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/phy/mig_7series_v4_0_ddr_of_pre_fifo.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/clocking/mig_7series_v4_0_iodelay_ctrl.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/phy/mig_7series_v4_0_ddr_phy_rdlvl.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/phy/mig_7series_v4_0_ddr_phy_wrcal.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/axi/mig_7series_v4_0_ddr_a_upsizer.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/axi/mig_7series_v4_0_ddr_command_fifo.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/controller/mig_7series_v4_0_rank_common.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/axi/mig_7series_v4_0_axi_ctrl_read.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/controller/mig_7series_v4_0_round_robin_arb.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/axi/mig_7series_v4_0_axi_ctrl_reg.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/axi/mig_7series_v4_0_axi_mc_w_channel.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/axi/mig_7series_v4_0_ddr_axi_upsizer.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/ip_top/mig_7series_v4_0_memc_ui_top_axi.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/phy/mig_7series_v4_0_ddr_phy_4lanes.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/phy/mig_7series_v4_0_ddr_phy_ocd_lim.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/ui/mig_7series_v4_0_ui_top.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/axi/mig_7series_v4_0_axi_mc_incr_cmd.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/axi/mig_7series_v4_0_axi_ctrl_top.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/phy/mig_7series_v4_0_ddr_phy_dqs_found_cal_hr.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/phy/mig_7series_v4_0_ddr_phy_ocd_cntlr.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/phy/mig_7series_v4_0_ddr_prbs_gen.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/phy/mig_7series_v4_0_ddr_if_post_fifo.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/axi/mig_7series_v4_0_ddr_carry_latch_and.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/controller/mig_7series_v4_0_arb_select.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/axi/mig_7series_v4_0_ddr_axic_register_slice.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/axi/mig_7series_v4_0_axi_mc_ar_channel.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/controller/mig_7series_v4_0_bank_queue.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/axi/mig_7series_v4_0_axi_ctrl_reg_bank.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/axi/mig_7series_v4_0_axi_mc_cmd_translator.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/phy/mig_7series_v4_0_ddr_phy_ocd_po_cntlr.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/axi/mig_7series_v4_0_ddr_axi_register_slice.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/axi/mig_7series_v4_0_axi_mc_b_channel.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/phy/mig_7series_v4_0_poc_tap_base.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/ui/mig_7series_v4_0_ui_wr_data.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/axi/mig_7series_v4_0_ddr_comparator_sel.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb/user_design/rtl/controller/mig_7series_v4_0_rank_cntrl.v"/>
-        <CompFileExtendedInfo CompFileName="vc707mig1gb.xci" FileRelPathName="vc707mig1gb_sim_netlist.vhdl"/>
       </File>
       <Config>
         <Option Name="TopModule" Val="vc707mig1gb"/>
-        <Option Name="UseBlackboxStub" Val="1"/>
-      </Config>
-    </FileSet>
-    <FileSet Name="pll" Type="BlockSrcs" RelSrcDir="$PSRCDIR/pll">
-      <File Path="$PSRCDIR/sources_1/ip/pll/pll.xci">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <Config>
-        <Option Name="TopModule" Val="pll"/>
         <Option Name="VerilogDir" Val="$PPRDIR/../../../hardware/keystoneAcc/vsrc/usbhostslave/RTL/include"/>
         <Option Name="UseBlackboxStub" Val="1"/>
         <Define Name="SYNTHESIS" Val="1"/>
@@ -937,16 +829,6 @@
       <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
     </Run>
-    <Run Id="pll_synth_1" Type="Ft3:Synth" SrcSet="pll" Part="xc7vx485tffg1761-2" ConstrsSet="pll" Description="Vivado Synthesis Defaults" Dir="$PRUNDIR/pll_synth_1" IncludeInArchive="true">
-      <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2016">
-          <Desc>Vivado Synthesis Defaults</Desc>
-        </StratHandle>
-        <Step Id="synth_design"/>
-      </Strategy>
-      <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
-      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
-    </Run>
     <Run Id="impl_1" Type="Ft2:EntireDesign" Part="xc7vx485tffg1761-2" ConstrsSet="constrs_1" Description="Default settings for Implementation." State="current" Dir="$PRUNDIR/impl_1" SynthRun="synth_1" IncludeInArchive="true">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2016"/>
@@ -966,23 +848,6 @@
     <Run Id="vc707mig1gb_impl_1" Type="Ft2:EntireDesign" Part="xc7vx485tffg1761-2" ConstrsSet="vc707mig1gb" Description="Default settings for Implementation." SynthRun="vc707mig1gb_synth_1" IncludeInArchive="false">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2016"/>
-        <Step Id="init_design"/>
-        <Step Id="opt_design"/>
-        <Step Id="power_opt_design"/>
-        <Step Id="place_design"/>
-        <Step Id="post_place_power_opt_design"/>
-        <Step Id="phys_opt_design"/>
-        <Step Id="route_design"/>
-        <Step Id="post_route_phys_opt_design"/>
-        <Step Id="write_bitstream"/>
-      </Strategy>
-      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
-    </Run>
-    <Run Id="pll_impl_1" Type="Ft2:EntireDesign" Part="xc7vx485tffg1761-2" ConstrsSet="pll" Description="Default settings for Implementation." SynthRun="pll_synth_1" IncludeInArchive="false">
-      <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2016">
-          <Desc>Default settings for Implementation.</Desc>
-        </StratHandle>
         <Step Id="init_design"/>
         <Step Id="opt_design"/>
         <Step Id="power_opt_design"/>

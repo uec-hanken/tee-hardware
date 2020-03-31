@@ -9,7 +9,7 @@ $(SDLOAD_FILE): $(sdload_dir)/Makefile
 	cp $(DTS_FILE) $(sdload_dir)/fsbl/ux00_fsbl.dts
 	echo "#define vc707 1" > $(sdload_dir)/board.h
 	echo "#define SKIP_ECC_WIPEDOWN 1" >> $(sdload_dir)/board.h
-	sed -i -e 's/INCLUDE\smemory.lds/INCLUDE memory_vc707.lds/g' $(sdload_dir)/ux00_zsbl.lds
-	sed -i -e 's/INCLUDE\smemory.lds/INCLUDE memory_vc707.lds/g' $(sdload_dir)/ux00_fsbl.lds
+	sed -i -e 's/INCLUDE\smemory.lds/INCLUDE memory_de4.lds/g' $(sdload_dir)/ux00_zsbl.lds
+	sed -i -e 's/INCLUDE\smemory.lds/INCLUDE memory_de4.lds/g' $(sdload_dir)/ux00_fsbl.lds
 	make -C $(sdload_dir) vc707zsbl.hex vc707fsbl.bin
 

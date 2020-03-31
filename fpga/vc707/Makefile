@@ -59,11 +59,11 @@ include $(sim_dir)/vc707.mk
 # ROM generation
 #########################################################################################
 include $(sim_dir)/sdload.mk
-include $(sim_dir)/jumpqspi.mk
-.PHONY: $(BOOT_FILE) $(SDLOAD_FILE)
+#include $(sim_dir)/jumpqspi.mk
+.PHONY: $(SDLOAD_FILE)
 
-$(ROM_FILE): $(ROM_CONF_FILE) $(BOOT_FILE) $(ROMGEN) $(SDLOAD_FILE)
-	$(ROMGEN) $(ROM_CONF_FILE) $(BOOT_FILE) > $(ROM_FILE)
+$(ROM_FILE): $(ROM_CONF_FILE) $(SDLOAD_FILE) $(ROMGEN)
+	$(ROMGEN) $(ROM_CONF_FILE) $(SDLOAD_FILE) > $(ROM_FILE)
 
 #########################################################################################
 # general cleanup rule

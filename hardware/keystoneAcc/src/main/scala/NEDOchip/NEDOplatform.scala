@@ -8,6 +8,7 @@ import freechips.rocketchip.subsystem._
 import freechips.rocketchip.devices.debug._
 import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.diplomacy._
+import freechips.rocketchip.interrupts._
 import freechips.rocketchip.system._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.util._
@@ -17,6 +18,7 @@ import sifive.blocks.devices.spi._
 import sifive.blocks.devices.uart._
 import sifive.blocks.devices.i2c._
 import sifive.blocks.devices.jtag._
+import sifive.fpgashells.devices.xilinx.xilinxvc707pciex1._
 import uec.keystoneAcc.devices.aes._
 import uec.keystoneAcc.devices.ed25519._
 import uec.keystoneAcc.devices.random._
@@ -127,6 +129,27 @@ class NEDOSystem(implicit p: Parameters) extends RocketSubsystem
     tlclock.bind(ps.device)
   }
 
+  // PCIe port export
+  val pcie = if(p(IncludePCIe)) {
+    val pcie = LazyModule(new XilinxVC707PCIeX1)
+    val nodeSlave = TLIdentityNode()
+    val nodeMaster = TLIdentityNode()
+
+    // Attach to the PCIe. NOTE: For some reason, they use TLIdentitiNode here. Not sure why tho.
+    // Maybe is the fact of just doing a crosstalk here
+    pcie.crossTLIn(pcie.slave) := nodeSlave
+    pcie.crossTLIn(pcie.control) := nodeSlave
+    nodeMaster := pcie.crossTLOut(pcie.master)
+
+    val pciename = Some(s"pcie_0")
+    sbus.fromMaster(pciename) { nodeMaster }
+    sbus.toFixedWidthSlave(pciename) { nodeSlave }
+    ibus.fromSync := pcie.intnode
+
+    Some(pcie)
+  }
+  else None
+
   // System module creation
   override lazy val module = new NEDOSystemModule(this)
 }
@@ -169,6 +192,12 @@ class NEDOSystemModule[+L <: NEDOSystem](_outer: L)
   // QSPI flash implementation.
   val qspi = outer.qspiNodes.zipWithIndex.map { case(n,i) => n.makeIO()(ValName(s"qspi_$i")) }
 
+  val pciePorts = if(p(IncludePCIe)) {
+    val p = IO(new XilinxVC707PCIeX1IO)
+    p <> outer.pcie.get.module.io.port
+    Some(p)
+  } else None
+
   // System module creation
   // Reset vector is set to the location of the first mask rom
   val maskROMParams = p(PeripheryMaskROMKey)
@@ -192,14 +221,17 @@ class TLUL(val params: TLBundleParameters) extends Bundle {
   val d = Flipped(Decoupled(new TLBundleD(params)))
 }
 
-class NEDOPlatformIO(val params: TLBundleParameters)(implicit val p: Parameters) extends Bundle {
+class NEDOPlatformIO(val params: TLBundleParameters)
+                    (implicit val p: Parameters) extends Bundle {
   val pins = new Bundle {
     val jtag = new JTAGPins(() => PinGen(), false)
     val gpio = new GPIOPins(() => PinGen(), p(PeripheryGPIOKey)(0))
-    val qspi = new SPIPins(() => PinGen(), p(PeripherySPIFlashKey)(0))
     val uart = new UARTPins(() => PinGen())
     //val i2c = new I2CPins(() => PinGen())
     val spi = new SPIPins(() => PinGen(), p(PeripherySPIKey)(0))
+    val qspi =
+      if(p(PeripherySPIFlashKey).isEmpty) None
+      else Some(new SPIPins(() => PinGen(), p(PeripherySPIFlashKey)(0)))
   }
   val usb11hs = new USB11HSPortIO
   val jtag_reset = Input(Bool())
@@ -207,6 +239,9 @@ class NEDOPlatformIO(val params: TLBundleParameters)(implicit val p: Parameters)
   val tlport = new TLUL(params)
   val ChildClock = Input(Clock())
   val ChildReset = Input(Bool())
+  val pciePorts =
+    if(p(IncludePCIe)) Some(new XilinxVC707PCIeX1IO)
+    else None
 }
 
 
@@ -269,7 +304,8 @@ class NEDOPlatform(implicit val p: Parameters) extends Module {
   GPIOPinsFromPort(io.pins.gpio, sys.gpio(0))
 
   // Dedicated SPI Pads
-  SPIPinsFromPort(io.pins.qspi, sys.qspi(0), clock = sys.clock, reset = sys.reset.toBool, syncStages = 3)
+  if(p(PeripherySPIFlashKey).nonEmpty)
+    SPIPinsFromPort(io.pins.qspi.get, sys.qspi(0), clock = sys.clock, reset = sys.reset.toBool, syncStages = 3)
   SPIPinsFromPort(io.pins.spi, sys.spi(0), clock = sys.clock, reset = sys.reset.toBool, syncStages = 3)
 
   // JTAG Debug Interface
@@ -279,4 +315,9 @@ class NEDOPlatform(implicit val p: Parameters) extends Module {
   sjtag.mfr_id := p(JtagDTMKey).idcodeManufId.U(11.W)
 
   io.ndreset := sys.debug.ndreset
+
+  // PCIe port connection
+  if(p(IncludePCIe)) {
+    io.pciePorts.get <> sys.pciePorts.get
+  }
 }

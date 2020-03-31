@@ -1,7 +1,35 @@
+set_property CFGBVS GND                               [current_design]
+set_property CONFIG_VOLTAGE 1.8                       [current_design]
+
 set_property BOARD_PIN {clk_p} [get_ports {sys_clock_p}]
 set_property BOARD_PIN {clk_n} [get_ports {sys_clock_n}]
 create_clock -name sys_diff_clk -period 5.0 [get_ports sys_clock_p]
 set_input_jitter [get_clocks -of_objects [get_ports sys_clock_p]] 0.5
+create_clock -name JTCK -period 100.0 [get_ports {jtag_jtag_TCK}]
+set_input_jitter JTCK 0.5
+create_clock -name pcie_ref_clk -period 10.0 [get_ports {pciePorts_REFCLK_rxp}]
+set_input_jitter pcie_ref_clk 0.5
+
+set_clock_groups -asynchronous \
+  -group [list [get_clocks { \
+      sys_diff_clk \
+    }]] \
+  -group [list [get_clocks -of_objects [get_pins { \
+      pll/clk_out1 \
+    }]]] \
+  -group [list [get_clocks -of_objects [get_pins { \
+      pll/clk_out2 \
+    }]]] \
+  -group [list [get_clocks -of_objects [get_pins { \
+      pll/clk_out3 \
+    }]]] \
+  -group [list [get_clocks { \
+      JTCK \
+    }]]
+
+# Nah, definitelly quit here. Going to put the false path in the clock
+
+
 set_property CLOCK_DEDICATED_ROUTE {FALSE} [get_nets [get_ports {jtag_jtag_TCK}]]
 set_property PACKAGE_PIN {BB23} [get_ports {jtag_jtag_TCK}]
 set_property IOSTANDARD {LVCMOS18} [get_ports {jtag_jtag_TCK}]
@@ -74,18 +102,18 @@ set_property IOSTANDARD {LVCMOS18} [get_ports {gpio_in[4]}]
 set_property IOSTANDARD {LVCMOS18} [get_ports {gpio_in[5]}]
 set_property IOSTANDARD {LVCMOS18} [get_ports {gpio_in[6]}]
 set_property IOSTANDARD {LVCMOS18} [get_ports {gpio_in[7]}]
-set_property PACKAGE_PIN {N38} [get_ports {qspi_qspi_cs}]
-set_property PACKAGE_PIN {M39} [get_ports {qspi_qspi_sck}]
-set_property PACKAGE_PIN {F40} [get_ports {qspi_qspi_miso}]
-set_property PACKAGE_PIN {F41} [get_ports {qspi_qspi_mosi}]
-set_property PACKAGE_PIN {R40} [get_ports {qspi_qspi_wp}]
-set_property PACKAGE_PIN {P40} [get_ports {qspi_qspi_hold}]
-set_property IOSTANDARD {LVCMOS18} [get_ports {qspi_qspi_cs}]
-set_property IOSTANDARD {LVCMOS18} [get_ports {qspi_qspi_sck}]
-set_property IOSTANDARD {LVCMOS18} [get_ports {qspi_qspi_miso}]
-set_property IOSTANDARD {LVCMOS18} [get_ports {qspi_qspi_mosi}]
-set_property IOSTANDARD {LVCMOS18} [get_ports {qspi_qspi_wp}]
-set_property IOSTANDARD {LVCMOS18} [get_ports {qspi_qspi_hold}]
+#set_property PACKAGE_PIN {N38} [get_ports {qspi_qspi_cs}]
+#set_property PACKAGE_PIN {M39} [get_ports {qspi_qspi_sck}]
+#set_property PACKAGE_PIN {F40} [get_ports {qspi_qspi_miso}]
+#set_property PACKAGE_PIN {F41} [get_ports {qspi_qspi_mosi}]
+#set_property PACKAGE_PIN {R40} [get_ports {qspi_qspi_wp}]
+#set_property PACKAGE_PIN {P40} [get_ports {qspi_qspi_hold}]
+#set_property IOSTANDARD {LVCMOS18} [get_ports {qspi_qspi_cs}]
+#set_property IOSTANDARD {LVCMOS18} [get_ports {qspi_qspi_sck}]
+#set_property IOSTANDARD {LVCMOS18} [get_ports {qspi_qspi_miso}]
+#set_property IOSTANDARD {LVCMOS18} [get_ports {qspi_qspi_mosi}]
+#set_property IOSTANDARD {LVCMOS18} [get_ports {qspi_qspi_wp}]
+#set_property IOSTANDARD {LVCMOS18} [get_ports {qspi_qspi_hold}]
 set_property BOARD_PIN {reset} [get_ports {rst_0}]
 set_property PACKAGE_PIN {AP40} [get_ports {rst_1}]
 set_property IOSTANDARD {LVCMOS18} [get_ports {rst_1}]
@@ -93,17 +121,17 @@ set_property PACKAGE_PIN {AV39} [get_ports {rst_2}]
 set_property IOSTANDARD {LVCMOS18} [get_ports {rst_2}]
 set_property PACKAGE_PIN {AR40} [get_ports {rst_3}]
 set_property IOSTANDARD {LVCMOS18} [get_ports {rst_3}]
-set_property PACKAGE_PIN {P41} [get_ports {USBWireDataIn[0]}]
-set_property PACKAGE_PIN {N41} [get_ports {USBWireDataIn[1]}]
-set_property PACKAGE_PIN {M42} [get_ports {USBWireDataOut[0]}]
-set_property PACKAGE_PIN {L42} [get_ports {USBWireDataOut[1]}]
-set_property PACKAGE_PIN {H40} [get_ports {USBWireDataOutTick}]
-set_property PACKAGE_PIN {H41} [get_ports {USBWireDataInTick}]
-set_property PACKAGE_PIN {M41} [get_ports {USBWireCtrlOut}]
-set_property PACKAGE_PIN {L41} [get_ports {USBFullSpeed}]
-set_property PACKAGE_PIN {K42} [get_ports {USBDPlusPullup}]
-set_property PACKAGE_PIN {J42} [get_ports {USBDMinusPullup}]
-set_property PACKAGE_PIN {G41} [get_ports {vBusDetect}]
+set_property PACKAGE_PIN {AK39} [get_ports {USBWireDataIn[0]}]
+set_property PACKAGE_PIN {AL39} [get_ports {USBWireDataIn[1]}]
+set_property PACKAGE_PIN {AJ42} [get_ports {USBWireDataOut[0]}]
+set_property PACKAGE_PIN {AK42} [get_ports {USBWireDataOut[1]}]
+set_property PACKAGE_PIN {AL41} [get_ports {USBWireDataOutTick}]
+set_property PACKAGE_PIN {AL42} [get_ports {USBWireDataInTick}]
+set_property PACKAGE_PIN {AF42} [get_ports {USBWireCtrlOut}]
+set_property PACKAGE_PIN {AG42} [get_ports {USBFullSpeed}]
+set_property PACKAGE_PIN {AD38} [get_ports {USBDPlusPullup}]
+set_property PACKAGE_PIN {AE38} [get_ports {USBDMinusPullup}]
+set_property PACKAGE_PIN {AC40} [get_ports {vBusDetect}]
 set_property IOSTANDARD {LVCMOS18} [get_ports {USBWireDataIn[0]}]
 set_property IOSTANDARD {LVCMOS18} [get_ports {USBWireDataIn[1]}]
 set_property IOSTANDARD {LVCMOS18} [get_ports {USBWireDataOut[0]}]
@@ -115,3 +143,9 @@ set_property IOSTANDARD {LVCMOS18} [get_ports {USBFullSpeed}]
 set_property IOSTANDARD {LVCMOS18} [get_ports {USBDPlusPullup}]
 set_property IOSTANDARD {LVCMOS18} [get_ports {USBDMinusPullup}]
 set_property IOSTANDARD {LVCMOS18} [get_ports {vBusDetect}]
+set_property PACKAGE_PIN {A10} [get_ports {pciePorts_REFCLK_rxp}]
+set_property PACKAGE_PIN {A9} [get_ports {pciePorts_REFCLK_rxn}]
+set_property PACKAGE_PIN {H4} [get_ports {pciePorts_pci_exp_txp}]
+set_property PACKAGE_PIN {H3} [get_ports {pciePorts_pci_exp_txn}]
+set_property PACKAGE_PIN {G6} [get_ports {pciePorts_pci_exp_rxp}]
+set_property PACKAGE_PIN {G5} [get_ports {pciePorts_pci_exp_rxn}]

@@ -133,7 +133,7 @@ ifeq ($(SUB_PROJECT),NEDOFPGA)
 	MODEL             ?= NEDOFPGA
 	VLOG_MODEL        ?= NEDOFPGA
 	MODEL_PACKAGE     ?= uec.keystoneAcc.nedochip
-	CONFIG            ?= ChipConfig
+	CONFIG            ?= ChipConfigVC707
 	CONFIG_PACKAGE    ?= uec.keystoneAcc.nedochip
 	GENERATOR_PACKAGE ?= uec.keystoneAcc.exampletop
 	TB                ?= TestDriver

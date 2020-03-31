@@ -10,6 +10,7 @@ import sifive.blocks.devices.pinctrl._
 import sifive.blocks.devices.gpio._
 import sifive.blocks.devices.spi._
 import sifive.fpgashells.clocks._
+import sifive.fpgashells.devices.xilinx.xilinxvc707pciex1._
 import uec.keystoneAcc.devices.usb11hs._
 
 // *********************************************************************************
@@ -88,21 +89,21 @@ class NEDOwrapper(implicit p :Parameters) extends RawModule {
     system.io.jtag_reset := PinToGPIO_24_A.asInput(JTAG_RST.io)
     attach(jtag_rst, JTAG_RST.io.PAD)
 
-    // QSPI (SPI as flash memory)
-    (qspi_cs zip system.io.pins.qspi.cs).foreach {
+    // QSPI (SPI as flash memory) TODO: Should be optional
+    (qspi_cs zip system.io.pins.qspi.get.cs).foreach {
       case (g, i) =>
         val QSPI_CS = Module(new GPIO_24_A)
         PinToGPIO_24_A(QSPI_CS.io, i)
         attach(g, QSPI_CS.io.PAD)
     }
-    (qspi_dq zip system.io.pins.qspi.dq).foreach {
+    (qspi_dq zip system.io.pins.qspi.get.dq).foreach {
       case (g, i) =>
         val QSPI_DQ = Module(new GPIO_24_A)
         PinToGPIO_24_A(QSPI_DQ.io, i)
         attach(g, QSPI_DQ.io.PAD)
     }
     val QSPI_SCK = Module(new GPIO_24_A)
-    PinToGPIO_24_A(QSPI_SCK.io, system.io.pins.qspi.sck)
+    PinToGPIO_24_A(QSPI_SCK.io, system.io.pins.qspi.get.sck)
     attach(qspi_sck, QSPI_SCK.io.PAD)
 
     // SPI (SPI as SD?)
@@ -168,14 +169,16 @@ class NEDObase(implicit val p :Parameters) extends RawModule {
     val sdio_dat_2 = (Analog(1.W))
     val sdio_dat_3 = (Output(Bool()))
   })
-  val qspi = IO(new Bundle {
-    val qspi_cs = (Output(UInt(p(PeripherySPIFlashKey).head.csWidth.W)))
-    val qspi_sck = (Output(Bool()))
-    val qspi_miso = (Input(Bool()))
-    val qspi_mosi = (Output(Bool()))
-    val qspi_wp = (Output(Bool()))
-    val qspi_hold = (Output(Bool()))
-  })
+  val qspi = if(p(PeripherySPIFlashKey).nonEmpty)
+    Some(IO(new Bundle {
+      val qspi_cs = (Output(UInt(p(PeripherySPIFlashKey).head.csWidth.W)))
+      val qspi_sck = (Output(Bool()))
+      val qspi_miso = (Input(Bool()))
+      val qspi_mosi = (Output(Bool()))
+      val qspi_wp = (Output(Bool()))
+      val qspi_hold = (Output(Bool()))
+    }))
+    else None
   val uart_txd = IO(Output(Bool()))
   val uart_rxd = IO(Input(Bool()))
   val uart_rtsn = IO(Output(Bool()))
@@ -183,6 +186,9 @@ class NEDObase(implicit val p :Parameters) extends RawModule {
   val usb11hs = IO(new USB11HSPortIO)
   val ChildClock = IO(Input(Clock()))
   val ChildReset = IO(Input(Bool()))
+  val pciePorts =
+    if(p(IncludePCIe)) Some(IO(new XilinxVC707PCIeX1IO))
+    else None
   // These are later connected
   val clock = Wire(Clock())
   val reset = Wire(Bool()) // System reset (for cores)
@@ -220,12 +226,14 @@ class NEDObase(implicit val p :Parameters) extends RawModule {
     system.io.jtag_reset := areset
 
     // QSPI (SPI as flash memory)
-    qspi.qspi_cs := BasePinToRegular(system.io.pins.qspi.cs)
-    qspi.qspi_sck := BasePinToRegular(system.io.pins.qspi.sck)
-    qspi.qspi_mosi := BasePinToRegular(system.io.pins.qspi.dq(0))
-    BasePinToRegular(system.io.pins.qspi.dq(1), qspi.qspi_miso)
-    qspi.qspi_wp := BasePinToRegular(system.io.pins.qspi.dq(2))
-    qspi.qspi_hold := BasePinToRegular(system.io.pins.qspi.dq(3))
+    if(p(PeripherySPIFlashKey).nonEmpty) {
+      qspi.get.qspi_cs := BasePinToRegular(system.io.pins.qspi.get.cs)
+      qspi.get.qspi_sck := BasePinToRegular(system.io.pins.qspi.get.sck)
+      qspi.get.qspi_mosi := BasePinToRegular(system.io.pins.qspi.get.dq(0))
+      BasePinToRegular(system.io.pins.qspi.get.dq(1), qspi.get.qspi_miso)
+      qspi.get.qspi_wp := BasePinToRegular(system.io.pins.qspi.get.dq(2))
+      qspi.get.qspi_hold := BasePinToRegular(system.io.pins.qspi.get.dq(3))
+    }
 
     // SPI (SPI as SD?)
     sdio.sdio_dat_3 := BasePinToRegular(system.io.pins.spi.cs.head)
@@ -248,6 +256,11 @@ class NEDObase(implicit val p :Parameters) extends RawModule {
     memdevice = Some(system.sys.outer.memdevice)
     system.io.ChildClock := ChildClock
     system.io.ChildReset := ChildReset
+
+    // PCIe port (if available)
+    if(p(IncludePCIe)) {
+      pciePorts.get <> system.io.pciePorts.get
+    }
   }
   val cacheBlockBytes = cacheBlockBytesOpt.get
 }
@@ -290,14 +303,16 @@ class NEDOFPGA(implicit val p :Parameters) extends RawModule {
     val sdio_dat_2 = (Analog(1.W))
     val sdio_dat_3 = (Output(Bool()))
   })
-  val qspi = IO(new Bundle {
-    val qspi_cs = (Output(UInt(p(PeripherySPIFlashKey).head.csWidth.W))) // C14 / LA10_P / J1_2
-    val qspi_sck = (Output(Bool())) // C15 / LA10_N / J1_4
-    val qspi_miso = (Input(Bool())) // H16 / LA11_P / J1_6
-    val qspi_mosi = (Output(Bool())) // H17 / LA11_N / J1_8
-    val qspi_wp = (Output(Bool())) // G15 / LA12_P / J1_10
-    val qspi_hold = (Output(Bool())) // G16 / LA12_N / J1_12
-  })
+  val qspi = if(p(PeripherySPIFlashKey).nonEmpty)
+    Some(IO(new Bundle {
+      val qspi_cs = (Output(UInt(p(PeripherySPIFlashKey).head.csWidth.W))) // C14 / LA10_P / J1_2
+      val qspi_sck = (Output(Bool())) // C15 / LA10_N / J1_4
+      val qspi_miso = (Input(Bool())) // H16 / LA11_P / J1_6
+      val qspi_mosi = (Output(Bool())) // H17 / LA11_N / J1_8
+      val qspi_wp = (Output(Bool())) // G15 / LA12_P / J1_10
+      val qspi_hold = (Output(Bool())) // G16 / LA12_N / J1_12
+    }))
+    else None
   val uart_txd = IO(Output(Bool()))
   val uart_rxd = IO(Input(Bool()))
   val uart_rtsn = IO(Output(Bool()))
@@ -317,7 +332,7 @@ class NEDOFPGA(implicit val p :Parameters) extends RawModule {
   val sys_clock_p = IO(Input(Clock()))
   val sys_clock_n = IO(Input(Clock()))
   val sys_clock_ibufds = Module(new IBUFDS())
-  val sys_clk_i = sys_clock_ibufds.io.O
+  val sys_clk_i = IBUFG(sys_clock_ibufds.io.O)
   sys_clock_ibufds.io.I := sys_clock_p
   sys_clock_ibufds.io.IB := sys_clock_n
   val rst_0 = IO(Input(Bool()))
@@ -331,6 +346,10 @@ class NEDOFPGA(implicit val p :Parameters) extends RawModule {
 
   val clock = Wire(Clock())
   val reset = Wire(Bool())
+
+  val pciePorts =
+    if(p(IncludePCIe)) Some(IO(new XilinxVC707PCIeX1Pads))
+    else None
 
   withClockAndReset(clock, reset) {
     // Instance our converter, and connect everything
@@ -382,13 +401,14 @@ class NEDOFPGA(implicit val p :Parameters) extends RawModule {
     gpio_out := Cat(reset_0, reset_1, reset_2, reset_3, mod.io.ddrport.init_calib_complete)
     chip.gpio_in := gpio_in
     jtag <> chip.jtag
-    qspi <> chip.qspi
-    chip.uart_rxd := uart_rxd	// UART_TXD
+    chip.jtag.jtag_TCK := IBUFG(jtag.jtag_TCK.asClock).asUInt
+    if(p(PeripherySPIFlashKey).nonEmpty) qspi.get <> chip.qspi.get
+    chip.uart_rxd := uart_rxd	  // UART_TXD
     uart_txd := chip.uart_txd 	// UART_RXD
-    // := chip.uart_rtsn 			// output: not used
-    chip.uart_ctsn := false.B 		// input:  notused
-    // := uart_ctsn 			// input: not used
-    uart_rtsn := false.B 		// output:  notused
+    // := chip.uart_rtsn 			  // input: not used
+    chip.uart_ctsn := false.B 	// output: notused
+    // := uart_ctsn 			      // input: not used
+    uart_rtsn := false.B 		    // output: notused
     sdio <> chip.sdio
     chip.jrst_n := !reset_3
 
@@ -407,6 +427,17 @@ class NEDOFPGA(implicit val p :Parameters) extends RawModule {
     chip.ChildClock := pll.io.clk_out2.getOrElse(false.B)
     chip.ChildReset := reset_2
     mod.clock := pll.io.clk_out2.getOrElse(false.B)
+
+    if(p(IncludePCIe)) {
+      chip.pciePorts.get.REFCLK_rxp := pciePorts.get.REFCLK_rxp
+      chip.pciePorts.get.REFCLK_rxn := pciePorts.get.REFCLK_rxn
+      pciePorts.get.pci_exp_txp := chip.pciePorts.get.pci_exp_txp
+      pciePorts.get.pci_exp_txn := chip.pciePorts.get.pci_exp_txn
+      chip.pciePorts.get.pci_exp_rxp := pciePorts.get.pci_exp_rxp
+      chip.pciePorts.get.pci_exp_rxn := pciePorts.get.pci_exp_rxn
+      chip.pciePorts.get.axi_aresetn := !reset_0
+      chip.pciePorts.get.axi_ctl_aresetn := !reset_0
+    }
   }
 }
 
@@ -585,14 +616,16 @@ class NEDOFPGAQuartus(implicit val p :Parameters) extends RawModule {
     val jtag_TCK = (Input(Bool())) // GPIO1_D[8]
     val jtag_TMS = (Input(Bool())) // GPIO1_D[6]
   })
-  val qspi = IO(new Bundle {
-    val qspi_cs = (Output(UInt(p(PeripherySPIFlashKey).head.csWidth.W))) // GPIO1_D[1]
-    val qspi_sck = (Output(Bool())) // GPIO1_D[3]
-    val qspi_miso = (Input(Bool())) // GPIO1_D[5]
-    val qspi_mosi = (Output(Bool())) // GPIO1_D[7]
-    val qspi_wp = (Output(Bool())) // GPIO1_D[9]
-    val qspi_hold = (Output(Bool())) // GPIO1_D[11]
-  })
+  val qspi = if(p(PeripherySPIFlashKey).nonEmpty)
+    Some(IO(new Bundle {
+      val qspi_cs = (Output(UInt(p(PeripherySPIFlashKey).head.csWidth.W))) // GPIO1_D[1]
+      val qspi_sck = (Output(Bool())) // GPIO1_D[3]
+      val qspi_miso = (Input(Bool())) // GPIO1_D[5]
+      val qspi_mosi = (Output(Bool())) // GPIO1_D[7]
+      val qspi_wp = (Output(Bool())) // GPIO1_D[9]
+      val qspi_hold = (Output(Bool())) // GPIO1_D[11]
+    }))
+    else None
   val USBWireDataIn = IO(Input(Bits(2.W))) // GPIO0_D[1:0]
   val USBWireDataOut = IO(Output(Bits(2.W))) // GPIO0_D[3:2]
   val USBWireDataOutTick = IO(Output(Bool())) // GPIO0_D[4]
@@ -716,7 +749,7 @@ class NEDOFPGAQuartus(implicit val p :Parameters) extends RawModule {
     )
     chip.gpio_in := SW(7,0)			// input  [7:0]
     jtag <> chip.jtag
-    qspi <> chip.qspi
+    if(p(PeripherySPIFlashKey).nonEmpty) qspi.get <> chip.qspi.get
     chip.uart_rxd := UART_RXD	// UART_TXD
     UART_TXD := chip.uart_txd 	// UART_RXD
     // := chip.uart_rtsn 			// output: not used

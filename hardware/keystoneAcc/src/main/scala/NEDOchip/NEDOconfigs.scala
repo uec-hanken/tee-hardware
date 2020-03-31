@@ -25,6 +25,9 @@ case object GPIOInKey extends Field[Int]
 // Frequency
 case object FreqKeyMHz extends Field[Double]
 
+// Include the PCIe
+case object IncludePCIe extends Field[Boolean]
+
 // Default Config
 class ChipDefaultConfig extends Config(
   new WithJtagDTM            ++
@@ -93,6 +96,7 @@ class ChipPeripherals extends Config((site, here, up) => {
     size = x"0_4000_0000",
     beatBytes = 4,// This is for supporting 32 bits outside. BEFORE: site(MemoryBusKey).beatBytes,
     idBits = 4), 1))
+  case IncludePCIe => false
 })
 
 // Chip Configs
@@ -123,5 +127,15 @@ class ChipConfig extends Config(
 class ChipConfigDE4 extends Config(
   new ChipConfig().alter((site,here,up) => {
     case FreqKeyMHz => 100.0
+  })
+)
+
+class ChipConfigVC707 extends Config(
+  new ChipConfig().alter((site,here,up) => {
+    case FreqKeyMHz => 100.0
+    case PeripherySPIFlashKey => List() // No external flash. There is no pins to put them
+    case PeripheryMaskROMKey => List( // TODO: The software is not compilable on 0x10000
+      MaskROMParams(address = BigInt(0x20000000), depth = 8192, name = "BootROM"))
+    case IncludePCIe => true // This is for including the PCIe
   })
 )
