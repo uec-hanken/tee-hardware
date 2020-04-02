@@ -49,7 +49,7 @@ class XilinxVC707MIG(c : Seq[AddressSet], cacheBlockBytes: Int, val crossing: Cl
     })
 
     //MIG black box instantiation
-    val blackbox = Module(new vc707mig32(depth))
+    val blackbox = Module(new vc707mig(depth))
     val (axi_async, _) = node.in(0)
 
     // Debug AXI

@@ -1,10 +1,10 @@
 // Copyright 1986-2016 Xilinx, Inc. All Rights Reserved.
 // --------------------------------------------------------------------------------
 // Tool Version: Vivado v.2016.4 (lin64) Build 1756540 Mon Jan 23 19:11:19 MST 2017
-// Date        : Thu Mar 19 19:13:48 2020
+// Date        : Thu Apr  2 12:06:12 2020
 // Host        : ckdur-VirtualBox running 64-bit Ubuntu 18.04.4 LTS
-// Command     : write_verilog -force -mode funcsim -rename_top pll -prefix
-//               pll_ pll_sim_netlist.v
+// Command     : write_verilog -force -mode funcsim
+//               /home/ckdur/Documents/keystone-hardware/fpga/vc707/keystone-NEDOFPGA/keystone-NEDOFPGA.srcs/sources_1/ip/pll/pll_sim_netlist.v
 // Design      : pll
 // Purpose     : This verilog netlist is a functional simulation representation of the design and should not be modified
 //               or synthesized. This netlist cannot be used for SDF annotated simulation.
@@ -43,6 +43,7 @@ module pll
         .reset(reset));
 endmodule
 
+(* ORIG_REF_NAME = "pll_clk_wiz" *) 
 module pll_pll_clk_wiz
    (clk_out1,
     clk_out2,
@@ -102,20 +103,20 @@ module pll_pll_clk_wiz
   (* BOX_TYPE = "PRIMITIVE" *) 
   MMCME2_ADV #(
     .BANDWIDTH("OPTIMIZED"),
-    .CLKFBOUT_MULT_F(4.500000),
+    .CLKFBOUT_MULT_F(6.000000),
     .CLKFBOUT_PHASE(0.000000),
     .CLKFBOUT_USE_FINE_PS("FALSE"),
     .CLKIN1_PERIOD(5.000000),
     .CLKIN2_PERIOD(0.000000),
-    .CLKOUT0_DIVIDE_F(18.750000),
+    .CLKOUT0_DIVIDE_F(25.000000),
     .CLKOUT0_DUTY_CYCLE(0.500000),
     .CLKOUT0_PHASE(0.000000),
     .CLKOUT0_USE_FINE_PS("FALSE"),
-    .CLKOUT1_DIVIDE(18),
+    .CLKOUT1_DIVIDE(24),
     .CLKOUT1_DUTY_CYCLE(0.500000),
     .CLKOUT1_PHASE(0.000000),
     .CLKOUT1_USE_FINE_PS("FALSE"),
-    .CLKOUT2_DIVIDE(9),
+    .CLKOUT2_DIVIDE(15),
     .CLKOUT2_DUTY_CYCLE(0.500000),
     .CLKOUT2_PHASE(0.000000),
     .CLKOUT2_USE_FINE_PS("FALSE"),

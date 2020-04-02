@@ -28,6 +28,9 @@ case object FreqKeyMHz extends Field[Double]
 // Include the PCIe
 case object IncludePCIe extends Field[Boolean]
 
+// When external the DDR port, has to run at another freq
+case object DDRPortOther extends Field[Boolean]
+
 // Default Config
 class ChipDefaultConfig extends Config(
   new WithJtagDTM            ++
@@ -97,6 +100,7 @@ class ChipPeripherals extends Config((site, here, up) => {
     beatBytes = 4,// This is for supporting 32 bits outside. BEFORE: site(MemoryBusKey).beatBytes,
     idBits = 4), 1))
   case IncludePCIe => false
+  case DDRPortOther => true
 })
 
 // Chip Configs
@@ -121,21 +125,44 @@ class ChipConfig extends Config(
       idcodeManufId = 0x489,  // As Assigned by JEDEC to SiFive. Only used in wrappers / test harnesses.
       debugIdleCycles = 5)    // Reasonable guess for synchronization
     case FreqKeyMHz => 100.0
+    case DDRPortOther => true
   })
 )
 
 class ChipConfigDE4 extends Config(
   new ChipConfig().alter((site,here,up) => {
     case FreqKeyMHz => 100.0
+    case DDRPortOther => true
   })
 )
 
 class ChipConfigVC707 extends Config(
   new ChipConfig().alter((site,here,up) => {
-    case FreqKeyMHz => 100.0
+    case FreqKeyMHz => 80.0
     case PeripherySPIFlashKey => List() // No external flash. There is no pins to put them
     case PeripheryMaskROMKey => List( // TODO: The software is not compilable on 0x10000
       MaskROMParams(address = BigInt(0x20000000), depth = 8192, name = "BootROM"))
     case IncludePCIe => true // This is for including the PCIe
+    case ExtMem => Some(MemoryPortParams(MasterPortParams( // For back to 64 bits
+      base = x"0_8000_0000",
+      size = x"0_4000_0000",
+      beatBytes = 8,
+      idBits = 4), 1))
+    case DDRPortOther => false // For back to not external clock
+    case RocketTilesKey => {
+      val big = RocketTileParams(
+        core   = RocketCoreParams(mulDiv = Some(MulDivParams(
+          mulUnroll = 8,
+          mulEarlyOut = true,
+          divEarlyOut = true))),
+        dcache = Some(DCacheParams(
+          rowBits = site(SystemBusKey).beatBits,
+          nMSHRs = 0,
+          blockBytes = site(CacheBlockBytes))),
+        icache = Some(ICacheParams(
+          rowBits = site(SystemBusKey).beatBits,
+          blockBytes = site(CacheBlockBytes))))
+      List.tabulate(2)(i => big.copy(hartId = i))
+    }
   })
 )

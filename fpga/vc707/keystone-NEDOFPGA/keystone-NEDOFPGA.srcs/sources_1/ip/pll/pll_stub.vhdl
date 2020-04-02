@@ -1,10 +1,10 @@
 -- Copyright 1986-2016 Xilinx, Inc. All Rights Reserved.
 -- --------------------------------------------------------------------------------
 -- Tool Version: Vivado v.2016.4 (lin64) Build 1756540 Mon Jan 23 19:11:19 MST 2017
--- Date        : Thu Mar 19 19:13:47 2020
+-- Date        : Thu Apr  2 12:06:12 2020
 -- Host        : ckdur-VirtualBox running 64-bit Ubuntu 18.04.4 LTS
--- Command     : write_vhdl -force -mode synth_stub -rename_top pll -prefix
---               pll_ pll_stub.vhdl
+-- Command     : write_vhdl -force -mode synth_stub
+--               /home/ckdur/Documents/keystone-hardware/fpga/vc707/keystone-NEDOFPGA/keystone-NEDOFPGA.srcs/sources_1/ip/pll/pll_stub.vhdl
 -- Design      : pll
 -- Purpose     : Stub declaration of top-level module interface
 -- Device      : xc7vx485tffg1761-2

@@ -17,6 +17,8 @@ import uec.keystoneAcc.devices.usb11hs._
 // NEDO wrapper - for doing a wrapper with actual ports (tri-state buffers at least)
 // *********************************************************************************
 
+
+
 class NEDOwrapper(implicit p :Parameters) extends RawModule {
   // The actual pins of this module.
   // This is a list of the ports 'to be wirebonded' / 'from the package'
@@ -184,8 +186,8 @@ class NEDObase(implicit val p :Parameters) extends RawModule {
   val uart_rtsn = IO(Output(Bool()))
   val uart_ctsn = IO(Input(Bool()))
   val usb11hs = IO(new USB11HSPortIO)
-  val ChildClock = IO(Input(Clock()))
-  val ChildReset = IO(Input(Bool()))
+  val ChildClock = if(p(DDRPortOther)) Some(IO(Input(Clock()))) else None
+  val ChildReset = if(p(DDRPortOther)) Some(IO(Input(Bool()))) else None
   val pciePorts =
     if(p(IncludePCIe)) Some(IO(new XilinxVC707PCIeX1IO))
     else None
@@ -254,8 +256,10 @@ class NEDObase(implicit val p :Parameters) extends RawModule {
     // The memory port
     tlportw = Some(system.io.tlport)
     memdevice = Some(system.sys.outer.memdevice)
-    system.io.ChildClock := ChildClock
-    system.io.ChildReset := ChildReset
+    if(p(DDRPortOther)) {
+      system.io.ChildClock.get := ChildClock.get
+      system.io.ChildReset.get := ChildReset.get
+    }
 
     // PCIe port (if available)
     if(p(IncludePCIe)) {
@@ -383,7 +387,7 @@ class NEDOFPGA(implicit val p :Parameters) extends RawModule {
           freqMHz = 50.0
         ),
         PLLOutClockParameters(
-          freqMHz = 100.0
+          freqMHz = p(FreqKeyMHz)
         )
       )
     )
@@ -424,9 +428,13 @@ class NEDOFPGA(implicit val p :Parameters) extends RawModule {
     chip.usb11hs.vBusDetect := vBusDetect
 
     chip.usb11hs.usbClk := pll.io.clk_out1.getOrElse(false.B)
-    chip.ChildClock := pll.io.clk_out2.getOrElse(false.B)
-    chip.ChildReset := reset_2
-    mod.clock := pll.io.clk_out2.getOrElse(false.B)
+    if(p(DDRPortOther)) {
+      chip.ChildClock.get := pll.io.clk_out2.getOrElse(false.B)
+      chip.ChildReset.get := reset_2
+      mod.clock := pll.io.clk_out2.getOrElse(false.B)
+    }
+    else mod.clock := pll.io.clk_out3.get
+
 
     if(p(IncludePCIe)) {
       chip.pciePorts.get.REFCLK_rxp := pciePorts.get.REFCLK_rxp
@@ -708,9 +716,12 @@ class NEDOFPGAQuartus(implicit val p :Parameters) extends RawModule {
     reset := SLIDE_SW(3)
     chip.sys_clk := mod.io.ckrst.dimmclk_clk
     chip.rst_n := !SLIDE_SW(3)
-    chip.ChildClock := mod.io.ckrst.ext_clk_clk
-    chip.ChildReset := SLIDE_SW(3)
-    mod.clock := mod.io.ckrst.ext_clk_clk
+    if(p(DDRPortOther)) {
+      chip.ChildClock.get := mod.io.ckrst.ext_clk_clk
+      chip.ChildReset.get := SLIDE_SW(3)
+      mod.clock := mod.io.ckrst.ext_clk_clk
+    }
+    else mod.clock := mod.io.ckrst.dimmclk_clk
 
     // Quartus Platform connections
     M1_DDR2_addr := mod.io.qport.memory_mem_a

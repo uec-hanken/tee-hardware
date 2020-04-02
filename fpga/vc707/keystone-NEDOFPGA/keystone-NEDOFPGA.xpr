@@ -696,13 +696,6 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PSRCDIR/sources_1/ip/pll/pll.xci">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
       <File Path="$PPRDIR/../generated-src/uec.keystoneAcc.nedochip.NEDOFPGA.ChipConfigVC707/uec.keystoneAcc.nedochip.NEDOFPGA.ChipConfigVC707.harness.v">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
@@ -716,11 +709,6 @@
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/mig.prj">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../../../hardware/keystoneAcc/optvsrc/Ed25519/Ed25519_mul/bram_1rw_1ro_readfirst.v">
@@ -737,6 +725,11 @@
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/mig.prj">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
         </FileInfo>
       </File>
       <Config>
@@ -776,7 +769,7 @@
       </Config>
     </FileSet>
     <FileSet Name="vc707mig1gb" Type="BlockSrcs" RelSrcDir="$PSRCDIR/vc707mig1gb">
-      <File Path="$PSRCDIR/sources_1/ip/vc707mig1gb/vc707mig1gb.xci">
+      <File Path="$PSRCDIR/sources_1/ip/vc707mig1gb_1/vc707mig1gb.xci">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
@@ -785,6 +778,21 @@
       </File>
       <Config>
         <Option Name="TopModule" Val="vc707mig1gb"/>
+        <Option Name="VerilogDir" Val="$PPRDIR/../../../hardware/keystoneAcc/vsrc/usbhostslave/RTL/include"/>
+        <Option Name="UseBlackboxStub" Val="1"/>
+        <Define Name="SYNTHESIS" Val="1"/>
+      </Config>
+    </FileSet>
+    <FileSet Name="pll" Type="BlockSrcs" RelSrcDir="$PSRCDIR/pll">
+      <File Path="$PSRCDIR/sources_1/ip/pll/pll.xci">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <Config>
+        <Option Name="TopModule" Val="pll"/>
         <Option Name="VerilogDir" Val="$PPRDIR/../../../hardware/keystoneAcc/vsrc/usbhostslave/RTL/include"/>
         <Option Name="UseBlackboxStub" Val="1"/>
         <Define Name="SYNTHESIS" Val="1"/>
@@ -823,7 +831,19 @@
     </Run>
     <Run Id="vc707mig1gb_synth_1" Type="Ft3:Synth" SrcSet="vc707mig1gb" Part="xc7vx485tffg1761-2" ConstrsSet="vc707mig1gb" Description="Vivado Synthesis Defaults" Dir="$PRUNDIR/vc707mig1gb_synth_1" IncludeInArchive="true">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2016"/>
+        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2016">
+          <Desc>Vivado Synthesis Defaults</Desc>
+        </StratHandle>
+        <Step Id="synth_design"/>
+      </Strategy>
+      <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
+      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
+    </Run>
+    <Run Id="pll_synth_1" Type="Ft3:Synth" SrcSet="pll" Part="xc7vx485tffg1761-2" ConstrsSet="pll" Description="Vivado Synthesis Defaults" Dir="$PRUNDIR/pll_synth_1" IncludeInArchive="true">
+      <Strategy Version="1" Minor="2">
+        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2016">
+          <Desc>Vivado Synthesis Defaults</Desc>
+        </StratHandle>
         <Step Id="synth_design"/>
       </Strategy>
       <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
@@ -847,7 +867,26 @@
     </Run>
     <Run Id="vc707mig1gb_impl_1" Type="Ft2:EntireDesign" Part="xc7vx485tffg1761-2" ConstrsSet="vc707mig1gb" Description="Default settings for Implementation." SynthRun="vc707mig1gb_synth_1" IncludeInArchive="false">
       <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2016"/>
+        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2016">
+          <Desc>Default settings for Implementation.</Desc>
+        </StratHandle>
+        <Step Id="init_design"/>
+        <Step Id="opt_design"/>
+        <Step Id="power_opt_design"/>
+        <Step Id="place_design"/>
+        <Step Id="post_place_power_opt_design"/>
+        <Step Id="phys_opt_design"/>
+        <Step Id="route_design"/>
+        <Step Id="post_route_phys_opt_design"/>
+        <Step Id="write_bitstream"/>
+      </Strategy>
+      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
+    </Run>
+    <Run Id="pll_impl_1" Type="Ft2:EntireDesign" Part="xc7vx485tffg1761-2" ConstrsSet="pll" Description="Default settings for Implementation." SynthRun="pll_synth_1" IncludeInArchive="false">
+      <Strategy Version="1" Minor="2">
+        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2016">
+          <Desc>Default settings for Implementation.</Desc>
+        </StratHandle>
         <Step Id="init_design"/>
         <Step Id="opt_design"/>
         <Step Id="power_opt_design"/>

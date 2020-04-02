@@ -81,13 +81,21 @@ class NEDOSystem(implicit p: Parameters) extends RocketSubsystem
     beatBytes = p(ExtMem).get.master.beatBytes
   )
   val memTLNode = TLManagerNode(Seq(mainMemParam))
-  //val source = LazyModule(new TLAsyncCrossingSource())
-  //val sink = LazyModule(new TLAsyncCrossingSink(AsyncQueueParams(depth = 1, sync = 3, safe = true, narrow = false)))
-  //val buffer  = LazyModule(new TLBuffer) // We removed a buffer in the TOP
-  val island = LazyModule(new SlowMemIsland(mbus.blockBytes))
-  //memTLNode := buffer.node := island.node := mbus.toDRAMController(Some("tl"))()
-  island.crossTLIn(island.node) := mbus.toDRAMController(Some("tl"))()
-  memTLNode := island.node
+  val island = if(p(DDRPortOther)) {
+    //val source = LazyModule(new TLAsyncCrossingSource())
+    //val sink = LazyModule(new TLAsyncCrossingSink(AsyncQueueParams(depth = 1, sync = 3, safe = true, narrow = false)))
+    //val buffer  = LazyModule(new TLBuffer) // We removed a buffer in the TOP
+    val island = LazyModule(new SlowMemIsland(mbus.blockBytes))
+    //memTLNode := buffer.node := island.node := mbus.toDRAMController(Some("tl"))()
+    island.crossTLIn(island.node) := mbus.toDRAMController(Some("tl"))()
+    memTLNode := island.node
+    Some(island)
+  } else {
+    val buffer  = LazyModule(new TLBuffer)
+    memTLNode := buffer.node := mbus.toDRAMController(Some("tl"))()
+    None
+  }
+
 
   // SPI to MMC conversion.
   // TODO: There is an intention from Sifive to do MMC, but has to be manual
@@ -172,14 +180,17 @@ class NEDOSystemModule[+L <: NEDOSystem](_outer: L)
     //    with CanHaveMasterTLMemPortModuleImp // NOTE: Manually created the TL port
 {
   // Main memory controller
-  val slowmemck = IO(new Bundle {
-    val ChildClock = Input(Clock())
-    val ChildReset = Input(Bool())
-  })
-  //outer.sink.module.clock := slowmemck.ChildClock
-  //outer.sink.module.reset := slowmemck.ChildReset
-  outer.island.module.io.ChildClock := slowmemck.ChildClock
-  outer.island.module.io.ChildReset := slowmemck.ChildReset
+  val slowmemck = if(p(DDRPortOther)) {
+    val slowmemck = IO(new Bundle {
+      val ChildClock = Input(Clock())
+      val ChildReset = Input(Bool())
+    })
+    outer.island.get.module.io.ChildClock := slowmemck.ChildClock
+    outer.island.get.module.io.ChildReset := slowmemck.ChildReset
+    Some(slowmemck)
+  }
+  else None
+
   val mem_tl = IO(HeterogeneousBag.fromNode(outer.memTLNode.in))
   (mem_tl zip outer.memTLNode.in).foreach { case (io, (bundle, _)) => io <> bundle }
 
@@ -237,8 +248,8 @@ class NEDOPlatformIO(val params: TLBundleParameters)
   val jtag_reset = Input(Bool())
   val ndreset = Output(Bool())
   val tlport = new TLUL(params)
-  val ChildClock = Input(Clock())
-  val ChildReset = Input(Bool())
+  val ChildClock = if(p(DDRPortOther)) Some(Input(Clock())) else None
+  val ChildReset = if(p(DDRPortOther)) Some(Input(Bool())) else None
   val pciePorts =
     if(p(IncludePCIe)) Some(new XilinxVC707PCIeX1IO)
     else None
@@ -258,8 +269,10 @@ class NEDOPlatform(implicit val p: Parameters) extends Module {
   // The TL memory port. This is a configurable one for the address space
   // and the ports are exposed inside the "foreach". Do not worry, there is
   // only one memory (unless you configure multiple memories).
-  sys.slowmemck.ChildClock := io.ChildClock
-  sys.slowmemck.ChildReset := io.ChildReset
+  if(p(DDRPortOther)) {
+    sys.slowmemck.get.ChildClock := io.ChildClock.get
+    sys.slowmemck.get.ChildReset := io.ChildReset.get
+  }
   sys.mem_tl.foreach{
     case ioi:TLBundle =>
       // Connect outside the ones that can be untied
