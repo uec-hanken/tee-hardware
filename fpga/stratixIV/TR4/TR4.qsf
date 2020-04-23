@@ -38,7 +38,7 @@
 
 set_global_assignment -name FAMILY "Stratix IV"
 set_global_assignment -name DEVICE EP4SGX230KF40C2
-set_global_assignment -name TOP_LEVEL_ENTITY NEDOFPGAQuartus
+set_global_assignment -name TOP_LEVEL_ENTITY NEDOFPGATR4
 set_global_assignment -name ORIGINAL_QUARTUS_VERSION 18.1.0
 set_global_assignment -name PROJECT_CREATION_TIME_DATE "19:19:29  JUNE 28, 2019"
 set_global_assignment -name LAST_QUARTUS_VERSION "18.1.0 Standard Edition"
