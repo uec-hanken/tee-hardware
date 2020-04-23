@@ -71,7 +71,7 @@
  <parameter name="hideFromIPCatalog" value="false" />
  <parameter name="lockedInterfaceDefinition" value="" />
  <parameter name="maxAdditionalLatency" value="1" />
- <parameter name="projectName" value="" />
+ <parameter name="projectName" value="TR4.qpf" />
  <parameter name="sopcBorderPoints" value="false" />
  <parameter name="systemHash" value="0" />
  <parameter name="testBenchDutName" value="" />
@@ -282,7 +282,7 @@
    kind="altera_axi_bridge"
    version="18.1"
    enabled="1">
-  <parameter name="ADDR_WIDTH" value="30" />
+  <parameter name="ADDR_WIDTH" value="32" />
   <parameter name="AXI_VERSION" value="AXI4" />
   <parameter name="COMBINED_ACCEPTANCE_CAPABILITY" value="16" />
   <parameter name="COMBINED_ISSUING_CAPABILITY" value="16" />
@@ -295,20 +295,20 @@
   <parameter name="READ_ISSUING_CAPABILITY" value="16" />
   <parameter name="S0_ID_WIDTH" value="4" />
   <parameter name="USE_M0_ARBURST" value="1" />
-  <parameter name="USE_M0_ARCACHE" value="0" />
+  <parameter name="USE_M0_ARCACHE" value="1" />
   <parameter name="USE_M0_ARID" value="1" />
   <parameter name="USE_M0_ARLEN" value="1" />
-  <parameter name="USE_M0_ARLOCK" value="0" />
-  <parameter name="USE_M0_ARQOS" value="0" />
+  <parameter name="USE_M0_ARLOCK" value="1" />
+  <parameter name="USE_M0_ARQOS" value="1" />
   <parameter name="USE_M0_ARREGION" value="0" />
   <parameter name="USE_M0_ARSIZE" value="1" />
   <parameter name="USE_M0_ARUSER" value="0" />
   <parameter name="USE_M0_AWBURST" value="1" />
-  <parameter name="USE_M0_AWCACHE" value="0" />
+  <parameter name="USE_M0_AWCACHE" value="1" />
   <parameter name="USE_M0_AWID" value="1" />
   <parameter name="USE_M0_AWLEN" value="1" />
-  <parameter name="USE_M0_AWLOCK" value="0" />
-  <parameter name="USE_M0_AWQOS" value="0" />
+  <parameter name="USE_M0_AWLOCK" value="1" />
+  <parameter name="USE_M0_AWQOS" value="1" />
   <parameter name="USE_M0_AWREGION" value="0" />
   <parameter name="USE_M0_AWSIZE" value="1" />
   <parameter name="USE_M0_AWUSER" value="0" />
@@ -322,16 +322,16 @@
   <parameter name="USE_M0_WSTRB" value="1" />
   <parameter name="USE_M0_WUSER" value="0" />
   <parameter name="USE_PIPELINE" value="1" />
-  <parameter name="USE_S0_ARCACHE" value="0" />
-  <parameter name="USE_S0_ARLOCK" value="0" />
-  <parameter name="USE_S0_ARPROT" value="0" />
-  <parameter name="USE_S0_ARQOS" value="0" />
+  <parameter name="USE_S0_ARCACHE" value="1" />
+  <parameter name="USE_S0_ARLOCK" value="1" />
+  <parameter name="USE_S0_ARPROT" value="1" />
+  <parameter name="USE_S0_ARQOS" value="1" />
   <parameter name="USE_S0_ARREGION" value="0" />
   <parameter name="USE_S0_ARUSER" value="0" />
-  <parameter name="USE_S0_AWCACHE" value="0" />
-  <parameter name="USE_S0_AWLOCK" value="0" />
-  <parameter name="USE_S0_AWPROT" value="0" />
-  <parameter name="USE_S0_AWQOS" value="0" />
+  <parameter name="USE_S0_AWCACHE" value="1" />
+  <parameter name="USE_S0_AWLOCK" value="1" />
+  <parameter name="USE_S0_AWPROT" value="1" />
+  <parameter name="USE_S0_AWQOS" value="1" />
   <parameter name="USE_S0_AWREGION" value="0" />
   <parameter name="USE_S0_AWUSER" value="0" />
   <parameter name="USE_S0_BRESP" value="1" />
@@ -746,4 +746,3 @@
  <interconnectRequirement for="$system" name="qsys_mm.insertDefaultSlave" value="FALSE" />
  <interconnectRequirement for="$system" name="qsys_mm.maxAdditionalLatency" value="1" />
 </system>
-
