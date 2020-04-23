@@ -304,6 +304,94 @@ ifeq ($(SUB_PROJECT),NEDOFPGAQuartus)
 	$(USB11HS_DIR)/RTL/buffers/dpMem_dc.v \
 	$(USB11HS_DIR)/RTL/wrapper/usbHostSlave.v
 endif
+ifeq ($(SUB_PROJECT),NEDOFPGATR4)
+	SBT_PROJECT       ?= keystoneAcc
+	MODEL             ?= NEDOFPGATR4
+	VLOG_MODEL        ?= NEDOFPGATR4
+	MODEL_PACKAGE     ?= uec.keystoneAcc.nedochip
+	CONFIG            ?= ChipConfigTR4
+	CONFIG_PACKAGE    ?= uec.keystoneAcc.nedochip
+	GENERATOR_PACKAGE ?= uec.keystoneAcc.exampletop
+	TB                ?= TestDriver
+	TOP               ?= NEDOchip
+	ADD_VSRC          ?= $(SHA3_HIGHPERF_DIR)/rtl/f_permutation.v \
+	$(SHA3_HIGHPERF_DIR)/rtl/round2in1.v \
+	$(SHA3_HIGHPERF_DIR)/rtl/padder1.v \
+	$(SHA3_HIGHPERF_DIR)/rtl/keccak.v \
+	$(SHA3_HIGHPERF_DIR)/rtl/padder.v \
+	$(SHA3_HIGHPERF_DIR)/rtl/rconst2in1.v \
+	$(ED25519_DIR)/rtl/mac16_generic.v \
+	$(ED25519_DIR)/rtl/ed25519_microcode_rom.v \
+	$(ED25519_DIR)/rtl/ed25519_operand_bank.v \
+	$(ED25519_DIR)/rtl/adder47_generic.v \
+	$(ED25519_DIR)/rtl/ed25519_uop_worker.v \
+	$(ED25519_DIR)/rtl/subtractor32_generic.v \
+	$(ED25519_DIR)/rtl/ed25519_wrapper.v \
+	$(ED25519_DIR)/rtl/ed25519_core_top.v \
+	$(ED25519_DIR)/rtl/bram_1rw_1ro_readfirst.v \
+	$(ED25519_DIR)/rtl/bram_1rw_readfirst.v \
+	$(ED25519_DIR)/rtl/bram_1wo_1ro_readfirst.v \
+	$(ED25519_DIR)/rtl/ed25519_base_point_multiplier.v \
+	$(ED25519_DIR)/rtl/curve25519_modular_multiplier.v \
+	$(ED25519_DIR)/rtl/ed25519_banks_array.v \
+	$(ED25519_DIR)/rtl/modular_adder.v \
+	$(ED25519_DIR)/rtl/modular_subtractor.v \
+	$(ED25519_DIR)/rtl/adder32_generic.v \
+	$(ED25519_DIR)/rtl/multiword_mover.v \
+	$(ED25519_SIGN_DIR)/src/rtl/ed25519_sign_core_S.v \
+	$(ED25519_SIGN_DIR)/src/rtl/multiplier/MULT_MACRO.v \
+	$(AES_DIR)/src/rtl/aes_core.v \
+	$(AES_DIR)/src/rtl/aes_decipher_block.v \
+	$(AES_DIR)/src/rtl/aes_encipher_block.v \
+	$(AES_DIR)/src/rtl/aes_inv_sbox.v \
+	$(AES_DIR)/src/rtl/aes_key_mem.v \
+	$(AES_DIR)/src/rtl/aes_sbox.v \
+	$(USB11HS_DIR)/RTL/hostController/USBHostControlBI.v \
+	$(USB11HS_DIR)/RTL/hostController/usbHostControl.v \
+	$(USB11HS_DIR)/RTL/hostController/speedCtrlMux.v \
+	$(USB11HS_DIR)/RTL/hostController/softransmit.v \
+	$(USB11HS_DIR)/RTL/hostController/sofcontroller.v \
+	$(USB11HS_DIR)/RTL/hostController/sendpacketcheckpreamble.v \
+	$(USB11HS_DIR)/RTL/hostController/sendpacketarbiter.v \
+	$(USB11HS_DIR)/RTL/hostController/sendpacket.v \
+	$(USB11HS_DIR)/RTL/hostController/rxStatusMonitor.v \
+	$(USB11HS_DIR)/RTL/hostController/hostcontroller.v \
+	$(USB11HS_DIR)/RTL/hostController/hctxportarbiter.v \
+	$(USB11HS_DIR)/RTL/hostController/getpacket.v \
+	$(USB11HS_DIR)/RTL/hostController/directcontrol.v \
+	$(USB11HS_DIR)/RTL/slaveController/USBSlaveControlBI.v \
+	$(USB11HS_DIR)/RTL/slaveController/usbSlaveControl.v \
+	$(USB11HS_DIR)/RTL/slaveController/slaveSendpacket.v \
+	$(USB11HS_DIR)/RTL/slaveController/slaveRxStatusMonitor.v \
+	$(USB11HS_DIR)/RTL/slaveController/slaveGetpacket.v \
+	$(USB11HS_DIR)/RTL/slaveController/slaveDirectcontrol.v \
+	$(USB11HS_DIR)/RTL/slaveController/slavecontroller.v \
+	$(USB11HS_DIR)/RTL/slaveController/sctxportarbiter.v \
+	$(USB11HS_DIR)/RTL/slaveController/fifoMux.v \
+	$(USB11HS_DIR)/RTL/slaveController/endpMux.v \
+	$(USB11HS_DIR)/RTL/serialInterfaceEngine/writeUSBWireData.v \
+	$(USB11HS_DIR)/RTL/serialInterfaceEngine/usbTxWireArbiter.v \
+	$(USB11HS_DIR)/RTL/serialInterfaceEngine/usbSerialInterfaceEngine.v \
+	$(USB11HS_DIR)/RTL/serialInterfaceEngine/updateCRC16.v \
+	$(USB11HS_DIR)/RTL/serialInterfaceEngine/updateCRC5.v \
+	$(USB11HS_DIR)/RTL/serialInterfaceEngine/SIETransmitter.v \
+	$(USB11HS_DIR)/RTL/serialInterfaceEngine/siereceiver.v \
+	$(USB11HS_DIR)/RTL/serialInterfaceEngine/readUSBWireData.v \
+	$(USB11HS_DIR)/RTL/serialInterfaceEngine/processTxByte.v \
+	$(USB11HS_DIR)/RTL/serialInterfaceEngine/processRxByte.v \
+	$(USB11HS_DIR)/RTL/serialInterfaceEngine/processRxBit.v \
+	$(USB11HS_DIR)/RTL/serialInterfaceEngine/lineControlUpdate.v \
+	$(USB11HS_DIR)/RTL/hostSlaveMux/hostSlaveMuxBI.v \
+	$(USB11HS_DIR)/RTL/hostSlaveMux/hostSlaveMux.v \
+	$(USB11HS_DIR)/RTL/busInterface/wishBoneBI.v \
+	$(USB11HS_DIR)/RTL/buffers/TxFifoBI.v \
+	$(USB11HS_DIR)/RTL/buffers/TxFifo.v \
+	$(USB11HS_DIR)/RTL/buffers/RxFifoBI.v \
+	$(USB11HS_DIR)/RTL/buffers/RxFifo.v \
+	$(USB11HS_DIR)/RTL/buffers/fifoRTL.v \
+	$(USB11HS_DIR)/RTL/buffers/dpMem_dc.v \
+	$(USB11HS_DIR)/RTL/wrapper/usbHostSlave.v
+endif
 ifeq ($(SUB_PROJECT),tracegen)
 	SBT_PROJECT       ?= tracegen
 	MODEL             ?= TestHarness

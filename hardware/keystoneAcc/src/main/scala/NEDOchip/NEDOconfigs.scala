@@ -136,6 +136,13 @@ class ChipConfigDE4 extends Config(
   })
 )
 
+class ChipConfigTR4 extends Config(
+  new ChipConfig().alter((site,here,up) => {
+    case FreqKeyMHz => 100.0
+    case DDRPortOther => true
+  })
+)
+
 class ChipConfigVC707 extends Config(
   new ChipConfig().alter((site,here,up) => {
     case FreqKeyMHz => 80.0

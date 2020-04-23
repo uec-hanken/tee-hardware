@@ -381,17 +381,20 @@ class TLtoPCIe(cacheBlockBytes: Int,
 
 // ** For Quartus-based FPGAs
 
-class QuartusDDR extends Bundle {
+case class QuartusDDRConfig (size_ck: Int = 2, is_reset: Boolean = false)
+
+class QuartusDDR(c: QuartusDDRConfig = QuartusDDRConfig()) extends Bundle {
   val memory_mem_a                = Output(Bits((14).W))
   val memory_mem_ba               = Output(Bits((3).W))
-  val memory_mem_ck               = Output(Bits((2).W))
-  val memory_mem_ck_n             = Output(Bits((2).W))
+  val memory_mem_ck               = Output(Bits((c.size_ck).W))
+  val memory_mem_ck_n             = Output(Bits((c.size_ck).W))
   val memory_mem_cke              = Output(Bits((2).W))
   val memory_mem_cs_n             = Output(Bits((2).W))
   val memory_mem_dm               = Output(Bits((8).W))
   val memory_mem_ras_n            = Output(Bool())
   val memory_mem_cas_n            = Output(Bool())
   val memory_mem_we_n             = Output(Bool())
+  val memory_mem_reset_n          = if(c.is_reset) Some(Output(Bool())) else None
   val memory_mem_dq               = Analog(64.W)
   val memory_mem_dqs              = Analog(8.W)
   val memory_mem_dqs_n            = Analog(8.W)
@@ -420,12 +423,12 @@ trait QuartusUserSignals extends Bundle {
   val mem_status_local_cal_fail = Output(Bool())
 }
 
-class QuartusIO extends QuartusDDR with QuartusUserSignals
+class QuartusIO(c: QuartusDDRConfig = QuartusDDRConfig()) extends QuartusDDR(c) with QuartusUserSignals
 
-class QuartusPlatformBlackBox(implicit val p:Parameters) extends BlackBox {
+class QuartusPlatformBlackBox(c: QuartusDDRConfig = QuartusDDRConfig())(implicit val p:Parameters) extends BlackBox {
   override def desiredName = "main"
 
-  val io = IO(new QuartusIO with QuartusClocksReset {
+  val io = IO(new QuartusIO(c) with QuartusClocksReset {
     //axi_s
     //slave interface write address ports
     val axi4_awid = Input(Bits((4).W))
@@ -472,7 +475,11 @@ class QuartusPlatformBlackBox(implicit val p:Parameters) extends BlackBox {
   })
 }
 
-class QuartusIsland(c : Seq[AddressSet], cacheBlockBytes: Int, val crossing: ClockCrossingType = AsynchronousCrossing(8))(implicit p: Parameters) extends LazyModule with CrossesToOnlyOneClockDomain {
+class QuartusIsland(c : Seq[AddressSet],
+                    cacheBlockBytes: Int,
+                    val crossing: ClockCrossingType = AsynchronousCrossing(8),
+                    ddrc: QuartusDDRConfig = QuartusDDRConfig()
+                   )(implicit p: Parameters) extends LazyModule with CrossesToOnlyOneClockDomain {
   val ranges = AddressRange.fromSets(c)
   require (ranges.size == 1, "DDR range must be contiguous")
   val offset = ranges.head.base
@@ -493,7 +500,7 @@ class QuartusIsland(c : Seq[AddressSet], cacheBlockBytes: Int, val crossing: Clo
 
   lazy val module = new LazyRawModuleImp(this) {
     val io = IO(new Bundle {
-      val port = new QuartusIO
+      val port = new QuartusIO(ddrc)
       val ckrst = new Bundle with QuartusClocksReset
     })
 
@@ -501,7 +508,7 @@ class QuartusIsland(c : Seq[AddressSet], cacheBlockBytes: Int, val crossing: Clo
     childReset := !io.ckrst.reset_sys_reset_n
 
     //MIG black box instantiation
-    val blackbox = Module(new QuartusPlatformBlackBox)
+    val blackbox = Module(new QuartusPlatformBlackBox(ddrc))
     val (axi_async, _) = node.in(0)
 
     //pins to top level
@@ -517,6 +524,7 @@ class QuartusIsland(c : Seq[AddressSet], cacheBlockBytes: Int, val crossing: Clo
     io.port.memory_mem_ras_n        := blackbox.io.memory_mem_ras_n
     io.port.memory_mem_cas_n        := blackbox.io.memory_mem_cas_n
     io.port.memory_mem_we_n         := blackbox.io.memory_mem_we_n
+    if(ddrc.is_reset) io.port.memory_mem_reset_n.get := blackbox.io.memory_mem_reset_n.get
     io.port.memory_mem_ck           := blackbox.io.memory_mem_ck
     io.port.memory_mem_ck_n         := blackbox.io.memory_mem_ck_n
     io.port.memory_mem_cke          := blackbox.io.memory_mem_cke
@@ -591,7 +599,9 @@ class QuartusIsland(c : Seq[AddressSet], cacheBlockBytes: Int, val crossing: Clo
   }
 }
 
-class QuartusPlatform(c : Seq[AddressSet], cacheBlockBytes: Int)(implicit p: Parameters) extends LazyModule {
+class QuartusPlatform(c : Seq[AddressSet],
+                      cacheBlockBytes: Int,
+                      ddrc: QuartusDDRConfig = QuartusDDRConfig())(implicit p: Parameters) extends LazyModule {
   val ranges = AddressRange.fromSets(c)
   require (ranges.size == 1, "DDR range must be contiguous")
   val offset = ranges.head.base
@@ -602,14 +612,14 @@ class QuartusPlatform(c : Seq[AddressSet], cacheBlockBytes: Int)(implicit p: Par
   val indexer = LazyModule(new AXI4IdIndexer(idBits = 4))
   val deint   = LazyModule(new AXI4Deinterleaver(p(CacheBlockBytes)))
   val yank    = LazyModule(new AXI4UserYanker)
-  val island  = LazyModule(new QuartusIsland(c, cacheBlockBytes))
+  val island  = LazyModule(new QuartusIsland(c, cacheBlockBytes, ddrc = ddrc))
 
   val node: TLInwardNode =
     island.crossAXI4In(island.node) := yank.node := deint.node := indexer.node := toaxi4.node// := buffer.node
 
   lazy val module = new LazyModuleImp(this) {
     val io = IO(new Bundle {
-      val port = new QuartusIO
+      val port = new QuartusIO(ddrc)
       val ckrst = new Bundle with QuartusClocksReset
     })
 
@@ -619,7 +629,10 @@ class QuartusPlatform(c : Seq[AddressSet], cacheBlockBytes: Int)(implicit p: Par
 }
 
 
-class TLULtoQuartusPlatform(cacheBlockBytes: Int, TLparams: TLBundleParameters)(implicit p :Parameters)
+class TLULtoQuartusPlatform( cacheBlockBytes: Int,
+                             TLparams: TLBundleParameters,
+                             ddrc: QuartusDDRConfig = QuartusDDRConfig()
+                           )(implicit p :Parameters)
   extends LazyModule {
   // Create the DDR
   val ddr = LazyModule(
@@ -628,7 +641,8 @@ class TLULtoQuartusPlatform(cacheBlockBytes: Int, TLparams: TLBundleParameters)(
           p(ExtMem).get.master.base,
           0x40000000L * 1 // 1GiB for the VC707DDR
       ),
-      cacheBlockBytes
+      cacheBlockBytes,
+      ddrc = ddrc
     )
   )
 
@@ -648,7 +662,7 @@ class TLULtoQuartusPlatform(cacheBlockBytes: Int, TLparams: TLBundleParameters)(
   lazy val module = new LazyModuleImp(this) {
     val io = IO(new Bundle {
       val tlport = Flipped(new TLUL(TLparams))
-      var qport = new QuartusIO
+      var qport = new QuartusIO(ddrc)
       val ckrst = new Bundle with QuartusClocksReset
     })
 
