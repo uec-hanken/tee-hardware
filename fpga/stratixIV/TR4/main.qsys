@@ -282,7 +282,7 @@
    kind="altera_axi_bridge"
    version="18.1"
    enabled="1">
-  <parameter name="ADDR_WIDTH" value="32" />
+  <parameter name="ADDR_WIDTH" value="30" />
   <parameter name="AXI_VERSION" value="AXI4" />
   <parameter name="COMBINED_ACCEPTANCE_CAPABILITY" value="16" />
   <parameter name="COMBINED_ISSUING_CAPABILITY" value="16" />

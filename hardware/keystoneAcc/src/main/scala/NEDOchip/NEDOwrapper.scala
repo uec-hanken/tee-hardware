@@ -926,8 +926,8 @@ class NEDOFPGATR4(implicit val p :Parameters) extends RawModule {
   val mem_ba = IO(Output(Bits((2+1).W)))
   val mem_cas_n = IO(Output(Bool()))
   val mem_cke = IO(Output(Bits((1+1).W)))
-  val mem_ck = IO(Output(Bits((1).W))) // TODO: IMPORTANT! This is different
-  val mem_ck_n = IO(Output(Bits((1).W))) // TODO: IMPORTANT! This is different
+  val mem_ck = IO(Output(Bits((0+1).W))) // NOTE: Is impossible to do [0:0]
+  val mem_ck_n = IO(Output(Bits((0+1).W))) // NOTE: Is impossible to do [0:0]
   val mem_cs_n = IO(Output(Bits((1+1).W)))
   val mem_dm = IO(Output(Bits((7+1).W)))
   val mem_dq = IO(Analog((63+1).W))
@@ -1045,8 +1045,8 @@ class NEDOFPGATR4(implicit val p :Parameters) extends RawModule {
     // Quartus Platform connections
     mem_a := mod.io.qport.memory_mem_a
     mem_ba := mod.io.qport.memory_mem_ba
-    mem_ck := mod.io.qport.memory_mem_ck
-    mem_ck_n := mod.io.qport.memory_mem_ck_n
+    mem_ck := mod.io.qport.memory_mem_ck(0) // Force only 1 line (although the config forces 1 line)
+    mem_ck_n := mod.io.qport.memory_mem_ck_n(0) // Force only 1 line (although the config forces 1 line)
     mem_cke := mod.io.qport.memory_mem_cke
     mem_cs_n := mod.io.qport.memory_mem_cs_n
     mem_dm := mod.io.qport.memory_mem_dm
@@ -1061,7 +1061,7 @@ class NEDOFPGATR4(implicit val p :Parameters) extends RawModule {
     mod.io.qport.oct_rdn := mem_oct_rdn
     mod.io.qport.oct_rup := mem_oct_rup
     mod.io.ckrst.refclk_sys_clk := OSC_50_BANK1.asUInt()
-    mod.io.ckrst.refclk_usb_clk := OSC_50_BANK1.asUInt() // TODO: This is okay?
+    mod.io.ckrst.refclk_usb_clk := OSC_50_BANK4.asUInt() // TODO: This is okay?
     mod.io.ckrst.reset_sys_reset_n := BUTTON(2)
     mod.io.ckrst.reset_usb_reset_n := BUTTON(2)
 

@@ -351,7 +351,6 @@ set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sdio_sdio_clk
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to UART_RXD
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sdio_sdio_dat_0
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to UART_TXD
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to qspi_qspi_cs[0]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to qspi_qspi_miso
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to qspi_qspi_wp
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to USBWireDataIn[0]
@@ -679,8 +678,6 @@ set_instance_assignment -name IO_STANDARD "SSTL-15 CLASS I" -to mem_ba[2]
 set_instance_assignment -name IO_STANDARD "SSTL-15 CLASS I" -to mem_cas_n
 set_instance_assignment -name IO_STANDARD "SSTL-15 CLASS I" -to mem_cke[0]
 set_instance_assignment -name IO_STANDARD "SSTL-15 CLASS I" -to mem_cke[1]
-set_instance_assignment -name IO_STANDARD "DIFFERENTIAL 1.5-V SSTL CLASS I" -to mem_ck[0]
-set_instance_assignment -name IO_STANDARD "DIFFERENTIAL 1.5-V SSTL CLASS I" -to mem_ck_n[0]
 set_instance_assignment -name IO_STANDARD "SSTL-15 CLASS I" -to mem_cs_n[0]
 set_instance_assignment -name IO_STANDARD "SSTL-15 CLASS I" -to mem_cs_n[1]
 set_instance_assignment -name IO_STANDARD "SSTL-15 CLASS I" -to mem_dm[0]
@@ -1137,7 +1134,6 @@ set_location_assignment PIN_AC29 -to sdio_sdio_clk
 set_location_assignment PIN_AD29 -to UART_RXD
 set_location_assignment PIN_AE29 -to sdio_sdio_dat_0
 set_location_assignment PIN_AG30 -to UART_TXD
-set_location_assignment PIN_AE31 -to qspi_qspi_cs[0]
 set_location_assignment PIN_AG32 -to qspi_qspi_miso
 set_location_assignment PIN_AD31 -to qspi_qspi_wp
 set_location_assignment PIN_AB31 -to USBWireDataIn[0]
@@ -1465,9 +1461,7 @@ set_location_assignment PIN_R24 -to mem_ba[2]
 set_location_assignment PIN_L26 -to mem_cas_n
 set_location_assignment PIN_P25 -to mem_cke[0]
 set_location_assignment PIN_M16 -to mem_cke[1]
-set_location_assignment PIN_K27 -to mem_ck[0]
 set_location_assignment PIN_L25 -to mem_ck[1]
-set_location_assignment PIN_J27 -to mem_ck_n[0]
 set_location_assignment PIN_K28 -to mem_ck_n[1]
 set_location_assignment PIN_D23 -to mem_cs_n[0]
 set_location_assignment PIN_G28 -to mem_cs_n[1]
@@ -1779,8 +1773,6 @@ set_instance_assignment -name INPUT_TERMINATION "PARALLEL 50 OHM WITH CALIBRATIO
 set_instance_assignment -name OUTPUT_TERMINATION "SERIES 50 OHM WITH CALIBRATION" -to mem_dqs_n[6]
 set_instance_assignment -name INPUT_TERMINATION "PARALLEL 50 OHM WITH CALIBRATION" -to mem_dqs_n[7]
 set_instance_assignment -name OUTPUT_TERMINATION "SERIES 50 OHM WITH CALIBRATION" -to mem_dqs_n[7]
-set_instance_assignment -name OUTPUT_TERMINATION "SERIES 50 OHM WITHOUT CALIBRATION" -to mem_ck[0]
-set_instance_assignment -name OUTPUT_TERMINATION "SERIES 50 OHM WITHOUT CALIBRATION" -to mem_ck_n[0]
 set_instance_assignment -name CURRENT_STRENGTH_NEW "MAXIMUM CURRENT" -to mem_a[0]
 set_instance_assignment -name CURRENT_STRENGTH_NEW "MAXIMUM CURRENT" -to mem_a[10]
 set_instance_assignment -name CURRENT_STRENGTH_NEW "MAXIMUM CURRENT" -to mem_a[11]
@@ -2149,4 +2141,13 @@ set_global_assignment -name SEARCH_PATH ../../../hardware/keystoneAcc/vsrc/ed255
 set_global_assignment -name SEARCH_PATH ../../../hardware/keystoneAcc/vsrc/ed25519_sign/src/rtl/modular_reduce
 set_global_assignment -name SEARCH_PATH ../../../hardware/keystoneAcc/vsrc/ed25519_sign/src/rtl/scalar_mult
 
+
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to qspi_qspi_cs
+set_location_assignment PIN_AE31 -to qspi_qspi_cs
+set_instance_assignment -name IO_STANDARD "DIFFERENTIAL 1.5-V SSTL CLASS I" -to mem_ck
+set_instance_assignment -name IO_STANDARD "DIFFERENTIAL 1.5-V SSTL CLASS I" -to mem_ck_n
+set_location_assignment PIN_K27 -to mem_ck
+set_location_assignment PIN_J27 -to mem_ck_n
+set_instance_assignment -name OUTPUT_TERMINATION "SERIES 50 OHM WITHOUT CALIBRATION" -to mem_ck
+set_instance_assignment -name OUTPUT_TERMINATION "SERIES 50 OHM WITHOUT CALIBRATION" -to mem_ck_n
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
