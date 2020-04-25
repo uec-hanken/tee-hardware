@@ -347,7 +347,7 @@ set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to HSMC_RX_p[13]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to HSMC_RX_p[14]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to HSMC_RX_p[15]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to HSMC_RX_p[16]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sdio_sdio_clk
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to HSMC_TX_n[0]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to UART_RXD
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sdio_sdio_dat_0
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to UART_TXD
@@ -359,11 +359,11 @@ set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to USBWireDataOutTick
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to USBWireCtrlOut
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to USBDPlusPullup
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to vBusDetect
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to HSMC_TX_n[13]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sdio_sdio_clk
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to jtag_jtag_TDO
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to HSMC_TX_n[15]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to jtag_jtag_TMS
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sdio_sdio_cmd
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to HSMC_TX_p[0]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sdio_sdio_dat_2
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sdio_sdio_dat_1
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sdio_sdio_dat_3
@@ -375,7 +375,7 @@ set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to USBWireDataOut[1]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to USBWireDataInTick
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to USBFullSpeed
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to USBDMinusPullup
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to HSMC_TX_p[12]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sdio_sdio_cmd
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to HSMC_TX_p[13]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to jtag_jtag_TCK
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to HSMC_TX_p[15]
@@ -1130,7 +1130,7 @@ set_location_assignment PIN_AJ34 -to HSMC_RX_p[13]
 set_location_assignment PIN_AH34 -to HSMC_RX_p[14]
 set_location_assignment PIN_AH32 -to HSMC_RX_p[15]
 set_location_assignment PIN_AC31 -to HSMC_RX_p[16]
-set_location_assignment PIN_AC29 -to sdio_sdio_clk
+set_location_assignment PIN_AC29 -to HSMC_TX_n[0]
 set_location_assignment PIN_AD29 -to UART_RXD
 set_location_assignment PIN_AE29 -to sdio_sdio_dat_0
 set_location_assignment PIN_AG30 -to UART_TXD
@@ -1142,11 +1142,11 @@ set_location_assignment PIN_AE24 -to USBWireDataOutTick
 set_location_assignment PIN_AW28 -to USBWireCtrlOut
 set_location_assignment PIN_AG24 -to USBDPlusPullup
 set_location_assignment PIN_AV31 -to vBusDetect
-set_location_assignment PIN_AW34 -to HSMC_TX_n[13]
+set_location_assignment PIN_AW34 -to sdio_sdio_clk
 set_location_assignment PIN_AP26 -to jtag_jtag_TDO
 set_location_assignment PIN_AT29 -to HSMC_TX_n[15]
 set_location_assignment PIN_AN27 -to jtag_jtag_TMS
-set_location_assignment PIN_AC28 -to sdio_sdio_cmd
+set_location_assignment PIN_AC28 -to HSMC_TX_p[0]
 set_location_assignment PIN_AD28 -to sdio_sdio_dat_2
 set_location_assignment PIN_AE28 -to sdio_sdio_dat_1
 set_location_assignment PIN_AF29 -to sdio_sdio_dat_3
@@ -1158,7 +1158,7 @@ set_location_assignment PIN_AL27 -to USBWireDataOut[1]
 set_location_assignment PIN_AK27 -to USBWireDataInTick
 set_location_assignment PIN_AW27 -to USBFullSpeed
 set_location_assignment PIN_AH24 -to USBDMinusPullup
-set_location_assignment PIN_AW31 -to HSMC_TX_p[12]
+set_location_assignment PIN_AW31 -to sdio_sdio_cmd
 set_location_assignment PIN_AW33 -to HSMC_TX_p[13]
 set_location_assignment PIN_AL25 -to jtag_jtag_TCK
 set_location_assignment PIN_AU29 -to HSMC_TX_p[15]

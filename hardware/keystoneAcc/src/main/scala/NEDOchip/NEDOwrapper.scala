@@ -975,42 +975,42 @@ class NEDOFPGATR4(implicit val p :Parameters) extends RawModule {
 
   ///////// GPIO /////////
   val jtag = IO(new Bundle {
-    val jtag_TDI = (Input(Bool())) // HSMC_TX_p[16]
-    val jtag_TDO = (Output(Bool())) // HSMC_TX_n[14]
-    val jtag_TCK = (Input(Bool())) // HSMC_TX_p[14]
-    val jtag_TMS = (Input(Bool())) // HSMC_TX_n[16]
+    val jtag_TDI = (Input(Bool())) // HSMC_TX_p[16] / PIN_AP27 / GPIO1_D4 GPIO1[5]
+    val jtag_TDO = (Output(Bool())) // HSMC_TX_n[14] / PIN_AP26 / GPIO1_D10 GPIO1[13]
+    val jtag_TCK = (Input(Bool())) // HSMC_TX_p[14] / PIN_AL25 / GPIO1_D8 GPIO1[9]
+    val jtag_TMS = (Input(Bool())) // HSMC_TX_n[16] / PIN_AN27 / GPIO1_D6 GPIO1[7]
   })
   val sdio = IO(new Bundle {
-    val sdio_clk = (Output(Bool())) // HSMC_TX_n[0]
-    val sdio_cmd = (Output(Bool())) // HSMC_TX_p[0]
-    val sdio_dat_0 = (Input(Bool())) // HSMC_TX_n[2]
-    val sdio_dat_1 = (Analog(1.W)) // HSMC_TX_p[2]
-    val sdio_dat_2 = (Analog(1.W)) // HSMC_TX_p[1]
-    val sdio_dat_3 = (Output(Bool())) // HSMC_TX_p[3]
+    val sdio_clk = (Output(Bool())) // HSMC_TX_n[13] / PIN_AW34 / GPIO1_D11 GPIO1[14]
+    val sdio_cmd = (Output(Bool())) // HSMC_TX_p[12] / PIN_AW31 / GPIO1_D12 GPIO1[15]
+    val sdio_dat_0 = (Input(Bool())) // HSMC_TX_n[2] / PIN_AE29 / GPIO1_D31 GPIO1[36]
+    val sdio_dat_1 = (Analog(1.W)) // HSMC_TX_p[2] / PIN_AE28 / GPIO1_D29 GPIO1[34]
+    val sdio_dat_2 = (Analog(1.W)) // HSMC_TX_p[1] / PIN_AD28 / GPIO1_D33 GPIO1[38]
+    val sdio_dat_3 = (Output(Bool())) // HSMC_TX_p[3] / PIN_AF29 / GPIO1_D32 GPIO1[37]
   })
   val qspi = if(p(PeripherySPIFlashKey).nonEmpty)
     Some(IO(new Bundle {
-      val qspi_cs = (Output(UInt(p(PeripherySPIFlashKey).head.csWidth.W))) // HSMC_TX_n[4]
-      val qspi_sck = (Output(Bool())) // HSMC_TX_p[4]
-      val qspi_miso = (Input(Bool())) // HSMC_TX_n[5]
-      val qspi_mosi = (Output(Bool())) // HSMC_TX_p[5]
-      val qspi_wp = (Output(Bool())) // HSMC_TX_n[6]
-      val qspi_hold = (Output(Bool())) // HSMC_TX_p[6]
+      val qspi_cs = (Output(UInt(p(PeripherySPIFlashKey).head.csWidth.W))) // HSMC_TX_n[4] / PIN_AE31 / GPIO1_D27[32]
+      val qspi_sck = (Output(Bool())) // HSMC_TX_p[4] / PIN_AE30 / GPIO1_D25 GPIO1[28]
+      val qspi_miso = (Input(Bool())) // HSMC_TX_n[5] / PIN_AG32 / GPIO1_D30 GPIO1[35]
+      val qspi_mosi = (Output(Bool())) // HSMC_TX_p[5] / PIN_AG31 / GPIO1_D28 GPIO1[33]
+      val qspi_wp = (Output(Bool())) // HSMC_TX_n[6] / PIN_AD31 / GPIO1_D23 GPIO1[26]
+      val qspi_hold = (Output(Bool())) // HSMC_TX_p[6] / PIN_AD30 / GPIO1_D21 GPIO1[24]
     }))
   else None
-  val USBWireDataIn = IO(Input(Bits(2.W))) // HSMC_TX_p[7] HSMC_TX_n[7]
-  val USBWireDataOut = IO(Output(Bits(2.W))) // HSMC_TX_p[8] HSMC_TX_n[8]
-  val USBWireDataOutTick = IO(Output(Bool())) // HSMC_TX_n[9]
-  val USBWireDataInTick = IO(Output(Bool())) // HSMC_TX_p[9]
-  val USBWireCtrlOut = IO(Output(Bool())) // HSMC_TX_n[10]
-  val USBFullSpeed = IO(Output(Bool())) // HSMC_TX_p[10]
-  val USBDPlusPullup = IO(Output(Bool())) // HSMC_TX_n[11]
-  val USBDMinusPullup = IO(Output(Bool()))  // HSMC_TX_p[11]
-  val vBusDetect = IO(Input(Bool()))  // HSMC_TX_n[12]
+  val USBWireDataIn = IO(Input(Bits(2.W))) // HSMC_TX_p[7] HSMC_TX_n[7] / PIN_AB30 PIN_AB31 / GPIO1_D24 GPIO1_D26 GPIO1[27,31]
+  val USBWireDataOut = IO(Output(Bits(2.W))) // HSMC_TX_p[8] HSMC_TX_n[8] / PIN_AL27 PIN_AH26 / GPIO1_D16 GPIO1_D18 GPIO1[19,21]
+  val USBWireDataOutTick = IO(Output(Bool())) // HSMC_TX_n[9] / PIN_AE24 / GPIO1_D22 GPIO1[25]
+  val USBWireDataInTick = IO(Output(Bool())) // HSMC_TX_p[9] / PIN_AK27 / GPIO1_D20 GPIO1[23]
+  val USBWireCtrlOut = IO(Output(Bool())) // HSMC_TX_n[10] / PIN_AW28 / GPIO1_D19 GPIO[22]
+  val USBFullSpeed = IO(Output(Bool())) // HSMC_TX_p[10] / PIN_AW27 / GPIO1_D17 GPIO1[20]
+  val USBDPlusPullup = IO(Output(Bool())) // HSMC_TX_n[11] / PIN_AG24 / GPIO1_D15 GPIO1[18]
+  val USBDMinusPullup = IO(Output(Bool()))  // HSMC_TX_p[11] / PIN_AH24 / GPIO1_D13 GPIO1[16]
+  val vBusDetect = IO(Input(Bool()))  // HSMC_TX_n[12] / PIN_AV31 / GPIO1_D14 GPIO1[17]
 
 
-  val UART_RXD = IO(Input(Bool()))
-  val UART_TXD = IO(Output(Bool()))
+  val UART_RXD = IO(Input(Bool())) // HSMC_TX_n[1] / PIN_AD29 / GPIO1_D35 GPIO1[40]
+  val UART_TXD = IO(Output(Bool())) // HSMC_TX_n[3] / PIN_AG30 / GPIO1_D34 GPIO1[39]
 
 
   // Assign essential things

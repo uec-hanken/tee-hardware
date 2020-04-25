@@ -33,11 +33,27 @@
          type = "int";
       }
    }
+   element ext_clk
+   {
+      datum _sortIndex
+      {
+         value = "7";
+         type = "int";
+      }
+   }
    element mem_if_ddr3_emif_0
    {
       datum _sortIndex
       {
          value = "2";
+         type = "int";
+      }
+   }
+   element mm_clock_crossing_bridge_0
+   {
+      datum _sortIndex
+      {
+         value = "6";
          type = "int";
       }
    }
@@ -80,7 +96,7 @@
  <instanceScript></instanceScript>
  <interface name="axi4" internal="axi_bridge_0.s0" type="axi4" dir="end" />
  <interface name="dimmclk" internal="dimmclk.clk" type="clock" dir="start" />
- <interface name="ext_clk" internal="altpll_0.c1" type="clock" dir="start" />
+ <interface name="ext_clk" internal="ext_clk.clk" type="clock" dir="start" />
  <interface
    name="mem_if_ddr3_emif_0_pll_sharing"
    internal="mem_if_ddr3_emif_0.pll_sharing"
@@ -349,7 +365,13 @@
  <module name="dimmclk" kind="clock_source" version="18.1" enabled="1">
   <parameter name="clockFrequency" value="50000000" />
   <parameter name="clockFrequencyKnown" value="true" />
-  <parameter name="inputClockFrequency" value="175000000" />
+  <parameter name="inputClockFrequency" value="100000000" />
+  <parameter name="resetSynchronousEdges" value="NONE" />
+ </module>
+ <module name="ext_clk" kind="clock_source" version="18.1" enabled="1">
+  <parameter name="clockFrequency" value="50000000" />
+  <parameter name="clockFrequencyKnown" value="true" />
+  <parameter name="inputClockFrequency" value="100000000" />
   <parameter name="resetSynchronousEdges" value="NONE" />
  </module>
  <module
@@ -675,6 +697,23 @@
   <parameter name="WEIGHT_PORT" value="0,0,0,0,0,0" />
   <parameter name="WRBUFFER_ADDR_WIDTH" value="6" />
  </module>
+ <module
+   name="mm_clock_crossing_bridge_0"
+   kind="altera_avalon_mm_clock_crossing_bridge"
+   version="18.1"
+   enabled="1">
+  <parameter name="ADDRESS_UNITS" value="SYMBOLS" />
+  <parameter name="ADDRESS_WIDTH" value="30" />
+  <parameter name="COMMAND_FIFO_DEPTH" value="4" />
+  <parameter name="DATA_WIDTH" value="32" />
+  <parameter name="MASTER_SYNC_DEPTH" value="2" />
+  <parameter name="MAX_BURST_SIZE" value="1" />
+  <parameter name="RESPONSE_FIFO_DEPTH" value="4" />
+  <parameter name="SLAVE_SYNC_DEPTH" value="2" />
+  <parameter name="SYMBOL_WIDTH" value="8" />
+  <parameter name="SYSINFO_ADDR_WIDTH" value="30" />
+  <parameter name="USE_AUTO_ADDRESS_WIDTH" value="1" />
+ </module>
  <module name="refclk_sys" kind="clock_source" version="18.1" enabled="1">
   <parameter name="clockFrequency" value="50000000" />
   <parameter name="clockFrequencyKnown" value="true" />
@@ -690,8 +729,17 @@
  <connection
    kind="avalon"
    version="18.1"
-   start="axi_bridge_0.m0"
+   start="mm_clock_crossing_bridge_0.m0"
    end="mem_if_ddr3_emif_0.avl">
+  <parameter name="arbitrationPriority" value="1" />
+  <parameter name="baseAddress" value="0x0000" />
+  <parameter name="defaultConnection" value="false" />
+ </connection>
+ <connection
+   kind="avalon"
+   version="18.1"
+   start="axi_bridge_0.m0"
+   end="mm_clock_crossing_bridge_0.s0">
   <parameter name="arbitrationPriority" value="1" />
   <parameter name="baseAddress" value="0x0000" />
   <parameter name="defaultConnection" value="false" />
@@ -700,12 +748,19 @@
    kind="clock"
    version="18.1"
    start="mem_if_ddr3_emif_0.afi_clk"
-   end="axi_bridge_0.clk" />
+   end="mm_clock_crossing_bridge_0.s0_clk" />
  <connection
    kind="clock"
    version="18.1"
-   start="mem_if_ddr3_emif_0.afi_clk"
-   end="dimmclk.clk_in" />
+   start="altpll_0.c1"
+   end="axi_bridge_0.clk" />
+ <connection kind="clock" version="18.1" start="altpll_0.c1" end="dimmclk.clk_in" />
+ <connection kind="clock" version="18.1" start="altpll_0.c1" end="ext_clk.clk_in" />
+ <connection
+   kind="clock"
+   version="18.1"
+   start="altpll_0.c1"
+   end="mm_clock_crossing_bridge_0.m0_clk" />
  <connection
    kind="clock"
    version="18.1"
@@ -719,8 +774,18 @@
  <connection
    kind="reset"
    version="18.1"
+   start="mem_if_ddr3_emif_0.afi_reset_export"
+   end="mm_clock_crossing_bridge_0.s0_reset" />
+ <connection
+   kind="reset"
+   version="18.1"
    start="refclk_sys.clk_reset"
    end="dimmclk.clk_in_reset" />
+ <connection
+   kind="reset"
+   version="18.1"
+   start="refclk_sys.clk_reset"
+   end="ext_clk.clk_in_reset" />
  <connection
    kind="reset"
    version="18.1"
@@ -736,6 +801,11 @@
    version="18.1"
    start="refclk_sys.clk_reset"
    end="altpll_0.inclk_interface_reset" />
+ <connection
+   kind="reset"
+   version="18.1"
+   start="refclk_sys.clk_reset"
+   end="mm_clock_crossing_bridge_0.m0_reset" />
  <connection
    kind="reset"
    version="18.1"
