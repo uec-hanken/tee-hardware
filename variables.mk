@@ -33,11 +33,11 @@
 SUB_PROJECT ?= keystoneAcc
 
 KEYSTONE_ACC_DIR ?= $(base_dir)/hardware/keystoneAcc
-SHA3_DIR ?= $(KEYSTONE_ACC_DIR)/vsrc/sha3
-SHA3_HIGHPERF_DIR ?= $(SHA3_DIR)/trunk/high_throughput_core
-ED25519_DIR ?= $(KEYSTONE_ACC_DIR)/vsrc/ed25519
-ED25519_SIGN_DIR ?= $(KEYSTONE_ACC_DIR)/vsrc/ed25519_sign
-AES_DIR ?= $(KEYSTONE_ACC_DIR)/vsrc/aes
+SHA3_DIR ?= $(KEYSTONE_ACC_DIR)/vsrc/SHA3
+SHA3_HIGHPERF_DIR ?= $(KEYSTONE_ACC_DIR)/optvsrc/SHA3
+ED25519_DIR ?= $(KEYSTONE_ACC_DIR)/optvsrc/Ed25519/Ed25519_mul
+ED25519_SIGN_DIR ?= $(KEYSTONE_ACC_DIR)/optvsrc/Ed25519/Ed25519_sign
+AES_DIR ?= $(KEYSTONE_ACC_DIR)/optvsrc/AES
 USB11HS_DIR ?= $(KEYSTONE_ACC_DIR)/vsrc/usbhostslave
 
 ifeq ($(SUB_PROJECT),keystoneAcc)
@@ -50,38 +50,47 @@ ifeq ($(SUB_PROJECT),keystoneAcc)
 	GENERATOR_PACKAGE ?= uec.keystoneAcc.exampletop
 	TB                ?= TestDriver
 	TOP               ?= ExampleRocketSystem
-	ADD_VSRC          ?= $(SHA3_HIGHPERF_DIR)/rtl/f_permutation.v \
-	$(SHA3_HIGHPERF_DIR)/rtl/round2in1.v \
-	$(SHA3_HIGHPERF_DIR)/rtl/padder1.v \
-	$(SHA3_HIGHPERF_DIR)/rtl/keccak.v \
-	$(SHA3_HIGHPERF_DIR)/rtl/padder.v \
-	$(SHA3_HIGHPERF_DIR)/rtl/rconst2in1.v \
-	$(ED25519_DIR)/rtl/mac16_generic.v \
-	$(ED25519_DIR)/rtl/ed25519_microcode_rom.v \
-	$(ED25519_DIR)/rtl/ed25519_operand_bank.v \
-	$(ED25519_DIR)/rtl/adder47_generic.v \
-	$(ED25519_DIR)/rtl/ed25519_uop_worker.v \
-	$(ED25519_DIR)/rtl/subtractor32_generic.v \
-	$(ED25519_DIR)/rtl/ed25519_wrapper.v \
-	$(ED25519_DIR)/rtl/ed25519_core_top.v \
-	$(ED25519_DIR)/rtl/bram_1rw_1ro_readfirst.v \
-	$(ED25519_DIR)/rtl/bram_1rw_readfirst.v \
-	$(ED25519_DIR)/rtl/bram_1wo_1ro_readfirst.v \
-	$(ED25519_DIR)/rtl/ed25519_base_point_multiplier.v \
-	$(ED25519_DIR)/rtl/curve25519_modular_multiplier.v \
-	$(ED25519_DIR)/rtl/ed25519_banks_array.v \
-	$(ED25519_DIR)/rtl/modular_adder.v \
-	$(ED25519_DIR)/rtl/modular_subtractor.v \
-	$(ED25519_DIR)/rtl/adder32_generic.v \
-	$(ED25519_DIR)/rtl/multiword_mover.v \
-	$(ED25519_SIGN_DIR)/src/rtl/ed25519_sign_core_S.v \
-	$(ED25519_SIGN_DIR)/src/rtl/multiplier/MULT_MACRO.v \
-	$(AES_DIR)/src/rtl/aes_core.v \
-	$(AES_DIR)/src/rtl/aes_decipher_block.v \
-	$(AES_DIR)/src/rtl/aes_encipher_block.v \
-	$(AES_DIR)/src/rtl/aes_inv_sbox.v \
-	$(AES_DIR)/src/rtl/aes_key_mem.v \
-	$(AES_DIR)/src/rtl/aes_sbox.v \
+	ADD_VSRC          ?= $(SHA3_HIGHPERF_DIR)/f_permutation.v \
+	$(SHA3_HIGHPERF_DIR)/round2in1.v \
+	$(SHA3_HIGHPERF_DIR)/padder1.v \
+	$(SHA3_HIGHPERF_DIR)/keccak.v \
+	$(SHA3_HIGHPERF_DIR)/padder.v \
+	$(SHA3_HIGHPERF_DIR)/rconst2in1.v \
+	$(SHA3_HIGHPERF_DIR)/SHA3_TOP.v \
+	$(SHA3_HIGHPERF_DIR)/SHA3_TOP_wrapper.v \
+	$(ED25519_DIR)/mac16_generic.v \
+	$(ED25519_DIR)/ed25519_microcode_rom.v \
+	$(ED25519_DIR)/ed25519_operand_bank.v \
+	$(ED25519_DIR)/adder47_generic.v \
+	$(ED25519_DIR)/ed25519_uop_worker.v \
+	$(ED25519_DIR)/subtractor32_generic.v \
+	$(ED25519_DIR)/ed25519_mul.v \
+	$(ED25519_DIR)/bram_1rw_1ro_readfirst.v \
+	$(ED25519_DIR)/curve25519_modular_multiplier.v \
+	$(ED25519_DIR)/ed25519_banks_array.v \
+	$(ED25519_DIR)/modular_adder.v \
+	$(ED25519_DIR)/modular_subtractor.v \
+	$(ED25519_DIR)/adder32_generic.v \
+	$(ED25519_DIR)/multiword_mover.v \
+	$(ED25519_DIR)/ed25519_mul_TOP.v \
+	$(ED25519_DIR)/ed25519_mul_TOP_wrapper.v \
+	$(ED25519_SIGN_DIR)/ed25519_sign_S_core_TOP.v \
+	$(ED25519_SIGN_DIR)/ed25519_sign_S_core_TOP_wrapper.v \
+	$(ED25519_SIGN_DIR)/ed25519_sign_S_core.v \
+	$(ED25519_SIGN_DIR)/mult_512_byAdder.v \
+	$(ED25519_SIGN_DIR)/barrett.v \
+	$(AES_DIR)/aes_core.v \
+	$(AES_DIR)/aes_decipher_block.v \
+	$(AES_DIR)/aes_encipher_block.v \
+	$(AES_DIR)/aes_sub_inv_sbox.v \
+	$(AES_DIR)/aes_sub_sbox.v \
+	$(AES_DIR)/aes_inv_sbox.v \
+	$(AES_DIR)/aes_key_mem.v \
+	$(AES_DIR)/aes_sbox.v \
+	$(AES_DIR)/mixcolumns.v \
+	$(AES_DIR)/inv_mixcolumns.v \
+	$(AES_DIR)/aes_core_TOP.v \
+	$(AES_DIR)/aes_core_TOP_wrapper.v \
 	$(USB11HS_DIR)/RTL/hostController/USBHostControlBI.v \
 	$(USB11HS_DIR)/RTL/hostController/usbHostControl.v \
 	$(USB11HS_DIR)/RTL/hostController/speedCtrlMux.v \

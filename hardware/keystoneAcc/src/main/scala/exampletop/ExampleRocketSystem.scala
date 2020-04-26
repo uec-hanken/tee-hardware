@@ -76,7 +76,7 @@ class ExampleRocketSystem(implicit p: Parameters) extends RocketSubsystem
     with HasPeripheryed25519
     with HasPeripheryAES
     with HasPeripheryRandom
-    with HasPeripheryUSB11HS
+    //with HasPeripheryUSB11HS
     with HasPeripheryBootROM {
   override lazy val module = new ExampleRocketSystemModuleImp(this)
 }
@@ -93,5 +93,5 @@ class ExampleRocketSystemModuleImp[+L <: ExampleRocketSystem](_outer: L) extends
     with HasPeripheryAESModuleImp
     with HasPeripheryBootROMModuleImp
     with HasPeripheryRandomModuleImp
-    with HasPeripheryUSB11HSModuleImp
+    //with HasPeripheryUSB11HSModuleImp
     with DontTouch

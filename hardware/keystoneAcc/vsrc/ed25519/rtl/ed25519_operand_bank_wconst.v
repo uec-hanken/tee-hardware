@@ -47,71 +47,71 @@ module ed25519_operand_bank_wconst
     //
     // Read Port B
     //
-    reg const;
+    reg cst; // Was const
     reg [32-1:0] bram_reg_b;
-    assign b_out = const ? bram_reg_b : b_out_a;
+    assign b_out = cst ? bram_reg_b : b_out_a;
     always @(posedge clk)
         //
         case (b_addr)
         //
         // CONST_ZERO 
         //
-        9'd007: begin bram_reg_b <= 32'h00000000; const <= 1; end
-        9'd006: begin bram_reg_b <= 32'h00000000; const <= 1; end
-        9'd005: begin bram_reg_b <= 32'h00000000; const <= 1; end
-        9'd004: begin bram_reg_b <= 32'h00000000; const <= 1; end
-        9'd003: begin bram_reg_b <= 32'h00000000; const <= 1; end
-        9'd002: begin bram_reg_b <= 32'h00000000; const <= 1; end
-        9'd001: begin bram_reg_b <= 32'h00000000; const <= 1; end
-        9'd000: begin bram_reg_b <= 32'h00000000; const <= 1; end
+        9'd007: begin bram_reg_b <= 32'h00000000; cst <= 1; end
+        9'd006: begin bram_reg_b <= 32'h00000000; cst <= 1; end
+        9'd005: begin bram_reg_b <= 32'h00000000; cst <= 1; end
+        9'd004: begin bram_reg_b <= 32'h00000000; cst <= 1; end
+        9'd003: begin bram_reg_b <= 32'h00000000; cst <= 1; end
+        9'd002: begin bram_reg_b <= 32'h00000000; cst <= 1; end
+        9'd001: begin bram_reg_b <= 32'h00000000; cst <= 1; end
+        9'd000: begin bram_reg_b <= 32'h00000000; cst <= 1; end
         //
         // CONST_ONE
         //
-        9'd015: begin bram_reg_b <= 32'h00000000; const <= 1; end
-        9'd014: begin bram_reg_b <= 32'h00000000; const <= 1; end
-        9'd013: begin bram_reg_b <= 32'h00000000; const <= 1; end
-        9'd012: begin bram_reg_b <= 32'h00000000; const <= 1; end
-        9'd011: begin bram_reg_b <= 32'h00000000; const <= 1; end
-        9'd010: begin bram_reg_b <= 32'h00000000; const <= 1; end
-        9'd009: begin bram_reg_b <= 32'h00000000; const <= 1; end
-        9'd008: begin bram_reg_b <= 32'h00000001; const <= 1; end
+        9'd015: begin bram_reg_b <= 32'h00000000; cst <= 1; end
+        9'd014: begin bram_reg_b <= 32'h00000000; cst <= 1; end
+        9'd013: begin bram_reg_b <= 32'h00000000; cst <= 1; end
+        9'd012: begin bram_reg_b <= 32'h00000000; cst <= 1; end
+        9'd011: begin bram_reg_b <= 32'h00000000; cst <= 1; end
+        9'd010: begin bram_reg_b <= 32'h00000000; cst <= 1; end
+        9'd009: begin bram_reg_b <= 32'h00000000; cst <= 1; end
+        9'd008: begin bram_reg_b <= 32'h00000001; cst <= 1; end
         //
         // G_X
         //
-        9'd119: begin bram_reg_b <= 32'h216936d3; const <= 1; end
-        9'd118: begin bram_reg_b <= 32'hcd6e53fe; const <= 1; end
-        9'd117: begin bram_reg_b <= 32'hc0a4e231; const <= 1; end
-        9'd116: begin bram_reg_b <= 32'hfdd6dc5c; const <= 1; end
-        9'd115: begin bram_reg_b <= 32'h692cc760; const <= 1; end
-        9'd114: begin bram_reg_b <= 32'h9525a7b2; const <= 1; end
-        9'd113: begin bram_reg_b <= 32'hc9562d60; const <= 1; end
-        9'd112: begin bram_reg_b <= 32'h8f25d51a; const <= 1; end
+        9'd119: begin bram_reg_b <= 32'h216936d3; cst <= 1; end
+        9'd118: begin bram_reg_b <= 32'hcd6e53fe; cst <= 1; end
+        9'd117: begin bram_reg_b <= 32'hc0a4e231; cst <= 1; end
+        9'd116: begin bram_reg_b <= 32'hfdd6dc5c; cst <= 1; end
+        9'd115: begin bram_reg_b <= 32'h692cc760; cst <= 1; end
+        9'd114: begin bram_reg_b <= 32'h9525a7b2; cst <= 1; end
+        9'd113: begin bram_reg_b <= 32'hc9562d60; cst <= 1; end
+        9'd112: begin bram_reg_b <= 32'h8f25d51a; cst <= 1; end
         //
         // G_Y
         //
-        9'd127: begin bram_reg_b <= 32'h66666666; const <= 1; end
-        9'd126: begin bram_reg_b <= 32'h66666666; const <= 1; end
-        9'd125: begin bram_reg_b <= 32'h66666666; const <= 1; end
-        9'd124: begin bram_reg_b <= 32'h66666666; const <= 1; end
-        9'd123: begin bram_reg_b <= 32'h66666666; const <= 1; end
-        9'd122: begin bram_reg_b <= 32'h66666666; const <= 1; end
-        9'd121: begin bram_reg_b <= 32'h66666666; const <= 1; end
-        9'd120: begin bram_reg_b <= 32'h66666658; const <= 1; end
+        9'd127: begin bram_reg_b <= 32'h66666666; cst <= 1; end
+        9'd126: begin bram_reg_b <= 32'h66666666; cst <= 1; end
+        9'd125: begin bram_reg_b <= 32'h66666666; cst <= 1; end
+        9'd124: begin bram_reg_b <= 32'h66666666; cst <= 1; end
+        9'd123: begin bram_reg_b <= 32'h66666666; cst <= 1; end
+        9'd122: begin bram_reg_b <= 32'h66666666; cst <= 1; end
+        9'd121: begin bram_reg_b <= 32'h66666666; cst <= 1; end
+        9'd120: begin bram_reg_b <= 32'h66666658; cst <= 1; end
         //
         // G_T
         //
-        9'd135: begin bram_reg_b <= 32'h67875f0f; const <= 1; end
-        9'd134: begin bram_reg_b <= 32'hd78b7665; const <= 1; end
-        9'd133: begin bram_reg_b <= 32'h66ea4e8e; const <= 1; end
-        9'd132: begin bram_reg_b <= 32'h64abe37d; const <= 1; end
-        9'd131: begin bram_reg_b <= 32'h20f09f80; const <= 1; end
-        9'd130: begin bram_reg_b <= 32'h775152f5; const <= 1; end
-        9'd129: begin bram_reg_b <= 32'h6dde8ab3; const <= 1; end
-        9'd128: begin bram_reg_b <= 32'ha5b7dda3; const <= 1; end
+        9'd135: begin bram_reg_b <= 32'h67875f0f; cst <= 1; end
+        9'd134: begin bram_reg_b <= 32'hd78b7665; cst <= 1; end
+        9'd133: begin bram_reg_b <= 32'h66ea4e8e; cst <= 1; end
+        9'd132: begin bram_reg_b <= 32'h64abe37d; cst <= 1; end
+        9'd131: begin bram_reg_b <= 32'h20f09f80; cst <= 1; end
+        9'd130: begin bram_reg_b <= 32'h775152f5; cst <= 1; end
+        9'd129: begin bram_reg_b <= 32'h6dde8ab3; cst <= 1; end
+        9'd128: begin bram_reg_b <= 32'ha5b7dda3; cst <= 1; end
         //
         // default
         //
-        default: begin bram_reg_b <= bram[b_addr]; const <= 0; end
+        default: begin bram_reg_b <= bram[b_addr]; cst <= 0; end
         endcase
 
 

@@ -13,7 +13,7 @@
    {
       datum _sortIndex
       {
-         value = "5";
+         value = "3";
          type = "int";
       }
    }
@@ -21,7 +21,7 @@
    {
       datum _sortIndex
       {
-         value = "3";
+         value = "5";
          type = "int";
       }
    }
@@ -29,7 +29,7 @@
    {
       datum _sortIndex
       {
-         value = "1";
+         value = "4";
          type = "int";
       }
    }
@@ -45,7 +45,7 @@
    {
       datum _sortIndex
       {
-         value = "2";
+         value = "1";
          type = "int";
       }
    }
@@ -53,7 +53,7 @@
    {
       datum _sortIndex
       {
-         value = "6";
+         value = "2";
          type = "int";
       }
    }
@@ -69,7 +69,7 @@
    {
       datum _sortIndex
       {
-         value = "4";
+         value = "6";
          type = "int";
       }
    }
@@ -97,6 +97,11 @@
  <interface name="axi4" internal="axi_bridge_0.s0" type="axi4" dir="end" />
  <interface name="dimmclk" internal="dimmclk.clk" type="clock" dir="start" />
  <interface name="ext_clk" internal="ext_clk.clk" type="clock" dir="start" />
+ <interface
+   name="locked"
+   internal="altpll_0.locked_conduit"
+   type="conduit"
+   dir="end" />
  <interface
    name="mem_if_ddr3_emif_0_pll_sharing"
    internal="mem_if_ddr3_emif_0.pll_sharing"
@@ -487,7 +492,7 @@
   <parameter name="MEM_CK_PHASE" value="0.0" />
   <parameter name="MEM_CK_WIDTH" value="2" />
   <parameter name="MEM_CLK_EN_WIDTH" value="1" />
-  <parameter name="MEM_CLK_FREQ" value="350.0" />
+  <parameter name="MEM_CLK_FREQ" value="300.0" />
   <parameter name="MEM_CLK_FREQ_MAX" value="533.333" />
   <parameter name="MEM_COL_ADDR_WIDTH" value="10" />
   <parameter name="MEM_CS_WIDTH" value="1" />
@@ -748,7 +753,7 @@
    kind="clock"
    version="18.1"
    start="mem_if_ddr3_emif_0.afi_clk"
-   end="mm_clock_crossing_bridge_0.s0_clk" />
+   end="mm_clock_crossing_bridge_0.m0_clk" />
  <connection
    kind="clock"
    version="18.1"
@@ -760,7 +765,7 @@
    kind="clock"
    version="18.1"
    start="altpll_0.c1"
-   end="mm_clock_crossing_bridge_0.m0_clk" />
+   end="mm_clock_crossing_bridge_0.s0_clk" />
  <connection
    kind="clock"
    version="18.1"
@@ -771,11 +776,6 @@
    version="18.1"
    start="refclk_sys.clk"
    end="mem_if_ddr3_emif_0.pll_ref_clk" />
- <connection
-   kind="reset"
-   version="18.1"
-   start="mem_if_ddr3_emif_0.afi_reset_export"
-   end="mm_clock_crossing_bridge_0.s0_reset" />
  <connection
    kind="reset"
    version="18.1"
@@ -806,6 +806,11 @@
    version="18.1"
    start="refclk_sys.clk_reset"
    end="mm_clock_crossing_bridge_0.m0_reset" />
+ <connection
+   kind="reset"
+   version="18.1"
+   start="refclk_sys.clk_reset"
+   end="mm_clock_crossing_bridge_0.s0_reset" />
  <connection
    kind="reset"
    version="18.1"

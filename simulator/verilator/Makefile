@@ -66,7 +66,7 @@ VERILATOR_NONCC_OPTS = \
 	-I$(ED25519_SIGN_DIR)/src/rtl/multiplier/ \
 	-I$(ED25519_SIGN_DIR)/src/rtl/modular_reduce/ \
 	-I$(USB11HS_DIR)/RTL/include/ \
-	-Wno-STMTDLY -Wno-WIDTH --x-assign unique \
+	-Wno-STMTDLY -Wno-WIDTH -Wno-COMBDLY -Wno-UNOPTFLAT -Wno-CASEINCOMPLETE --x-assign unique \
 	$(sim_vsrcs) \
 	-f $(sim_common_files)
 
