@@ -144,6 +144,9 @@ class ChipConfigTR4 extends Config(
       size = x"0_4000_0000",
       beatBytes = 8,
       idBits = 4), 1))*/
+    case PeripherySPIFlashKey => List() // No external flash. There is no pins to put them
+    case PeripheryMaskROMKey => List( // TODO: The software is not compilable on 0x10000
+      MaskROMParams(address = BigInt(0x20000000), depth = 8192, name = "BootROM"))
     case DDRPortOther => false // For back to not external clock
     case RocketTilesKey => {
       val big = RocketTileParams(
