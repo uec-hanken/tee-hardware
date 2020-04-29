@@ -139,7 +139,27 @@ class ChipConfigDE4 extends Config(
 class ChipConfigTR4 extends Config(
   new ChipConfig().alter((site,here,up) => {
     case FreqKeyMHz => 100.0
-    case DDRPortOther => true
+    /*case ExtMem => Some(MemoryPortParams(MasterPortParams( // For back to 64 bits
+      base = x"0_8000_0000",
+      size = x"0_4000_0000",
+      beatBytes = 8,
+      idBits = 4), 1))*/
+    case DDRPortOther => false // For back to not external clock
+    case RocketTilesKey => {
+      val big = RocketTileParams(
+        core   = RocketCoreParams(mulDiv = Some(MulDivParams(
+          mulUnroll = 8,
+          mulEarlyOut = true,
+          divEarlyOut = true))),
+        dcache = Some(DCacheParams(
+          rowBits = site(SystemBusKey).beatBits,
+          nMSHRs = 0,
+          blockBytes = site(CacheBlockBytes))),
+        icache = Some(ICacheParams(
+          rowBits = site(SystemBusKey).beatBits,
+          blockBytes = site(CacheBlockBytes))))
+      List.tabulate(2)(i => big.copy(hartId = i))
+    }
   })
 )
 

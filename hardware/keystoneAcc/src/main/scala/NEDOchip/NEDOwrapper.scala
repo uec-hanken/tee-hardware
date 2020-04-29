@@ -1032,9 +1032,9 @@ class NEDOFPGATR4(implicit val p :Parameters) extends RawModule {
 
     // Clock and reset (for TL stuff)
     clock := mod.io.ckrst.dimmclk_clk
-    reset := SW(3)
+    reset := SW(1)
     chip.sys_clk := mod.io.ckrst.dimmclk_clk
-    chip.rst_n := !SW(3)
+    chip.rst_n := !SW(2)
     if(p(DDRPortOther)) {
       chip.ChildClock.get := mod.io.ckrst.ext_clk_clk
       chip.ChildReset.get := SW(3)
@@ -1063,7 +1063,7 @@ class NEDOFPGATR4(implicit val p :Parameters) extends RawModule {
     mod.io.ckrst.refclk_sys_clk := OSC_50_BANK1.asUInt()
     mod.io.ckrst.refclk_usb_clk := OSC_50_BANK4.asUInt() // TODO: This is okay?
     mod.io.ckrst.reset_sys_reset_n := BUTTON(2)
-    mod.io.ckrst.reset_usb_reset_n := BUTTON(2)
+    mod.io.ckrst.reset_usb_reset_n := BUTTON(3)
 
     // TileLink Interface from platform
     mod.io.tlport.a <> chip.tlport.a
@@ -1085,7 +1085,7 @@ class NEDOFPGATR4(implicit val p :Parameters) extends RawModule {
     // := chip.uart_rtsn 			// output: not used
     chip.uart_ctsn := false.B 		// input:  notused
     sdio <> chip.sdio
-    chip.jrst_n := !SW(2)
+    chip.jrst_n := !SW(0)
 
     // USB phy connections
     chip.usb11hs.USBWireDataIn := USBWireDataIn
