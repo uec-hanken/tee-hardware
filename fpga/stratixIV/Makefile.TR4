@@ -58,16 +58,29 @@ include $(sim_dir)/stratixIV.mk
 #########################################################################################
 # ROM generation
 #########################################################################################
-include $(sim_dir)/sdload.mk
+#include $(sim_dir)/sdload.mk
 #include $(sim_dir)/jumpqspi.mk
-.PHONY: $(SDLOAD_FILE)
+#.PHONY: $(SDLOAD_FILE)
 
-$(ROM_FILE): $(ROM_CONF_FILE) $(SDLOAD_FILE) $(ROMGEN)
-	$(ROMGEN) $(ROM_CONF_FILE) $(SDLOAD_FILE) > $(ROM_FILE)
+#$(ROM_FILE): $(ROM_CONF_FILE) $(SDLOAD_FILE) $(ROMGEN)
+#	$(ROMGEN) $(ROM_CONF_FILE) $(SDLOAD_FILE) > $(ROM_FILE)
+
+export BUILD_DIR = $(build_dir)
+export CONFIG
+export CONFIG_PROJECT = $(CONFIG_PACKAGE).$(MODEL)
+export BOARD = tr4
+export ROMGEN
+export ROM_CONF_FILE
+export ROM_FILE
+export TEEHW = 1
+
+$(ROM_FILE): $(ROM_CONF_FILE) $(ROMGEN)
+	make -C $(bootrom_dir) romgen
 
 #########################################################################################
 # general cleanup rule
 #########################################################################################
 .PHONY: clean
 clean:
-	rm -rf $(gen_dir) $(sim_prefix)-* $(test_dir) 
+	rm -rf $(gen_dir) $(sim_prefix)-* $(test_dir)
+	make -C $(bootrom_dir) clean

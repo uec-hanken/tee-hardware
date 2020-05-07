@@ -133,6 +133,9 @@ class ChipConfigDE4 extends Config(
   new ChipConfig().alter((site,here,up) => {
     case FreqKeyMHz => 100.0
     case DDRPortOther => true
+    case PeripherySPIFlashKey => List() // No external flash.
+    case PeripheryMaskROMKey => List( // TODO: The software is not compilable on 0x10000
+      MaskROMParams(address = BigInt(0x20000000), depth = 8192, name = "BootROM"))
   })
 )
 

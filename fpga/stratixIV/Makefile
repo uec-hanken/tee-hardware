@@ -7,6 +7,7 @@
 #########################################################################################
 base_dir=$(abspath ../..)
 sim_dir=$(abspath .)
+bootrom_dir=$(base_dir)/software/freedom-u540-c000-bootloader
 SUB_PROJECT ?= NEDOFPGAQuartus
 ROMGEN ?= $(base_dir)/vlsi/vlsi_rom_gen_real
 
@@ -29,6 +30,7 @@ sim_debug = $(sim_dir)/$(sim_prefix)-$(MODEL_PACKAGE)-$(CONFIG)-debug
 ROM_FILE = $(build_dir)/$(long_name).rom.v
 ROM_CONF_FILE = $(build_dir)/$(long_name).rom.conf
 DTS_FILE = $(build_dir)/$(long_name).dts
+BOOT_FILE = $(bootrom_dir)/vc707zsbl.hex
 
 PERMISSIVE_ON=
 PERMISSIVE_OFF=
@@ -56,16 +58,29 @@ include $(sim_dir)/stratixIV.mk
 #########################################################################################
 # ROM generation
 #########################################################################################
-include $(sim_dir)/sdload.mk
-include $(sim_dir)/jumpqspi.mk
-.PHONY: $(BOOT_FILE) $(SDLOAD_FILE)
+#include $(sim_dir)/sdload.mk
+#include $(sim_dir)/jumpqspi.mk
+#.PHONY: $(BOOT_FILE) $(SDLOAD_FILE)
 
-$(ROM_FILE): $(ROM_CONF_FILE) $(BOOT_FILE) $(ROMGEN) $(SDLOAD_FILE)
-	$(ROMGEN) $(ROM_CONF_FILE) $(BOOT_FILE) > $(ROM_FILE)
+#$(ROM_FILE): $(ROM_CONF_FILE) $(BOOT_FILE) $(ROMGEN) $(SDLOAD_FILE)
+#	$(ROMGEN) $(ROM_CONF_FILE) $(BOOT_FILE) > $(ROM_FILE)
+
+export BUILD_DIR = $(build_dir)
+export CONFIG
+export CONFIG_PROJECT = $(CONFIG_PACKAGE).$(MODEL)
+export BOARD = de4
+export ROMGEN
+export ROM_CONF_FILE
+export ROM_FILE
+export TEEHW = 1
+
+$(ROM_FILE): $(ROM_CONF_FILE) $(ROMGEN)
+	make -C $(bootrom_dir) romgen
 
 #########################################################################################
 # general cleanup rule
 #########################################################################################
 .PHONY: clean
 clean:
-	rm -rf $(gen_dir) $(sim_prefix)-* $(test_dir) 
+	rm -rf $(gen_dir) $(sim_prefix)-* $(test_dir)
+	make -C $(bootrom_dir) clean
