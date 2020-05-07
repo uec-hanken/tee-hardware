@@ -1,0 +1,19 @@
+diff --git a/generators/utilities/src/main/scala/Simulator.scala b/generators/utilities/src/main/scala/Simulator.scala
+index b1b2c4c..2244e7c 100644
+--- a/generators/utilities/src/main/scala/Simulator.scala
++++ b/generators/utilities/src/main/scala/Simulator.scala
+@@ -99,10 +99,10 @@ object GenerateSimFiles extends App with HasGenerateSimConfig {
+   })
+ 
+   def writeBootrom(): Unit = {
+-    firrtl.FileUtils.makeDirectory("./bootrom/")
+-    writeResource("/testchipip/bootrom/bootrom.rv64.img", "./bootrom/")
+-    writeResource("/testchipip/bootrom/bootrom.rv32.img", "./bootrom/")
+-    writeResource("/bootrom/bootrom.img", "./bootrom/")
++    firrtl.FileUtils.makeDirectory("./hardware/chipyard/bootrom/")
++    writeResource("/testchipip/bootrom/bootrom.rv64.img", "./hardware/chipyard/bootrom/")
++    writeResource("/testchipip/bootrom/bootrom.rv32.img", "./hardware/chipyard/bootrom/")
++    writeResource("/bootrom/bootrom.img", "./hardware/chipyard/bootrom/")
+   }
+ 
+   def writeFiles(cfg: GenerateSimConfig): Unit = {
