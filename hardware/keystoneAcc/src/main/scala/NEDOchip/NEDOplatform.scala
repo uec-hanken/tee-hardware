@@ -25,6 +25,7 @@ import uec.keystoneAcc.devices.random._
 import uec.keystoneAcc.devices.sha3._
 import uec.keystoneAcc.devices.usb11hs._
 import uec.rocketchip.subsystem._
+import utilities._
 
 class SlowMemIsland(blockBytes: Int, val crossing: ClockCrossingType = AsynchronousCrossing(8))(implicit p: Parameters)
     extends LazyModule
@@ -43,7 +44,8 @@ class SlowMemIsland(blockBytes: Int, val crossing: ClockCrossingType = Asynchron
   }
 }
 
-class NEDOSystem(implicit p: Parameters) extends RocketSubsystem
+class NEDOSystem(implicit p: Parameters) extends BaseSubsystem
+    with HasBoomAndRocketTiles
     with HasHierarchicalBusTopology
     with HasPeripheryDebug
     with HasPeripheryGPIO
@@ -158,12 +160,16 @@ class NEDOSystem(implicit p: Parameters) extends RocketSubsystem
   }
   else None
 
+  // add Mask ROM devices
+  val maskROMs = p(PeripheryMaskROMKey).map { MaskROM.attach(_, cbus) }
+
   // System module creation
   override lazy val module = new NEDOSystemModule(this)
 }
 
 class NEDOSystemModule[+L <: NEDOSystem](_outer: L)
-  extends RocketSubsystemModuleImp(_outer)
+  extends BaseSubsystemModuleImp(_outer)
+    with HasBoomAndRocketTilesModuleImp
     with HasRTCModuleImp
     with HasPeripheryDebugModuleImp
     with HasPeripheryGPIOModuleImp
@@ -172,6 +178,7 @@ class NEDOSystemModule[+L <: NEDOSystem](_outer: L)
     with HasPeripheryAESModuleImp
     with HasPeripheryUSB11HSModuleImp
     with HasPeripheryRandomModuleImp
+    with HasResetVectorWire
     //    with HasPeripheryI2CModuleImp
     //    with HasPeripheryUARTModuleImp // NOTE: Already included
     //    with HasPeripherySPIFlashModuleImp // NOTE: Already included
@@ -213,6 +220,14 @@ class NEDOSystemModule[+L <: NEDOSystem](_outer: L)
   // Reset vector is set to the location of the first mask rom
   val maskROMParams = p(PeripheryMaskROMKey)
   global_reset_vector := maskROMParams(0).address.U
+
+  tile_inputs.zip(outer.hartIdList).foreach { case(wire, i) =>
+    wire.hartid := i.U
+    wire.reset_vector := global_reset_vector
+  }
+
+  // create file with boom params
+  ElaborationArtefacts.add("""core.config""", outer.tiles.map(x => x.module.toString).mkString("\n"))
 }
 
 object PinGen {

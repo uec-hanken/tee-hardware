@@ -35,7 +35,10 @@ case object DDRPortOther extends Field[Boolean]
 class ChipDefaultConfig extends Config(
   new WithJtagDTM            ++
   new WithNMemoryChannels(1) ++
-  //new WithNBigCores(2)       ++
+  new boom.common.WithRenumberHarts(rocketFirst = true) ++
+  new boom.common.WithLargeBooms ++
+  new boom.common.WithNBoomCores(1) ++
+    //new WithNBigCores(2)       ++
   new BaseConfig().alter((site,here,up) => {
     case RocketTilesKey => {
       val big = RocketTileParams(
@@ -61,7 +64,7 @@ class ChipDefaultConfig extends Config(
           nWays = 1,
           rowBits = site(SystemBusKey).beatBits,
           blockBytes = site(CacheBlockBytes))))
-      List.tabulate(2)(i => big.copy(hartId = i))
+      List.tabulate(2)(i => big.copy(hartId = i+1))
     }
   })
 )
