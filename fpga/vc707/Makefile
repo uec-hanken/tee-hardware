@@ -9,7 +9,7 @@ base_dir=$(abspath ../..)
 sim_dir=$(abspath .)
 bootrom_dir=$(base_dir)/software/freedom-u540-c000-bootloader
 SUB_PROJECT ?= NEDOFPGA
-ROMGEN ?= $(base_dir)/vlsi/vlsi_rom_gen_real
+ROMGEN ?= $(base_dir)/hardware/vlsi_rom_gen_real
 
 #########################################################################################
 # include shared variables
