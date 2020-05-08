@@ -17,6 +17,7 @@ import uec.keystoneAcc.devices.ed25519._
 import uec.keystoneAcc.devices.sha3._
 import uec.keystoneAcc.devices.usb11hs._
 import uec.keystoneAcc.devices.random._
+import boom.common._
 //import sifive.freedom.unleashed.DevKitFPGAFrequencyKey
 
 // The number of gpios that we want as input
@@ -36,9 +37,9 @@ class ChipDefaultConfig extends Config(
   new WithJtagDTM            ++
   new WithNMemoryChannels(1) ++
   new boom.common.WithRenumberHarts(rocketFirst = true) ++
-  new boom.common.WithLargeBooms ++
-  new boom.common.WithNBoomCores(1) ++
-    //new WithNBigCores(2)       ++
+  new boom.common.WithSmallBooms ++
+  //new boom.common.WithNBoomCores(1) ++
+  // new WithNBigCores(2)       ++
   new BaseConfig().alter((site,here,up) => {
     case RocketTilesKey => {
       val big = RocketTileParams(
@@ -64,7 +65,10 @@ class ChipDefaultConfig extends Config(
           nWays = 1,
           rowBits = site(SystemBusKey).beatBits,
           blockBytes = site(CacheBlockBytes))))
-      List.tabulate(2)(i => big.copy(hartId = i+1))
+      List.tabulate(1)(i => big.copy(hartId = i))
+    }
+    case BoomTilesKey => {
+      List.tabulate(1)(i => BoomTileParams(hartId = i+1)) // TODO: Make it dependent of up(RocketTilesKey, site).length
     }
   })
 )
@@ -140,6 +144,7 @@ class ChipConfigDE4 extends Config(
 )
 
 class ChipConfigTR4 extends Config(
+  new boom.common.WithSmallBooms ++
   new ChipConfig().alter((site,here,up) => {
     case FreqKeyMHz => 100.0
     /*case ExtMem => Some(MemoryPortParams(MasterPortParams( // For back to 64 bits
@@ -164,12 +169,16 @@ class ChipConfigTR4 extends Config(
         icache = Some(ICacheParams(
           rowBits = site(SystemBusKey).beatBits,
           blockBytes = site(CacheBlockBytes))))
-      List.tabulate(2)(i => big.copy(hartId = i))
+      List.tabulate(1)(i => big.copy(hartId = i))
+    }
+    case BoomTilesKey => {
+      List.tabulate(1)(i => BoomTileParams(hartId = i+1)) // TODO: Make it dependent of up(RocketTilesKey, site).length
     }
   })
 )
 
 class ChipConfigVC707 extends Config(
+  new boom.common.WithSmallBooms ++
   new ChipConfig().alter((site,here,up) => {
     case FreqKeyMHz => 80.0
     case PeripherySPIFlashKey => List() // No external flash. There is no pins to put them
@@ -195,7 +204,10 @@ class ChipConfigVC707 extends Config(
         icache = Some(ICacheParams(
           rowBits = site(SystemBusKey).beatBits,
           blockBytes = site(CacheBlockBytes))))
-      List.tabulate(2)(i => big.copy(hartId = i))
+      List.tabulate(1)(i => big.copy(hartId = i))
+    }
+    case BoomTilesKey => {
+      List.tabulate(1)(i => BoomTileParams(hartId = i+1)) // TODO: Make it dependent of up(RocketTilesKey, site).length
     }
   })
 )
