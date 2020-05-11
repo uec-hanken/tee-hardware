@@ -2,7 +2,7 @@ package uec.keystoneAcc.nedochip
 
 import chisel3._
 import chisel3.util._
-import chisel3.experimental.{Analog, IO, RawModule, attach}
+import chisel3.experimental.{Analog, IO, attach}
 import freechips.rocketchip.config._
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.util._

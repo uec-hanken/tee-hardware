@@ -337,12 +337,17 @@ class NEDOPlatform(implicit val p: Parameters) extends Module {
   SPIPinsFromPort(io.pins.spi, sys.spi(0), clock = sys.clock, reset = sys.reset.toBool, syncStages = 3)
 
   // JTAG Debug Interface
-  val sjtag = sys.debug.systemjtag.get
+  // TODO: Now the debug is optional? The get will fail if the debug is disabled
+  val sjtag = sys.debug.get.systemjtag.get
   JTAGPinsFromPort(io.pins.jtag, sjtag.jtag)
   sjtag.reset := io.jtag_reset
   sjtag.mfr_id := p(JtagDTMKey).idcodeManufId.U(11.W)
+  sjtag.part_number := p(JtagDTMKey).idcodePartNum.U(16.W)
+  sjtag.version := p(JtagDTMKey).idcodeVersion.U(4.W)
 
-  io.ndreset := sys.debug.ndreset
+  sys.debug.foreach { case debug =>
+    io.ndreset := debug.ndreset
+  }
 
   // PCIe port connection
   if(p(IncludePCIe)) {

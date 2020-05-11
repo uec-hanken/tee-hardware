@@ -3,7 +3,6 @@ import Tests._
 // This gives us a nicer handle  to the root project instead of using the
 // implicit one
 lazy val keystoneHardwareRoot = RootProject(file("."))
-//lazy val chipyardRoot = RootProject(file("hardware/chipyard"))
 
 lazy val commonSettings = Seq(
   organization := "ac.uec.vlsilab.ee",
@@ -34,12 +33,16 @@ lazy val commonSettings = Seq(
 
 val rocketChipDir = file("hardware/chipyard/generators/rocket-chip")
 
-/*lazy val firesimAsLibrary = sys.env.get("FIRESIM_STANDALONE") == None
-lazy val firesimDir = if (firesimAsLibrary) {
+lazy val firesimAsLibrary = sys.env.get("FIRESIM_STANDALONE") == None
+lazy val firesimDir = 
   file("hardware/chipyard/sims/firesim/sim/")
-} else {
-  file("../../")
-}*/
+
+// Checks for -DROCKET_USE_MAVEN.
+// If it's there, use a maven dependency.
+// Else, depend on subprojects in git submodules.
+def conditionalDependsOn(prj: Project): Project = {
+    prj.dependsOn(testchipip)
+}
 
 /**
   * It has been a struggle for us to override settings in subprojects.
@@ -93,6 +96,9 @@ lazy val chisel_testers = (project in file("hardware/chipyard/tools/chisel-teste
 // Contains annotations & firrtl passes you may wish to use in rocket-chip without
 // introducing a circular dependency between RC and MIDAS
 //lazy val midasTargetUtils = ProjectRef(firesimDir, "targetutils")
+lazy val midasTargetUtils = (project in file("hardware/chipyard/sims/firesim/sim/midas/targetutils"))
+  .dependsOn(chisel)
+  .settings(commonSettings)
 
  // Rocket-chip dependencies (subsumes making RC a RootProject)
 lazy val hardfloat  = (project in rocketChipDir / "hardfloat")
@@ -113,18 +119,17 @@ lazy val testchipip = (project in file("hardware/chipyard/generators/testchipip"
   .dependsOn(rocketchip, sifive_blocks)
   .settings(commonSettings)
 
-lazy val chipyard = (project in file("hardware/chipyard/generators/chipyard"))
+lazy val chipyard = conditionalDependsOn(project in file("hardware/chipyard/generators/chipyard"))
   .dependsOn(boom, hwacha, sifive_blocks, sifive_cache, utilities,
     sha3, // On separate line to allow for cleaner tutorial-setup patches
     gemmini, icenet, tracegen, ariane)
   .settings(commonSettings)
 
-lazy val tracegen = (project in file("hardware/chipyard/generators/tracegen"))
+lazy val tracegen = conditionalDependsOn(project in file("hardware/chipyard/generators/tracegen"))
   .dependsOn(rocketchip, sifive_cache, boom, utilities)
   .settings(commonSettings)
 
-lazy val utilities = (project in file("hardware/chipyard/generators/utilities"))
-  .dependsOn(rocketchip, boom, testchipip)
+lazy val utilities = conditionalDependsOn(project in file("hardware/chipyard/generators/utilities"))
   .settings(commonSettings)
 
 lazy val icenet = (project in file("hardware/chipyard/generators/icenet"))
@@ -144,14 +149,14 @@ lazy val ariane = (project in file("hardware/chipyard/generators/ariane"))
   .settings(commonSettings)
 
 lazy val sha3 = (project in file("hardware/chipyard/generators/sha3"))
-  .dependsOn(rocketchip, chisel_testers)
+  .dependsOn(rocketchip, chisel_testers, midasTargetUtils, midas)
   .settings(commonSettings)
 
 lazy val gemmini = (project in file("hardware/chipyard/generators/gemmini"))
   .dependsOn(rocketchip, chisel_testers, testchipip)
   .settings(commonSettings)
 
-lazy val tapeout = (project in file("./hardware/chipyard/tools/barstools/tapeout/"))
+lazy val tapeout = conditionalDependsOn(project in file("./hardware/chipyard/tools/barstools/tapeout/"))
   .dependsOn(chisel_testers, testchipip)
   .settings(commonSettings)
 
@@ -185,7 +190,7 @@ lazy val sifive_blocks = (project in file("hardware/chipyard/generators/sifive-b
 
 lazy val sifive_cache = (project in file("hardware/chipyard/generators/sifive-cache")).settings(
     commonSettings,
-    scalaSource in Compile := baseDirectory.value / "craft"
+    scalaSource in Compile := baseDirectory.value / "design/craft"
   ).dependsOn(rocketchip)
 
 lazy val fpga_shells = (project in file("hardware/fpga-shells")).
@@ -197,11 +202,13 @@ lazy val keystoneAcc = (project in file("hardware/keystoneAcc")).
   settings(commonSettings)
 
 // Library components of FireSim
-//lazy val midas      = ProjectRef(firesimDir, "midas")
+lazy val midas      = (project in file("hardware/chipyard/sims/firesim/sim/midas")).
+  dependsOn(rocketchip, chisel, midasTargetUtils, mdf, barstoolsMacros).
+  settings(commonSettings)
 //lazy val firesimLib = ProjectRef(firesimDir, "firesimLib")
 
 /*lazy val firechip = (project in file("hardware/chipyard/generators/firechip"))
-  .dependsOn(boom, icenet, testchipip, sifive_blocks, sifive_cache, sha3, utilities, tracegen, midasTargetUtils, midas, firesimLib % "test->test;compile->compile")
+  .dependsOn(chipyard, midasTargetUtils, midas, firesimLib % "test->test;compile->compile")
   .settings(
     commonSettings,
     testGrouping in Test := isolateAllTests( (definedTests in Test).value )
