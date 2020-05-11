@@ -1,0 +1,6 @@
+*
+!.gitignore
+!Makefile
+!main.qsys
+!DE4.qpf
+!DE4.qsf
