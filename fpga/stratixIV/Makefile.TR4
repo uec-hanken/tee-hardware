@@ -48,7 +48,7 @@ default: verilog
 	mkdir -p $(test_dir)
 	# We already had a compilation where the MODEL is the harness and the RocketTile is the top
 	# In this case: The TOP is the harness, the RocketTile is the top
-	cd $(base_dir) && $(SBT) "project keystoneAcc" "runMain uec.keystoneAcc.uecutils.GenerateTopAndHarness -o $(test_dir)/RocketTile.v -tho $(test_dir)/$(TOP).v -i $(FIRRTL_FILE) --syn-top RocketTile --harness-top $(TOP) -faf $(ANNO_FILE) -tsaof $(test_dir)/top.anno.json -tdf $(test_dir)/RocketTile.top.f -tsf $(test_dir)/RocketTile.fir -thaof $(test_dir)/RocketTile.anno.json -hdf $(test_dir)/top.harness.f -thf $(test_dir)/top.fir --infer-rw --repl-seq-mem -c:$(TOP):-o:$(test_dir)/RocketTile.mems.conf -thconf $(test_dir)/top.mems.conf -td $(test_dir)"
+	cd $(base_dir) && $(SBT) "project keystoneAcc" "runMain uec.keystoneAcc.uecutils.GenerateTopAndHarness -o $(test_dir)/RocketTile.v -tho $(test_dir)/$(TOP).v -i $(FIRRTL_FILE) --syn-top BoomTile --harness-top $(TOP) -faf $(ANNO_FILE) -tsaof $(test_dir)/top.anno.json -tdf $(test_dir)/RocketTile.top.f -tsf $(test_dir)/RocketTile.fir -thaof $(test_dir)/RocketTile.anno.json -hdf $(test_dir)/top.harness.f -thf $(test_dir)/top.fir --infer-rw --repl-seq-mem -c:$(TOP):-o:$(test_dir)/RocketTile.mems.conf -thconf $(test_dir)/top.mems.conf -td $(test_dir)"
 	# We also want to generate our memories
 	cd $(base_dir) && $(SBT) "project barstoolsMacros" "runMain barstools.macros.MacroCompiler -n $(test_dir)/RocketTile.mems.conf -v $(test_dir)/RocketTile.mems.v -f $(test_dir)/RocketTile.mems.fir $(MACROCOMPILER_MODE)"
 	cd $(base_dir) && $(SBT) "project barstoolsMacros" "runMain barstools.macros.MacroCompiler -n $(test_dir)/top.mems.conf -v $(test_dir)/top.mems.v -f $(test_dir)/top.mems.fir $(MACROCOMPILER_MODE)"

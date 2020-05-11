@@ -8,14 +8,14 @@ lazy val keystoneHardwareRoot = RootProject(file("."))
 lazy val commonSettings = Seq(
   organization := "ac.uec.vlsilab.ee",
   version := "0.1",
-  scalaVersion := "2.12.4",
+  scalaVersion := "2.12.10",
   traceLevel := 15,
   test in assembly := {},
   assemblyMergeStrategy in assembly := { _ match {
     case PathList("META-INF", "MANIFEST.MF") => MergeStrategy.discard
     case _ => MergeStrategy.first}},
   scalacOptions ++= Seq("-deprecation","-unchecked","-Xsource:2.11"),
-  libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.5" % "test",
+  libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.8" % "test",
   libraryDependencies += "org.json4s" %% "json4s-jackson" % "3.6.1",
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
   libraryDependencies += "com.github.scopt" %% "scopt" % "3.7.0",
@@ -101,21 +101,26 @@ lazy val hardfloat  = (project in rocketChipDir / "hardfloat")
 
 lazy val rocketMacros  = (project in rocketChipDir / "macros")
   .settings(commonSettings)
+  
+lazy val rocketConfig = (project in rocketChipDir / "api-config-chipsalliance/build-rules/sbt")
+  .settings(commonSettings)
 
 lazy val rocketchip = freshProject("rocketchip", rocketChipDir)
   .settings(commonSettings)
-  .dependsOn(chisel, hardfloat, rocketMacros)
+  .dependsOn(chisel, hardfloat, rocketMacros, rocketConfig)
 
 lazy val testchipip = (project in file("hardware/chipyard/generators/testchipip"))
-  .dependsOn(rocketchip)
+  .dependsOn(rocketchip, sifive_blocks)
   .settings(commonSettings)
 
-//lazy val example = (project in file("hardware/chipyard/generators/example"))
-//  .dependsOn(boom, hwacha, sifive_blocks, sifive_cache, utilities, sha3, testchipip)
-//  .settings(commonSettings)
+lazy val chipyard = (project in file("hardware/chipyard/generators/chipyard"))
+  .dependsOn(boom, hwacha, sifive_blocks, sifive_cache, utilities,
+    sha3, // On separate line to allow for cleaner tutorial-setup patches
+    gemmini, icenet, tracegen, ariane)
+  .settings(commonSettings)
 
 lazy val tracegen = (project in file("hardware/chipyard/generators/tracegen"))
-  .dependsOn(rocketchip, sifive_cache, testchipip)
+  .dependsOn(rocketchip, sifive_cache, boom, utilities)
   .settings(commonSettings)
 
 lazy val utilities = (project in file("hardware/chipyard/generators/utilities"))
@@ -134,9 +139,17 @@ lazy val boom = (project in file("hardware/chipyard/generators/boom"))
   .dependsOn(rocketchip)
   .settings(commonSettings)
 
-//lazy val sha3 = (project in file("hardware/chipyard/generators/sha3"))
-//  .dependsOn(rocketchip, chisel_testers)
-//  .settings(commonSettings)
+lazy val ariane = (project in file("hardware/chipyard/generators/ariane"))
+  .dependsOn(rocketchip)
+  .settings(commonSettings)
+
+lazy val sha3 = (project in file("hardware/chipyard/generators/sha3"))
+  .dependsOn(rocketchip, chisel_testers)
+  .settings(commonSettings)
+
+lazy val gemmini = (project in file("hardware/chipyard/generators/gemmini"))
+  .dependsOn(rocketchip, chisel_testers, testchipip)
+  .settings(commonSettings)
 
 lazy val tapeout = (project in file("./hardware/chipyard/tools/barstools/tapeout/"))
   .dependsOn(chisel_testers, testchipip)
@@ -180,7 +193,7 @@ lazy val fpga_shells = (project in file("hardware/fpga-shells")).
   settings(commonSettings)
 
 lazy val keystoneAcc = (project in file("hardware/keystoneAcc")).
-  dependsOn(rocketchip, sifive_blocks, fpga_shells, utilities, tapeout).
+  dependsOn(rocketchip, sifive_blocks, fpga_shells, utilities, tapeout, chipyard).
   settings(commonSettings)
 
 // Library components of FireSim

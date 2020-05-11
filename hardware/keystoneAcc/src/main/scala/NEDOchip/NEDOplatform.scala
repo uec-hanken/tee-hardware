@@ -25,7 +25,7 @@ import uec.keystoneAcc.devices.random._
 import uec.keystoneAcc.devices.sha3._
 import uec.keystoneAcc.devices.usb11hs._
 import uec.rocketchip.subsystem._
-import utilities._
+import chipyard._
 
 class SlowMemIsland(blockBytes: Int, val crossing: ClockCrossingType = AsynchronousCrossing(8))(implicit p: Parameters)
     extends LazyModule
@@ -45,7 +45,7 @@ class SlowMemIsland(blockBytes: Int, val crossing: ClockCrossingType = Asynchron
 }
 
 class NEDOSystem(implicit p: Parameters) extends BaseSubsystem
-    with HasBoomAndRocketTiles
+    with HasChipyardTiles
     with HasHierarchicalBusTopology
     with HasPeripheryDebug
     with HasPeripheryGPIO
@@ -169,7 +169,7 @@ class NEDOSystem(implicit p: Parameters) extends BaseSubsystem
 
 class NEDOSystemModule[+L <: NEDOSystem](_outer: L)
   extends BaseSubsystemModuleImp(_outer)
-    with HasBoomAndRocketTilesModuleImp
+    with HasChipyardTilesModuleImp
     with HasRTCModuleImp
     with HasPeripheryDebugModuleImp
     with HasPeripheryGPIOModuleImp
