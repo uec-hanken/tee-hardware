@@ -7,6 +7,8 @@
 #########################################################################################
 base_dir=$(abspath ../..)
 sim_dir=$(abspath .)
+build_dir=$(sim_dir)/DE4/src
+
 bootrom_dir=$(base_dir)/software/freedom-u540-c000-bootloader
 SUB_PROJECT ?= NEDOFPGAQuartus
 ROMGEN ?= $(base_dir)/hardware/vlsi_rom_gen_real
@@ -37,15 +39,13 @@ PERMISSIVE_OFF=
 
 WAVEFORM_FLAG=-v$(sim_out_name).vcd
 
-test_dir=$(sim_dir)/chip/
-
 .PHONY: default
 # NOTE: We are going to add the true tapeout stuff here
 default: verilog
-	mkdir -p $(test_dir)
+	cp -rf $(KEYSTONE_ACC_DIR)/optvsrc/* $(build_dir)
 	# We already had a compilation where the MODEL is the harness and the RocketTile is the top
 	# In this case: The TOP is the harness, the RocketTile is the top
-	cd $(base_dir) && $(SBT) "project keystoneAcc" "runMain uec.keystoneAcc.uecutils.GenerateTopAndHarness -o $(test_dir)/RocketTile.v -tho $(test_dir)/$(TOP).v -i $(FIRRTL_FILE) --syn-top RocketTile --harness-top $(TOP) -faf $(ANNO_FILE) -tsaof $(test_dir)/top.anno.json -tdf $(test_dir)/RocketTile.top.f -tsf $(test_dir)/RocketTile.fir -thaof $(test_dir)/RocketTile.anno.json -hdf $(test_dir)/top.harness.f -thf $(test_dir)/top.fir --infer-rw --repl-seq-mem -c:$(TOP):-o:$(test_dir)/RocketTile.mems.conf -thconf $(test_dir)/top.mems.conf -td $(test_dir)"
+	cd $(base_dir) && $(SBT) "project keystoneAcc" "runMain uec.keystoneAcc.uecutils.GenerateTopAndHarness -o $(build_dir)/RocketTile.v -tho $(build_dir)/$(TOP).v -i $(FIRRTL_FILE) --syn-top RocketTile --harness-top $(TOP) -faf $(ANNO_FILE) -tsaof $(build_dir)/top.anno.json -tdf $(build_dir)/RocketTile.top.f -tsf $(build_dir)/RocketTile.fir -thaof $(build_dir)/RocketTile.anno.json -hdf $(build_dir)/top.harness.f -thf $(build_dir)/top.fir --infer-rw --repl-seq-mem -c:$(TOP):-o:$(build_dir)/RocketTile.mems.conf -thconf $(build_dir)/top.mems.conf -td $(build_dir)"
 
 verilog: $(TOP_FILE) $(HARNESS_FILE) $(ROM_FILE)
 
@@ -66,8 +66,7 @@ include $(sim_dir)/stratixIV.mk
 #	$(ROMGEN) $(ROM_CONF_FILE) $(BOOT_FILE) > $(ROM_FILE)
 
 export BUILD_DIR = $(build_dir)
-export CONFIG
-export CONFIG_PROJECT = $(CONFIG_PACKAGE).$(MODEL)
+export long_name
 export BOARD = de4
 export ROMGEN
 export ROM_CONF_FILE
@@ -82,5 +81,5 @@ $(ROM_FILE): $(ROM_CONF_FILE) $(ROMGEN)
 #########################################################################################
 .PHONY: clean
 clean:
-	rm -rf $(gen_dir) $(sim_prefix)-* $(test_dir)
+	rm -rf $(build_dir) $(sim_prefix)-*
 	make -C $(bootrom_dir) clean

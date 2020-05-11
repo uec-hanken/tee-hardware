@@ -21,19 +21,6 @@
 # Date created = 16:00:20  October 03, 2019
 #
 # -------------------------------------------------------------------------- #
-#
-# Notes:
-#
-# 1) The default values for assignments are stored in the file:
-#		DE4_freedom_assignment_defaults.qdf
-#    If this file doesn't exist, see file:
-#		assignment_defaults.qdf
-#
-# 2) Altera recommends that you do not modify this file. This
-#    file is updated automatically by the Quartus Prime software
-#    and any changes you make may be lost or overwritten.
-#
-# -------------------------------------------------------------------------- #
 
 
 set_global_assignment -name FAMILY "Stratix IV"
@@ -1928,112 +1915,103 @@ set_instance_assignment -name IO_STANDARD "DIFFERENTIAL 1.8-V SSTL CLASS I" -to 
 set_instance_assignment -name IO_STANDARD "DIFFERENTIAL 1.8-V SSTL CLASS I" -to M1_DDR2_dqs[6]
 set_instance_assignment -name IO_STANDARD "DIFFERENTIAL 1.8-V SSTL CLASS I" -to M1_DDR2_dqs[7]
 set_global_assignment -name VERILOG_MACRO "SYNTHESIS=1"
+set_global_assignment -name QIP_FILE main/synthesis/main.qip
 set_global_assignment -name TIMING_ANALYZER_MULTICORNER_ANALYSIS ON
 set_global_assignment -name NUM_PARALLEL_PROCESSORS ALL
-set_global_assignment -name ENABLE_SIGNALTAP ON
-set_global_assignment -name SEARCH_PATH ../../../hardware/keystoneAcc/vsrc/usbhostslave/RTL/include
-set_global_assignment -name SEARCH_PATH ../../../hardware/keystoneAcc/vsrc/ed25519_sign/src/rtl/memories
-set_global_assignment -name SEARCH_PATH ../../../hardware/keystoneAcc/vsrc/ed25519_sign/src/rtl/modular_reduce
-set_global_assignment -name SEARCH_PATH ../../../hardware/keystoneAcc/vsrc/ed25519_sign/src/rtl/scalar_mult
-set_global_assignment -name USE_SIGNALTAP_FILE stp1.stp
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/optvsrc/Ed25519/Ed25519_mul/ed25519_mul_TOP_wrapper.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/optvsrc/Ed25519/Ed25519_mul/ed25519_mul_TOP.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/optvsrc/Ed25519/Ed25519_mul/ed25519_mul.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/optvsrc/SHA3/SHA3_TOP_wrapper.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/optvsrc/SHA3/SHA3_TOP.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/optvsrc/SHA3/round2in1.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/optvsrc/SHA3/rconst2in1.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/optvsrc/SHA3/padder1.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/optvsrc/SHA3/padder.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/optvsrc/SHA3/keccak.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/optvsrc/SHA3/f_permutation.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/optvsrc/Ed25519/Ed25519_sign/mult_512_byAdder.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/optvsrc/Ed25519/Ed25519_sign/ed25519_sign_S_core_TOP_wrapper.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/optvsrc/Ed25519/Ed25519_sign/ed25519_sign_S_core_TOP.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/optvsrc/Ed25519/Ed25519_sign/ed25519_sign_S_core.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/optvsrc/Ed25519/Ed25519_sign/barrett.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/optvsrc/Ed25519/Ed25519_mul/subtractor32_generic.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/optvsrc/Ed25519/Ed25519_mul/multiword_mover.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/optvsrc/Ed25519/Ed25519_mul/modular_subtractor.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/optvsrc/Ed25519/Ed25519_mul/modular_adder.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/optvsrc/Ed25519/Ed25519_mul/mac16_generic.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/optvsrc/Ed25519/Ed25519_mul/ed25519_uop_worker.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/optvsrc/Ed25519/Ed25519_mul/ed25519_operand_bank.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/optvsrc/Ed25519/Ed25519_mul/ed25519_microcode_rom.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/optvsrc/Ed25519/Ed25519_mul/ed25519_banks_array.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/optvsrc/Ed25519/Ed25519_mul/curve25519_modular_multiplier.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/optvsrc/Ed25519/Ed25519_mul/bram_1rw_1ro_readfirst.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/optvsrc/Ed25519/Ed25519_mul/adder47_generic.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/optvsrc/Ed25519/Ed25519_mul/adder32_generic.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/optvsrc/AES/mixcolumns.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/optvsrc/AES/inv_mixcolumns.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/optvsrc/AES/aes_sub_sbox.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/optvsrc/AES/aes_sub_inv_sbox.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/optvsrc/AES/aes_sbox.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/optvsrc/AES/aes_key_mem.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/optvsrc/AES/aes_inv_sbox.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/optvsrc/AES/aes_encipher_block.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/optvsrc/AES/aes_decipher_block.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/optvsrc/AES/aes_core_TOP_wrapper.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/optvsrc/AES/aes_core_TOP.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/optvsrc/AES/aes_core.v
-set_global_assignment -name SIGNALTAP_FILE stp1.stp
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/vsrc/wb2axip/rtl/wbarbiter.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/vsrc/usbhostslave/RTL/hostController/USBHostControlBI.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/vsrc/usbhostslave/RTL/hostController/usbHostControl.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/vsrc/usbhostslave/RTL/hostController/speedCtrlMux.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/vsrc/usbhostslave/RTL/hostController/softransmit.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/vsrc/usbhostslave/RTL/hostController/sofcontroller.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/vsrc/usbhostslave/RTL/hostController/sendpacketcheckpreamble.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/vsrc/usbhostslave/RTL/hostController/sendpacketarbiter.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/vsrc/usbhostslave/RTL/hostController/sendpacket.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/vsrc/usbhostslave/RTL/hostController/rxStatusMonitor.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/vsrc/usbhostslave/RTL/hostController/hostcontroller.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/vsrc/usbhostslave/RTL/hostController/hctxportarbiter.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/vsrc/usbhostslave/RTL/hostController/getpacket.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/vsrc/usbhostslave/RTL/hostController/directcontrol.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/vsrc/usbhostslave/RTL/slaveController/USBSlaveControlBI.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/vsrc/usbhostslave/RTL/slaveController/usbSlaveControl.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/vsrc/usbhostslave/RTL/slaveController/slaveSendpacket.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/vsrc/usbhostslave/RTL/slaveController/slaveRxStatusMonitor.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/vsrc/usbhostslave/RTL/slaveController/slaveGetpacket.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/vsrc/usbhostslave/RTL/slaveController/slaveDirectcontrol.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/vsrc/usbhostslave/RTL/slaveController/slavecontroller.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/vsrc/usbhostslave/RTL/slaveController/sctxportarbiter.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/vsrc/usbhostslave/RTL/slaveController/fifoMux.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/vsrc/usbhostslave/RTL/slaveController/endpMux.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/vsrc/usbhostslave/RTL/serialInterfaceEngine/writeUSBWireData.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/vsrc/usbhostslave/RTL/serialInterfaceEngine/usbTxWireArbiter.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/vsrc/usbhostslave/RTL/serialInterfaceEngine/usbSerialInterfaceEngine.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/vsrc/usbhostslave/RTL/serialInterfaceEngine/updateCRC16.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/vsrc/usbhostslave/RTL/serialInterfaceEngine/updateCRC5.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/vsrc/usbhostslave/RTL/serialInterfaceEngine/SIETransmitter.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/vsrc/usbhostslave/RTL/serialInterfaceEngine/siereceiver.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/vsrc/usbhostslave/RTL/serialInterfaceEngine/readUSBWireData.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/vsrc/usbhostslave/RTL/serialInterfaceEngine/processTxByte.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/vsrc/usbhostslave/RTL/serialInterfaceEngine/processRxByte.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/vsrc/usbhostslave/RTL/serialInterfaceEngine/processRxBit.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/vsrc/usbhostslave/RTL/serialInterfaceEngine/lineControlUpdate.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/vsrc/usbhostslave/RTL/hostSlaveMux/hostSlaveMuxBI.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/vsrc/usbhostslave/RTL/hostSlaveMux/hostSlaveMux.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/vsrc/usbhostslave/RTL/busInterface/wishBoneBI.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/vsrc/usbhostslave/RTL/buffers/TxFifoBI.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/vsrc/usbhostslave/RTL/buffers/TxFifo.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/vsrc/usbhostslave/RTL/buffers/RxFifoBI.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/vsrc/usbhostslave/RTL/buffers/RxFifo.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/vsrc/usbhostslave/RTL/buffers/fifoRTL.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/vsrc/usbhostslave/RTL/buffers/dpMem_dc.v
-set_global_assignment -name VERILOG_FILE ../../../hardware/keystoneAcc/vsrc/usbhostslave/RTL/wrapper/usbHostSlave.v
-set_global_assignment -name VERILOG_FILE ../chip/RocketTile.v
-set_global_assignment -name VERILOG_FILE ../chip/NEDOchip.v
-set_global_assignment -name VERILOG_FILE "../generated-src/uec.keystoneAcc.nedochip.NEDOFPGAQuartus.ChipConfigDE4/uec.keystoneAcc.nedochip.NEDOFPGAQuartus.ChipConfigDE4.top.mems.v"
-set_global_assignment -name VERILOG_FILE "../generated-src/uec.keystoneAcc.nedochip.NEDOFPGAQuartus.ChipConfigDE4/uec.keystoneAcc.nedochip.NEDOFPGAQuartus.ChipConfigDE4.rom.v"
-set_global_assignment -name VERILOG_FILE "../generated-src/uec.keystoneAcc.nedochip.NEDOFPGAQuartus.ChipConfigDE4/uec.keystoneAcc.nedochip.NEDOFPGAQuartus.ChipConfigDE4.harness.v"
-set_global_assignment -name VERILOG_FILE "../generated-src/uec.keystoneAcc.nedochip.NEDOFPGAQuartus.ChipConfigDE4/uec.keystoneAcc.nedochip.NEDOFPGAQuartus.ChipConfigDE4.harness.mems.v"
-set_global_assignment -name VERILOG_FILE "../generated-src/uec.keystoneAcc.nedochip.NEDOFPGAQuartus.ChipConfigDE4/plusarg_reader.v"
-set_global_assignment -name VERILOG_FILE "../generated-src/uec.keystoneAcc.nedochip.NEDOFPGAQuartus.ChipConfigDE4/EICG_wrapper.v"
-set_global_assignment -name VERILOG_FILE "../generated-src/uec.keystoneAcc.nedochip.NEDOFPGAQuartus.ChipConfigDE4/AsyncResetReg.v"
-set_global_assignment -name QIP_FILE main/synthesis/main.qip
-
+set_global_assignment -name VERILOG_FILE src/SHA3/SHA3_TOP_wrapper.v
+set_global_assignment -name VERILOG_FILE src/SHA3/SHA3_TOP.v
+set_global_assignment -name VERILOG_FILE src/SHA3/round2in1.v
+set_global_assignment -name VERILOG_FILE src/SHA3/rconst2in1.v
+set_global_assignment -name VERILOG_FILE src/SHA3/padder1.v
+set_global_assignment -name VERILOG_FILE src/SHA3/padder.v
+set_global_assignment -name VERILOG_FILE src/SHA3/keccak.v
+set_global_assignment -name VERILOG_FILE src/SHA3/f_permutation.v
+set_global_assignment -name VERILOG_FILE src/Ed25519/Ed25519_mul/ed25519_mul_TOP_wrapper.v
+set_global_assignment -name VERILOG_FILE src/Ed25519/Ed25519_mul/ed25519_mul_TOP.v
+set_global_assignment -name VERILOG_FILE src/Ed25519/Ed25519_mul/ed25519_mul.v
+set_global_assignment -name VERILOG_FILE src/Ed25519/Ed25519_mul/subtractor32_generic.v
+set_global_assignment -name VERILOG_FILE src/Ed25519/Ed25519_mul/multiword_mover.v
+set_global_assignment -name VERILOG_FILE src/Ed25519/Ed25519_mul/modular_subtractor.v
+set_global_assignment -name VERILOG_FILE src/Ed25519/Ed25519_mul/modular_adder.v
+set_global_assignment -name VERILOG_FILE src/Ed25519/Ed25519_mul/mac16_generic.v
+set_global_assignment -name VERILOG_FILE src/Ed25519/Ed25519_mul/ed25519_uop_worker.v
+set_global_assignment -name VERILOG_FILE src/Ed25519/Ed25519_mul/ed25519_operand_bank.v
+set_global_assignment -name VERILOG_FILE src/Ed25519/Ed25519_mul/ed25519_microcode_rom.v
+set_global_assignment -name VERILOG_FILE src/Ed25519/Ed25519_mul/ed25519_banks_array.v
+set_global_assignment -name VERILOG_FILE src/Ed25519/Ed25519_mul/curve25519_modular_multiplier.v
+set_global_assignment -name VERILOG_FILE src/Ed25519/Ed25519_mul/bram_1rw_1ro_readfirst.v
+set_global_assignment -name VERILOG_FILE src/Ed25519/Ed25519_mul/adder47_generic.v
+set_global_assignment -name VERILOG_FILE src/Ed25519/Ed25519_mul/adder32_generic.v
+set_global_assignment -name VERILOG_FILE src/Ed25519/Ed25519_sign/mult_512_byAdder.v
+set_global_assignment -name VERILOG_FILE src/Ed25519/Ed25519_sign/ed25519_sign_S_core_TOP_wrapper.v
+set_global_assignment -name VERILOG_FILE src/Ed25519/Ed25519_sign/ed25519_sign_S_core_TOP.v
+set_global_assignment -name VERILOG_FILE src/Ed25519/Ed25519_sign/ed25519_sign_S_core.v
+set_global_assignment -name VERILOG_FILE src/Ed25519/Ed25519_sign/barrett.v
+set_global_assignment -name VERILOG_FILE src/AES/mixcolumns.v
+set_global_assignment -name VERILOG_FILE src/AES/inv_mixcolumns.v
+set_global_assignment -name VERILOG_FILE src/AES/aes_sub_sbox.v
+set_global_assignment -name VERILOG_FILE src/AES/aes_sub_inv_sbox.v
+set_global_assignment -name VERILOG_FILE src/AES/aes_sbox.v
+set_global_assignment -name VERILOG_FILE src/AES/aes_key_mem.v
+set_global_assignment -name VERILOG_FILE src/AES/aes_inv_sbox.v
+set_global_assignment -name VERILOG_FILE src/AES/aes_encipher_block.v
+set_global_assignment -name VERILOG_FILE src/AES/aes_decipher_block.v
+set_global_assignment -name VERILOG_FILE src/AES/aes_core_TOP_wrapper.v
+set_global_assignment -name VERILOG_FILE src/AES/aes_core_TOP.v
+set_global_assignment -name VERILOG_FILE src/AES/aes_core.v
+set_global_assignment -name VERILOG_FILE src/USB/hostController/USBHostControlBI.v
+set_global_assignment -name VERILOG_FILE src/USB/hostController/usbHostControl.v
+set_global_assignment -name VERILOG_FILE src/USB/hostController/speedCtrlMux.v
+set_global_assignment -name VERILOG_FILE src/USB/hostController/softransmit.v
+set_global_assignment -name VERILOG_FILE src/USB/hostController/sofcontroller.v
+set_global_assignment -name VERILOG_FILE src/USB/hostController/sendpacketcheckpreamble.v
+set_global_assignment -name VERILOG_FILE src/USB/hostController/sendpacketarbiter.v
+set_global_assignment -name VERILOG_FILE src/USB/hostController/sendpacket.v
+set_global_assignment -name VERILOG_FILE src/USB/hostController/rxStatusMonitor.v
+set_global_assignment -name VERILOG_FILE src/USB/hostController/hostcontroller.v
+set_global_assignment -name VERILOG_FILE src/USB/hostController/hctxportarbiter.v
+set_global_assignment -name VERILOG_FILE src/USB/hostController/getpacket.v
+set_global_assignment -name VERILOG_FILE src/USB/hostController/directcontrol.v
+set_global_assignment -name VERILOG_FILE src/USB/slaveController/USBSlaveControlBI.v
+set_global_assignment -name VERILOG_FILE src/USB/slaveController/usbSlaveControl.v
+set_global_assignment -name VERILOG_FILE src/USB/slaveController/slaveSendpacket.v
+set_global_assignment -name VERILOG_FILE src/USB/slaveController/slaveRxStatusMonitor.v
+set_global_assignment -name VERILOG_FILE src/USB/slaveController/slaveGetpacket.v
+set_global_assignment -name VERILOG_FILE src/USB/slaveController/slaveDirectcontrol.v
+set_global_assignment -name VERILOG_FILE src/USB/slaveController/slavecontroller.v
+set_global_assignment -name VERILOG_FILE src/USB/slaveController/sctxportarbiter.v
+set_global_assignment -name VERILOG_FILE src/USB/slaveController/fifoMux.v
+set_global_assignment -name VERILOG_FILE src/USB/slaveController/endpMux.v
+set_global_assignment -name VERILOG_FILE src/USB/serialInterfaceEngine/writeUSBWireData.v
+set_global_assignment -name VERILOG_FILE src/USB/serialInterfaceEngine/usbTxWireArbiter.v
+set_global_assignment -name VERILOG_FILE src/USB/serialInterfaceEngine/usbSerialInterfaceEngine.v
+set_global_assignment -name VERILOG_FILE src/USB/serialInterfaceEngine/updateCRC16.v
+set_global_assignment -name VERILOG_FILE src/USB/serialInterfaceEngine/updateCRC5.v
+set_global_assignment -name VERILOG_FILE src/USB/serialInterfaceEngine/SIETransmitter.v
+set_global_assignment -name VERILOG_FILE src/USB/serialInterfaceEngine/siereceiver.v
+set_global_assignment -name VERILOG_FILE src/USB/serialInterfaceEngine/readUSBWireData.v
+set_global_assignment -name VERILOG_FILE src/USB/serialInterfaceEngine/processTxByte.v
+set_global_assignment -name VERILOG_FILE src/USB/serialInterfaceEngine/processRxByte.v
+set_global_assignment -name VERILOG_FILE src/USB/serialInterfaceEngine/processRxBit.v
+set_global_assignment -name VERILOG_FILE src/USB/serialInterfaceEngine/lineControlUpdate.v
+set_global_assignment -name VERILOG_FILE src/USB/hostSlaveMux/hostSlaveMuxBI.v
+set_global_assignment -name VERILOG_FILE src/USB/hostSlaveMux/hostSlaveMux.v
+set_global_assignment -name VERILOG_FILE src/USB/busInterface/wishBoneBI.v
+set_global_assignment -name VERILOG_FILE src/USB/buffers/TxFifoBI.v
+set_global_assignment -name VERILOG_FILE src/USB/buffers/TxFifo.v
+set_global_assignment -name VERILOG_FILE src/USB/buffers/RxFifoBI.v
+set_global_assignment -name VERILOG_FILE src/USB/buffers/RxFifo.v
+set_global_assignment -name VERILOG_FILE src/USB/buffers/fifoRTL.v
+set_global_assignment -name VERILOG_FILE src/USB/buffers/dpMem_dc.v
+set_global_assignment -name VERILOG_FILE src/USB/wrapper/usbHostSlave.v
+set_global_assignment -name VERILOG_FILE src/NEDOchip.v
+set_global_assignment -name VERILOG_FILE src/RocketTile.v
+set_global_assignment -name VERILOG_FILE src/AsyncResetReg.v
+set_global_assignment -name VERILOG_FILE src/plusarg_reader.v
+set_global_assignment -name VERILOG_FILE src/EICG_wrapper.v
+set_global_assignment -name VERILOG_FILE src/uec.keystoneAcc.nedochip.NEDOFPGAQuartus.ChipConfigDE4.harness.mems.v
+set_global_assignment -name VERILOG_FILE src/uec.keystoneAcc.nedochip.NEDOFPGAQuartus.ChipConfigDE4.harness.v
+set_global_assignment -name VERILOG_FILE src/uec.keystoneAcc.nedochip.NEDOFPGAQuartus.ChipConfigDE4.rom.v
+set_global_assignment -name VERILOG_FILE src/uec.keystoneAcc.nedochip.NEDOFPGAQuartus.ChipConfigDE4.top.mems.v
 
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

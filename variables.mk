@@ -549,12 +549,6 @@ VERBOSE_FLAGS ?= +verbose
 sim_out_name = $(subst $() $(),_,$(notdir $(basename $(BINARY))).$(long_name))
 
 #########################################################################################
-# build output directory for compilation
-#########################################################################################
-gen_dir=$(sim_dir)/generated-src
-build_dir=$(gen_dir)/$(long_name)
-
-#########################################################################################
 # vsrcs needed to run projects
 #########################################################################################
 rocketchip_vsrc_dir = $(ROCKETCHIP_DIR)/src/main/resources/vsrc
