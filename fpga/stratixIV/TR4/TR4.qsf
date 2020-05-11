@@ -2127,10 +2127,11 @@ set_global_assignment -name VERILOG_FILE src/RocketTile.v
 set_global_assignment -name VERILOG_FILE src/AsyncResetReg.v
 set_global_assignment -name VERILOG_FILE src/plusarg_reader.v
 set_global_assignment -name VERILOG_FILE src/EICG_wrapper.v
-set_global_assignment -name VERILOG_FILE src/uec.keystoneAcc.nedochip.NEDOFPGATR4.ChipConfigTR4.harness.mems.v
-set_global_assignment -name VERILOG_FILE src/uec.keystoneAcc.nedochip.NEDOFPGATR4.ChipConfigTR4.harness.v
-set_global_assignment -name VERILOG_FILE src/uec.keystoneAcc.nedochip.NEDOFPGATR4.ChipConfigTR4.rom.v
-set_global_assignment -name VERILOG_FILE src/uec.keystoneAcc.nedochip.NEDOFPGATR4.ChipConfigTR4.top.mems.v
+set_global_assignment -name VERILOG_FILE src/NEDOFPGATR4.harness.mems.v
+set_global_assignment -name VERILOG_FILE src/NEDOFPGATR4.harness.v
+set_global_assignment -name VERILOG_FILE src/NEDOFPGATR4.rom.v
+set_global_assignment -name VERILOG_FILE src/NEDOFPGATR4.top.mems.v
+
 
 
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

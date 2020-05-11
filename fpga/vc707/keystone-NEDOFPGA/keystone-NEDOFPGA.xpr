@@ -528,7 +528,7 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PSRCDIR/sources_2/uec.keystoneAcc.nedochip.NEDOFPGA.ChipConfigVC707.top.mems.v">
+      <File Path="$PSRCDIR/sources_2/NEDOFPGA.top.mems.v">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
@@ -626,7 +626,7 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PSRCDIR/sources_2/uec.keystoneAcc.nedochip.NEDOFPGA.ChipConfigVC707.rom.v">
+      <File Path="$PSRCDIR/sources_2/NEDOFPGA.rom.v">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
@@ -696,14 +696,14 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PSRCDIR/sources_2/uec.keystoneAcc.nedochip.NEDOFPGA.ChipConfigVC707.harness.v">
+      <File Path="$PSRCDIR/sources_2/NEDOFPGA.harness.v">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PSRCDIR/sources_2/uec.keystoneAcc.nedochip.NEDOFPGA.ChipConfigVC707.harness.mems.v">
+      <File Path="$PSRCDIR/sources_2/NEDOFPGA.harness.mems.v">
         <FileInfo>
           <Attr Name="AutoDisabled" Val="1"/>
           <Attr Name="UsedIn" Val="synthesis"/>
