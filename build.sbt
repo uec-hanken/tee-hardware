@@ -195,7 +195,10 @@ lazy val sifive_cache = (project in file("hardware/chipyard/generators/sifive-ca
 
 lazy val fpga_shells = (project in file("hardware/fpga-shells")).
   dependsOn(rocketchip, sifive_blocks, utilities).
-  settings(commonSettings)
+  settings(
+      commonSettings,
+      unmanagedSources / excludeFilter := HiddenFileFilter || "*microsemi*" // Avoid microsemi, because does not compile
+  )
 
 lazy val keystoneAcc = (project in file("hardware/keystoneAcc")).
   dependsOn(rocketchip, sifive_blocks, fpga_shells, utilities, tapeout, chipyard).
