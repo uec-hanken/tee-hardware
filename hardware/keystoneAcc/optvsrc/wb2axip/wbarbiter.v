@@ -1,3 +1,70 @@
+////////////////////////////////////////////////////////////////////////////////
+//
+// Filename: 	wbarbiter.v
+//
+// Project:	Pipelined Wishbone to AXI converter
+//
+// Purpose:	This is a priority bus arbiter.  It allows two separate wishbone
+//		masters to connect to the same bus, while also guaranteeing
+//	that the last master can have the bus with no delay any time it is
+//	idle.  The goal is to minimize the combinatorial logic required in this
+//	process, while still minimizing access time.
+//
+//	The core logic works like this:
+//
+//		1. If 'A' or 'B' asserts the o_cyc line, a bus cycle will begin,
+//			with acccess granted to whomever requested it.
+//		2. If both 'A' and 'B' assert o_cyc at the same time, only 'A'
+//			will be granted the bus.  (If the alternating parameter 
+//			is set, A and B will alternate who gets the bus in
+//			this case.)
+//		3. The bus will remain owned by whomever the bus was granted to
+//			until they deassert the o_cyc line.
+//		4. At the end of a bus cycle, o_cyc is guaranteed to be
+//			deasserted (low) for one clock.
+//		5. On the next clock, bus arbitration takes place again.  If
+//			'A' requests the bus, no matter how long 'B' was
+//			waiting, 'A' will then be granted the bus.  (Unless
+//			again the alternating parameter is set, then the
+//			access is guaranteed to switch to B.)
+//
+//
+// Creator:	Dan Gisselquist, Ph.D.
+//		Gisselquist Technology, LLC
+//
+////////////////////////////////////////////////////////////////////////////////
+//
+// Copyright (C) 2015-2019, Gisselquist Technology, LLC
+//
+// This file is part of the pipelined Wishbone to AXI converter project, a
+// project that contains multiple bus bridging designs and formal bus property
+// sets.
+//
+// The bus bridge designs and property sets are free RTL designs: you can
+// redistribute them and/or modify any of them under the terms of the GNU
+// Lesser General Public License as published by the Free Software Foundation,
+// either version 3 of the License, or (at your option) any later version.
+//
+// The bus bridge designs and property sets are distributed in the hope that
+// they will be useful, but WITHOUT ANY WARRANTY; without even the implied
+// warranty of MERCHANTIBILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with these designs.  (It's in the $(ROOT)/doc directory.  Run make
+// with no target there if the PDF file isn't present.)  If not, see
+// <http://www.gnu.org/licenses/> for a copy.
+//
+// License:	LGPL, v3, as defined and found on www.gnu.org,
+//		http://www.gnu.org/licenses/lgpl.html
+//
+////////////////////////////////////////////////////////////////////////////////
+//
+//
+`default_nettype	none
+//
+`define	WBA_ALTERNATING
+//
 module	wbarbiter(i_clk, i_reset,
 	// Bus A -- the priority bus
 	i_a_cyc, i_a_stb, i_a_we, i_a_adr, i_a_dat, i_a_sel,
@@ -7,10 +74,16 @@ module	wbarbiter(i_clk, i_reset,
 		o_b_ack, o_b_stall, o_b_err,
 	// Combined/arbitrated bus
 	o_cyc, o_stb, o_we, o_adr, o_dat, o_sel, i_ack, i_stall, i_err
+`ifdef	FORMAL
+	,
+	f_a_nreqs, f_a_nacks, f_a_outstanding,
+	f_b_nreqs, f_b_nacks, f_b_outstanding,
+	f_nreqs,   f_nacks,   f_outstanding
+`endif
 	);
 	parameter			DW=32, AW=32;
 	parameter			SCHEME="ALTERNATING";
-	parameter	[0:0]	OPT_ZERO_ON_IDLE = 1'b0;
+	parameter	[0:0]		OPT_ZERO_ON_IDLE = 1'b0;
 	parameter			F_MAX_STALL = 3;
 	parameter			F_MAX_ACK_DELAY = 3;
 	parameter			F_LGDEPTH=3;
@@ -36,6 +109,11 @@ module	wbarbiter(i_clk, i_reset,
 	output	wire	[(DW/8-1):0]	o_sel;
 	input	wire			i_ack, i_stall, i_err;
 	//
+`ifdef	FORMAL
+	output	wire	[(F_LGDEPTH-1):0] f_nreqs, f_nacks, f_outstanding,
+			f_a_nreqs, f_a_nacks, f_a_outstanding,
+			f_b_nreqs, f_b_nacks, f_b_outstanding;
+`endif
 
 	// Go high immediately (new cycle) if ...
 	//	Previous cycle was low and *someone* is requesting a bus cycle
@@ -155,4 +233,135 @@ module	wbarbiter(i_clk, i_reset,
 	assign	unused = i_reset;
 	// verilator lint_on  UNUSED
 
+`ifdef	FORMAL
+
+`ifdef	WBARBITER
+
+`define	ASSUME	assume
+`else
+`define	ASSUME	assert
+`endif
+
+	reg	f_past_valid;
+	initial	f_past_valid = 1'b0;
+	always @(posedge i_clk)
+		f_past_valid <= 1'b1;
+
+	initial	`ASSUME(!i_a_cyc);
+	initial	`ASSUME(!i_a_stb);
+
+	initial	`ASSUME(!i_b_cyc);
+	initial	`ASSUME(!i_b_stb);
+
+	initial	`ASSUME(!i_ack);
+	initial	`ASSUME(!i_err);
+
+	always @(*)
+	if (!f_past_valid)
+		`ASSUME(i_reset);
+
+	always @(posedge i_clk)
+	begin
+		if (o_cyc)
+			assert((i_a_cyc)||(i_b_cyc));
+		if ((f_past_valid)&&($past(o_cyc))&&(o_cyc))
+			assert($past(r_a_owner) == r_a_owner);
+	end
+
+	fwb_master #(.DW(DW), .AW(AW),
+			.F_MAX_STALL(F_MAX_STALL),
+			.F_LGDEPTH(F_LGDEPTH),
+			.F_MAX_ACK_DELAY(F_MAX_ACK_DELAY),
+			.F_OPT_RMW_BUS_OPTION(1),
+			.F_OPT_DISCONTINUOUS(1))
+		f_wbm(i_clk, i_reset,
+			o_cyc, o_stb, o_we, o_adr, o_dat, o_sel,
+			i_ack, i_stall, 32'h0, i_err,
+			f_nreqs, f_nacks, f_outstanding);
+
+	fwb_slave  #(.DW(DW), .AW(AW),
+			.F_MAX_STALL(0),
+			.F_LGDEPTH(F_LGDEPTH),
+			.F_MAX_ACK_DELAY(0),
+			.F_OPT_RMW_BUS_OPTION(1),
+			.F_OPT_DISCONTINUOUS(1))
+		f_wba(i_clk, i_reset,
+			i_a_cyc, i_a_stb, i_a_we, i_a_adr, i_a_dat, i_a_sel, 
+			o_a_ack, o_a_stall, 32'h0, o_a_err,
+			f_a_nreqs, f_a_nacks, f_a_outstanding);
+
+	fwb_slave  #(.DW(DW), .AW(AW),
+			.F_MAX_STALL(0),
+			.F_LGDEPTH(F_LGDEPTH),
+			.F_MAX_ACK_DELAY(0),
+			.F_OPT_RMW_BUS_OPTION(1),
+			.F_OPT_DISCONTINUOUS(1))
+		f_wbb(i_clk, i_reset,
+			i_b_cyc, i_b_stb, i_b_we, i_b_adr, i_b_dat, i_b_sel,
+			o_b_ack, o_b_stall, 32'h0, o_b_err,
+			f_b_nreqs, f_b_nacks, f_b_outstanding);
+
+	always @(posedge i_clk)
+		if (r_a_owner)
+		begin
+			assert(f_b_nreqs == 0);
+			assert(f_b_nacks == 0);
+			assert(f_a_outstanding == f_outstanding);
+		end else begin
+			assert(f_a_nreqs == 0);
+			assert(f_a_nacks == 0);
+			assert(f_b_outstanding == f_outstanding);
+		end
+
+	always @(posedge i_clk)
+	if ((f_past_valid)&&(!$past(i_reset))
+			&&($past(i_a_stb))&&(!$past(i_b_cyc)))
+		assert(r_a_owner);
+	always @(posedge i_clk)
+	if ((f_past_valid)&&(!$past(i_reset))
+			&&(!$past(i_a_cyc))&&($past(i_b_stb)))
+		assert(!r_a_owner);
+
+	always @(posedge i_clk)
+		if ((f_past_valid)&&(r_a_owner != $past(r_a_owner)))
+			assert(!$past(o_cyc));
+
+	reg	f_prior_a_ack, f_prior_b_ack;
+
+	initial	f_prior_a_ack = 1'b0;
+	always @(posedge i_clk)
+	if ((i_reset)||(o_a_err)||(o_b_err))
+		f_prior_a_ack = 1'b0;
+	else if ((o_cyc)&&(o_a_ack))
+		f_prior_a_ack <= 1'b1;
+
+	initial	f_prior_b_ack = 1'b0;
+	always @(posedge i_clk)
+	if ((i_reset)||(o_a_err)||(o_b_err))
+		f_prior_b_ack = 1'b0;
+	else if ((o_cyc)&&(o_b_ack))
+		f_prior_b_ack <= 1'b1;
+
+	always @(posedge i_clk)
+	begin
+		cover(f_prior_b_ack && o_cyc && o_a_ack);
+
+		cover((o_cyc && o_a_ack)
+			&&($past(o_cyc && o_a_ack))
+			&&($past(o_cyc && o_a_ack,2)));
+
+
+		cover(f_prior_a_ack && o_cyc && o_b_ack);
+
+		cover((o_cyc && o_b_ack)
+			&&($past(o_cyc && o_b_ack))
+			&&($past(o_cyc && o_b_ack,2)));
+	end
+
+	always @(*)
+		cover(o_cyc && o_b_ack);
+`endif
 endmodule
+`ifndef	YOSYS
+`default_nettype wire
+`endif
