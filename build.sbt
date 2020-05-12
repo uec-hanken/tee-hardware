@@ -179,7 +179,7 @@ lazy val fpga_shells = (project in file("hardware/fpga-shells")).
   dependsOn(rocketchip, sifive_blocks, utilities).
   settings(commonSettings)
 
-lazy val teehardware = (project in file("hardware/keystoneAcc")).
+lazy val teehardware = (project in file("hardware/teehw")).
   dependsOn(rocketchip, sifive_blocks, fpga_shells, utilities, tapeout).
   settings(commonSettings)
 

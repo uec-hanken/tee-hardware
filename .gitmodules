@@ -7,14 +7,14 @@
 [submodule "hardware/fpga-shells"]
 	path = hardware/fpga-shells
 	url = https://github.com/sifive/fpga-shells.git
-[submodule "hardware/keystoneAcc/vsrc/ed25519_sign"]
-	path = hardware/keystoneAcc/vsrc/ed25519_sign
+[submodule "hardware/teehw/vsrc/ed25519_sign"]
+	path = hardware/teehw/vsrc/ed25519_sign
 	url = https://github.com/ckdur/ed25519_fpga.git
-[submodule "hardware/keystoneAcc/vsrc/aes"]
-	path = hardware/keystoneAcc/vsrc/aes
+[submodule "hardware/teehw/vsrc/aes"]
+	path = hardware/teehw/vsrc/aes
 	url = https://github.com/secworks/aes.git
-[submodule "hardware/keystoneAcc/vsrc/wb2axip"]
-	path = hardware/keystoneAcc/vsrc/wb2axip
+[submodule "hardware/teehw/vsrc/wb2axip"]
+	path = hardware/teehw/vsrc/wb2axip
 	url = https://github.com/ZipCPU/wb2axip.git
 [submodule "software/sim-bootloader/tiny-AES-c"]
 	path = software/sim-bootloader/tiny-AES-c

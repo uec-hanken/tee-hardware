@@ -32,13 +32,13 @@
 #########################################################################################
 SUB_PROJECT ?= teehardware
 
-KEYSTONE_ACC_DIR ?= $(base_dir)/hardware/keystoneAcc
-SHA3_DIR ?= $(KEYSTONE_ACC_DIR)/vsrc/SHA3
-SHA3_HIGHPERF_DIR ?= $(KEYSTONE_ACC_DIR)/optvsrc/SHA3
-ED25519_DIR ?= $(KEYSTONE_ACC_DIR)/optvsrc/Ed25519/Ed25519_mul
-ED25519_SIGN_DIR ?= $(KEYSTONE_ACC_DIR)/optvsrc/Ed25519/Ed25519_sign
-AES_DIR ?= $(KEYSTONE_ACC_DIR)/optvsrc/AES
-USB11HS_DIR ?= $(KEYSTONE_ACC_DIR)/vsrc/usbhostslave
+TEEHW_DIR ?= $(base_dir)/hardware/teehw
+SHA3_DIR ?= $(TEEHW_DIR)/vsrc/SHA3
+SHA3_HIGHPERF_DIR ?= $(TEEHW_DIR)/optvsrc/SHA3
+ED25519_DIR ?= $(TEEHW_DIR)/optvsrc/Ed25519/Ed25519_mul
+ED25519_SIGN_DIR ?= $(TEEHW_DIR)/optvsrc/Ed25519/Ed25519_sign
+AES_DIR ?= $(TEEHW_DIR)/optvsrc/AES
+USB11HS_DIR ?= $(TEEHW_DIR)/vsrc/usbhostslave
 
 ifeq ($(SUB_PROJECT),teehardware)
 	SBT_PROJECT       ?= teehardware
