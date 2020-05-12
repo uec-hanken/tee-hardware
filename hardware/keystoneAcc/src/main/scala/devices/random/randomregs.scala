@@ -1,4 +1,4 @@
-package uec.keystoneAcc.devices.random
+package uec.teehardware.devices.random
 
 // NOTE: We are trying to mimic the TrustZone ARM RNG programming model
 object RandomRegs {

@@ -1,4 +1,4 @@
-package uec.keystoneAcc.devices.aes
+package uec.teehardware.devices.aes
 
 object AESCtrlRegs {
   val key = 0x00

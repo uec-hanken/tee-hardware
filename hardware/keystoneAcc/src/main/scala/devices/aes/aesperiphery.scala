@@ -1,4 +1,4 @@
-package uec.keystoneAcc.devices.aes
+package uec.teehardware.devices.aes
 
 import freechips.rocketchip.config.Field
 import freechips.rocketchip.diplomacy._

@@ -1,4 +1,4 @@
-package uec.keystoneAcc.devices.ed25519
+package uec.teehardware.devices.ed25519
 
 object ed25519CtrlRegs {
   val key = 0x00

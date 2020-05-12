@@ -1,6 +1,6 @@
 // See LICENSE.SiFive for license details.
 
-package uec.keystoneAcc.exampletop
+package uec.teehardware.exampletop
 
 import Chisel._
 import freechips.rocketchip.config.Parameters

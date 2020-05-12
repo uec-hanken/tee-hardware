@@ -3,7 +3,7 @@
 // This file is just a copy of Generator.scala from rocket-chip. And this is caused by the awful makefile
 // infrastructure of the original project. Is a TODO to create a pull request over the makefiles.
 
-package uec.keystoneAcc.exampletop
+package uec.teehardware.exampletop
 
 import freechips.rocketchip.system.{BaseConfig, DefaultTestSuites, RegressionTestSuite, TestGeneration}
 import freechips.rocketchip.config._

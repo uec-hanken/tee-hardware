@@ -1,4 +1,4 @@
-package uec.keystoneAcc.devices.random
+package uec.teehardware.devices.random
 
 import freechips.rocketchip.config.Field
 import freechips.rocketchip.diplomacy._

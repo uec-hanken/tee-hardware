@@ -1,4 +1,4 @@
-package uec.keystoneAcc.devices.usb11hs
+package uec.teehardware.devices.usb11hs
 
 import chisel3._
 import freechips.rocketchip.config.Field

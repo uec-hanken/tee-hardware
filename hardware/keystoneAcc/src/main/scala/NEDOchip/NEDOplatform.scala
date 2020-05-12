@@ -1,4 +1,4 @@
-package uec.keystoneAcc.nedochip
+package uec.teehardware
 
 import chisel3._
 import chisel3.util._
@@ -19,11 +19,11 @@ import sifive.blocks.devices.uart._
 import sifive.blocks.devices.i2c._
 import sifive.blocks.devices.jtag._
 import sifive.fpgashells.devices.xilinx.xilinxvc707pciex1._
-import uec.keystoneAcc.devices.aes._
-import uec.keystoneAcc.devices.ed25519._
-import uec.keystoneAcc.devices.random._
-import uec.keystoneAcc.devices.sha3._
-import uec.keystoneAcc.devices.usb11hs._
+import uec.teehardware.devices.aes._
+import uec.teehardware.devices.ed25519._
+import uec.teehardware.devices.random._
+import uec.teehardware.devices.sha3._
+import uec.teehardware.devices.usb11hs._
 import uec.rocketchip.subsystem._
 
 class SlowMemIsland(blockBytes: Int, val crossing: ClockCrossingType = AsynchronousCrossing(8))(implicit p: Parameters)

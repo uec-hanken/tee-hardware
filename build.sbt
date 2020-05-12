@@ -2,11 +2,11 @@ import Tests._
 
 // This gives us a nicer handle  to the root project instead of using the
 // implicit one
-lazy val keystoneHardwareRoot = RootProject(file("."))
+lazy val teeHardwareRoot = RootProject(file("."))
 //lazy val chipyardRoot = RootProject(file("hardware/chipyard"))
 
 lazy val commonSettings = Seq(
-  organization := "ac.uec.vlsilab.ee",
+  organization := "vlsilab.ee.uec.ac",
   version := "0.1",
   scalaVersion := "2.12.4",
   traceLevel := 15,
@@ -22,9 +22,9 @@ lazy val commonSettings = Seq(
   libraryDependencies += "org.scala-lang.modules" % "scala-jline" % "2.12.1",
   libraryDependencies += "com.typesafe.play" %% "play-json" % "2.6.10",
   addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
-  unmanagedBase := (keystoneHardwareRoot / unmanagedBase).value,
+  unmanagedBase := (teeHardwareRoot / unmanagedBase).value,
   allDependencies := allDependencies.value.filterNot{ case w =>
-    w.organization == "ac.uec.vlsilab.ee" || w.organization == "edu.berkeley.cs"
+    w.organization == "vlsilab.ee.uec.ac" || w.organization == "edu.berkeley.cs"
   },
   exportJars := true,
   resolvers ++= Seq(
@@ -179,7 +179,7 @@ lazy val fpga_shells = (project in file("hardware/fpga-shells")).
   dependsOn(rocketchip, sifive_blocks, utilities).
   settings(commonSettings)
 
-lazy val keystoneAcc = (project in file("hardware/keystoneAcc")).
+lazy val teehardware = (project in file("hardware/keystoneAcc")).
   dependsOn(rocketchip, sifive_blocks, fpga_shells, utilities, tapeout).
   settings(commonSettings)
 

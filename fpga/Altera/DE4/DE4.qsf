@@ -25,7 +25,7 @@
 
 set_global_assignment -name FAMILY "Stratix IV"
 set_global_assignment -name DEVICE EP4SGX230KF40C2
-set_global_assignment -name TOP_LEVEL_ENTITY NEDOFPGAQuartus
+set_global_assignment -name TOP_LEVEL_ENTITY FPGADE4
 set_global_assignment -name ORIGINAL_QUARTUS_VERSION 18.1.0
 set_global_assignment -name PROJECT_CREATION_TIME_DATE "16:00:20  OCTOBER 03, 2019"
 set_global_assignment -name LAST_QUARTUS_VERSION "18.1.0 Standard Edition"
@@ -2009,10 +2009,11 @@ set_global_assignment -name VERILOG_FILE src/RocketTile.v
 set_global_assignment -name VERILOG_FILE src/AsyncResetReg.v
 set_global_assignment -name VERILOG_FILE src/plusarg_reader.v
 set_global_assignment -name VERILOG_FILE src/EICG_wrapper.v
-set_global_assignment -name VERILOG_FILE src/NEDOFPGAQuartus.harness.mems.v
-set_global_assignment -name VERILOG_FILE src/NEDOFPGAQuartus.harness.v
-set_global_assignment -name VERILOG_FILE src/NEDOFPGAQuartus.rom.v
-set_global_assignment -name VERILOG_FILE src/NEDOFPGAQuartus.top.mems.v
+set_global_assignment -name VERILOG_FILE src/FPGADE4.harness.mems.v
+set_global_assignment -name VERILOG_FILE src/FPGADE4.harness.v
+set_global_assignment -name VERILOG_FILE src/FPGADE4.rom.v
+set_global_assignment -name VERILOG_FILE src/FPGADE4.top.mems.v
+
 
 
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

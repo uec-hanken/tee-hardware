@@ -1,4 +1,4 @@
-package uec.keystoneAcc.nedochip
+package uec.teehardware
 
 import freechips.rocketchip.config._
 import freechips.rocketchip.subsystem._
@@ -12,11 +12,11 @@ import sifive.blocks.devices.gpio._
 import sifive.blocks.devices.spi._
 import sifive.blocks.devices.uart._
 import sifive.blocks.devices.i2c._
-import uec.keystoneAcc.devices.aes._
-import uec.keystoneAcc.devices.ed25519._
-import uec.keystoneAcc.devices.sha3._
-import uec.keystoneAcc.devices.usb11hs._
-import uec.keystoneAcc.devices.random._
+import uec.teehardware.devices.aes._
+import uec.teehardware.devices.ed25519._
+import uec.teehardware.devices.sha3._
+import uec.teehardware.devices.usb11hs._
+import uec.teehardware.devices.random._
 //import sifive.freedom.unleashed.DevKitFPGAFrequencyKey
 
 // The number of gpios that we want as input
@@ -129,7 +129,7 @@ class ChipConfig extends Config(
   })
 )
 
-class ChipConfigDE4 extends Config(
+class DE4Config extends Config(
   new ChipConfig().alter((site,here,up) => {
     case FreqKeyMHz => 100.0
     case DDRPortOther => true
@@ -139,7 +139,7 @@ class ChipConfigDE4 extends Config(
   })
 )
 
-class ChipConfigTR4 extends Config(
+class TR4Config extends Config(
   new ChipConfig().alter((site,here,up) => {
     case FreqKeyMHz => 100.0
     /*case ExtMem => Some(MemoryPortParams(MasterPortParams( // For back to 64 bits
@@ -169,7 +169,7 @@ class ChipConfigTR4 extends Config(
   })
 )
 
-class ChipConfigVC707 extends Config(
+class VC707Config extends Config(
   new ChipConfig().alter((site,here,up) => {
     case FreqKeyMHz => 80.0
     case PeripherySPIFlashKey => List() // No external flash. There is no pins to put them

@@ -1,5 +1,4 @@
-package uec.keystoneAcc.uecutils
-
+package uec.teehardware.uecutils
 
 import firrtl._
 import firrtl.ir._

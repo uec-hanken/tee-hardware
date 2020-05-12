@@ -1,4 +1,4 @@
-package uec.keystoneAcc.devices.wb2axip
+package uec.teehardware.devices.wb2axip
 
 import chisel3._
 import chisel3.util._

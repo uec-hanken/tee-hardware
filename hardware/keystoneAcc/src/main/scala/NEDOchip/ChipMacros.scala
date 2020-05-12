@@ -1,4 +1,4 @@
-package uec.keystoneAcc.nedochip
+package uec.teehardware
 
 import chisel3._
 import chisel3.util._

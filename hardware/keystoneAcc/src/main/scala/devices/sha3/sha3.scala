@@ -1,4 +1,4 @@
-package uec.keystoneAcc.devices.sha3
+package uec.teehardware.devices.sha3
 
 import chisel3._
 import freechips.rocketchip.config.Parameters

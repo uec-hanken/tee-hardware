@@ -10,7 +10,7 @@ sim_dir=$(abspath .)
 build_dir=$(sim_dir)/src
 
 bootrom_dir=$(base_dir)/software/freedom-u540-c000-bootloader
-SUB_PROJECT ?= NEDOFPGAQuartus
+SUB_PROJECT ?= FPGADE4
 ROMGEN ?= $(base_dir)/hardware/vlsi_rom_gen_real
 
 #########################################################################################
@@ -45,7 +45,7 @@ default: verilog
 	cp -rf $(KEYSTONE_ACC_DIR)/optvsrc/* $(build_dir)
 	# We already had a compilation where the MODEL is the harness and the RocketTile is the top
 	# In this case: The TOP is the harness, the RocketTile is the top
-	cd $(base_dir) && $(SBT) "project keystoneAcc" "runMain uec.keystoneAcc.uecutils.GenerateTopAndHarness -o $(build_dir)/RocketTile.v -tho $(build_dir)/$(TOP).v -i $(FIRRTL_FILE) --syn-top RocketTile --harness-top $(TOP) -faf $(ANNO_FILE) -tsaof $(build_dir)/top.anno.json -tdf $(build_dir)/RocketTile.top.f -tsf $(build_dir)/RocketTile.fir -thaof $(build_dir)/RocketTile.anno.json -hdf $(build_dir)/top.harness.f -thf $(build_dir)/top.fir --infer-rw --repl-seq-mem -c:$(TOP):-o:$(build_dir)/RocketTile.mems.conf -thconf $(build_dir)/top.mems.conf -td $(build_dir)"
+	cd $(base_dir) && $(SBT) "project $(SBT_PROJECT)" "runMain $(MODEL_PACKAGE).uecutils.GenerateTopAndHarness -o $(build_dir)/RocketTile.v -tho $(build_dir)/$(TOP).v -i $(FIRRTL_FILE) --syn-top RocketTile --harness-top $(TOP) -faf $(ANNO_FILE) -tsaof $(build_dir)/top.anno.json -tdf $(build_dir)/RocketTile.top.f -tsf $(build_dir)/RocketTile.fir -thaof $(build_dir)/RocketTile.anno.json -hdf $(build_dir)/top.harness.f -thf $(build_dir)/top.fir --infer-rw --repl-seq-mem -c:$(TOP):-o:$(build_dir)/RocketTile.mems.conf -thconf $(build_dir)/top.mems.conf -td $(build_dir)"
 	rename.ul $(MODEL_PACKAGE).$(MODEL).$(CONFIG) $(MODEL) $(build_dir)/*
 
 verilog: $(TOP_FILE) $(HARNESS_FILE) $(ROM_FILE)

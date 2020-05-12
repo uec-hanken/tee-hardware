@@ -1,6 +1,6 @@
 // See LICENSE.SiFive for license details.
 
-package uec.keystoneAcc.exampletop
+package uec.teehardware.exampletop
 
 import Chisel._
 import freechips.rocketchip.config._
@@ -13,11 +13,11 @@ import freechips.rocketchip.system._
 import freechips.rocketchip.config._
 import freechips.rocketchip.devices.debug._
 import freechips.rocketchip.tile._
-import uec.keystoneAcc.devices.sha3._
-import uec.keystoneAcc.devices.ed25519._
-import uec.keystoneAcc.devices.aes._
-import uec.keystoneAcc.devices.random._
-import uec.keystoneAcc.devices.usb11hs._
+import uec.teehardware.devices.sha3._
+import uec.teehardware.devices.ed25519._
+import uec.teehardware.devices.aes._
+import uec.teehardware.devices.random._
+import uec.teehardware.devices.usb11hs._
 
 // Just like DefaultConfig for now, but with the peripherals
 class KeystoneDefaultPeripherals extends Config((site, here, up) => {

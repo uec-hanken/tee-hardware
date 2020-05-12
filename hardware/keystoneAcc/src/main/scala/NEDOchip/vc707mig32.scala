@@ -1,5 +1,5 @@
 // See LICENSE for license details.
-package uec.keystoneAcc.vc707mig32
+package uec.teehardware.vc707mig32
 
 import Chisel._
 import chisel3.experimental.{Analog,attach}

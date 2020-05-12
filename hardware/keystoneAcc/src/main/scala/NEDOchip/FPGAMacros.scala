@@ -1,4 +1,4 @@
-package uec.keystoneAcc.nedochip
+package uec.teehardware
 
 import chisel3._
 import chisel3.util._
@@ -14,7 +14,7 @@ import sifive.blocks.devices.gpio._
 import sifive.blocks.devices.spi._
 import sifive.fpgashells.clocks._
 import sifive.fpgashells.devices.xilinx.xilinxvc707pciex1._
-import uec.keystoneAcc.vc707mig32._
+import uec.teehardware.vc707mig32._
 
 // ******* For Xilinx FPGAs
 import sifive.fpgashells.ip.xilinx.vc707mig._

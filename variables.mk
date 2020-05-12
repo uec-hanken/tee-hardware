@@ -2,7 +2,7 @@
 # makefile variables shared across multiple makefiles
 # This file is copied from chipyard/variables.mk
 # Changes:
-#   - keystoneAcc as the default
+#   - teehardware as the default
 #   - Remove the example (example depends deeply on chipyard)
 #   - Make ROCKETCHIP_DIR, TESTCHIP_DIR, CHIPYARD_FIRRTL_DIR configurable
 #########################################################################################
@@ -30,7 +30,7 @@
 #   - make it so that you only change 1 param to change most or all of them!
 #   - mainly intended for quick developer setup for common flags
 #########################################################################################
-SUB_PROJECT ?= keystoneAcc
+SUB_PROJECT ?= teehardware
 
 KEYSTONE_ACC_DIR ?= $(base_dir)/hardware/keystoneAcc
 SHA3_DIR ?= $(KEYSTONE_ACC_DIR)/vsrc/SHA3
@@ -40,14 +40,14 @@ ED25519_SIGN_DIR ?= $(KEYSTONE_ACC_DIR)/optvsrc/Ed25519/Ed25519_sign
 AES_DIR ?= $(KEYSTONE_ACC_DIR)/optvsrc/AES
 USB11HS_DIR ?= $(KEYSTONE_ACC_DIR)/vsrc/usbhostslave
 
-ifeq ($(SUB_PROJECT),keystoneAcc)
-	SBT_PROJECT       ?= keystoneAcc
+ifeq ($(SUB_PROJECT),teehardware)
+	SBT_PROJECT       ?= teehardware
 	MODEL             ?= TestHarness
 	VLOG_MODEL        ?= TestHarness
-	MODEL_PACKAGE     ?= uec.keystoneAcc.exampletop
+	MODEL_PACKAGE     ?= uec.teehardware.exampletop
 	CONFIG            ?= KeystoneDefaultConfig
-	CONFIG_PACKAGE    ?= uec.keystoneAcc.exampletop
-	GENERATOR_PACKAGE ?= uec.keystoneAcc.exampletop
+	CONFIG_PACKAGE    ?= uec.teehardware.exampletop
+	GENERATOR_PACKAGE ?= uec.teehardware.exampletop
 	TB                ?= TestDriver
 	TOP               ?= ExampleRocketSystem
 	ADD_VSRC          ?= $(SHA3_HIGHPERF_DIR)/f_permutation.v \
@@ -137,14 +137,14 @@ ifeq ($(SUB_PROJECT),keystoneAcc)
 	$(USB11HS_DIR)/RTL/buffers/dpMem_dc.v \
 	$(USB11HS_DIR)/RTL/wrapper/usbHostSlave.v
 endif
-ifeq ($(SUB_PROJECT),NEDOFPGA)
-	SBT_PROJECT       ?= keystoneAcc
-	MODEL             ?= NEDOFPGA
-	VLOG_MODEL        ?= NEDOFPGA
-	MODEL_PACKAGE     ?= uec.keystoneAcc.nedochip
-	CONFIG            ?= ChipConfigVC707
-	CONFIG_PACKAGE    ?= uec.keystoneAcc.nedochip
-	GENERATOR_PACKAGE ?= uec.keystoneAcc.exampletop
+ifeq ($(SUB_PROJECT),FPGAVC707)
+	SBT_PROJECT       ?= teehardware
+	MODEL             ?= FPGAVC707
+	VLOG_MODEL        ?= FPGAVC707
+	MODEL_PACKAGE     ?= uec.teehardware
+	CONFIG            ?= VC707Config
+	CONFIG_PACKAGE    ?= uec.teehardware
+	GENERATOR_PACKAGE ?= uec.teehardware.exampletop
 	TB                ?= TestDriver
 	TOP               ?= NEDOchip
 	ADD_VSRC          ?= $(SHA3_HIGHPERF_DIR)/f_permutation.v \
@@ -234,14 +234,14 @@ ifeq ($(SUB_PROJECT),NEDOFPGA)
 	$(USB11HS_DIR)/RTL/buffers/dpMem_dc.v \
 	$(USB11HS_DIR)/RTL/wrapper/usbHostSlave.v
 endif
-ifeq ($(SUB_PROJECT),NEDOFPGAQuartus)
-	SBT_PROJECT       ?= keystoneAcc
-	MODEL             ?= NEDOFPGAQuartus
-	VLOG_MODEL        ?= NEDOFPGAQuartus
-	MODEL_PACKAGE     ?= uec.keystoneAcc.nedochip
-	CONFIG            ?= ChipConfigDE4
-	CONFIG_PACKAGE    ?= uec.keystoneAcc.nedochip
-	GENERATOR_PACKAGE ?= uec.keystoneAcc.exampletop
+ifeq ($(SUB_PROJECT),FPGADE4)
+	SBT_PROJECT       ?= teehardware
+	MODEL             ?= FPGADE4
+	VLOG_MODEL        ?= FPGADE4
+	MODEL_PACKAGE     ?= uec.teehardware
+	CONFIG            ?= DE4Config
+	CONFIG_PACKAGE    ?= uec.teehardware
+	GENERATOR_PACKAGE ?= uec.teehardware.exampletop
 	TB                ?= TestDriver
 	TOP               ?= NEDOchip
 	ADD_VSRC          ?= $(SHA3_HIGHPERF_DIR)/f_permutation.v \
@@ -331,14 +331,14 @@ ifeq ($(SUB_PROJECT),NEDOFPGAQuartus)
 	$(USB11HS_DIR)/RTL/buffers/dpMem_dc.v \
 	$(USB11HS_DIR)/RTL/wrapper/usbHostSlave.v
 endif
-ifeq ($(SUB_PROJECT),NEDOFPGATR4)
-	SBT_PROJECT       ?= keystoneAcc
-	MODEL             ?= NEDOFPGATR4
-	VLOG_MODEL        ?= NEDOFPGATR4
-	MODEL_PACKAGE     ?= uec.keystoneAcc.nedochip
-	CONFIG            ?= ChipConfigTR4
-	CONFIG_PACKAGE    ?= uec.keystoneAcc.nedochip
-	GENERATOR_PACKAGE ?= uec.keystoneAcc.exampletop
+ifeq ($(SUB_PROJECT),FPGATR4)
+	SBT_PROJECT       ?= teehardware
+	MODEL             ?= FPGATR4
+	VLOG_MODEL        ?= FPGATR4
+	MODEL_PACKAGE     ?= uec.teehardware
+	CONFIG            ?= TR4Config
+	CONFIG_PACKAGE    ?= uec.teehardware
+	GENERATOR_PACKAGE ?= uec.teehardware.exampletop
 	TB                ?= TestDriver
 	TOP               ?= NEDOchip
 	ADD_VSRC          ?= $(SHA3_HIGHPERF_DIR)/f_permutation.v \

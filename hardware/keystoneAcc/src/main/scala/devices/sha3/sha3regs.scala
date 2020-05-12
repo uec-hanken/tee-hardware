@@ -1,4 +1,4 @@
-package uec.keystoneAcc.devices.sha3
+package uec.teehardware.devices.sha3
 
 object SHA3CtrlRegs {
   val data0 = 0x00

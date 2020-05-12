@@ -1,4 +1,4 @@
-package uec.keystoneAcc.devices.usb11hs
+package uec.teehardware.devices.usb11hs
 
 import chisel3._
 import chisel3.util._
@@ -10,7 +10,7 @@ import freechips.rocketchip.regmapper._
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.util._
-import uec.keystoneAcc.devices.wb2axip._
+import uec.teehardware.devices.wb2axip._
 
 case class USB11HSParams(address: BigInt)
 

@@ -1,4 +1,4 @@
-package uec.keystoneAcc.devices.ed25519
+package uec.teehardware.devices.ed25519
 
 import chisel3._
 import chisel3.core.SyncReadMem

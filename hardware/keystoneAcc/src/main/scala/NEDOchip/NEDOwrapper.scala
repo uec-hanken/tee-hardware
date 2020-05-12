@@ -1,4 +1,4 @@
-package uec.keystoneAcc.nedochip
+package uec.teehardware
 
 import chisel3._
 import chisel3.util._
@@ -11,7 +11,7 @@ import sifive.blocks.devices.gpio._
 import sifive.blocks.devices.spi._
 import sifive.fpgashells.clocks._
 import sifive.fpgashells.devices.xilinx.xilinxvc707pciex1._
-import uec.keystoneAcc.devices.usb11hs._
+import uec.teehardware.devices.usb11hs._
 
 // *********************************************************************************
 // NEDO wrapper - for doing a wrapper with actual ports (tri-state buffers at least)
@@ -283,12 +283,12 @@ class NEDOchip(implicit override val p :Parameters) extends NEDObase {
 }
 
 // ********************************************************************
-// NEDOFPGA - Just an adaptation of NEDOchip to the FPGA
+// FPGAVC707 - Demo on VC707 FPGA board
 // ********************************************************************
 import sifive.fpgashells.ip.xilinx.vc707mig._
 import sifive.fpgashells.ip.xilinx._
 
-class NEDOFPGA(implicit val p :Parameters) extends RawModule {
+class FPGAVC707(implicit val p :Parameters) extends RawModule {
   val gpio_in = IO(Input(UInt(p(GPIOInKey).W)))
   val gpio_out = IO(Output(UInt((p(PeripheryGPIOKey).head.width-p(GPIOInKey)).W)))
   val jtag = IO(new Bundle {
@@ -433,7 +433,6 @@ class NEDOFPGA(implicit val p :Parameters) extends RawModule {
     }
     else mod.clock := pll.io.clk_out3.get
 
-
     if(p(IncludePCIe)) {
       chip.pciePorts.get.REFCLK_rxp := pciePorts.get.REFCLK_rxp
       chip.pciePorts.get.REFCLK_rxn := pciePorts.get.REFCLK_rxn
@@ -448,10 +447,9 @@ class NEDOFPGA(implicit val p :Parameters) extends RawModule {
 }
 
 // ********************************************************************
-// NEDODPGAQuartus - Just an adaptation of NEDOchip to the FPGA in Quartus
+// FPGADE4 - Demo on DE4 FPGA board
 // ********************************************************************
-
-class NEDOFPGAQuartus(implicit val p :Parameters) extends RawModule {
+class FPGADE4(implicit val p :Parameters) extends RawModule {
   ///////// CLOCKS /////////
   val OSC_50_BANK2 = IO(Input(Clock())) //HSMA + UART + ext_pll
   val OSC_50_BANK3 = IO(Input(Clock())) //DIMM1		<-- most used
@@ -784,7 +782,10 @@ class NEDOFPGAQuartus(implicit val p :Parameters) extends RawModule {
   }
 }
 
-class NEDOFPGATR4(implicit val p :Parameters) extends RawModule {
+// ********************************************************************
+// FPGATR4 - Demo on TR4 FPGA board
+// ********************************************************************
+class FPGATR4(implicit val p :Parameters) extends RawModule {
   ///////// BUTTON /////////
   val BUTTON = IO(Input(Bits((3+1).W)))
 

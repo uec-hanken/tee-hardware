@@ -25,7 +25,7 @@
 
 set_global_assignment -name FAMILY "Stratix IV"
 set_global_assignment -name DEVICE EP4SGX230KF40C2
-set_global_assignment -name TOP_LEVEL_ENTITY NEDOFPGATR4
+set_global_assignment -name TOP_LEVEL_ENTITY FPGATR4
 set_global_assignment -name ORIGINAL_QUARTUS_VERSION 18.1.0
 set_global_assignment -name PROJECT_CREATION_TIME_DATE "19:19:29  JUNE 28, 2019"
 set_global_assignment -name LAST_QUARTUS_VERSION "18.1.0 Standard Edition"
@@ -2127,10 +2127,11 @@ set_global_assignment -name VERILOG_FILE src/RocketTile.v
 set_global_assignment -name VERILOG_FILE src/AsyncResetReg.v
 set_global_assignment -name VERILOG_FILE src/plusarg_reader.v
 set_global_assignment -name VERILOG_FILE src/EICG_wrapper.v
-set_global_assignment -name VERILOG_FILE src/NEDOFPGATR4.harness.mems.v
-set_global_assignment -name VERILOG_FILE src/NEDOFPGATR4.harness.v
-set_global_assignment -name VERILOG_FILE src/NEDOFPGATR4.rom.v
-set_global_assignment -name VERILOG_FILE src/NEDOFPGATR4.top.mems.v
+set_global_assignment -name VERILOG_FILE src/FPGATR4.harness.mems.v
+set_global_assignment -name VERILOG_FILE src/FPGATR4.harness.v
+set_global_assignment -name VERILOG_FILE src/FPGATR4.rom.v
+set_global_assignment -name VERILOG_FILE src/FPGATR4.top.mems.v
+
 
 
 
