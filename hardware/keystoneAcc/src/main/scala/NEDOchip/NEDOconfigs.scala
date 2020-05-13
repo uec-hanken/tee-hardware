@@ -65,10 +65,10 @@ class ChipDefaultConfig extends Config(
           nWays = 1,
           rowBits = site(SystemBusKey).beatBits,
           blockBytes = site(CacheBlockBytes))))
-      List.tabulate(1)(i => big.copy(hartId = i))
+      List.tabulate(1)(i => big.copy(hartId = i+1)) // TODO: Make it dependent of up(BoomTilesKey, site).length
     }
     case BoomTilesKey => {
-      List.tabulate(1)(i => BoomTileParams(hartId = i+1)) // TODO: Make it dependent of up(RocketTilesKey, site).length
+      List.tabulate(1)(i => BoomTileParams(hartId = i)) // TODO: Make it dependent of up(RocketTilesKey, site).length
     }
   })
 )
@@ -169,10 +169,10 @@ class ChipConfigTR4 extends Config(
         icache = Some(ICacheParams(
           rowBits = site(SystemBusKey).beatBits,
           blockBytes = site(CacheBlockBytes))))
-      List.tabulate(1)(i => big.copy(hartId = i))
+      List.tabulate(1)(i => big.copy(hartId = i+1)) // TODO: Make it dependent of up(BoomTilesKey, site).length
     }
     case BoomTilesKey => {
-      List.tabulate(1)(i => BoomTileParams(hartId = i+1)) // TODO: Make it dependent of up(RocketTilesKey, site).length
+      List.tabulate(1)(i => BoomTileParams(hartId = i)) // TODO: Make it dependent of up(RocketTilesKey, site).length
     }
   })
 )
@@ -204,10 +204,10 @@ class ChipConfigVC707 extends Config(
         icache = Some(ICacheParams(
           rowBits = site(SystemBusKey).beatBits,
           blockBytes = site(CacheBlockBytes))))
-      List.tabulate(1)(i => big.copy(hartId = i))
+      List.tabulate(1)(i => big.copy(hartId = i+1)) // TODO: Make it dependent of up(BoomTilesKey, site).length
     }
     case BoomTilesKey => {
-      List.tabulate(1)(i => BoomTileParams(hartId = i+1)) // TODO: Make it dependent of up(RocketTilesKey, site).length
+      List.tabulate(1)(i => BoomTileParams(hartId = i)) // TODO: Make it dependent of up(RocketTilesKey, site).length
     }
   })
 )
