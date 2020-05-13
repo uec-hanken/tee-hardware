@@ -20,7 +20,7 @@ import uec.teehardware.devices.random._
 import uec.teehardware.devices.usb11hs._
 
 // Just like DefaultConfig for now, but with the peripherals
-class KeystoneDefaultPeripherals extends Config((site, here, up) => {
+class TEEHWDefaultPeripherals extends Config((site, here, up) => {
   case PeripherySHA3Key =>
     SHA3Params(address = BigInt(0x10003000L))
   case Peripheryed25519Key =>
@@ -44,17 +44,17 @@ class WithAESAccel extends Config ((site, here, up) => {
   )
 })
 
-class KeystoneDefaultConfig extends Config(
-    new KeystoneDefaultPeripherals ++
+class TEEHWDefaultConfig extends Config(
+    new TEEHWDefaultPeripherals ++
     new WithAESAccel ++
     new WithNBigCores(1) ++
     new BaseConfig
 )
 
-class KeystoneJTAGConfig extends Config(
+class TEEHWJTAGConfig extends Config(
     new WithNBreakpoints(4) ++
     new WithJtagDTM ++
-    new KeystoneDefaultConfig().alter((site,here,up) => {
+    new TEEHWDefaultConfig().alter((site,here,up) => {
       case DTSTimebase => BigInt(1000000)
       case JtagDTMKey => new JtagDTMConfig (
         idcodeVersion = 2,      // 1 was legacy (FE310-G000, Acai).

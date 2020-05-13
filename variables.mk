@@ -45,7 +45,7 @@ ifeq ($(SUB_PROJECT),teehardware)
 	MODEL             ?= TestHarness
 	VLOG_MODEL        ?= TestHarness
 	MODEL_PACKAGE     ?= uec.teehardware.exampletop
-	CONFIG            ?= KeystoneDefaultConfig
+	CONFIG            ?= TEEHWDefaultConfig
 	CONFIG_PACKAGE    ?= uec.teehardware.exampletop
 	GENERATOR_PACKAGE ?= uec.teehardware.exampletop
 	TB                ?= TestDriver
@@ -146,7 +146,7 @@ ifeq ($(SUB_PROJECT),FPGAVC707)
 	CONFIG_PACKAGE    ?= uec.teehardware
 	GENERATOR_PACKAGE ?= uec.teehardware.exampletop
 	TB                ?= TestDriver
-	TOP               ?= NEDOchip
+	TOP               ?= TEEHWSoC
 	ADD_VSRC          ?= $(SHA3_HIGHPERF_DIR)/f_permutation.v \
 	$(SHA3_HIGHPERF_DIR)/round2in1.v \
 	$(SHA3_HIGHPERF_DIR)/padder1.v \
@@ -243,7 +243,7 @@ ifeq ($(SUB_PROJECT),FPGADE4)
 	CONFIG_PACKAGE    ?= uec.teehardware
 	GENERATOR_PACKAGE ?= uec.teehardware.exampletop
 	TB                ?= TestDriver
-	TOP               ?= NEDOchip
+	TOP               ?= TEEHWSoC
 	ADD_VSRC          ?= $(SHA3_HIGHPERF_DIR)/f_permutation.v \
 	$(SHA3_HIGHPERF_DIR)/round2in1.v \
 	$(SHA3_HIGHPERF_DIR)/padder1.v \
@@ -340,7 +340,7 @@ ifeq ($(SUB_PROJECT),FPGATR4)
 	CONFIG_PACKAGE    ?= uec.teehardware
 	GENERATOR_PACKAGE ?= uec.teehardware.exampletop
 	TB                ?= TestDriver
-	TOP               ?= NEDOchip
+	TOP               ?= TEEHWSoC
 	ADD_VSRC          ?= $(SHA3_HIGHPERF_DIR)/f_permutation.v \
 	$(SHA3_HIGHPERF_DIR)/round2in1.v \
 	$(SHA3_HIGHPERF_DIR)/padder1.v \

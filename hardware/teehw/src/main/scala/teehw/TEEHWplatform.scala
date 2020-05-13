@@ -43,7 +43,7 @@ class SlowMemIsland(blockBytes: Int, val crossing: ClockCrossingType = Asynchron
   }
 }
 
-class NEDOSystem(implicit p: Parameters) extends RocketSubsystem
+class TEEHWSystem(implicit p: Parameters) extends RocketSubsystem
     with HasHierarchicalBusTopology
     with HasPeripheryDebug
     with HasPeripheryGPIO
@@ -159,10 +159,10 @@ class NEDOSystem(implicit p: Parameters) extends RocketSubsystem
   else None
 
   // System module creation
-  override lazy val module = new NEDOSystemModule(this)
+  override lazy val module = new TEEHWSystemModule(this)
 }
 
-class NEDOSystemModule[+L <: NEDOSystem](_outer: L)
+class TEEHWSystemModule[+L <: TEEHWSystem](_outer: L)
   extends RocketSubsystemModuleImp(_outer)
     with HasRTCModuleImp
     with HasPeripheryDebugModuleImp
@@ -232,7 +232,7 @@ class TLUL(val params: TLBundleParameters) extends Bundle {
   val d = Flipped(Decoupled(new TLBundleD(params)))
 }
 
-class NEDOPlatformIO(val params: TLBundleParameters)
+class TEEHWPlatformIO(val params: TLBundleParameters)
                     (implicit val p: Parameters) extends Bundle {
   val pins = new Bundle {
     val jtag = new JTAGPins(() => PinGen(), false)
@@ -256,12 +256,12 @@ class NEDOPlatformIO(val params: TLBundleParameters)
 }
 
 
-class NEDOPlatform(implicit val p: Parameters) extends Module {
-  val sys = Module(LazyModule(new NEDOSystem).module)
+class TEEHWPlatform(implicit val p: Parameters) extends Module {
+  val sys = Module(LazyModule(new TEEHWSystem).module)
 
   // Not actually sure if "sys.outer.memTLNode.head.in.head._1.params" is the
   // correct way to get the params... TODO: Get the correct way
-  val io = IO(new NEDOPlatformIO(sys.outer.memTLNode.in.head._1.params) )
+  val io = IO(new TEEHWPlatformIO(sys.outer.memTLNode.in.head._1.params) )
 
   // Add in debug-controlled reset.
   sys.reset := ResetCatchAndSync(clock, reset.toBool, 20)

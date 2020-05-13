@@ -14,10 +14,10 @@ import sifive.fpgashells.devices.xilinx.xilinxvc707pciex1._
 import uec.teehardware.devices.usb11hs._
 
 // *********************************************************************************
-// NEDO wrapper - for doing a wrapper with actual ports (tri-state buffers at least)
+// TEEHW wrapper - for doing a wrapper with actual ports (tri-state buffers at least)
 // *********************************************************************************
 
-class NEDOwrapper(implicit p :Parameters) extends RawModule {
+class TEEHWwrapper(implicit p :Parameters) extends RawModule {
   // The actual pins of this module.
   // This is a list of the ports 'to be wirebonded' / 'from the package'
   val clk_p = IO(Analog(1.W))
@@ -62,7 +62,7 @@ class NEDOwrapper(implicit p :Parameters) extends RawModule {
     attach(rst_n, rst_gpio.io.PAD)
 
     // The platform module
-    val system = Module(new NEDOPlatform)
+    val system = Module(new TEEHWPlatform)
 
     // GPIOs
     (gpio zip system.io.pins.gpio.pins).foreach {
@@ -148,10 +148,10 @@ class NEDOwrapper(implicit p :Parameters) extends RawModule {
 }
 
 // **********************************************************************
-// ** NEDO chip - for doing the only-input/output chip
+// **TEEHW chip - for doing the only-input/output chip
 // **********************************************************************
 
-class NEDObase(implicit val p :Parameters) extends RawModule {
+class TEEHWbase(implicit val p :Parameters) extends RawModule {
   // The actual pins of this module.
   val gpio_in = IO(Input(UInt(p(GPIOInKey).W)))
   val gpio_out = IO(Output(UInt((p(PeripheryGPIOKey).head.width-p(GPIOInKey)).W)))
@@ -202,7 +202,7 @@ class NEDObase(implicit val p :Parameters) extends RawModule {
   // All the modules declared here have this clock and reset
   withClockAndReset(clock, reset) {
     // The platform module
-    val system = Module(new NEDOPlatform)
+    val system = Module(new TEEHWPlatform)
     ndreset := system.io.ndreset
     cacheBlockBytesOpt = Some(system.sys.outer.mbus.blockBytes)
 
@@ -267,7 +267,7 @@ class NEDObase(implicit val p :Parameters) extends RawModule {
   val cacheBlockBytes = cacheBlockBytesOpt.get
 }
 
-class NEDOchip(implicit override val p :Parameters) extends NEDObase {
+class TEEHWSoC(implicit override val p :Parameters) extends TEEHWbase {
   // Some additional ports to connect to the chip
   val sys_clk = IO(Input(Clock()))
   val rst_n = IO(Input(Bool()))
@@ -355,7 +355,7 @@ class FPGAVC707(implicit val p :Parameters) extends RawModule {
 
   withClockAndReset(clock, reset) {
     // Instance our converter, and connect everything
-    val chip = Module(new NEDOchip)
+    val chip = Module(new TEEHWSoC)
     val mod = Module(LazyModule(new TLULtoMIG(chip.cacheBlockBytes, chip.tlportw.get.params)).module)
 
     // DDR port only
@@ -704,7 +704,7 @@ class FPGADE4(implicit val p :Parameters) extends RawModule {
 
   withClockAndReset(clock, reset) {
     // Instance our converter, and connect everything
-    val chip = Module(new NEDOchip)
+    val chip = Module(new TEEHWSoC)
     val mod = Module(LazyModule(new TLULtoQuartusPlatform(chip.cacheBlockBytes, chip.tlportw.get.params)).module)
     
     // Clock and reset (for TL stuff)
@@ -1022,7 +1022,7 @@ class FPGATR4(implicit val p :Parameters) extends RawModule {
 
   withClockAndReset(clock, reset) {
     // Instance our converter, and connect everything
-    val chip = Module(new NEDOchip)
+    val chip = Module(new TEEHWSoC)
     val mod = Module(LazyModule(
       new TLULtoQuartusPlatform(
         chip.cacheBlockBytes,

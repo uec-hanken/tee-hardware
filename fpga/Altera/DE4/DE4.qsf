@@ -2004,7 +2004,7 @@ set_global_assignment -name VERILOG_FILE src/USB/buffers/RxFifo.v
 set_global_assignment -name VERILOG_FILE src/USB/buffers/fifoRTL.v
 set_global_assignment -name VERILOG_FILE src/USB/buffers/dpMem_dc.v
 set_global_assignment -name VERILOG_FILE src/USB/wrapper/usbHostSlave.v
-set_global_assignment -name VERILOG_FILE src/NEDOchip.v
+set_global_assignment -name VERILOG_FILE src/TEEHWSoC.v
 set_global_assignment -name VERILOG_FILE src/RocketTile.v
 set_global_assignment -name VERILOG_FILE src/AsyncResetReg.v
 set_global_assignment -name VERILOG_FILE src/plusarg_reader.v
@@ -2013,6 +2013,7 @@ set_global_assignment -name VERILOG_FILE src/FPGADE4.harness.mems.v
 set_global_assignment -name VERILOG_FILE src/FPGADE4.harness.v
 set_global_assignment -name VERILOG_FILE src/FPGADE4.rom.v
 set_global_assignment -name VERILOG_FILE src/FPGADE4.top.mems.v
+
 
 
 
