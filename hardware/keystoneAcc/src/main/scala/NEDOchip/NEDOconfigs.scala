@@ -84,10 +84,10 @@ class ChipPeripherals extends Config((site, here, up) => {
   case PeripheryGPIOKey => List(
     GPIOParams(address = BigInt(0x64002000L), width = 16))
   case GPIOInKey => 8
-  case PeripherySHA3Key =>
-    SHA3Params(address = BigInt(0x64003000L))
-  case Peripheryed25519Key =>
-    ed25519Params(address = BigInt(0x64004000L))
+  case PeripherySHA3Key => List(
+    SHA3Params(address = BigInt(0x64003000L)))
+  case Peripheryed25519Key => List(
+    ed25519Params(address = BigInt(0x64004000L)))
   case PeripherySPIFlashKey => List(
     SPIFlashParams(
       fAddress = 0x20000000,
@@ -95,12 +95,12 @@ class ChipPeripherals extends Config((site, here, up) => {
       defaultSampleDel = 3))
   case PeripheryI2CKey => List(
     I2CParams(address = 0x64006000))
-  case PeripheryAESKey =>
-    AESParams(address = BigInt(0x64007000L))
-  case PeripheryUSB11HSKey =>
-    USB11HSParams(address = BigInt(0x64008000L))
-  case PeripheryRandomKey =>
-    RandomParams(address = BigInt(0x64009000L))
+  case PeripheryAESKey => List(
+    AESParams(address = BigInt(0x64007000L)))
+  case PeripheryUSB11HSKey => List(
+    USB11HSParams(address = BigInt(0x64008000L)))
+  case PeripheryRandomKey => List(
+    RandomParams(address = BigInt(0x64009000L)))
   case ExtMem => Some(MemoryPortParams(MasterPortParams(
     base = x"0_8000_0000",
     size = x"0_4000_0000",
@@ -144,7 +144,7 @@ class ChipConfigDE4 extends Config(
 )
 
 class ChipConfigTR4 extends Config(
-  new boom.common.WithSmallBooms ++
+  new boom.common.WithLargeBooms ++
   new ChipConfig().alter((site,here,up) => {
     case FreqKeyMHz => 100.0
     /*case ExtMem => Some(MemoryPortParams(MasterPortParams( // For back to 64 bits
@@ -152,6 +152,7 @@ class ChipConfigTR4 extends Config(
       size = x"0_4000_0000",
       beatBytes = 8,
       idBits = 4), 1))*/
+    case PeripheryUSB11HSKey => List() // Make the USB dissapear for this impl
     case PeripherySPIFlashKey => List() // No external flash. There is no pins to put them
     case PeripheryMaskROMKey => List( // TODO: The software is not compilable on 0x10000
       MaskROMParams(address = BigInt(0x20000000), depth = 8192, name = "BootROM"))
@@ -169,7 +170,7 @@ class ChipConfigTR4 extends Config(
         icache = Some(ICacheParams(
           rowBits = site(SystemBusKey).beatBits,
           blockBytes = site(CacheBlockBytes))))
-      List.tabulate(1)(i => big.copy(hartId = i+1)) // TODO: Make it dependent of up(BoomTilesKey, site).length
+      List.tabulate(0)(i => big.copy(hartId = i+1)) // TODO: Make it dependent of up(BoomTilesKey, site).length
     }
     case BoomTilesKey => {
       List.tabulate(1)(i => BoomTileParams(hartId = i)) // TODO: Make it dependent of up(RocketTilesKey, site).length

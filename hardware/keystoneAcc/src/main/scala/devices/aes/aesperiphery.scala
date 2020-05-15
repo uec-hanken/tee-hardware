@@ -4,10 +4,12 @@ import freechips.rocketchip.config.Field
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.subsystem.BaseSubsystem
 
-case object PeripheryAESKey extends Field[AESParams]
+case object PeripheryAESKey extends Field[List[AESParams]]
 
 trait HasPeripheryAES { this: BaseSubsystem =>
-  val aesNode = AES.attach(AESAttachParams(p(PeripheryAESKey), pbus, ibus.fromAsync)).ioNode.makeSink
+  val aesNodes = p(PeripheryAESKey).map { case key =>
+    AES.attach(AESAttachParams(key, pbus, ibus.fromAsync)).ioNode.makeSink
+  }
 }
 
 trait HasPeripheryAESBundle {
@@ -15,5 +17,7 @@ trait HasPeripheryAESBundle {
 
 trait HasPeripheryAESModuleImp extends LazyModuleImp with HasPeripheryAESBundle {
   val outer: HasPeripheryAES
-  val aes = outer.aesNode.makeIO()(ValName(s"aes"))
+  val aes = outer.aesNodes.zipWithIndex.map{ case (node,i) =>
+    node.makeIO()(ValName(s"aes_" + i))
+  }
 }

@@ -259,7 +259,7 @@ class NEDOPlatformIO(val params: TLBundleParameters)
       if(p(PeripherySPIFlashKey).isEmpty) None
       else Some(new SPIPins(() => PinGen(), p(PeripherySPIFlashKey)(0)))
   }
-  val usb11hs = new USB11HSPortIO
+  val usb11hs = if(p(PeripheryUSB11HSKey).nonEmpty) Some(new USB11HSPortIO) else None
   val jtag_reset = Input(Bool())
   val ndreset = Output(Bool())
   val tlport = new TLUL(params)
@@ -309,8 +309,8 @@ class NEDOPlatform(implicit val p: Parameters) extends Module {
       // and there is no usage of channels B, C and E (except for some TL Monitors)
   }
 
-  // Connect the USB to the outside
-  io.usb11hs <> sys.usb11hs
+  // Connect the USB to the outside (only the first one)
+  if(sys.usb11hs.nonEmpty) io.usb11hs.get <> sys.usb11hs(0)
 
   //-----------------------------------------------------------------------
   // Check for unsupported rocket-chip connections

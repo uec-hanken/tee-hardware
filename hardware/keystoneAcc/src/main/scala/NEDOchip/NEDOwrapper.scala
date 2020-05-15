@@ -183,7 +183,7 @@ class NEDObase(implicit val p :Parameters) extends RawModule {
   val uart_rxd = IO(Input(Bool()))
   val uart_rtsn = IO(Output(Bool()))
   val uart_ctsn = IO(Input(Bool()))
-  val usb11hs = IO(new USB11HSPortIO)
+  val usb11hs = if(p(PeripheryUSB11HSKey).nonEmpty) Some(IO(new USB11HSPortIO)) else None
   val ChildClock = if(p(DDRPortOther)) Some(IO(Input(Clock()))) else None
   val ChildReset = if(p(DDRPortOther)) Some(IO(Input(Bool()))) else None
   val pciePorts =
@@ -249,7 +249,7 @@ class NEDObase(implicit val p :Parameters) extends RawModule {
     uart_rtsn := false.B
 
     // USB11
-    usb11hs <> system.io.usb11hs
+    if(p(PeripheryUSB11HSKey).nonEmpty) usb11hs.get <> system.io.usb11hs.get
 
     // The memory port
     tlportw = Some(system.io.tlport)
@@ -320,15 +320,15 @@ class NEDOFPGA(implicit val p :Parameters) extends RawModule {
   val uart_rtsn = IO(Output(Bool()))
   val uart_ctsn = IO(Input(Bool()))
 
-  val USBWireDataIn = IO(Input(Bits(2.W))) // H7 / LA02_P / J1_9 // H8 / LA02_N / J1_11
-  val USBWireDataOut = IO(Output(Bits(2.W))) // G9 / LA03_P / J1_13 // G10 / LA03_N / J1_15
-  val USBWireDataOutTick = IO(Output(Bool())) // H10 / LA04_P / J1_17
-  val USBWireDataInTick = IO(Output(Bool())) // H11 / LA04_N / J1_19
-  val USBWireCtrlOut = IO(Output(Bool())) // D11 / LA05_P / J1_21
-  val USBFullSpeed = IO(Output(Bool())) // D12 / LA05_N / J1_23
-  val USBDPlusPullup = IO(Output(Bool())) // C10 / LA06_P / J1_25
-  val USBDMinusPullup = IO(Output(Bool())) // C11 / LA06_N / J1_27
-  val vBusDetect = IO(Input(Bool())) // H13 / LA07_P / J1_29
+  val USBWireDataIn = if(p(PeripheryUSB11HSKey).nonEmpty) Some(IO(Input(Bits(2.W)))) else None // H7 / LA02_P / J1_9 // H8 / LA02_N / J1_11
+  val USBWireDataOut = if(p(PeripheryUSB11HSKey).nonEmpty) Some(IO(Output(Bits(2.W)))) else None // G9 / LA03_P / J1_13 // G10 / LA03_N / J1_15
+  val USBWireDataOutTick = if(p(PeripheryUSB11HSKey).nonEmpty) Some(IO(Output(Bool()))) else None // H10 / LA04_P / J1_17
+  val USBWireDataInTick = if(p(PeripheryUSB11HSKey).nonEmpty) Some(IO(Output(Bool()))) else None // H11 / LA04_N / J1_19
+  val USBWireCtrlOut = if(p(PeripheryUSB11HSKey).nonEmpty) Some(IO(Output(Bool()))) else None // D11 / LA05_P / J1_21
+  val USBFullSpeed = if(p(PeripheryUSB11HSKey).nonEmpty) Some(IO(Output(Bool()))) else None // D12 / LA05_N / J1_23
+  val USBDPlusPullup = if(p(PeripheryUSB11HSKey).nonEmpty) Some(IO(Output(Bool()))) else None // C10 / LA06_P / J1_25
+  val USBDMinusPullup = if(p(PeripheryUSB11HSKey).nonEmpty) Some(IO(Output(Bool()))) else None // C11 / LA06_N / J1_27
+  val vBusDetect = if(p(PeripheryUSB11HSKey).nonEmpty) Some(IO(Input(Bool()))) else None // H13 / LA07_P / J1_29
 
   var ddr: Option[VC707MIGIODDR] = None
   val sys_clock_p = IO(Input(Clock()))
@@ -415,17 +415,19 @@ class NEDOFPGA(implicit val p :Parameters) extends RawModule {
     chip.jrst_n := !reset_3
 
     // USB phy connections
-    chip.usb11hs.USBWireDataIn := USBWireDataIn
-    USBWireDataOut := chip.usb11hs.USBWireDataOut
-    USBWireDataOutTick := chip.usb11hs.USBWireDataOutTick
-    USBWireDataInTick := chip.usb11hs.USBWireDataInTick
-    USBWireCtrlOut := chip.usb11hs.USBWireCtrlOut
-    USBFullSpeed := chip.usb11hs.USBFullSpeed
-    USBDPlusPullup := chip.usb11hs.USBDPlusPullup
-    USBDMinusPullup := chip.usb11hs.USBDMinusPullup
-    chip.usb11hs.vBusDetect := vBusDetect
+    if(p(PeripheryUSB11HSKey).nonEmpty){
+      chip.usb11hs.get.USBWireDataIn := USBWireDataIn.get
+      USBWireDataOut.get := chip.usb11hs.get.USBWireDataOut
+      USBWireDataOutTick.get := chip.usb11hs.get.USBWireDataOutTick
+      USBWireDataInTick.get := chip.usb11hs.get.USBWireDataInTick
+      USBWireCtrlOut.get := chip.usb11hs.get.USBWireCtrlOut
+      USBFullSpeed.get := chip.usb11hs.get.USBFullSpeed
+      USBDPlusPullup.get := chip.usb11hs.get.USBDPlusPullup
+      USBDMinusPullup.get := chip.usb11hs.get.USBDMinusPullup
+      chip.usb11hs.get.vBusDetect := vBusDetect.get
+      chip.usb11hs.get.usbClk := pll.io.clk_out1.getOrElse(false.B)
+    }
 
-    chip.usb11hs.usbClk := pll.io.clk_out1.getOrElse(false.B)
     if(p(DDRPortOther)) {
       chip.ChildClock.get := pll.io.clk_out2.getOrElse(false.B)
       chip.ChildReset.get := reset_2
@@ -632,15 +634,15 @@ class NEDOFPGAQuartus(implicit val p :Parameters) extends RawModule {
       val qspi_hold = (Output(Bool())) // GPIO1_D[11]
     }))
     else None
-  val USBWireDataIn = IO(Input(Bits(2.W))) // GPIO0_D[1:0]
-  val USBWireDataOut = IO(Output(Bits(2.W))) // GPIO0_D[3:2]
-  val USBWireDataOutTick = IO(Output(Bool())) // GPIO0_D[4]
-  val USBWireDataInTick = IO(Output(Bool())) // GPIO0_D[5]
-  val USBWireCtrlOut = IO(Output(Bool())) // GPIO0_D[6]
-  val USBFullSpeed = IO(Output(Bool())) // GPIO0_D[7]
-  val USBDPlusPullup = IO(Output(Bool())) // GPIO0_D[8]
-  val USBDMinusPullup = IO(Output(Bool()))  // GPIO0_D[9]
-  val vBusDetect = IO(Input(Bool()))  // GPIO0_D[10]
+  val USBWireDataIn = if(p(PeripheryUSB11HSKey).nonEmpty) Some(IO(Input(Bits(2.W)))) else None // GPIO0_D[1:0]
+  val USBWireDataOut = if(p(PeripheryUSB11HSKey).nonEmpty) Some(IO(Output(Bits(2.W)))) else None // GPIO0_D[3:2]
+  val USBWireDataOutTick = if(p(PeripheryUSB11HSKey).nonEmpty) Some(IO(Output(Bool()))) else None // GPIO0_D[4]
+  val USBWireDataInTick = if(p(PeripheryUSB11HSKey).nonEmpty) Some(IO(Output(Bool()))) else None // GPIO0_D[5]
+  val USBWireCtrlOut = if(p(PeripheryUSB11HSKey).nonEmpty) Some(IO(Output(Bool()))) else None // GPIO0_D[6]
+  val USBFullSpeed = if(p(PeripheryUSB11HSKey).nonEmpty) Some(IO(Output(Bool()))) else None // GPIO0_D[7]
+  val USBDPlusPullup = if(p(PeripheryUSB11HSKey).nonEmpty) Some(IO(Output(Bool()))) else None // GPIO0_D[8]
+  val USBDMinusPullup = if(p(PeripheryUSB11HSKey).nonEmpty) Some(IO(Output(Bool()))) else None // GPIO0_D[9]
+  val vBusDetect = if(p(PeripheryUSB11HSKey).nonEmpty) Some(IO(Input(Bool()))) else None // GPIO0_D[10]
 
   ///////////  EXT_IO /////////
   //val EXT_IO = IO(Analog(1.W))
@@ -770,17 +772,19 @@ class NEDOFPGAQuartus(implicit val p :Parameters) extends RawModule {
     chip.jrst_n := !SLIDE_SW(2)
 
     // USB phy connections
-    chip.usb11hs.USBWireDataIn := USBWireDataIn
-    USBWireDataOut := chip.usb11hs.USBWireDataOut
-    USBWireDataOutTick := chip.usb11hs.USBWireDataOutTick
-    USBWireDataInTick := chip.usb11hs.USBWireDataInTick
-    USBWireCtrlOut := chip.usb11hs.USBWireCtrlOut
-    USBFullSpeed := chip.usb11hs.USBFullSpeed
-    USBDPlusPullup := chip.usb11hs.USBDPlusPullup
-    USBDMinusPullup := chip.usb11hs.USBDMinusPullup
-    chip.usb11hs.vBusDetect := vBusDetect
+    if(p(PeripheryUSB11HSKey).nonEmpty) {
+      chip.usb11hs.get.USBWireDataIn := USBWireDataIn.get
+      USBWireDataOut.get := chip.usb11hs.get.USBWireDataOut
+      USBWireDataOutTick.get := chip.usb11hs.get.USBWireDataOutTick
+      USBWireDataInTick.get := chip.usb11hs.get.USBWireDataInTick
+      USBWireCtrlOut.get := chip.usb11hs.get.USBWireCtrlOut
+      USBFullSpeed.get := chip.usb11hs.get.USBFullSpeed
+      USBDPlusPullup.get := chip.usb11hs.get.USBDPlusPullup
+      USBDMinusPullup.get := chip.usb11hs.get.USBDMinusPullup
+      chip.usb11hs.get.vBusDetect := vBusDetect.get
 
-    chip.usb11hs.usbClk := mod.io.ckrst.usb_clk_clk
+      chip.usb11hs.get.usbClk := mod.io.ckrst.usb_clk_clk
+    }
   }
 }
 
@@ -998,15 +1002,15 @@ class NEDOFPGATR4(implicit val p :Parameters) extends RawModule {
       val qspi_hold = (Output(Bool())) // HSMC_TX_p[6] / PIN_AD30 / GPIO1_D21 GPIO1[24]
     }))
   else None
-  val USBWireDataIn = IO(Input(Bits(2.W))) // HSMC_TX_p[7] HSMC_TX_n[7] / PIN_AB30 PIN_AB31 / GPIO1_D24 GPIO1_D26 GPIO1[27,31]
-  val USBWireDataOut = IO(Output(Bits(2.W))) // HSMC_TX_p[8] HSMC_TX_n[8] / PIN_AL27 PIN_AH26 / GPIO1_D16 GPIO1_D18 GPIO1[19,21]
-  val USBWireDataOutTick = IO(Output(Bool())) // HSMC_TX_n[9] / PIN_AE24 / GPIO1_D22 GPIO1[25]
-  val USBWireDataInTick = IO(Output(Bool())) // HSMC_TX_p[9] / PIN_AK27 / GPIO1_D20 GPIO1[23]
-  val USBWireCtrlOut = IO(Output(Bool())) // HSMC_TX_n[10] / PIN_AW28 / GPIO1_D19 GPIO[22]
-  val USBFullSpeed = IO(Output(Bool())) // HSMC_TX_p[10] / PIN_AW27 / GPIO1_D17 GPIO1[20]
-  val USBDPlusPullup = IO(Output(Bool())) // HSMC_TX_n[11] / PIN_AG24 / GPIO1_D15 GPIO1[18]
-  val USBDMinusPullup = IO(Output(Bool()))  // HSMC_TX_p[11] / PIN_AH24 / GPIO1_D13 GPIO1[16]
-  val vBusDetect = IO(Input(Bool()))  // HSMC_TX_n[12] / PIN_AV31 / GPIO1_D14 GPIO1[17]
+  val USBWireDataIn = if(p(PeripheryUSB11HSKey).nonEmpty) Some(IO(Input(Bits(2.W)))) else None // HSMC_TX_p[7] HSMC_TX_n[7] / PIN_AB30 PIN_AB31 / GPIO1_D24 GPIO1_D26 GPIO1[27,31]
+  val USBWireDataOut = if(p(PeripheryUSB11HSKey).nonEmpty) Some(IO(Output(Bits(2.W)))) else None // HSMC_TX_p[8] HSMC_TX_n[8] / PIN_AL27 PIN_AH26 / GPIO1_D16 GPIO1_D18 GPIO1[19,21]
+  val USBWireDataOutTick = if(p(PeripheryUSB11HSKey).nonEmpty) Some(IO(Output(Bool()))) else None // HSMC_TX_n[9] / PIN_AE24 / GPIO1_D22 GPIO1[25]
+  val USBWireDataInTick = if(p(PeripheryUSB11HSKey).nonEmpty) Some(IO(Output(Bool()))) else None // HSMC_TX_p[9] / PIN_AK27 / GPIO1_D20 GPIO1[23]
+  val USBWireCtrlOut = if(p(PeripheryUSB11HSKey).nonEmpty) Some(IO(Output(Bool()))) else None // HSMC_TX_n[10] / PIN_AW28 / GPIO1_D19 GPIO[22]
+  val USBFullSpeed = if(p(PeripheryUSB11HSKey).nonEmpty) Some(IO(Output(Bool()))) else None // HSMC_TX_p[10] / PIN_AW27 / GPIO1_D17 GPIO1[20]
+  val USBDPlusPullup = if(p(PeripheryUSB11HSKey).nonEmpty) Some(IO(Output(Bool()))) else None // HSMC_TX_n[11] / PIN_AG24 / GPIO1_D15 GPIO1[18]
+  val USBDMinusPullup = if(p(PeripheryUSB11HSKey).nonEmpty) Some(IO(Output(Bool()))) else None // HSMC_TX_p[11] / PIN_AH24 / GPIO1_D13 GPIO1[16]
+  val vBusDetect = if(p(PeripheryUSB11HSKey).nonEmpty) Some(IO(Input(Bool()))) else None // HSMC_TX_n[12] / PIN_AV31 / GPIO1_D14 GPIO1[17]
 
 
   val UART_RXD = IO(Input(Bool())) // HSMC_TX_n[1] / PIN_AD29 / GPIO1_D35 GPIO1[40]
@@ -1088,16 +1092,19 @@ class NEDOFPGATR4(implicit val p :Parameters) extends RawModule {
     chip.jrst_n := !SW(0)
 
     // USB phy connections
-    chip.usb11hs.USBWireDataIn := USBWireDataIn
-    USBWireDataOut := chip.usb11hs.USBWireDataOut
-    USBWireDataOutTick := chip.usb11hs.USBWireDataOutTick
-    USBWireDataInTick := chip.usb11hs.USBWireDataInTick
-    USBWireCtrlOut := chip.usb11hs.USBWireCtrlOut
-    USBFullSpeed := chip.usb11hs.USBFullSpeed
-    USBDPlusPullup := chip.usb11hs.USBDPlusPullup
-    USBDMinusPullup := chip.usb11hs.USBDMinusPullup
-    chip.usb11hs.vBusDetect := vBusDetect
+    if(p(PeripheryUSB11HSKey).nonEmpty) {
+      chip.usb11hs.get.USBWireDataIn := USBWireDataIn.get
+      USBWireDataOut.get := chip.usb11hs.get.USBWireDataOut
+      USBWireDataOutTick.get := chip.usb11hs.get.USBWireDataOutTick
+      USBWireDataInTick.get := chip.usb11hs.get.USBWireDataInTick
+      USBWireCtrlOut.get := chip.usb11hs.get.USBWireCtrlOut
+      USBFullSpeed.get := chip.usb11hs.get.USBFullSpeed
+      USBDPlusPullup.get := chip.usb11hs.get.USBDPlusPullup
+      USBDMinusPullup.get := chip.usb11hs.get.USBDMinusPullup
+      chip.usb11hs.get.vBusDetect := vBusDetect.get
 
-    chip.usb11hs.usbClk := mod.io.ckrst.usb_clk_clk
+      chip.usb11hs.get.usbClk := mod.io.ckrst.usb_clk_clk
+    }
+
   }
 }
