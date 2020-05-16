@@ -152,6 +152,10 @@ class ChipConfigTR4 extends Config(
       size = x"0_4000_0000",
       beatBytes = 8,
       idBits = 4), 1))*/
+    case PeripherySHA3Key => List()
+    case Peripheryed25519Key => List()
+    case PeripheryAESKey => List()
+    case PeripheryRandomKey => List()
     case PeripheryUSB11HSKey => List() // Make the USB dissapear for this impl
     case PeripherySPIFlashKey => List() // No external flash. There is no pins to put them
     case PeripheryMaskROMKey => List( // TODO: The software is not compilable on 0x10000
@@ -185,7 +189,7 @@ class ChipConfigVC707 extends Config(
     case PeripherySPIFlashKey => List() // No external flash. There is no pins to put them
     case PeripheryMaskROMKey => List( // TODO: The software is not compilable on 0x10000
       MaskROMParams(address = BigInt(0x20000000), depth = 8192, name = "BootROM"))
-    case IncludePCIe => true // This is for including the PCIe
+    case IncludePCIe => false // This is for including the PCIe
     case ExtMem => Some(MemoryPortParams(MasterPortParams( // For back to 64 bits
       base = x"0_8000_0000",
       size = x"0_4000_0000",
