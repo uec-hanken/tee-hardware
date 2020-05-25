@@ -18,6 +18,9 @@ import uec.keystoneAcc.devices.sha3._
 import uec.keystoneAcc.devices.usb11hs._
 import uec.keystoneAcc.devices.random._
 import boom.common._
+import boom.exu._
+import boom.ifu._
+import boom.bpu._
 //import sifive.freedom.unleashed.DevKitFPGAFrequencyKey
 
 // The number of gpios that we want as input
@@ -37,7 +40,7 @@ class ChipDefaultConfig extends Config(
   new WithJtagDTM            ++
   new WithNMemoryChannels(1) ++
   new boom.common.WithRenumberHarts(rocketFirst = true) ++
-  new boom.common.WithSmallBooms ++
+  //new boom.common.WithSmallBooms ++
   //new boom.common.WithNBoomCores(1) ++
   // new WithNBigCores(2)       ++
   new BaseConfig().alter((site,here,up) => {
@@ -68,7 +71,65 @@ class ChipDefaultConfig extends Config(
       List.tabulate(1)(i => big.copy(hartId = i+1)) // TODO: Make it dependent of up(BoomTilesKey, site).length
     }
     case BoomTilesKey => {
-      List.tabulate(1)(i => BoomTileParams(hartId = i)) // TODO: Make it dependent of up(RocketTilesKey, site).length
+      val small  = BoomTileParams(
+        core = BoomCoreParams(
+          fetchWidth = 4, // was 4
+          useCompressed = true,
+          decodeWidth = 1,
+          numRobEntries = 16, // was 32
+          issueParams = Seq( // In all, numEntries was 8
+            IssueParams(issueWidth=1, numEntries=2, iqType=IQT_MEM.litValue, dispatchWidth=1),
+            IssueParams(issueWidth=1, numEntries=2, iqType=IQT_INT.litValue, dispatchWidth=1),
+            IssueParams(issueWidth=1, numEntries=2, iqType=IQT_FP.litValue , dispatchWidth=1)),
+          numIntPhysRegisters = 52,
+          numFpPhysRegisters = 48,
+          numLdqEntries = 4, // was 8
+          numStqEntries = 4, // was 8
+          maxBrCount = 2, // was 4
+          numFetchBufferEntries = 8, // was 8
+          ftq = FtqParameters(nEntries=4), // was 16
+          btb = BoomBTBParameters(
+            btbsa=true, densebtb=false, bypassCalls=false, rasCheckForEmpty=false,
+            nSets=16, // was 64
+            nWays=1, // was 2
+            nRAS=4, // was 8
+            tagSz=10), // was 20
+          bpdBaseOnly = None,
+          gshare = Some(GShareParameters(
+            historyLength=11,
+            numSets=1024)), // was 2048
+          tage = None,
+          bpdRandom = None,
+          nPerfCounters = 1, // was 2
+          fpu = Some(freechips.rocketchip.tile.FPUParams(sfmaLatency=4, dfmaLatency=4, divSqrt=true))),
+        // Cache size = nSets * nWays * CacheBlockBytes
+        // nSets = (default) 64;
+        // nWays = (default) 4;
+        // CacheBlockBytes = (default) 64;
+        // => default cache size = 64 * 4 * 64 = 16KBytes
+        dcache = Some(DCacheParams(
+          // => dcache size = 16 * 1 * 64 = 1KBytes
+          nSets = 16, // was 64
+          nWays = 1, // was 4
+          rowBits = site(SystemBusKey).beatBits,
+          nMSHRs = 2, // was 2, NOTE: Cannot be strictly 0 (restriction), and cannot be 1 (width error) in boom
+          blockBytes = site(CacheBlockBytes),
+          nTLBEntries=8)),
+        icache = Some(ICacheParams(
+          // => icache size = 16 * 1 * 64 = 1KBytes
+          nSets = 16, // was 64
+          nWays = 1, // was 4
+          rowBits = site(SystemBusKey).beatBits,
+          blockBytes = site(CacheBlockBytes),
+          fetchBytes=2*4)) // was 2*4, 2 = instrWidth (bytes), 4 = fetchWidth, has to be instrWidt*fetchWidth
+        /*
+        NOTES:
+        1) Cannot set fetchBytes in the icache to 2*2 in fetchWidth = 2 because
+           it requires that the cache width only difers 1 bank. Either we disable Compressed, or fetch 4.
+           Why compressed? In compressed, the instruction width is 2.
+         */
+      )
+      List.tabulate(1)(i => small.copy(hartId = i)) // TODO: Make it dependent of up(RocketTilesKey, site).length
     }
   })
 )
@@ -144,7 +205,6 @@ class ChipConfigDE4 extends Config(
 )
 
 class ChipConfigTR4 extends Config(
-  new boom.common.WithLargeBooms ++
   new ChipConfig().alter((site,here,up) => {
     case FreqKeyMHz => 100.0
     /*case ExtMem => Some(MemoryPortParams(MasterPortParams( // For back to 64 bits
@@ -152,16 +212,11 @@ class ChipConfigTR4 extends Config(
       size = x"0_4000_0000",
       beatBytes = 8,
       idBits = 4), 1))*/
-    case PeripherySHA3Key => List()
-    case Peripheryed25519Key => List()
-    case PeripheryAESKey => List()
-    case PeripheryRandomKey => List()
-    case PeripheryUSB11HSKey => List() // Make the USB dissapear for this impl
     case PeripherySPIFlashKey => List() // No external flash. There is no pins to put them
     case PeripheryMaskROMKey => List( // TODO: The software is not compilable on 0x10000
       MaskROMParams(address = BigInt(0x20000000), depth = 8192, name = "BootROM"))
     case DDRPortOther => false // For back to not external clock
-    case RocketTilesKey => {
+    /*case RocketTilesKey => {
       val big = RocketTileParams(
         core   = RocketCoreParams(mulDiv = Some(MulDivParams(
           mulUnroll = 8,
@@ -174,16 +229,15 @@ class ChipConfigTR4 extends Config(
         icache = Some(ICacheParams(
           rowBits = site(SystemBusKey).beatBits,
           blockBytes = site(CacheBlockBytes))))
-      List.tabulate(0)(i => big.copy(hartId = i+1)) // TODO: Make it dependent of up(BoomTilesKey, site).length
-    }
-    case BoomTilesKey => {
-      List.tabulate(1)(i => BoomTileParams(hartId = i)) // TODO: Make it dependent of up(RocketTilesKey, site).length
-    }
+      List.tabulate(1)(i => big.copy(hartId = i+1)) // TODO: Make it dependent of up(BoomTilesKey, site).length
+    }*/
+    //case BoomTilesKey => {
+    //  List.tabulate(1)(i => BoomTileParams(hartId = i)) // TODO: Make it dependent of up(RocketTilesKey, site).length
+    //}
   })
 )
 
 class ChipConfigVC707 extends Config(
-  new boom.common.WithSmallBooms ++
   new ChipConfig().alter((site,here,up) => {
     case FreqKeyMHz => 80.0
     case PeripherySPIFlashKey => List() // No external flash. There is no pins to put them
@@ -211,8 +265,8 @@ class ChipConfigVC707 extends Config(
           blockBytes = site(CacheBlockBytes))))
       List.tabulate(1)(i => big.copy(hartId = i+1)) // TODO: Make it dependent of up(BoomTilesKey, site).length
     }
-    case BoomTilesKey => {
-      List.tabulate(1)(i => BoomTileParams(hartId = i)) // TODO: Make it dependent of up(RocketTilesKey, site).length
-    }
+    //case BoomTilesKey => {
+    //  List.tabulate(1)(i => BoomTileParams(hartId = i)) // TODO: Make it dependent of up(RocketTilesKey, site).length
+    //}
   })
 )
