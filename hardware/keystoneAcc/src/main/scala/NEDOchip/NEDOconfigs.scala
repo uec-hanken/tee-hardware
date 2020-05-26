@@ -39,7 +39,7 @@ case object DDRPortOther extends Field[Boolean]
 class ChipDefaultConfig extends Config(
   new WithJtagDTM            ++
   new WithNMemoryChannels(1) ++
-  new boom.common.WithRenumberHarts(rocketFirst = true) ++
+  new boom.common.WithRenumberHarts(rocketFirst = false) ++
   //new boom.common.WithSmallBooms ++
   //new boom.common.WithNBoomCores(1) ++
   // new WithNBigCores(2)       ++
