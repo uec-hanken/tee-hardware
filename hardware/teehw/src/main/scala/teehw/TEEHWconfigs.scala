@@ -129,7 +129,7 @@ class ChipConfig extends Config(
   })
 )
 
-class DE4Config extends Config(
+class DE4ConfigRV64GC extends Config(
   new ChipConfig().alter((site,here,up) => {
     case FreqKeyMHz => 100.0
     case DDRPortOther => true
@@ -139,7 +139,31 @@ class DE4Config extends Config(
   })
 )
 
-class TR4Config extends Config(
+class DE4ConfigRV32GC extends Config(
+  new DE4ConfigRV64GC().alter((site,here,up) => {
+    case XLen => 32
+  })
+)
+
+class DE4ConfigRV32IMAFC extends Config(
+  new DE4ConfigRV64GC().alter((site,here,up) => {
+    case XLen => 32
+    case RocketTilesKey => up(RocketTilesKey, site) map { r =>
+      r.copy(core = r.core.copy(fpu = r.core.fpu.map(_.copy(fLen = 32))))
+    }
+  })
+)
+
+class DE4ConfigRV32IMAC extends Config(
+  new DE4ConfigRV64GC().alter((site,here,up) => {
+    case XLen => 32
+    case RocketTilesKey => up(RocketTilesKey, site) map { r =>
+      r.copy(core = r.core.copy(fpu = None))
+    }
+  })
+)
+
+class TR4ConfigRV64GC extends Config(
   new ChipConfig().alter((site,here,up) => {
     case FreqKeyMHz => 100.0
     /*case ExtMem => Some(MemoryPortParams(MasterPortParams( // For back to 64 bits
@@ -169,7 +193,31 @@ class TR4Config extends Config(
   })
 )
 
-class VC707Config extends Config(
+class TR4ConfigRV32GC extends Config(
+  new TR4ConfigRV64GC().alter((site,here,up) => {
+    case XLen => 32
+  })
+)
+
+class TR4ConfigRV32IMAFC extends Config(
+  new TR4ConfigRV64GC().alter((site,here,up) => {
+    case XLen => 32
+    case RocketTilesKey => up(RocketTilesKey, site) map { r =>
+      r.copy(core = r.core.copy(fpu = r.core.fpu.map(_.copy(fLen = 32))))
+    }
+  })
+)
+
+class TR4ConfigRV32IMAC extends Config(
+  new TR4ConfigRV64GC().alter((site,here,up) => {
+    case XLen => 32
+    case RocketTilesKey => up(RocketTilesKey, site) map { r =>
+      r.copy(core = r.core.copy(fpu = None))
+    }
+  })
+)
+
+class VC707ConfigRV64GC extends Config(
   new ChipConfig().alter((site,here,up) => {
     case FreqKeyMHz => 80.0
     case PeripherySPIFlashKey => List() // No external flash. There is no pins to put them
@@ -196,6 +244,30 @@ class VC707Config extends Config(
           rowBits = site(SystemBusKey).beatBits,
           blockBytes = site(CacheBlockBytes))))
       List.tabulate(2)(i => big.copy(hartId = i))
+    }
+  })
+)
+
+class VC707ConfigRV32GC extends Config(
+  new VC707ConfigRV64GC().alter((site,here,up) => {
+    case XLen => 32
+  })
+)
+
+class VC707ConfigRV32IMAFC extends Config(
+  new VC707ConfigRV64GC().alter((site,here,up) => {
+    case XLen => 32
+    case RocketTilesKey => up(RocketTilesKey, site) map { r =>
+      r.copy(core = r.core.copy(fpu = r.core.fpu.map(_.copy(fLen = 32))))
+    }
+  })
+)
+
+class VC707ConfigRV32IMAC extends Config(
+  new VC707ConfigRV64GC().alter((site,here,up) => {
+    case XLen => 32
+    case RocketTilesKey => up(RocketTilesKey, site) map { r =>
+      r.copy(core = r.core.copy(fpu = None))
     }
   })
 )

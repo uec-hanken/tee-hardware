@@ -13,6 +13,9 @@ bootrom_dir=$(base_dir)/software/freedom-u540-c000-bootloader
 SUB_PROJECT ?= FPGATR4
 ROMGEN ?= $(base_dir)/hardware/vlsi_rom_gen_real
 
+BOARD=TR4
+ISACONF=RV64GC
+
 #########################################################################################
 # include shared variables
 #########################################################################################
@@ -32,7 +35,7 @@ sim_debug = $(sim_dir)/$(sim_prefix)-$(MODEL_PACKAGE)-$(CONFIG)-debug
 ROM_FILE = $(build_dir)/$(long_name).rom.v
 ROM_CONF_FILE = $(build_dir)/$(long_name).rom.conf
 DTS_FILE = $(build_dir)/$(long_name).dts
-BOOT_FILE = $(bootrom_dir)/vc707zsbl.hex
+#BOOT_FILE = $(bootrom_dir)/vc707zsbl.hex
 
 PERMISSIVE_ON=
 PERMISSIVE_OFF=
@@ -58,23 +61,10 @@ include $(base_dir)/hardware/chipyard/common.mk
 #########################################################################################
 # ROM generation
 #########################################################################################
-#include $(sim_dir)/sdload.mk
 #include $(sim_dir)/jumpqspi.mk
-#.PHONY: $(SDLOAD_FILE)
-
-#$(ROM_FILE): $(ROM_CONF_FILE) $(SDLOAD_FILE) $(ROMGEN)
-#	$(ROMGEN) $(ROM_CONF_FILE) $(SDLOAD_FILE) > $(ROM_FILE)
-
-export BUILD_DIR = $(build_dir)
-export long_name
-export BOARD = TR4
-export ROMGEN
-export ROM_CONF_FILE
-export ROM_FILE
-export TEEHW = 1
 
 $(ROM_FILE): $(ROM_CONF_FILE) $(ROMGEN)
-	make -C $(bootrom_dir) romgen
+	make -C $(bootrom_dir) BUILD_DIR=$(build_dir) long_name=$(long_name) BOARD=$(BOARD) ROMGEN=$(ROMGEN) ROM_CONF_FILE=$(ROM_CONF_FILE) ROM_FILE=$(ROM_FILE) TEEHW=1 ISACONF=$(ISACONF) romgen
 
 #########################################################################################
 # general cleanup rule
