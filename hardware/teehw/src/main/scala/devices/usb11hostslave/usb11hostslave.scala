@@ -20,13 +20,13 @@ class USB11HSPortIO extends Bundle {
   // USB phy signals
   val USBWireDataIn = Input(Bits(2.W))
   val USBWireDataOut = Output(Bits(2.W))
-  val USBWireDataOutTick = Output(Bool())
-  val USBWireDataInTick = Output(Bool())
+  //val USBWireDataOutTick = Output(Bool())
+  //val USBWireDataInTick = Output(Bool())
   val USBWireCtrlOut = Output(Bool())
   val USBFullSpeed = Output(Bool())
-  val USBDPlusPullup = Output(Bool())
-  val USBDMinusPullup = Output(Bool())
-  val vBusDetect = Input(Bool())
+  //val USBDPlusPullup = Output(Bool())
+  //val USBDMinusPullup = Output(Bool())
+  //val vBusDetect = Input(Bool())
 }
 
 class usbHostSlave extends BlackBox {
@@ -113,13 +113,13 @@ class USB11HS(blockBytes: Int, beatBytes: Int, params: USB11HSParams)(implicit p
     // Connect the phy to the outer
     blackbox.io.USBWireDataIn := io.USBWireDataIn
     io.USBWireDataOut := blackbox.io.USBWireDataOut
-    io.USBWireDataOutTick := blackbox.io.USBWireDataOutTick
-    io.USBWireDataInTick := blackbox.io.USBWireDataInTick
+    //io.USBWireDataOutTick := blackbox.io.USBWireDataOutTick
+    //io.USBWireDataInTick := blackbox.io.USBWireDataInTick
     io.USBWireCtrlOut := blackbox.io.USBWireCtrlOut
     io.USBFullSpeed := blackbox.io.USBFullSpeed
-    io.USBDPlusPullup := blackbox.io.USBDPlusPullup
-    io.USBDMinusPullup := blackbox.io.USBDMinusPullup
-    blackbox.io.vBusDetect := io.vBusDetect
+    //io.USBDPlusPullup := blackbox.io.USBDPlusPullup
+    //io.USBDMinusPullup := blackbox.io.USBDMinusPullup
+    //blackbox.io.vBusDetect := io.vBusDetect
     blackbox.io.usbClk := io.usbClk
 
     // Connect the interrupts

@@ -178,11 +178,9 @@ class TEEHWbase(implicit val p :Parameters) extends RawModule {
       val qspi_wp = (Output(Bool()))
       val qspi_hold = (Output(Bool()))
     }))
-    else None
+  else None
   val uart_txd = IO(Output(Bool()))
   val uart_rxd = IO(Input(Bool()))
-  val uart_rtsn = IO(Output(Bool()))
-  val uart_ctsn = IO(Input(Bool()))
   val usb11hs = IO(new USB11HSPortIO)
   val ChildClock = if(p(DDRPortOther)) Some(IO(Input(Clock()))) else None
   val ChildReset = if(p(DDRPortOther)) Some(IO(Input(Bool()))) else None
@@ -246,7 +244,6 @@ class TEEHWbase(implicit val p :Parameters) extends RawModule {
     // UART
     BasePinToRegular(system.io.pins.uart.rxd, uart_rxd)
     uart_txd := BasePinToRegular(system.io.pins.uart.txd)
-    uart_rtsn := false.B
 
     // USB11
     usb11hs <> system.io.usb11hs
@@ -305,30 +302,8 @@ class FPGAVC707(implicit val p :Parameters) extends RawModule {
     val sdio_dat_2 = (Analog(1.W))
     val sdio_dat_3 = (Output(Bool()))
   })
-  val qspi = if(p(PeripherySPIFlashKey).nonEmpty)
-    Some(IO(new Bundle {
-      val qspi_cs = (Output(UInt(p(PeripherySPIFlashKey).head.csWidth.W))) // C14 / LA10_P / J1_2
-      val qspi_sck = (Output(Bool())) // C15 / LA10_N / J1_4
-      val qspi_miso = (Input(Bool())) // H16 / LA11_P / J1_6
-      val qspi_mosi = (Output(Bool())) // H17 / LA11_N / J1_8
-      val qspi_wp = (Output(Bool())) // G15 / LA12_P / J1_10
-      val qspi_hold = (Output(Bool())) // G16 / LA12_N / J1_12
-    }))
-    else None
   val uart_txd = IO(Output(Bool()))
   val uart_rxd = IO(Input(Bool()))
-  val uart_rtsn = IO(Output(Bool()))
-  val uart_ctsn = IO(Input(Bool()))
-
-  val USBWireDataIn = IO(Input(Bits(2.W))) // H7 / LA02_P / J1_9 // H8 / LA02_N / J1_11
-  val USBWireDataOut = IO(Output(Bits(2.W))) // G9 / LA03_P / J1_13 // G10 / LA03_N / J1_15
-  val USBWireDataOutTick = IO(Output(Bool())) // H10 / LA04_P / J1_17
-  val USBWireDataInTick = IO(Output(Bool())) // H11 / LA04_N / J1_19
-  val USBWireCtrlOut = IO(Output(Bool())) // D11 / LA05_P / J1_21
-  val USBFullSpeed = IO(Output(Bool())) // D12 / LA05_N / J1_23
-  val USBDPlusPullup = IO(Output(Bool())) // C10 / LA06_P / J1_25
-  val USBDMinusPullup = IO(Output(Bool())) // C11 / LA06_N / J1_27
-  val vBusDetect = IO(Input(Bool())) // H13 / LA07_P / J1_29
 
   var ddr: Option[VC707MIGIODDR] = None
   val sys_clock_p = IO(Input(Clock()))
@@ -404,28 +379,15 @@ class FPGAVC707(implicit val p :Parameters) extends RawModule {
     chip.gpio_in := gpio_in
     jtag <> chip.jtag
     chip.jtag.jtag_TCK := IBUFG(jtag.jtag_TCK.asClock).asUInt
-    if(p(PeripherySPIFlashKey).nonEmpty) qspi.get <> chip.qspi.get
     chip.uart_rxd := uart_rxd	  // UART_TXD
     uart_txd := chip.uart_txd 	// UART_RXD
-    // := chip.uart_rtsn 			  // input: not used
-    chip.uart_ctsn := false.B 	// output: notused
-    // := uart_ctsn 			      // input: not used
-    uart_rtsn := false.B 		    // output: notused
     sdio <> chip.sdio
     chip.jrst_n := !reset_3
 
-    // USB phy connections
-    chip.usb11hs.USBWireDataIn := USBWireDataIn
-    USBWireDataOut := chip.usb11hs.USBWireDataOut
-    USBWireDataOutTick := chip.usb11hs.USBWireDataOutTick
-    USBWireDataInTick := chip.usb11hs.USBWireDataInTick
-    USBWireCtrlOut := chip.usb11hs.USBWireCtrlOut
-    USBFullSpeed := chip.usb11hs.USBFullSpeed
-    USBDPlusPullup := chip.usb11hs.USBDPlusPullup
-    USBDMinusPullup := chip.usb11hs.USBDMinusPullup
-    chip.usb11hs.vBusDetect := vBusDetect
-
+    // USB phy connections (not used in VC707)
+    chip.usb11hs.USBWireDataIn := 0.U(2.W)
     chip.usb11hs.usbClk := pll.io.clk_out1.getOrElse(false.B)
+
     if(p(DDRPortOther)) {
       chip.ChildClock.get := pll.io.clk_out2.getOrElse(false.B)
       chip.ChildReset.get := reset_2
@@ -464,13 +426,14 @@ class FPGADE4(implicit val p :Parameters) extends RawModule {
   //////// CPU RESET //////////
   val CPU_RESET_n = IO(Input(Bool()))
 
-  //////// MAX I/O //////////
-  /*val MAX_CONF_D = IO(Analog((3+1).W))
-  val MAX_I2C_SCLK = IO(Output(Bool()))
-  val MAX_I2C_SDAT = IO(Analog(1.W))*/
-
   ///////// LED /////////
   val LED = IO(Output(Bits((7+1).W)))
+
+  //////////// 7-Segment Display //////////
+  /*val SEG0_D = IO(Output(Bits((6+1).W)))
+  val SEG1_D = IO(Output(Bits((6+1).W)))
+  val SEG0_DP = IO(Output(Bool()))
+  val SEG1_DP = IO(Output(Bool()))*/
 
   ///////// BUTTON /////////
   val BUTTON = IO(Input(Bits((3+1).W)))
@@ -481,40 +444,16 @@ class FPGADE4(implicit val p :Parameters) extends RawModule {
   //////////// SLIDE SWITCH x 4 //////////
   val SLIDE_SW = IO(Input(Bits((3+1).W)))
 
-  //////////// Temperature //////////
-  /*val TEMP_SMCLK = IO(Output(Bool()))
-  val TEMP_SMDAT = IO(Analog(1.W))
-  val TEMP_INT_n = IO(Input(Bool()))*/
-
-  //////////// Current //////////
-  /*val CSENSE_ADC_F0 = IO(Output(Bool()))
-  val CSENSE_SCK = IO(Analog(1.W))
-  val CSENSE_SDI = IO(Output(Bool()))
-  val CSENSE_SDO = IO(Input(Bool()))
-  val CSENSE_CS_n = IO(Output(Bits((1+1).W)))*/
-
   ///////// FAN /////////
-  //val FAN_CTRL = IO(Output(Bool()))
-
-  //////////// EEPROM //////////
-  /*val EEP_SCL = IO(Output(Bool()))
-  val EEP_SDA = IO(Analog(1.W))*/
+  val FAN_CTRL = IO(Output(Bool()))
 
   //////////// SDCARD //////////
   val SD_CLK = IO(Output(Bool()))
   val SD_MOSI = IO(Output(Bool()))
   val SD_MISO = IO(Input(Bool()))
   val SD_CS_N = IO(Output(Bool()))
-  val SD_INTERUPT_N = IO(Input(Bool()))
-  val SD_WP_n = IO(Input(Bool()))
-
-  //////////// Ethernet x 4 //////////
-  /*val ETH_INT_n = IO(Input(Bits((3+1).W)))
-  val ETH_MDC = IO(Output(Bits((3+1).W)))
-  val ETH_MDIO = IO(Analog((3+1).W))
-  val ETH_RST_n = IO(Output(Bool()))
-  val ETH_RX_p = IO(Input(Bits((3+1).W)))
-  val ETH_TX_p = IO(Output(Bits((3+1).W)))*/
+  //val SD_INTERUPT_N = IO(Input(Bool()))
+  //val SD_WP_n = IO(Input(Bool()))
 
   ////////////// PCIe x 8 //////////
   /*	val PCIE_PREST_n = IO(Input(Bool()))
@@ -523,52 +462,8 @@ class FPGADE4(implicit val p :Parameters) extends RawModule {
     val PCIE_SMBCLK = IO(Input(Bool()))
     val PCIE_SMBDAT = IO(Analog(1.W))
     val PCIE_TX_p = IO(Output(Bits((7+1).W)))
-    val PCIE_WAKE_n = IO(Output(Bool()))
-  */
-  //////////// Flash and SRAM Address/Data Share Bus //////////
-  /*val FSM_A = IO(Output(Bits((25+1).W)))
-  val FSM_D = IO(Analog((15+1).W))*/
+    val PCIE_WAKE_n = IO(Output(Bool()))  */
 
-  //////////// Flash Control //////////
-  /*val FLASH_ADV_n = IO(Output(Bool()))
-  val FLASH_CE_n = IO(Output(Bool()))
-  val FLASH_CLK = IO(Output(Bool()))
-  val FLASH_OE_n = IO(Output(Bool()))
-  val FLASH_RESET_n = IO(Output(Bool()))
-  val FLASH_RYBY_n = IO(Input(Bool()))
-  val FLASH_WE_n = IO(Output(Bool()))*/
-
-  //////////// SSRAM Control //////////
-  /*val SSRAM_ADV = IO(Output(Bool()))
-  val SSRAM_BWA_n = IO(Output(Bool()))
-  val SSRAM_BWB_n = IO(Output(Bool()))
-  val SSRAM_CE_n = IO(Output(Bool()))
-  val SSRAM_CKE_n = IO(Output(Bool()))
-  val SSRAM_CLK = IO(Output(Bool()))
-  val SSRAM_OE_n = IO(Output(Bool()))
-  val SSRAM_WE_n = IO(Output(Bool()))*/
-
-  //////////// USB OTG //////////
-  /*val OTG_A = IO(Output(Bits((17+1).W)))
-  val OTG_CS_n = IO(Output(Bool()))
-  val OTG_D = IO(Analog((31+1).W))
-  val OTG_DC_DACK = IO(Output(Bool()))
-  val OTG_DC_DREQ = IO(Input(Bool()))
-  val OTG_DC_IRQ = IO(Input(Bool()))
-  val OTG_HC_DACK = IO(Output(Bool()))
-  val OTG_HC_DREQ = IO(Input(Bool()))
-  val OTG_HC_IRQ = IO(Input(Bool()))
-  val OTG_OE_n = IO(Output(Bool()))
-  val OTG_RESET_n = IO(Output(Bool()))
-  val OTG_WE_n = IO(Output(Bool()))*/
-
-  //////////// SATA //////////
-  /*	val SATA_REFCLK_p = IO(Input(Bool()))
-    val SATA_HOST_RX_p = IO(Input(Bits((1+1).W)))
-    val SATA_HOST_TX_p = IO(Output(Bits((1+1).W)))
-    val SATA_DEVICE_RX_p = IO(Input(Bits((1+1).W)))
-    val SATA_DEVICE_TX_p = IO(Output(Bits((1+1).W)))
-  */
   //////////// DDR2 SODIMM //////////
   val M1_DDR2_addr = IO(Output(Bits((15+1).W)))
   val M1_DDR2_ba = IO(Output(Bits((2+1).W)))
@@ -609,104 +504,53 @@ class FPGADE4(implicit val p :Parameters) extends RawModule {
     val M2_DDR2_SDA = IO(Analog(1.W))
     val M2_DDR2_we_n = IO(Output(Bool()))
     val M2_DDR2_oct_rdn = IO(Input(Bool()))
-    val M2_DDR2_oct_rup = IO(Input(Bool()))
-  */
+    val M2_DDR2_oct_rup = IO(Input(Bool()))  */
+
   ///////// GPIO /////////
   //val GPIO0_D = IO(Output(Bits((35+1).W)))
   //val GPIO1_D = IO(Analog((35+1).W))
   val jtag = IO(new Bundle {
-    val jtag_TDI = (Input(Bool())) // GPIO1_D[4]
-    val jtag_TDO = (Output(Bool())) // GPIO1_D[10]
-    val jtag_TCK = (Input(Bool())) // GPIO1_D[8]
-    val jtag_TMS = (Input(Bool())) // GPIO1_D[6]
+    val jtag_TDI = (Input(Bool()))
+    val jtag_TMS = (Input(Bool()))
+    val jtag_TCK = (Input(Bool()))
+    val jtag_TDO = (Output(Bool()))
   })
   val qspi = if(p(PeripherySPIFlashKey).nonEmpty)
     Some(IO(new Bundle {
-      val qspi_cs = (Output(UInt(p(PeripherySPIFlashKey).head.csWidth.W))) // GPIO1_D[1]
-      val qspi_sck = (Output(Bool())) // GPIO1_D[3]
-      val qspi_miso = (Input(Bool())) // GPIO1_D[5]
-      val qspi_mosi = (Output(Bool())) // GPIO1_D[7]
-      val qspi_wp = (Output(Bool())) // GPIO1_D[9]
-      val qspi_hold = (Output(Bool())) // GPIO1_D[11]
+      val qspi_cs = (Output(UInt(p(PeripherySPIFlashKey).head.csWidth.W)))
+      val qspi_sck = (Output(Bool()))
+      val qspi_miso = (Input(Bool()))
+      val qspi_mosi = (Output(Bool()))
+      val qspi_wp = (Output(Bool()))
+      val qspi_hold = (Output(Bool()))
     }))
-    else None
-  val USBWireDataIn = IO(Input(Bits(2.W))) // GPIO0_D[1:0]
-  val USBWireDataOut = IO(Output(Bits(2.W))) // GPIO0_D[3:2]
-  val USBWireDataOutTick = IO(Output(Bool())) // GPIO0_D[4]
-  val USBWireDataInTick = IO(Output(Bool())) // GPIO0_D[5]
-  val USBWireCtrlOut = IO(Output(Bool())) // GPIO0_D[6]
-  val USBFullSpeed = IO(Output(Bool())) // GPIO0_D[7]
-  val USBDPlusPullup = IO(Output(Bool())) // GPIO0_D[8]
-  val USBDMinusPullup = IO(Output(Bool()))  // GPIO0_D[9]
-  val vBusDetect = IO(Input(Bool()))  // GPIO0_D[10]
-
-  ///////////  EXT_IO /////////
-  //val EXT_IO = IO(Analog(1.W))
-
-  //////////// HSMC_A //////////
-  /*val HSMA_CLKIN_n1 = IO(Input(Bool()))
-  val HSMA_CLKIN_n2 = IO(Input(Bool()))
-  val HSMA_CLKIN_p1 = IO(Input(Bool()))
-  val HSMA_CLKIN_p2 = IO(Input(Bool()))
-  val HSMA_CLKIN0 = IO(Input(Bool()))
-  val HSMA_CLKOUT_n2 = IO(Output(Bool()))
-  val HSMA_CLKOUT_p2 = IO(Output(Bool()))
-  val HSMA_D = IO(Analog((3+1).W))
-  //val HSMA_GXB_RX_p = IO(Input(Bits((3+1).W)))
-  //val HSMA_GXB_TX_p = IO(Output(Bits((3+1).W)))
-  val HSMA_OUT_n1 = IO(Analog(1.W))
-  val HSMA_OUT_p1 = IO(Analog(1.W))
-  val HSMA_OUT0 = IO(Analog(1.W))
-  //val HSMA_REFCLK_p = IO(Input(Bool()))
-  val HSMA_RX_n = IO(Analog((16+1).W))
-  val HSMA_RX_p = IO(Analog((16+1).W))
-  val HSMA_TX_n = IO(Analog((16+1).W))
-  val HSMA_TX_p = IO(Analog((16+1).W))*/
-
-  //////////// HSMC_B //////////
-  /*val HSMB_CLKIN_n1 = IO(Input(Bool()))
-  val HSMB_CLKIN_n2 = IO(Input(Bool()))
-  val HSMB_CLKIN_p1 = IO(Input(Bool()))
-  val HSMB_CLKIN_p2 = IO(Input(Bool()))
-  val HSMB_CLKIN0 = IO(Input(Bool()))
-  val HSMB_CLKOUT_n2 = IO(Output(Bool()))
-  val HSMB_CLKOUT_p2 = IO(Output(Bool()))
-  val HSMB_D = IO(Analog((3+1).W))
-  //val HSMB_GXB_RX_p = IO(Input(Bits((7+1).W)))
-  //val HSMB_GXB_TX_p = IO(Output(Bits((7+1).W)))
-  val HSMB_OUT_n1 = IO(Analog(1.W))
-  val HSMB_OUT_p1 = IO(Analog(1.W))
-  val HSMB_OUT0 = IO(Analog(1.W))
-  //val HSMB_REFCLK_p = IO(Input(Bool()))
-  val HSMB_RX_n = IO(Analog((16+1).W))
-  val HSMB_RX_p = IO(Analog((16+1).W))
-  val HSMB_TX_n = IO(Analog((16+1).W))
-  val HSMB_TX_p = IO(Analog((16+1).W))*/
-
-  //////////// HSMC I2C //////////
-  /*val HSMC_SCL = IO(Output(Bool()))
-  val HSMC_SDA = IO(Analog(1.W))*/
-
-  //////////// 7-Segment Display //////////
-  /*val SEG0_D = IO(Output(Bits((6+1).W)))
-  val SEG1_D = IO(Output(Bits((6+1).W)))
-  val SEG0_DP = IO(Output(Bool()))
-  val SEG1_DP = IO(Output(Bool()))*/
+  else None
+  val USBFullSpeed = IO(Output(Bool()))
+  val USBWireDataIn = IO(Input(Bits(2.W)))
+  val USBWireCtrlOut = IO(Output(Bool()))
+  val USBWireDataOut = IO(Output(Bits(2.W)))
 
   //////////// Uart //////////
   //val UART_CTS = IO(Output(Bool()))
   //val UART_RTS = IO(Input(Bool()))
   val UART_RXD = IO(Input(Bool()))
   val UART_TXD = IO(Output(Bool()))
-  
+
+  FAN_CTRL := true.B
+
   val clock = Wire(Clock())
   val reset = Wire(Bool())
 
   withClockAndReset(clock, reset) {
     // Instance our converter, and connect everything
     val chip = Module(new TEEHWSoC)
-    val mod = Module(LazyModule(new TLULtoQuartusPlatform(chip.cacheBlockBytes, chip.tlportw.get.params)).module)
-    
+    val mod = Module(LazyModule(
+      new TLULtoQuartusPlatform(
+        chip.cacheBlockBytes,
+        chip.tlportw.get.params
+      )
+    ).module)
+
     // Clock and reset (for TL stuff)
     clock := mod.io.ckrst.dimmclk_clk
     reset := SLIDE_SW(3)
@@ -744,7 +588,7 @@ class FPGADE4(implicit val p :Parameters) extends RawModule {
     // TileLink Interface from platform
     mod.io.tlport.a <> chip.tlport.a
     chip.tlport.d <> mod.io.tlport.d
-    
+
     // The rest of the platform connections
     val chipshell_led = chip.gpio_out 	// output [7:0]
     LED := Cat(
@@ -759,8 +603,6 @@ class FPGADE4(implicit val p :Parameters) extends RawModule {
     if(p(PeripherySPIFlashKey).nonEmpty) qspi.get <> chip.qspi.get
     chip.uart_rxd := UART_RXD	// UART_TXD
     UART_TXD := chip.uart_txd 	// UART_RXD
-    // := chip.uart_rtsn 			// output: not used
-    chip.uart_ctsn := false.B 		// input:  notused
     SD_CLK := chip.sdio.sdio_clk 	// output
     SD_MOSI := chip.sdio.sdio_cmd 	// output
     chip.sdio.sdio_dat_0 := SD_MISO 	// input
@@ -768,16 +610,10 @@ class FPGADE4(implicit val p :Parameters) extends RawModule {
     chip.jrst_n := !SLIDE_SW(2)
 
     // USB phy connections
-    chip.usb11hs.USBWireDataIn := USBWireDataIn
-    USBWireDataOut := chip.usb11hs.USBWireDataOut
-    USBWireDataOutTick := chip.usb11hs.USBWireDataOutTick
-    USBWireDataInTick := chip.usb11hs.USBWireDataInTick
-    USBWireCtrlOut := chip.usb11hs.USBWireCtrlOut
     USBFullSpeed := chip.usb11hs.USBFullSpeed
-    USBDPlusPullup := chip.usb11hs.USBDPlusPullup
-    USBDMinusPullup := chip.usb11hs.USBDMinusPullup
-    chip.usb11hs.vBusDetect := vBusDetect
-
+    chip.usb11hs.USBWireDataIn := USBWireDataIn
+    USBWireCtrlOut := chip.usb11hs.USBWireCtrlOut
+    USBWireDataOut := chip.usb11hs.USBWireDataOut
     chip.usb11hs.usbClk := mod.io.ckrst.usb_clk_clk
   }
 }
@@ -786,25 +622,24 @@ class FPGADE4(implicit val p :Parameters) extends RawModule {
 // FPGATR4 - Demo on TR4 FPGA board
 // ********************************************************************
 class FPGATR4(implicit val p :Parameters) extends RawModule {
+  ///////// CLOCKS /////////
+  val OSC_50_BANK1 = IO(Input(Clock()))
+  val OSC_50_BANK3 = IO(Input(Clock()))
+  val OSC_50_BANK4 = IO(Input(Clock()))
+  val OSC_50_BANK7 = IO(Input(Clock()))
+  val OSC_50_BANK8 = IO(Input(Clock()))
+
   ///////// BUTTON /////////
   val BUTTON = IO(Input(Bits((3+1).W)))
 
+  ///////// LED /////////
+  val LED = IO(Output(Bits((3+1).W)))
+
+  ///////// SW /////////
+  val SW = IO(Input(Bits((3+1).W)))
+
   ///////// FAN /////////
   val FAN_CTRL = IO(Output(Bool()))
-
-  //////////// Flash Control //////////
-  /*val FLASH_ADV_n = IO(Output(Bool()))
-  val FLASH_CE_n = IO(Output(Bool()))
-  val FLASH_CLK = IO(Output(Bool()))
-  val FLASH_RDY_BSY_n = IO(Input(Bool()))
-  val FLASH_RESET_n = IO(Output(Bool()))
-  val FLASH_WP_n = IO(Output(Bool()))*/
-
-  //////////// Flash and SRAM Address/Data Share Bus //////////
-  /*val FSM_A = IO(Output(Bits((25).W)))
-  val FSM_D = IO(Analog((32).W))
-  val FSM_OE_n = IO(Output(Bool()))
-  val FSM_WE_n = IO(Output(Bool()))*/
 
   //////////// HSMC_A //////////
   /*val HSMA_CLKIN0 = IO(Input(Bool()))
@@ -841,21 +676,8 @@ class FPGATR4(implicit val p :Parameters) extends RawModule {
   val HSMB_TX_p = IO(Analog((16+1).W))*/
 
   //////////// HSMC_C //////////
-  /*val HSMC_CLKIN0 = IO(Input(Bool()))
-  val HSMC_CLKIN_n1 = IO(Input(Bool()))
-  val HSMC_CLKIN_n2 = IO(Input(Bool()))
-  val HSMC_CLKIN_p1 = IO(Input(Bool()))
-  val HSMC_CLKIN_p2 = IO(Input(Bool()))
-  val HSMC_CLKOUT_n1 = IO(Analog(1.W))
-  val HSMC_CLKOUT_p1 = IO(Analog(1.W))
-  val HSMC_D = IO(Analog((3+1).W))
-  val HSMC_OUT0 = IO(Analog(1.W))
-  val HSMC_OUT_n2 = IO(Analog(1.W))
-  val HSMC_OUT_p2 = IO(Analog(1.W))
-  val HSMC_RX_n = IO(Analog((16+1).W))
-  val HSMC_RX_p = IO(Analog((16+1).W))
-  val HSMC_TX_n = IO(Analog((16+1).W))
-  val HSMC_TX_p = IO(Analog((16+1).W))*/
+  //val GPIO0_D = IO(Output(Bits((35+1).W)))
+  //val GPIO1_D = IO(Analog((35+1).W))
 
   //////////// HSMC_D //////////
   /*val HSMD_CLKIN0 = IO(Input(Bool()))
@@ -908,20 +730,6 @@ class FPGATR4(implicit val p :Parameters) extends RawModule {
   val HSMF_TX_n = IO(Analog((16+1).W))
   val HSMF_TX_p = IO(Analog((16+1).W))*/
 
-  ///////// LED /////////
-  val LED = IO(Output(Bits((3+1).W)))
-
-  ///////// LOOP /////////
-  //val LOOP_CLKIN0 = IO(Input(Bool()))
-  //val LOOP_CLKOUT0 = IO(Output(Bool()))
-  //val LOOP_CLKIN1 = IO(Input(Bool()))
-  //val LOOP_CLKOUT1 = IO(Output(Bool()))
-
-  //////// MAX2 //////////
-  /*val MAX2_CS_n = IO(Output(Bool()))
-  val MAX2_I2C_SCL = IO(Output(Bool()))
-  val MAX2_I2C_SDA = IO(Analog(1.W))*/
-
   //////////// mem //////////
   val mem_a = IO(Output(Bits((15+1).W)))
   val mem_ba = IO(Output(Bits((2+1).W)))
@@ -944,77 +752,40 @@ class FPGATR4(implicit val p :Parameters) extends RawModule {
   //val mem_sda = IO(Analog(1.W))
   //val mem_event_n = IO(Input(Bool())) // NOTE: This also appeared, but is not used
 
-  ///////// CLOCKS /////////
-  val OSC_50_BANK1 = IO(Input(Clock()))
-  val OSC_50_BANK3 = IO(Input(Clock()))
-  val OSC_50_BANK4 = IO(Input(Clock()))
-  val OSC_50_BANK7 = IO(Input(Clock()))
-  val OSC_50_BANK8 = IO(Input(Clock()))
-
-  ///////// SMA /////////
-  //val SMA_CLKIN = IO(Input(Clock()))
-  //val SMA_CLKOUT = IO(Output(Clock()))
-  //val SMA_CLKOUT_n = IO(Output(Clock()))
-  //val SMA_CLKOUT_p = IO(Output(Clock()))
-
-  //////////// SSRAM Control //////////
-  /*val SSRAM_ADSC_n = IO(Output(Bool()))
-  val SSRAM_ADSP_n = IO(Output(Bool()))
-  val SSRAM_ADV_n = IO(Output(Bool()))
-  val SSRAM_BE_n = IO(Output(Bits((3+1).W)))
-  val SSRAM_CE1_n = IO(Output(Bool()))
-  val SSRAM_CLK = IO(Output(Bool()))*/
-
-  ///////// SW /////////
-  val SW = IO(Input(Bits((3+1).W)))
-
-  ///////// TEMP /////////
-  //val TEMP_CLK = IO(Output(Bool()))
-  //val TEMP_DATA = IO(Input(Bool()))
-  //val TEMP_INT_n = IO(Input(Bool()))
-  //val TEMP_OVERT_n = IO(Input(Bool()))
-
   ///////// GPIO /////////
   val jtag = IO(new Bundle {
-    val jtag_TDI = (Input(Bool())) // HSMC_TX_p[16] / PIN_AP27 / GPIO1_D4 GPIO1[5]
-    val jtag_TDO = (Output(Bool())) // HSMC_TX_n[14] / PIN_AP26 / GPIO1_D10 GPIO1[13]
-    val jtag_TCK = (Input(Bool())) // HSMC_TX_p[14] / PIN_AL25 / GPIO1_D8 GPIO1[9]
-    val jtag_TMS = (Input(Bool())) // HSMC_TX_n[16] / PIN_AN27 / GPIO1_D6 GPIO1[7]
+    val jtag_TDI = (Input(Bool()))
+    val jtag_TMS = (Input(Bool()))
+    val jtag_TCK = (Input(Bool()))
+    val jtag_TDO = (Output(Bool()))
   })
   val sdio = IO(new Bundle {
-    val sdio_clk = (Output(Bool())) // HSMC_TX_n[13] / PIN_AW34 / GPIO1_D11 GPIO1[14]
-    val sdio_cmd = (Output(Bool())) // HSMC_TX_p[12] / PIN_AW31 / GPIO1_D12 GPIO1[15]
-    val sdio_dat_0 = (Input(Bool())) // HSMC_TX_n[2] / PIN_AE29 / GPIO1_D31 GPIO1[36]
-    val sdio_dat_1 = (Analog(1.W)) // HSMC_TX_p[2] / PIN_AE28 / GPIO1_D29 GPIO1[34]
-    val sdio_dat_2 = (Analog(1.W)) // HSMC_TX_p[1] / PIN_AD28 / GPIO1_D33 GPIO1[38]
-    val sdio_dat_3 = (Output(Bool())) // HSMC_TX_p[3] / PIN_AF29 / GPIO1_D32 GPIO1[37]
+    val sdio_clk = (Output(Bool()))
+    val sdio_cmd = (Output(Bool()))
+    val sdio_dat_0 = (Input(Bool()))
+    val sdio_dat_1 = (Analog(1.W))
+    val sdio_dat_2 = (Analog(1.W))
+    val sdio_dat_3 = (Output(Bool()))
   })
   val qspi = if(p(PeripherySPIFlashKey).nonEmpty)
     Some(IO(new Bundle {
-      val qspi_cs = (Output(UInt(p(PeripherySPIFlashKey).head.csWidth.W))) // HSMC_TX_n[4] / PIN_AE31 / GPIO1_D27[32]
-      val qspi_sck = (Output(Bool())) // HSMC_TX_p[4] / PIN_AE30 / GPIO1_D25 GPIO1[28]
-      val qspi_miso = (Input(Bool())) // HSMC_TX_n[5] / PIN_AG32 / GPIO1_D30 GPIO1[35]
-      val qspi_mosi = (Output(Bool())) // HSMC_TX_p[5] / PIN_AG31 / GPIO1_D28 GPIO1[33]
-      val qspi_wp = (Output(Bool())) // HSMC_TX_n[6] / PIN_AD31 / GPIO1_D23 GPIO1[26]
-      val qspi_hold = (Output(Bool())) // HSMC_TX_p[6] / PIN_AD30 / GPIO1_D21 GPIO1[24]
+      val qspi_cs = (Output(UInt(p(PeripherySPIFlashKey).head.csWidth.W)))
+      val qspi_sck = (Output(Bool()))
+      val qspi_miso = (Input(Bool()))
+      val qspi_mosi = (Output(Bool()))
+      val qspi_wp = (Output(Bool()))
+      val qspi_hold = (Output(Bool()))
     }))
   else None
-  val USBWireDataIn = IO(Input(Bits(2.W))) // HSMC_TX_p[7] HSMC_TX_n[7] / PIN_AB30 PIN_AB31 / GPIO1_D24 GPIO1_D26 GPIO1[27,31]
-  val USBWireDataOut = IO(Output(Bits(2.W))) // HSMC_TX_p[8] HSMC_TX_n[8] / PIN_AL27 PIN_AH26 / GPIO1_D16 GPIO1_D18 GPIO1[19,21]
-  val USBWireDataOutTick = IO(Output(Bool())) // HSMC_TX_n[9] / PIN_AE24 / GPIO1_D22 GPIO1[25]
-  val USBWireDataInTick = IO(Output(Bool())) // HSMC_TX_p[9] / PIN_AK27 / GPIO1_D20 GPIO1[23]
-  val USBWireCtrlOut = IO(Output(Bool())) // HSMC_TX_n[10] / PIN_AW28 / GPIO1_D19 GPIO[22]
-  val USBFullSpeed = IO(Output(Bool())) // HSMC_TX_p[10] / PIN_AW27 / GPIO1_D17 GPIO1[20]
-  val USBDPlusPullup = IO(Output(Bool())) // HSMC_TX_n[11] / PIN_AG24 / GPIO1_D15 GPIO1[18]
-  val USBDMinusPullup = IO(Output(Bool()))  // HSMC_TX_p[11] / PIN_AH24 / GPIO1_D13 GPIO1[16]
-  val vBusDetect = IO(Input(Bool()))  // HSMC_TX_n[12] / PIN_AV31 / GPIO1_D14 GPIO1[17]
+  val USBFullSpeed = IO(Output(Bool()))
+  val USBWireDataIn = IO(Input(Bits(2.W)))
+  val USBWireCtrlOut = IO(Output(Bool()))
+  val USBWireDataOut = IO(Output(Bits(2.W)))
 
+  //////////// Uart //////////
+  val UART_TXD = IO(Output(Bool()))
+  val UART_RXD = IO(Input(Bool()))
 
-  val UART_RXD = IO(Input(Bool())) // HSMC_TX_n[1] / PIN_AD29 / GPIO1_D35 GPIO1[40]
-  val UART_TXD = IO(Output(Bool())) // HSMC_TX_n[3] / PIN_AG30 / GPIO1_D34 GPIO1[39]
-
-
-  // Assign essential things
   FAN_CTRL := true.B
 
   val clock = Wire(Clock())
@@ -1083,22 +854,14 @@ class FPGATR4(implicit val p :Parameters) extends RawModule {
     if(p(PeripherySPIFlashKey).nonEmpty) qspi.get <> chip.qspi.get
     chip.uart_rxd := UART_RXD	// UART_TXD
     UART_TXD := chip.uart_txd 	// UART_RXD
-    // := chip.uart_rtsn 			// output: not used
-    chip.uart_ctsn := false.B 		// input:  notused
     sdio <> chip.sdio
     chip.jrst_n := !SW(0)
 
     // USB phy connections
-    chip.usb11hs.USBWireDataIn := USBWireDataIn
-    USBWireDataOut := chip.usb11hs.USBWireDataOut
-    USBWireDataOutTick := chip.usb11hs.USBWireDataOutTick
-    USBWireDataInTick := chip.usb11hs.USBWireDataInTick
-    USBWireCtrlOut := chip.usb11hs.USBWireCtrlOut
     USBFullSpeed := chip.usb11hs.USBFullSpeed
-    USBDPlusPullup := chip.usb11hs.USBDPlusPullup
-    USBDMinusPullup := chip.usb11hs.USBDMinusPullup
-    chip.usb11hs.vBusDetect := vBusDetect
-
+    chip.usb11hs.USBWireDataIn := USBWireDataIn
+    USBWireCtrlOut := chip.usb11hs.USBWireCtrlOut
+    USBWireDataOut := chip.usb11hs.USBWireDataOut
     chip.usb11hs.usbClk := mod.io.ckrst.usb_clk_clk
   }
 }
