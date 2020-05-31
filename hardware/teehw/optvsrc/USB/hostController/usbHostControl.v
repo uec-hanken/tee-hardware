@@ -46,6 +46,8 @@ module usbHostControl (
 	input			hostControlSelect
 );
 
+	wire	[10:0]	frameNum;
+	wire			SOFSent;
 	wire			SOFTimerClr;
 	wire			getPacketREn;
 	wire			getPacketRdy;
