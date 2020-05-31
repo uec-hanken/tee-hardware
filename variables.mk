@@ -164,7 +164,7 @@ else
 	SBT_PROJECT       ?= teehardware
 	MODEL             ?= $(SUB_PROJECT)
 	MODEL_PACKAGE     ?= uec.teehardware
-	CONFIG            ?= $(BOARD)Config$(ISACONF)
+	CONFIG            ?= $(ISACONF)_$(BOARD)Config
 	CONFIG_PACKAGE    ?= uec.teehardware
 	GENERATOR_PACKAGE ?= uec.teehardware.exampletop
 	TOP               ?= TEEHWSoC
