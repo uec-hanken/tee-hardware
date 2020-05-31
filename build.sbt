@@ -200,7 +200,7 @@ lazy val fpga_shells = (project in file("hardware/fpga-shells")).
       unmanagedSources / excludeFilter := HiddenFileFilter || "*microsemi*" // Avoid microsemi, because does not compile
   )
 
-lazy val teehardware = (project in file("hardware/keystoneAcc")).
+lazy val teehardware = (project in file("hardware/teehw")).
   dependsOn(rocketchip, sifive_blocks, fpga_shells, utilities, tapeout, chipyard).
   settings(commonSettings)
 

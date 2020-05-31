@@ -168,7 +168,7 @@ class TEEHWSystem(implicit p: Parameters) extends BaseSubsystem
 }
 
 
-class TEEHWSystemModule[+L <: NEDOSystem](_outer: L)
+class TEEHWSystemModule[+L <: TEEHWSystem](_outer: L)
   extends BaseSubsystemModuleImp(_outer)
     with HasChipyardTilesModuleImp
     with HasRTCModuleImp
