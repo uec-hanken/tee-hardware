@@ -5,15 +5,14 @@
 
 package uec.teehardware.exampletop
 
-import freechips.rocketchip.system.{BaseConfig, DefaultTestSuites, RegressionTestSuite, TestGeneration}
-import freechips.rocketchip.config._
-import freechips.rocketchip.subsystem.RocketTilesKey
-import freechips.rocketchip.tile.XLen
-import freechips.rocketchip.util.GeneratorApp
-import utilities.TestSuiteHelper
+import scala.util.Try
 
-import scala.collection.mutable.LinkedHashSet
+import chisel3._
 
+import freechips.rocketchip.config.{Parameters}
+import freechips.rocketchip.util.{GeneratorApp}
+import freechips.rocketchip.system.{TestGeneration}
+import chipyard._
 
 object Generator extends GeneratorApp {
   // add unique test suites
@@ -21,10 +20,23 @@ object Generator extends GeneratorApp {
     implicit val p: Parameters = params
     TestSuiteHelper.addRocketTestSuites
     TestSuiteHelper.addBoomTestSuites
+    TestSuiteHelper.addArianeTestSuites
+
+    // if hwacha parameter exists then generate its tests
+    // TODO: find a more elegant way to do this. either through
+    // trying to disambiguate BuildRoCC, having a AccelParamsKey,
+    // or having the Accelerator/Tile add its own tests
+    import hwacha.HwachaTestSuites._
+    if (Try(p(hwacha.HwachaNLanes)).getOrElse(0) > 0) {
+      TestGeneration.addSuites(rv64uv.map(_("p")))
+      TestGeneration.addSuites(rv64uv.map(_("vp")))
+      TestGeneration.addSuite(rv64sv("p"))
+      TestGeneration.addSuite(hwachaBmarks)
+    }
   }
 
   // specify the name that the generator outputs files as
-  val longName = names.topModuleProject + "." + names.topModuleClass + "." + names.configs
+  override lazy val longName = names.topModuleProject + "." + names.topModuleClass + "." + names.configs
 
   // generate files
   generateFirrtl
@@ -33,4 +45,3 @@ object Generator extends GeneratorApp {
   generateTestSuiteMakefrags
   generateArtefacts
 }
-

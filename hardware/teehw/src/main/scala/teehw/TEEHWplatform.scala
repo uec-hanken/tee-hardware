@@ -25,6 +25,7 @@ import uec.teehardware.devices.random._
 import uec.teehardware.devices.sha3._
 import uec.teehardware.devices.usb11hs._
 import uec.rocketchip.subsystem._
+import chipyard._
 
 class SlowMemIsland(blockBytes: Int, val crossing: ClockCrossingType = AsynchronousCrossing(8))(implicit p: Parameters)
     extends LazyModule
@@ -43,7 +44,8 @@ class SlowMemIsland(blockBytes: Int, val crossing: ClockCrossingType = Asynchron
   }
 }
 
-class TEEHWSystem(implicit p: Parameters) extends RocketSubsystem
+class TEEHWSystem(implicit p: Parameters) extends BaseSubsystem
+    with HasChipyardTiles
     with HasHierarchicalBusTopology
     with HasPeripheryDebug
     with HasPeripheryGPIO
@@ -158,12 +160,17 @@ class TEEHWSystem(implicit p: Parameters) extends RocketSubsystem
   }
   else None
 
+  // add Mask ROM devices
+  val maskROMs = p(PeripheryMaskROMKey).map { MaskROM.attach(_, cbus) }
+
   // System module creation
   override lazy val module = new TEEHWSystemModule(this)
 }
 
-class TEEHWSystemModule[+L <: TEEHWSystem](_outer: L)
-  extends RocketSubsystemModuleImp(_outer)
+
+class TEEHWSystemModule[+L <: NEDOSystem](_outer: L)
+  extends BaseSubsystemModuleImp(_outer)
+    with HasChipyardTilesModuleImp
     with HasRTCModuleImp
     with HasPeripheryDebugModuleImp
     with HasPeripheryGPIOModuleImp
@@ -172,6 +179,7 @@ class TEEHWSystemModule[+L <: TEEHWSystem](_outer: L)
     with HasPeripheryAESModuleImp
     with HasPeripheryUSB11HSModuleImp
     with HasPeripheryRandomModuleImp
+    with HasResetVectorWire
     //    with HasPeripheryI2CModuleImp
     //    with HasPeripheryUARTModuleImp // NOTE: Already included
     //    with HasPeripherySPIFlashModuleImp // NOTE: Already included
@@ -213,6 +221,14 @@ class TEEHWSystemModule[+L <: TEEHWSystem](_outer: L)
   // Reset vector is set to the location of the first mask rom
   val maskROMParams = p(PeripheryMaskROMKey)
   global_reset_vector := maskROMParams(0).address.U
+
+  tile_inputs.zip(outer.hartIdList).foreach { case(wire, i) =>
+    wire.hartid := i.U
+    wire.reset_vector := global_reset_vector
+  }
+
+  // create file with boom params
+  ElaborationArtefacts.add("""core.config""", outer.tiles.map(x => x.module.toString).mkString("\n"))
 }
 
 object PinGen {
@@ -244,7 +260,7 @@ class TEEHWPlatformIO(val params: TLBundleParameters)
       if(p(PeripherySPIFlashKey).isEmpty) None
       else Some(new SPIPins(() => PinGen(), p(PeripherySPIFlashKey)(0)))
   }
-  val usb11hs = new USB11HSPortIO
+  val usb11hs = if(p(PeripheryUSB11HSKey).nonEmpty) Some(new USB11HSPortIO) else None
   val jtag_reset = Input(Bool())
   val ndreset = Output(Bool())
   val tlport = new TLUL(params)
@@ -294,8 +310,8 @@ class TEEHWPlatform(implicit val p: Parameters) extends Module {
       // and there is no usage of channels B, C and E (except for some TL Monitors)
   }
 
-  // Connect the USB to the outside
-  io.usb11hs <> sys.usb11hs
+  // Connect the USB to the outside (only the first one)
+  if(sys.usb11hs.nonEmpty) io.usb11hs.get <> sys.usb11hs(0)
 
   //-----------------------------------------------------------------------
   // Check for unsupported rocket-chip connections
@@ -322,12 +338,17 @@ class TEEHWPlatform(implicit val p: Parameters) extends Module {
   SPIPinsFromPort(io.pins.spi, sys.spi(0), clock = sys.clock, reset = sys.reset.toBool, syncStages = 3)
 
   // JTAG Debug Interface
-  val sjtag = sys.debug.systemjtag.get
+  // TODO: Now the debug is optional? The get will fail if the debug is disabled
+  val sjtag = sys.debug.get.systemjtag.get
   JTAGPinsFromPort(io.pins.jtag, sjtag.jtag)
   sjtag.reset := io.jtag_reset
   sjtag.mfr_id := p(JtagDTMKey).idcodeManufId.U(11.W)
+  sjtag.part_number := p(JtagDTMKey).idcodePartNum.U(16.W)
+  sjtag.version := p(JtagDTMKey).idcodeVersion.U(4.W)
 
-  io.ndreset := sys.debug.ndreset
+  sys.debug.foreach { case debug =>
+    io.ndreset := debug.ndreset
+  }
 
   // PCIe port connection
   if(p(IncludePCIe)) {
