@@ -304,8 +304,6 @@ class FPGAVC707(implicit val p :Parameters) extends RawModule {
   })
   val uart_txd = IO(Output(Bool()))
   val uart_rxd = IO(Input(Bool()))
-  val uart_rtsn = IO(Output(Bool()))
-  val uart_ctsn = IO(Input(Bool()))
 
   val USBFullSpeed = if(p(PeripheryUSB11HSKey).nonEmpty) Some(IO(Output(Bool()))) else None // D12 / LA05_N / J1_23
   val USBWireDataIn = if(p(PeripheryUSB11HSKey).nonEmpty) Some(IO(Input(Bits(2.W)))) else None // H7 / LA02_P / J1_9 // H8 / LA02_N / J1_11
