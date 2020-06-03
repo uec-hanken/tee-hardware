@@ -15,6 +15,7 @@ ROMGEN ?= $(base_dir)/hardware/vlsi_rom_gen_real
 
 BOARD=DE4
 ISACONF=RV64GC
+HYBRID=BoomRocket
 
 #########################################################################################
 # include shared variables
