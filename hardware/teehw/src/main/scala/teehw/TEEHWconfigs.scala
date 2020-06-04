@@ -162,17 +162,21 @@ class RocketBoom extends Config(
   RocketParams(1)
 )
 
-// Default Config
-class ChipDefaultConfig extends Config(
-  new WithJtagDTM            ++
-  new WithNMemoryChannels(1) ++
-  new BaseConfig()
-)
+class BOOTROM extends Config((site, here, up) => {
+  case PeripheryMaskROMKey => List(
+    MaskROMParams(address = BigInt(0x20000000), depth = 8192, name = "BootROM"))
+  case PeripherySPIFlashKey => List() // disable SPIFlash
+})
+
+class QSPI extends Config((site, here, up) => {
+  case PeripheryMaskROMKey => List(
+    MaskROMParams(address = 0x10000, name = "BootROM")) //move BootROM back to 0x10000
+  case PeripherySPIFlashKey => List(
+    SPIFlashParams(fAddress = 0x20000000, rAddress = 0x64005000, defaultSampleDel = 3))
+})
 
 // Chip Peripherals
 class ChipPeripherals extends Config((site, here, up) => {
-  case PeripheryMaskROMKey => List(
-    MaskROMParams(address = 0x10000, name = "BootROM"))
   case PeripheryUARTKey => List(
     UARTParams(address = BigInt(0x64000000L)))
   case PeripherySPIKey => List(
@@ -184,11 +188,6 @@ class ChipPeripherals extends Config((site, here, up) => {
     SHA3Params(address = BigInt(0x64003000L)))
   case Peripheryed25519Key => List(
     ed25519Params(address = BigInt(0x64004000L)))
-  case PeripherySPIFlashKey => List(
-    SPIFlashParams(
-      fAddress = 0x20000000,
-      rAddress = 0x64005000,
-      defaultSampleDel = 3))
   case PeripheryI2CKey => List(
     I2CParams(address = 0x64006000))
   case PeripheryAESKey => List(
@@ -211,7 +210,9 @@ class ChipConfig extends Config(
   new WithNExtTopInterrupts(0)   ++
   new WithNBreakpoints(4)    ++
   new ChipPeripherals ++
-  new ChipDefaultConfig().alter((site,here,up) => {
+  new WithJtagDTM            ++
+  new WithNMemoryChannels(1) ++
+  new BaseConfig().alter((site,here,up) => {
     case SystemBusKey => up(SystemBusKey).copy(
       errorDevice = Some(DevNullParams(
         Seq(AddressSet(0x4000, 0xfff)),
@@ -236,63 +237,28 @@ class DE4Config extends Config(
   new ChipConfig().alter((site,here,up) => {
     case FreqKeyMHz => 100.0
     case DDRPortOther => true
-    case PeripherySPIFlashKey => List() // No external flash.
-    case PeripheryMaskROMKey => List( // TODO: The software is not compilable on 0x10000
-      MaskROMParams(address = BigInt(0x20000000), depth = 8192, name = "BootROM"))
   })
 )
 
 class TR4Config extends Config(
   new ChipConfig().alter((site,here,up) => {
-    //case XLen => 32
     case FreqKeyMHz => 100.0
     /*case ExtMem => Some(MemoryPortParams(MasterPortParams( // For back to 64 bits
       base = x"0_8000_0000",
       size = x"0_4000_0000",
       beatBytes = 8,
       idBits = 4), 1))*/
-    case PeripherySPIFlashKey => List() // No external flash. There is no pins to put them
-    case PeripheryMaskROMKey => List( // TODO: The software is not compilable on 0x10000
-      MaskROMParams(address = BigInt(0x20000000), depth = 8192, name = "BootROM"))
     case DDRPortOther => false // For back to not external clock
-    /*case RocketTilesKey => up(RocketTilesKey, site) map { r =>
-      r.copy(core = r.core.copy(fpu = None))
-    }*/
-    /*case BoomTilesKey => up(BoomTilesKey, site) map { r =>
-      r.copy(core = r.core.copy(
-        fpu = None,
-        issueParams = Seq( // In all, numEntries was 8
-          IssueParams(issueWidth=1, numEntries=2, iqType=IQT_MEM.litValue, dispatchWidth=1),
-          IssueParams(issueWidth=1, numEntries=2, iqType=IQT_INT.litValue, dispatchWidth=1))
-      ))
-    }*/
-    /*case RocketTilesKey => {
-      val big = RocketTileParams(
-        core   = RocketCoreParams(mulDiv = Some(MulDivParams(
-          mulUnroll = 8,
-          mulEarlyOut = true,
-          divEarlyOut = true))),
-        dcache = Some(DCacheParams(
-          rowBits = site(SystemBusKey).beatBits,
-          nMSHRs = 0,
-          blockBytes = site(CacheBlockBytes))),
-        icache = Some(ICacheParams(
-          rowBits = site(SystemBusKey).beatBits,
-          blockBytes = site(CacheBlockBytes))))
-      List.tabulate(1)(i => big.copy(hartId = i+1)) // TODO: Make it dependent of up(BoomTilesKey, site).length
-    }*/
-    //case BoomTilesKey => {
-    //  List.tabulate(1)(i => BoomTileParams(hartId = i)) // TODO: Make it dependent of up(RocketTilesKey, site).length
-    //}
   })
 )
 
 class VC707Config extends Config(
   new ChipConfig().alter((site,here,up) => {
     case FreqKeyMHz => 80.0
-    case PeripherySPIFlashKey => List() // No external flash. There is no pins to put them
-    case PeripheryMaskROMKey => List( // TODO: The software is not compilable on 0x10000
+    /* Force to use BootROM because VC707 doesn't have enough GPIOs for QSPI */
+    case PeripheryMaskROMKey => List(
       MaskROMParams(address = BigInt(0x20000000), depth = 8192, name = "BootROM"))
+    case PeripherySPIFlashKey => List() // disable SPIFlash
     case IncludePCIe => false // This is for including the PCIe
     case ExtMem => Some(MemoryPortParams(MasterPortParams( // For back to 64 bits
       base = x"0_8000_0000",
@@ -300,23 +266,5 @@ class VC707Config extends Config(
       beatBytes = 8,
       idBits = 4), 1))
     case DDRPortOther => false // For back to not external clock
-    case RocketTilesKey => {
-      val big = RocketTileParams(
-        core   = RocketCoreParams(mulDiv = Some(MulDivParams(
-          mulUnroll = 8,
-          mulEarlyOut = true,
-          divEarlyOut = true))),
-        dcache = Some(DCacheParams(
-          rowBits = site(SystemBusKey).beatBits,
-          nMSHRs = 0,
-          blockBytes = site(CacheBlockBytes))),
-        icache = Some(ICacheParams(
-          rowBits = site(SystemBusKey).beatBits,
-          blockBytes = site(CacheBlockBytes))))
-      List.tabulate(1)(i => big.copy(hartId = i+1)) // TODO: Make it dependent of up(BoomTilesKey, site).length
-    }
-    //case BoomTilesKey => {
-    //  List.tabulate(1)(i => BoomTileParams(hartId = i)) // TODO: Make it dependent of up(RocketTilesKey, site).length
-    //}
   })
 )

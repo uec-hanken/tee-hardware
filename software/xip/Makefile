@@ -24,34 +24,35 @@ $(dtb): $(BUILD_DIR)/$(long_name).dts
 .PHONY: dtb
 dtb: $(dtb)
 
-elf := $(BUILD_DIR)/xip.elf
+elf := xip.elf
 $(elf): xip.S $(dtb)
 	$(CC) $(CFLAGS) -DXIP_TARGET_ADDR=$(XIP_TARGET_ADDR) -DDEVICE_TREE='"$(dtb)"' $(LFLAGS) -o $@ $<
 
 .PHONY: elf
 elf: $(elf)
 
-bin := $(BUILD_DIR)/xip.bin
+bin := xip.bin
 $(bin): $(elf)
 	$(OBJCOPY) -O binary $< $@
 
 .PHONY: bin
 bin: $(bin)
 
-hex := $(BUILD_DIR)/xip.hex
+hex := xip.hex
 $(hex): $(bin)
 	od -t x4 -An -w4 -v $< > $@
 
 .PHONY: hex
 hex: $(hex)
 
-romgen := $(BUILD_DIR)/rom.v
+romgen := rom.v
 $(romgen): $(hex)
-	$(rocketchip_dir)/scripts/vlsi_rom_gen $(ROMCONF) $< > $@
+	$(ROMGEN) $(ROM_CONF_FILE) $< > $@
+	cp rom.v $(ROM_FILE)
 
 .PHONY: romgen
 romgen: $(romgen)
 
 .PHONY: clean
 clean::
-	rm -rf $(hex) $(elf) 
+	rm -rf $(hex) $(elf) $(bin) $(romgen)

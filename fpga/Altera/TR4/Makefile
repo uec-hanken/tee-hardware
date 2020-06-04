@@ -10,11 +10,13 @@ sim_dir=$(abspath .)
 build_dir=$(sim_dir)/src
 
 bootrom_dir=$(base_dir)/software/freedom-u540-c000-bootloader
+xip_dir=$(base_dir)/software/xip
 SUB_PROJECT ?= FPGATR4
 ROMGEN ?= $(base_dir)/hardware/vlsi_rom_gen_real
 
 BOARD=TR4
 ISACONF=RV64GC
+BOOTSRC=BOOTROM
 HYBRID=BoomRocket
 
 #########################################################################################
@@ -36,7 +38,6 @@ sim_debug = $(sim_dir)/$(sim_prefix)-$(MODEL_PACKAGE)-$(CONFIG)-debug
 ROM_FILE = $(build_dir)/$(long_name).rom.v
 ROM_CONF_FILE = $(build_dir)/$(long_name).rom.conf
 DTS_FILE = $(build_dir)/$(long_name).dts
-#BOOT_FILE = $(bootrom_dir)/vc707zsbl.hex
 
 PERMISSIVE_ON=
 PERMISSIVE_OFF=
@@ -68,10 +69,11 @@ include $(base_dir)/hardware/chipyard/common.mk
 #########################################################################################
 # ROM generation
 #########################################################################################
-#include $(sim_dir)/jumpqspi.mk
-
 $(ROM_FILE): $(ROM_CONF_FILE) $(ROMGEN)
 	make -C $(bootrom_dir) BUILD_DIR=$(build_dir) long_name=$(long_name) BOARD=$(BOARD) ROMGEN=$(ROMGEN) ROM_CONF_FILE=$(ROM_CONF_FILE) ROM_FILE=$(ROM_FILE) TEEHW=1 ISACONF=$(ISACONF) romgen
+ifeq ($(BOOTSRC),QSPI) #overwrite the rom.v with xip
+	make -C $(xip_dir) BUILD_DIR=$(build_dir) long_name=$(long_name) ROMGEN=$(ROMGEN) ROM_CONF_FILE=$(ROM_CONF_FILE) ROM_FILE=$(ROM_FILE) ISACONF=$(ISACONF) romgen
+endif
 
 #########################################################################################
 # general cleanup rule
@@ -80,3 +82,4 @@ $(ROM_FILE): $(ROM_CONF_FILE) $(ROMGEN)
 clean:
 	rm -rf $(build_dir) $(sim_prefix)-*
 	make -C $(bootrom_dir) clean
+	make -C $(xip_dir) clean
