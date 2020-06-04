@@ -17,16 +17,18 @@ CFLAGS=$(CFLAGS_ARCH) -O2 -std=gnu11 -Wall -I. -nostartfiles -fno-common -g
 LFLAGS=-static -nostdlib
 XIP_TARGET_ADDR?=0x20000000
 
-dtb := $(BUILD_DIR)/$(long_name).dtb
-$(dtb): $(BUILD_DIR)/$(long_name).dts
-	dtc -I dts -O dtb -o $@ $<
+#dtb := $(BUILD_DIR)/$(long_name).dtb
+#$(dtb): $(BUILD_DIR)/$(long_name).dts
+#	dtc -I dts -O dtb -o $@ $<
 
-.PHONY: dtb
-dtb: $(dtb)
+#.PHONY: dtb
+#dtb: $(dtb)
 
 elf := xip.elf
-$(elf): xip.S $(dtb)
-	$(CC) $(CFLAGS) -DXIP_TARGET_ADDR=$(XIP_TARGET_ADDR) -DDEVICE_TREE='"$(dtb)"' $(LFLAGS) -o $@ $<
+#$(elf): xip.S $(dtb)
+#	$(CC) $(CFLAGS) -DXIP_TARGET_ADDR=$(XIP_TARGET_ADDR) -DDEVICE_TREE='"$(dtb)"' $(LFLAGS) -o $@ $<
+$(elf): xip.S
+	$(CC) $(CFLAGS) -DXIP_TARGET_ADDR=$(XIP_TARGET_ADDR) $(LFLAGS) -o $@ $<
 
 .PHONY: elf
 elf: $(elf)
