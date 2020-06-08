@@ -21,3 +21,4 @@ tags
 *.hex
 *.map
 bootrom
+software/xip/*.v
