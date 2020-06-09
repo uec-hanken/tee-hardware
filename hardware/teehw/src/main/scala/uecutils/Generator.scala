@@ -100,6 +100,7 @@ sealed trait MultiTopApp extends LazyLogging { this: App =>
 
   // TopGeneration
   protected def executeTop(name: String): Seq[ExtModule] = {
+    println("Attempting to extract " + name + "...")
     optionsManager.firrtlOptions = topOptions(name)
     val result = firrtl.Driver.execute(optionsManager)
     result match {
@@ -107,7 +108,8 @@ sealed trait MultiTopApp extends LazyLogging { this: App =>
         dump(x, Some(targetDir + name + ".fir"), Some(targetDir + name + ".anno.json"))
         x.circuitState.circuit.modules.collect{ case e: ExtModule => e }
       case _ =>
-        throw new Exception("executeTop failed on illegal FIRRTL input!")
+        println("Failed to extract " + name + ", continuing...")
+        Seq()
     }
   }
 
@@ -123,6 +125,8 @@ sealed trait MultiTopApp extends LazyLogging { this: App =>
   protected def executeMultiTopAndChip(): Seq[ExtModule] = {
     // Execute top and get list of ExtModules to avoid collisions
     val topExtModules = executeMultiTop()
+
+    println("Attempting to extract " + chipTop.get + "...")
 
     optionsManager.firrtlOptions = firrtlOptions.copy(
       customTransforms = firrtlOptions.customTransforms ++ chipTransforms(topExtModules),
@@ -141,7 +145,7 @@ sealed trait MultiTopApp extends LazyLogging { this: App =>
           Some(targetDir + multiTopOptions.chipTop.get + ".anno.json"))
         x.circuitState.circuit.modules.collect{ case e: ExtModule => e }
       case _ =>
-        throw new Exception("executeTop failed on illegal FIRRTL input!")
+        throw new Exception("executeMultiTopAndChip failed on illegal FIRRTL Chip Top!")
     }
   }
 
@@ -149,6 +153,8 @@ sealed trait MultiTopApp extends LazyLogging { this: App =>
   protected def executeChipAndHarness(): Unit = {
     // Execute top and get list of ExtModules to avoid collisions
     val topExtModules = executeMultiTopAndChip()
+
+    println("Attempting to extract " + multiTopOptions.harnessTop.get + "...")
 
     optionsManager.firrtlOptions = firrtlOptions.copy(
       customTransforms = firrtlOptions.customTransforms ++ harnessTransforms(topExtModules),
