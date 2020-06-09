@@ -36,7 +36,7 @@ MACROCOMPILER_COMMANDS = $(foreach T, $(ALL_TOPS),"runMain barstools.macros.Macr
 default: my_verilog
 	cp -rf $(TEEHW_DIR)/optvsrc/* $(build_dir)
 	# We are going to separate the different tops here
-	cd $(base_dir) && $(SBT) "project $(SBT_PROJECT)" "runMain $(MODEL_PACKAGE).uecutils.MultiTopAndHarness -o $(build_dir)/SHOULDNT.v -i $(FIRRTL_FILE) --syn-tops $(SEPARE) --chip-top $(TOP) --harness-top $(MODEL) --infer-rw --repl-seq-mem -c:$(TOP):-o:$(build_dir)/SHOULDNT.mems.conf -td $(build_dir)"
+	cd $(base_dir) && $(SBT) "project $(SBT_PROJECT)" "runMain $(MODEL_PACKAGE).uecutils.MultiTopAndHarness -o $(build_dir)/SHOULDNT.v -i $(FIRRTL_FILE) --syn-tops $(SEPARE) --chip-top $(TOP) --harness-top $(MODEL) -faf $(ANNO_FILE) --infer-rw --repl-seq-mem -c:$(TOP):-o:$(build_dir)/SHOULDNT.mems.conf -td $(build_dir)"
 	rename.ul $(MODEL_PACKAGE).$(MODEL).$(CONFIG) $(MODEL) $(build_dir)/*
 	# We also want to generate our memories
 	cd $(base_dir) && $(SBT) "project barstoolsMacros" $(MACROCOMPILER_COMMANDS)

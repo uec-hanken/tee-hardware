@@ -5,10 +5,10 @@ import firrtl.ir._
 import firrtl.annotations._
 import firrtl.stage.FirrtlCircuitAnnotation
 import firrtl.passes.Pass
-
 import java.io.File
+
 import firrtl.annotations.AnnotationYamlProtocol._
-import firrtl.passes.memlib.ReplSeqMemAnnotation
+import firrtl.passes.memlib.{ReplSeqMem, ReplSeqMemAnnotation}
 import firrtl.transforms.BlackBoxResourceFileNameAnno
 import net.jcazevedo.moultingyaml._
 import com.typesafe.scalalogging.LazyLogging
@@ -33,19 +33,25 @@ sealed trait MultiTopApp extends LazyLogging { this: App =>
   lazy val targetDir = optionsManager.commonOptions.targetDirName + "/"
 
   // This gets the transforms for a specific top
-  def topTransforms(name: String): Seq[Transform] = {
+  def topTransforms(name: String, topExtModules: Seq[ExtModule]): Seq[Transform] = {
     Seq(
       new ReParentCircuit(name),
-      new RemoveUnusedModules
+      new RemoveUnusedModules,
+      new AvoidExtModuleCollisions(topExtModules),
+      new RenameModulesAndInstancesNotExt((old) => if(old == name || old.endsWith("_in" + name)) old
+                                                   else (old + "_in" + name))
     )
   }
 
-  def topOptions(name: String) = firrtlOptions.copy(
-    customTransforms = firrtlOptions.customTransforms ++ topTransforms(name),
+  def topOptions(name: String, topExtModules: Seq[ExtModule]) = firrtlOptions.copy(
+    customTransforms = firrtlOptions.customTransforms.map{
+      case mem: ReplSeqMem => new ReplSeqMemNotExt(name)
+      case other => other
+    } ++ topTransforms(name, topExtModules),
     annotations = firrtlOptions.annotations.map({
       case ReplSeqMemAnnotation(i, o) => ReplSeqMemAnnotation(i, targetDir + name + ".mems.conf")
       case a => a
-    }) ++ List(BlackBoxResourceFileNameAnno(targetDir + name + ".f")),
+    }) ++ Some(BlackBoxResourceFileNameAnno(targetDir + name + ".f")),
     outputFileNameOverride = targetDir + name + ".v"
   )
 
@@ -73,7 +79,7 @@ sealed trait MultiTopApp extends LazyLogging { this: App =>
     val externals = Set(harnessTop.get, chipTop.get, "SimSerial", "SimDTM")
     Seq(
       new ReParentCircuit(harnessTop.get),
-      new ConvertToExtMod((m) => m.name == multiTopOptions.chipTop.get),
+      new ConvertToExtMod((m) => m.name == chipTop.get),
       new RemoveUnusedModules,
       new AvoidExtModuleCollisions(topExtModules),
       new RenameModulesAndInstances((old) => if (externals contains old) old else (old + "_in" + harnessTop.get))
@@ -99,9 +105,9 @@ sealed trait MultiTopApp extends LazyLogging { this: App =>
   }
 
   // TopGeneration
-  protected def executeTop(name: String): Seq[ExtModule] = {
+  protected def executeTop(name: String, topExtModules: Seq[ExtModule]): Seq[ExtModule] = {
     println("Attempting to extract " + name + "...")
-    optionsManager.firrtlOptions = topOptions(name)
+    optionsManager.firrtlOptions = topOptions(name, topExtModules)
     val result = firrtl.Driver.execute(optionsManager)
     result match {
       case x: FirrtlExecutionSuccess =>
@@ -115,10 +121,15 @@ sealed trait MultiTopApp extends LazyLogging { this: App =>
 
   // Multi Top Generation
   protected def executeMultiTop(): Seq[ExtModule] = {
-    synTops.flatMap {
+    var currentExt : Seq[ExtModule] = Seq()
+    synTops.foreach {
       case name =>
-        executeTop(name)
+        val ext = executeTop(name, currentExt)
+        currentExt = currentExt ++ ext
+        //println("Ext: " + ext.map(_.name).mkString(" "))
+        //println("CurrentExt: " + currentExt.map(_.name).mkString(" "))
     }
+    currentExt
   }
 
   // Top and Chip generation
@@ -134,7 +145,7 @@ sealed trait MultiTopApp extends LazyLogging { this: App =>
       annotations = firrtlOptions.annotations.map({
         case ReplSeqMemAnnotation(i, o) => ReplSeqMemAnnotation(i, targetDir + multiTopOptions.chipTop.get + ".mems.conf")
         case a => a
-      }) ++ List(BlackBoxResourceFileNameAnno(targetDir + multiTopOptions.chipTop.get + ".f"))
+      }) ++ Some(BlackBoxResourceFileNameAnno(targetDir + multiTopOptions.chipTop.get + ".f"))
     )
     val chipResult = firrtl.Driver.execute(optionsManager)
     chipResult match {
@@ -162,7 +173,7 @@ sealed trait MultiTopApp extends LazyLogging { this: App =>
       annotations = firrtlOptions.annotations.map({
         case ReplSeqMemAnnotation(i, o) => ReplSeqMemAnnotation(i, targetDir + multiTopOptions.harnessTop.get + ".mems.conf")
         case a => a
-      }) ++ List(BlackBoxResourceFileNameAnno(targetDir + multiTopOptions.harnessTop.get + ".f"))
+      }) ++ Some(BlackBoxResourceFileNameAnno(targetDir + multiTopOptions.harnessTop.get + ".f"))
     )
     val harnessResult = firrtl.Driver.execute(optionsManager)
     harnessResult match {
