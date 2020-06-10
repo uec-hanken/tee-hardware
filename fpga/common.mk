@@ -28,7 +28,7 @@ MACROCOMPILER_MODE ?= --mode synflops
 
 # The macro-compiler command creator. Just attach a buch of them, to avoid multiple-execution of sbt
 ALL_TOPS := $(TOP) $(MODEL) $(shell echo $(SEPARE) | sed "s/,/ /g")
-MACROCOMPILER_COMMANDS = $(foreach T, $(ALL_TOPS),"runMain barstools.macros.MacroCompiler -n $(build_dir)/$T.mems.conf -v $(build_dir)/$T.mems.v -f $(build_dir)/$T.mems.fir $(MACROCOMPILER_MODE)") 
+MACROCOMPILER_COMMANDS = $(foreach T, $(ALL_TOPS),"runMain $(MODEL_PACKAGE).uecutils.MacroCompiler -n $(build_dir)/$T.mems.conf -v $(build_dir)/$T.mems.v -f $(build_dir)/$T.mems.fir $(MACROCOMPILER_MODE)") 
 
 
 .PHONY: default
@@ -39,7 +39,7 @@ default: my_verilog
 	cd $(base_dir) && $(SBT) "project $(SBT_PROJECT)" "runMain $(MODEL_PACKAGE).uecutils.MultiTopAndHarness -o $(build_dir)/SHOULDNT.v -i $(FIRRTL_FILE) --syn-tops $(SEPARE) --chip-top $(TOP) --harness-top $(MODEL) -faf $(ANNO_FILE) --infer-rw --repl-seq-mem -c:$(TOP):-o:$(build_dir)/SHOULDNT.mems.conf -td $(build_dir)"
 	rename.ul $(MODEL_PACKAGE).$(MODEL).$(CONFIG) $(MODEL) $(build_dir)/*
 	# We also want to generate our memories
-	cd $(base_dir) && $(SBT) "project barstoolsMacros" $(MACROCOMPILER_COMMANDS)
+	cd $(base_dir) && $(SBT) "project $(SBT_PROJECT)" $(MACROCOMPILER_COMMANDS)
 
 my_verilog: $(FIRRTL_FILE) $(ROM_FILE)
 
