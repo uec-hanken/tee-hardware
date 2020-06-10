@@ -108,11 +108,18 @@ sealed trait MultiTopApp extends LazyLogging { this: App =>
   protected def executeTop(name: String, topExtModules: Seq[ExtModule]): Seq[ExtModule] = {
     println("Attempting to extract " + name + "...")
     optionsManager.firrtlOptions = topOptions(name, topExtModules)
-    val result = firrtl.Driver.execute(optionsManager)
-    result match {
-      case x: FirrtlExecutionSuccess =>
-        dump(x, Some(targetDir + name + ".fir"), Some(targetDir + name + ".anno.json"))
-        x.circuitState.circuit.modules.collect{ case e: ExtModule => e }
+    try {
+      val result = firrtl.Driver.execute(optionsManager)
+      result match {
+        case x: FirrtlExecutionSuccess =>
+          dump(x, Some(targetDir + name + ".fir"), Some(targetDir + name + ".anno.json"))
+          x.circuitState.circuit.modules.collect { case e: ExtModule => e }
+        case _ =>
+          println("Failed to extract " + name + ", continuing...")
+          Seq()
+      }
+    }
+    catch {
       case _ =>
         println("Failed to extract " + name + ", continuing...")
         Seq()
