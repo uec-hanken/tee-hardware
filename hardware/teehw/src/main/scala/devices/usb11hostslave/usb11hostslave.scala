@@ -74,6 +74,11 @@ class USB11HS(blockBytes: Int, beatBytes: Int, params: USB11HSParams)(implicit p
       Description(name, mapping ++ extraResources(resources))
     }
   }
+
+  // TODO: Attempt to recreate the port bullshit in LazyModules
+  val ioNode = BundleBridgeSource(() => (new USB11HSPortIO).cloneType)
+  val port = InModuleBody { ioNode.bundle }
+
   // Allow this device to extend the DTS mapping
   def extraResources(resources: ResourceBindings) = Map[String, Seq[ResourceValue]]()
 
@@ -108,7 +113,7 @@ class USB11HS(blockBytes: Int, beatBytes: Int, params: USB11HSParams)(implicit p
 
   lazy val module = new LazyModuleImp(this) {
 
-    val io = IO(new USB11HSPortIO)
+    val io = port//IO(new USB11HSPortIO)
     val (interrupts, _) = intnode.out(0) // Expose the interrupt signals
 
     // Instance the USB black box

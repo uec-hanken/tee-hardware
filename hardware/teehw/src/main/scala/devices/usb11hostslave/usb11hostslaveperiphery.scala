@@ -12,19 +12,19 @@ trait HasPeripheryUSB11HS { this: BaseSubsystem =>
   val usb11hsDevs = p(PeripheryUSB11HSKey).map { case key =>
     USB11HSAttachParams(key).attachTo(this)
   }
+  val usb11hs = usb11hsDevs.map {
+    case i =>
+      i.ioNode.makeSink()
+  }
 }
 
 trait HasPeripheryUSB11HSBundle {
-  val usb11hs: List[USB11HSPortIO]
+  val uart: Seq[USB11HSPortIO]
 }
 
-trait HasPeripheryUSB11HSModuleImp extends LazyModuleImp with HasPeripheryUSB11HSBundle {
+trait HasPeripheryUSB11HSModuleImp extends LazyModuleImp {
   val outer: HasPeripheryUSB11HS
-  val usb11hs = outer.usb11hsDevs.zipWithIndex.map{case (dev,i) =>
-    val port = IO(new HeterogeneousBag(Seq(new USB11HSPortIO)))
-    port.suggestName("usb11hs_" + i)
-    port <> dev.module.io
-    port.head
+  val usb11hs = outer.usb11hs.zipWithIndex.map{
+    case (n,i) => n.makeIO()(ValName(s"usb1_$i"))
   }
-
 }
