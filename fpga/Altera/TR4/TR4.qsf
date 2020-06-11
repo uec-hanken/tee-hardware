@@ -137,11 +137,10 @@ set_global_assignment -name VERILOG_FILE src/TLSHA3.v
 set_global_assignment -name VERILOG_FILE src/TLAES.v
 set_global_assignment -name VERILOG_FILE src/TLed25519.v
 set_global_assignment -name VERILOG_FILE src/USB11HS.v
-set_global_assignment -name VERILOG_FILE src/AsyncResetReg.v
 set_global_assignment -name VERILOG_FILE src/plusarg_reader.v
 set_global_assignment -name VERILOG_FILE src/EICG_wrapper.v
-set_global_assignment -name VERILOG_FILE src/FPGADE4.v
-set_global_assignment -name VERILOG_FILE src/FPGADE4.rom.v
+set_global_assignment -name VERILOG_FILE src/FPGATR4.v
+set_global_assignment -name VERILOG_FILE src/FPGATR4.rom.v
 set_global_assignment -name VERILOG_FILE src/TLSHA3.mems.v
 set_global_assignment -name VERILOG_FILE src/TLAES.mems.v
 set_global_assignment -name VERILOG_FILE src/TLed25519.mems.v
