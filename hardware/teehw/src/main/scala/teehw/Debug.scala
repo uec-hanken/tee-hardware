@@ -136,7 +136,8 @@ class ilatl extends BlackBox {
     io.probe2 := tl.a.bits.size
     io.probe3 := tl.a.bits.source
     io.probe4 := tl.a.bits.address
-    io.probe5 := tl.a.bits.user.getOrElse(0.U)
+    io.probe5 := 0.U
+    //io.probe5 := tl.a.bits.user.getOrElse(0.U)
     io.probe6 := tl.a.bits.mask
     io.probe7 := tl.a.bits.data
     io.probe8 := tl.a.bits.corrupt
@@ -150,7 +151,8 @@ class ilatl extends BlackBox {
     io.probe14 := tl.d.bits.source
     io.probe15 := tl.d.bits.sink
     io.probe16 := tl.d.bits.denied
-    io.probe17 := tl.d.bits.user.getOrElse(0.U)
+    io.probe17 := 0.U
+    //io.probe17 := tl.d.bits.user.getOrElse(0.U)
     io.probe18 := tl.d.bits.data
     io.probe19 := tl.d.bits.corrupt
     io.probe20 := tl.d.ready

@@ -8,7 +8,7 @@ case object Peripheryed25519Key extends Field[List[ed25519Params]]
 
 trait HasPeripheryed25519 { this: BaseSubsystem =>
   val ed25519Nodes = p(Peripheryed25519Key).map { case key =>
-    ed25519.attach(ed25519AttachParams(key, pbus, ibus.fromAsync)).ioNode.makeSink
+    ed25519AttachParams(key).attachTo(this).ioNode.makeSink
   }
 }
 

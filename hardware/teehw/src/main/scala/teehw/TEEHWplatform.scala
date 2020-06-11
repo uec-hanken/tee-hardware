@@ -46,7 +46,6 @@ class SlowMemIsland(blockBytes: Int, val crossing: ClockCrossingType = Asynchron
 
 class TEEHWSystem(implicit p: Parameters) extends BaseSubsystem
     with HasChipyardTiles
-    with HasHierarchicalBusTopology
     with HasPeripheryDebug
     with HasPeripheryGPIO
     with HasPeripherySHA3
@@ -63,7 +62,7 @@ class TEEHWSystem(implicit p: Parameters) extends BaseSubsystem
     //    with CanHaveMasterTLMemPort // NOTE: Manually created the TL port
 {
   // The clock resource. This is just for put in the DTS the tlclock
-  val tlclock = new FixedClockResource("tlclk", p(FreqKeyMHz))
+  //val tlclock = new FixedClockResource("tlclk", p(FreqKeyMHz))
 
   // Main memory controller (TL memory controller)
   val memdevice = new MemoryDevice
@@ -102,31 +101,31 @@ class TEEHWSystem(implicit p: Parameters) extends BaseSubsystem
   // SPI to MMC conversion.
   // TODO: There is an intention from Sifive to do MMC, but has to be manual
   // TODO: Also the tlclock binding is manual
-  val spiDevs = p(PeripherySPIKey).map { ps => SPI.attach(SPIAttachParams(ps, pbus, ibus.fromAsync))}
+  val spiDevs = p(PeripherySPIKey).map { ps => SPIAttachParams(ps).attachTo(this)}
   val spiNodes = spiDevs.map { ps => ps.ioNode.makeSink() }
   val mmc = new MMCDevice(spiDevs.head.device) // Only the first one is mmc
   ResourceBinding {
     Resource(mmc, "reg").bind(ResourceAddress(0))
   }
   spiDevs.foreach { case ps =>
-    tlclock.bind(ps.device)
+    //tlclock.bind(ps.device)
   }
 
   // UART implementation. This is the same as HasPeripheryUART
   // TODO: This is done this way instead of "HasPeripheryUART" because we need to do a bind to tlclock
   val uartDevs = p(PeripheryUARTKey).map{
-    val divinit = (p(PeripheryBusKey).frequency / 115200).toInt
-    ps => UART.attach(UARTAttachParams(ps, divinit, pbus, ibus.fromAsync))
+    val divinit = (p(PeripheryBusKey).dtsFrequency.get / 115200).toInt
+    ps => UARTAttachParams(ps).attachTo(this)
   }
   val uartNodes = uartDevs.map { ps => ps.ioNode.makeSink }
   uartDevs.foreach{ case ps =>
-    tlclock.bind(ps.device)
+    //tlclock.bind(ps.device)
   }
 
   // QSPI flash implementation. This is the same as HasPeripherySPIFlash
   // TODO: This is done this way instead of "HasPeripherySPIFlash" because we need to do a bind to tlclock
   val qspiDevs = p(PeripherySPIFlashKey).map { ps =>
-    SPI.attachFlash(SPIFlashAttachParams(ps, pbus, pbus, ibus.fromAsync, fBufferDepth = 8))
+    SPIFlashAttachParams(ps, fBufferDepth = 8).attachTo(this)
   }
   val qspiNodes = qspiDevs.map { ps => ps.ioNode.makeSink() }
   ResourceBinding {
@@ -136,7 +135,7 @@ class TEEHWSystem(implicit p: Parameters) extends BaseSubsystem
     }
   }
   qspiDevs.foreach { case ps =>
-    tlclock.bind(ps.device)
+    //tlclock.bind(ps.device)
   }
 
   // PCIe port export

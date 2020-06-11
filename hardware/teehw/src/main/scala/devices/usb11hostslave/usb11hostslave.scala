@@ -4,8 +4,13 @@ import chisel3._
 import chisel3.util._
 import freechips.rocketchip.amba.axi4._
 import freechips.rocketchip.config.Parameters
+import freechips.rocketchip.devices.tilelink.{BasicBusBlockerParams, TLClockBlocker}
 import freechips.rocketchip.diplomacy._
+import freechips.rocketchip.diplomaticobjectmodel.DiplomaticObjectModelAddressing
+import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{LogicalModuleTree, LogicalTreeNode}
+import freechips.rocketchip.diplomaticobjectmodel.model.{OMComponent, OMDevice, OMInterrupt, OMMemoryRegion}
 import freechips.rocketchip.interrupts._
+import freechips.rocketchip.prci.{ClockGroup, ClockSinkDomain}
 import freechips.rocketchip.regmapper._
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.tilelink._
@@ -13,6 +18,12 @@ import freechips.rocketchip.util._
 import uec.teehardware.devices.wb2axip._
 
 case class USB11HSParams(address: BigInt)
+
+case class OMUSB11HSDevice(
+  memoryRegions: Seq[OMMemoryRegion],
+  interrupts: Seq[OMInterrupt],
+  _types: Seq[String] = Seq("OMUSB11HSDevice", "OMDevice", "OMComponent")
+) extends OMDevice
 
 class USB11HSPortIO extends Bundle {
   // USB clock 48 MHz
@@ -108,7 +119,7 @@ class USB11HS(blockBytes: Int, beatBytes: Int, params: USB11HSParams)(implicit p
 
     // Clocks and resets
     blackbox.io.clk_i := clock
-    blackbox.io.rst_i := reset
+    blackbox.io.rst_i := reset.asBool
 
     // Connect the phy to the outer
     blackbox.io.USBWireDataIn := io.USBWireDataIn
@@ -185,39 +196,80 @@ class USB11HS(blockBytes: Int, beatBytes: Int, params: USB11HSParams)(implicit p
     tl_in.c.ready := true.B
     tl_in.e.ready := true.B
   }
+
+  val logicalTreeNode = new LogicalTreeNode(() => Some(device)) {
+    def getOMComponents(resourceBindings: ResourceBindings, children: Seq[OMComponent] = Nil): Seq[OMComponent] = {
+      val Description(name, mapping) = device.describe(resourceBindings)
+      val memRegions = DiplomaticObjectModelAddressing.getOMMemoryRegions(name, resourceBindings, None)
+      val interrupts = DiplomaticObjectModelAddressing.describeInterrupts(name, resourceBindings)
+      Seq(
+        OMUSB11HSDevice(
+          memoryRegions = memRegions.map(_.copy(
+            name = "usb11hs",
+            description = "USB11HS Push-Register Device"
+          )),
+          interrupts = interrupts
+        )
+      )
+    }
+  }
 }
 
 case class USB11HSAttachParams(
-                             usbpar: USB11HSParams,
-                             perBus: PeripheryBus,
-                             intNode: IntInwardNode,
-                             controlXType: ClockCrossingType = NoCrossing,
-                             intXType: ClockCrossingType = NoCrossing,
-                             mclock: Option[ModuleValue[Clock]] = None,
-                             mreset: Option[ModuleValue[Bool]] = None)
-                           (implicit val p: Parameters)
+  usb11hspar: USB11HSParams,
+  controlWhere: TLBusWrapperLocation = PBUS,
+  blockerAddr: Option[BigInt] = None,
+  controlXType: ClockCrossingType = NoCrossing,
+  intXType: ClockCrossingType = NoCrossing)
+                              (implicit val p: Parameters) {
+
+  def attachTo(where: Attachable)(implicit p: Parameters): USB11HS = {
+    val name = s"usb11hs_${USB11HS.nextId()}"
+    val cbus = where.locateTLBusWrapper(controlWhere)
+    val usb11hsClockDomainWrapper = LazyModule(new ClockSinkDomain(take = None))
+    val usb11hs = usb11hsClockDomainWrapper { LazyModule(new USB11HS(cbus.blockBytes, cbus.beatBytes, usb11hspar)) }
+    usb11hs.suggestName(name)
+
+    cbus.coupleTo(s"device_named_$name") { bus =>
+
+      val blockerOpt = blockerAddr.map { a =>
+        val blocker = LazyModule(new TLClockBlocker(BasicBusBlockerParams(a, cbus.beatBytes, cbus.beatBytes)))
+        cbus.coupleTo(s"bus_blocker_for_$name") { blocker.controlNode := TLFragmenter(cbus) := _ }
+        blocker
+      }
+
+      usb11hsClockDomainWrapper.clockNode := (controlXType match {
+        case _: SynchronousCrossing =>
+          cbus.dtsClk.map(_.bind(usb11hs.device))
+          cbus.fixedClockNode
+        case _: RationalCrossing =>
+          cbus.clockNode
+        case _: AsynchronousCrossing =>
+          val usb11hsClockGroup = ClockGroup()
+          usb11hsClockGroup := where.asyncClockGroupsNode
+          blockerOpt.map { _.clockNode := usb11hsClockGroup } .getOrElse { usb11hsClockGroup }
+      })
+
+      (usb11hs.node
+        := blockerOpt.map { _.node := bus } .getOrElse { bus })
+    }
+
+    (intXType match {
+      case _: SynchronousCrossing => where.ibus.fromSync
+      case _: RationalCrossing => where.ibus.fromRational
+      case _: AsynchronousCrossing => where.ibus.fromAsync
+    }) := usb11hs.intnode
+
+    LogicalModuleTree.add(where.logicalTreeNode, usb11hs.logicalTreeNode)
+
+    usb11hs
+  }
+}
 
 object USB11HS {
   val nextId = {
     var i = -1; () => {
       i += 1; i
     }
-  }
-
-  def attach(params: USB11HSAttachParams): USB11HS = {
-    implicit val p = params.p
-    val name = s"usb11hs ${nextId()}"
-    val pbus = params.perBus
-    val usb11hs = LazyModule(new USB11HS(pbus.blockBytes, pbus.beatBytes, params.usbpar))
-
-    // Connect the nodes to the control bus
-    pbus.coupleTo( s"device_named_$name" ) {
-      usb11hs.node := _
-    }
-
-    // Connect the interruptions
-    params.intNode := usb11hs.intnode
-
-    usb11hs
   }
 }

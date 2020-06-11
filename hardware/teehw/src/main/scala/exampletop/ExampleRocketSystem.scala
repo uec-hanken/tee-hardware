@@ -65,8 +65,7 @@ class TEEHWJTAGConfig extends Config(
 )
 
 /** Example Top with periphery devices and ports, and a Rocket subsystem */
-class ExampleRocketSystem(implicit p: Parameters) extends RocketSubsystem
-    with HasHierarchicalBusTopology
+class ExampleRocketSystemTEEHW(implicit p: Parameters) extends RocketSubsystem
     with HasPeripheryDebug
     with HasAsyncExtInterrupts
     with CanHaveMasterAXI4MemPort
@@ -78,16 +77,13 @@ class ExampleRocketSystem(implicit p: Parameters) extends RocketSubsystem
     with HasPeripheryRandom
     //with HasPeripheryUSB11HS
     with HasPeripheryBootROM {
-  override lazy val module = new ExampleRocketSystemModuleImp(this)
+  override lazy val module = new ExampleRocketSystemTEEHWModuleImp(this)
 }
 
-class ExampleRocketSystemModuleImp[+L <: ExampleRocketSystem](_outer: L) extends RocketSubsystemModuleImp(_outer)
+class ExampleRocketSystemTEEHWModuleImp[+L <: ExampleRocketSystemTEEHW](_outer: L) extends RocketSubsystemModuleImp(_outer)
     with HasRTCModuleImp
     with HasPeripheryDebugModuleImp
     with HasExtInterruptsModuleImp
-    with CanHaveMasterAXI4MemPortModuleImp
-    with CanHaveMasterAXI4MMIOPortModuleImp
-    with CanHaveSlaveAXI4PortModuleImp
     with HasPeripherySHA3ModuleImp
     with HasPeripheryed25519ModuleImp
     with HasPeripheryAESModuleImp

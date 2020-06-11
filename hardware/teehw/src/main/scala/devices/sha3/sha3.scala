@@ -2,14 +2,25 @@ package uec.teehardware.devices.sha3
 
 import chisel3._
 import freechips.rocketchip.config.Parameters
+import freechips.rocketchip.devices.tilelink.{BasicBusBlockerParams, TLClockBlocker}
 import freechips.rocketchip.diplomacy._
+import freechips.rocketchip.diplomaticobjectmodel._
+import freechips.rocketchip.diplomaticobjectmodel.logicaltree._
+import freechips.rocketchip.diplomaticobjectmodel.model._
 import freechips.rocketchip.interrupts._
+import freechips.rocketchip.prci.{ClockGroup, ClockSinkDomain}
 import freechips.rocketchip.regmapper._
+import freechips.rocketchip.subsystem.{Attachable, PBUS, TLBusWrapperLocation}
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.util._
 
-case class SHA3Params(
-                       address: BigInt)
+case class SHA3Params(address: BigInt)
+
+case class OMSHA3Device(
+  memoryRegions: Seq[OMMemoryRegion],
+  interrupts: Seq[OMInterrupt],
+  _types: Seq[String] = Seq("OMSHA3Device", "OMDevice", "OMComponent")
+) extends OMDevice
 
 class SHA3PortIO extends Bundle {
 }
@@ -123,6 +134,23 @@ abstract class SHA3(busWidthBytes: Int, val c: SHA3Params)
       SHA3CtrlRegs.out_hash_f -> Seq(RegField.r(32, out_hash(16*32-1,15*32), RegFieldDesc("out_hash_f","Output SHA3 hash f"))),
     )
   }
+
+  val logicalTreeNode = new LogicalTreeNode(() => Some(device)) {
+    def getOMComponents(resourceBindings: ResourceBindings, children: Seq[OMComponent] = Nil): Seq[OMComponent] = {
+      val Description(name, mapping) = device.describe(resourceBindings)
+      val memRegions = DiplomaticObjectModelAddressing.getOMMemoryRegions(name, resourceBindings, None)
+      val interrupts = DiplomaticObjectModelAddressing.describeInterrupts(name, resourceBindings)
+      Seq(
+        OMSHA3Device(
+          memoryRegions = memRegions.map(_.copy(
+            name = "sha3",
+            description = "SHA3 Push-Register Device"
+          )),
+          interrupts = interrupts
+        )
+      )
+    }
+  }
 }
 
 class TLSHA3(busWidthBytes: Int, params: SHA3Params)(implicit p: Parameters)
@@ -130,39 +158,60 @@ class TLSHA3(busWidthBytes: Int, params: SHA3Params)(implicit p: Parameters)
 
 case class SHA3AttachParams(
    sha3par: SHA3Params,
-   controlBus: TLBusWrapper,
-   intNode: IntInwardNode,
+   controlWhere: TLBusWrapperLocation = PBUS,
+   blockerAddr: Option[BigInt] = None,
    controlXType: ClockCrossingType = NoCrossing,
-   intXType: ClockCrossingType = NoCrossing,
-   mclock: Option[ModuleValue[Clock]] = None,
-   mreset: Option[ModuleValue[Bool]] = None)
- (implicit val p: Parameters)
+   intXType: ClockCrossingType = NoCrossing)
+ (implicit val p: Parameters) {
+
+  def attachTo(where: Attachable)(implicit p: Parameters): TLSHA3 = {
+    val name = s"sha3_${SHA3.nextId()}"
+    val cbus = where.locateTLBusWrapper(controlWhere)
+    val sha3ClockDomainWrapper = LazyModule(new ClockSinkDomain(take = None))
+    val sha3 = sha3ClockDomainWrapper { LazyModule(new TLSHA3(cbus.beatBytes, sha3par)) }
+    sha3.suggestName(name)
+
+    cbus.coupleTo(s"device_named_$name") { bus =>
+
+      val blockerOpt = blockerAddr.map { a =>
+        val blocker = LazyModule(new TLClockBlocker(BasicBusBlockerParams(a, cbus.beatBytes, cbus.beatBytes)))
+        cbus.coupleTo(s"bus_blocker_for_$name") { blocker.controlNode := TLFragmenter(cbus) := _ }
+        blocker
+      }
+
+      sha3ClockDomainWrapper.clockNode := (controlXType match {
+        case _: SynchronousCrossing =>
+          cbus.dtsClk.map(_.bind(sha3.device))
+          cbus.fixedClockNode
+        case _: RationalCrossing =>
+          cbus.clockNode
+        case _: AsynchronousCrossing =>
+          val sha3ClockGroup = ClockGroup()
+          sha3ClockGroup := where.asyncClockGroupsNode
+          blockerOpt.map { _.clockNode := sha3ClockGroup } .getOrElse { sha3ClockGroup }
+      })
+
+      (sha3.controlXing(controlXType)
+        := TLFragmenter(cbus)
+        := blockerOpt.map { _.node := bus } .getOrElse { bus })
+    }
+
+    (intXType match {
+      case _: SynchronousCrossing => where.ibus.fromSync
+      case _: RationalCrossing => where.ibus.fromRational
+      case _: AsynchronousCrossing => where.ibus.fromAsync
+    }) := sha3.intXing(intXType)
+
+    LogicalModuleTree.add(where.logicalTreeNode, sha3.logicalTreeNode)
+
+    sha3
+  }
+}
 
 object SHA3 {
   val nextId = {
     var i = -1; () => {
       i += 1; i
     }
-  }
-
-  def attach(params: SHA3AttachParams): TLSHA3 = {
-    implicit val p = params.p
-    val name = s"sha3 ${nextId()}"
-    val cbus = params.controlBus
-    val sha3 = LazyModule(new TLSHA3(cbus.beatBytes, params.sha3par))
-    sha3.suggestName(name)
-
-    cbus.coupleTo(s"device_named_$name") {
-      sha3.controlXing(params.controlXType) := TLFragmenter(cbus.beatBytes, cbus.blockBytes) := _
-    }
-    params.intNode := sha3.intXing(params.intXType)
-    InModuleBody {
-      sha3.module.clock := params.mclock.map(_.getWrappedValue).getOrElse(cbus.module.clock)
-    }
-    InModuleBody {
-      sha3.module.reset := params.mreset.map(_.getWrappedValue).getOrElse(cbus.module.reset)
-    }
-
-    sha3
   }
 }

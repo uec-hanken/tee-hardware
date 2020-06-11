@@ -8,7 +8,7 @@ case object PeripherySHA3Key extends Field[List[SHA3Params]]
 
 trait HasPeripherySHA3 { this: BaseSubsystem =>
   val sha3Nodes = p(PeripherySHA3Key).map{ case key =>
-    SHA3.attach(SHA3AttachParams(key, pbus, ibus.fromAsync)).ioNode.makeSink
+    SHA3AttachParams(key).attachTo(this).ioNode.makeSink
   }
 }
 

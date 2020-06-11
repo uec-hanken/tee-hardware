@@ -64,7 +64,7 @@ verilog: $(TOP_FILE) $(HARNESS_FILE) $(ROM_FILE)
 #########################################################################################
 # import other necessary rules and variables
 #########################################################################################
-include $(base_dir)/hardware/chipyard/common.mk
+include $(base_dir)/common.mk
 
 #########################################################################################
 # ROM generation
