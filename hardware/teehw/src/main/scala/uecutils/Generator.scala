@@ -33,12 +33,10 @@ sealed trait MultiTopApp extends LazyLogging { this: App =>
   lazy val targetDir = optionsManager.commonOptions.targetDirName + "/"
 
   // This gets the transforms for a specific top
-  def topTransforms(name: String, topExtModules: Seq[ExtModule]): Seq[Transform] = {
+  def topTransforms: Seq[Transform] = {
     Seq(
-      //new ReParentCircuit(name),
-      new ReParentCircuit, // TODO: Need to use the chip top renaming here
+      new ReParentCircuit,
       new RemoveUnusedModules,
-      //new AvoidExtModuleCollisions(topExtModules),
       new AvoidExtModuleCollisions,
       new AddSuffixToModuleNames
     )
@@ -49,13 +47,15 @@ sealed trait MultiTopApp extends LazyLogging { this: App =>
   def topAnnos(name: String, topExtModules: Seq[ExtModule]) =
     Seq(ReParentCircuitAnnotation(rootCircuitTarget.module(name))) ++
       Seq(BlackBoxResourceFileNameAnno(targetDir + name + ".f"))  ++
+      Seq(KeepNameAnnotation(rootCircuitTarget.module(name))) ++
+      Seq(ModuleNameSuffixAnnotation(rootCircuitTarget, s"_in${name}")) ++
       Seq(LinkExtModulesAnnotation(topExtModules))
 
   def topOptions(name: String, topExtModules: Seq[ExtModule]) = firrtlOptions.copy(
     customTransforms = firrtlOptions.customTransforms.map{
-      //case mem: ReplSeqMem => new ReplSeqMemNotExt(name)
+      case _: ReplSeqMem => new ReplSeqMemNotExt
       case other => other
-    } ++ topTransforms(name, topExtModules),
+    } ++ topTransforms,
     annotations = firrtlOptions.annotations.map({
       case ReplSeqMemAnnotation(i, o) => ReplSeqMemAnnotation(i, targetDir + name + ".mems.conf")
       case a => a
@@ -63,26 +63,21 @@ sealed trait MultiTopApp extends LazyLogging { this: App =>
     outputFileNameOverride = targetDir + name + ".v"
   )
 
-  private def chipTransforms(topExtModules: Seq[ExtModule]): Seq[Transform] = {
+  private def chipTransforms: Seq[Transform] = {
     Seq(
-      //new ReParentCircuit(chipTop.get),
-      new ReParentCircuit, // TODO: Need to use the chip top renaming here
-      //new ConvertToExtMod((m) => synTops.contains(m.name)),
+      new ReParentCircuit,
       new ConvertToExtMod,
       new RemoveUnusedModules,
-      //new AvoidExtModuleCollisions(topExtModules),
       new AvoidExtModuleCollisions,
       new AddSuffixToModuleNames
     )
   }
 
-  def harnessTransforms(topExtModules: Seq[ExtModule]): Seq[Transform] = {
+  def harnessTransforms: Seq[Transform] = {
     Seq(
-      new ReParentCircuit, // TODO: Need to use the chip top renaming here
-      //new ConvertToExtMod((m) => m.name == chipTop.get),
+      new ReParentCircuit,
       new ConvertToExtMod,
       new RemoveUnusedModules,
-      //new AvoidExtModuleCollisions(topExtModules),
       new AvoidExtModuleCollisions,
       new AddSuffixToModuleNames
     )
@@ -120,12 +115,14 @@ sealed trait MultiTopApp extends LazyLogging { this: App =>
           x.circuitState.circuit.modules.collect { case e: ExtModule => e }
         case _ =>
           println("Failed to extract " + name + ", continuing...")
+          //throw new Exception("executeTop failed on illegal FIRRTL Chip Top!")
           Seq()
       }
     }
     catch {
-      case _ : Throwable =>
+      case a : Throwable =>
         println("Failed to extract " + name + ", continuing...")
+        //throw a
         Seq()
     }
   }
@@ -155,7 +152,7 @@ sealed trait MultiTopApp extends LazyLogging { this: App =>
       Seq(ReParentCircuitAnnotation(rootCircuitTarget.module(chipTop.get))) ++
       Seq(BlackBoxResourceFileNameAnno(targetDir + chipTop.get + ".f")) ++
       externals.map(ext => KeepNameAnnotation(rootCircuitTarget.module(ext))) ++
-      harnessTop.map(ht => ModuleNameSuffixAnnotation(rootCircuitTarget, s"_in${ht}")) ++
+      chipTop.map(ht => ModuleNameSuffixAnnotation(rootCircuitTarget, s"_in${ht}")) ++
       synTops.map(st => ConvertToExtModAnnotation(rootCircuitTarget.module(st))) :+
       LinkExtModulesAnnotation(topExtModules)
 
@@ -166,7 +163,7 @@ sealed trait MultiTopApp extends LazyLogging { this: App =>
     // outputFileNameOverride: change to harnessOutput
     // conf file must change to harnessConf by mapping annotations
     optionsManager.firrtlOptions = firrtlOptions.copy(
-      customTransforms = firrtlOptions.customTransforms ++ chipTransforms(topExtModules),
+      customTransforms = firrtlOptions.customTransforms ++ chipTransforms,
       outputFileNameOverride = targetDir + chipTop.get + ".v",
       annotations = firrtlOptions.annotations.map({
         case ReplSeqMemAnnotation(i, o) => ReplSeqMemAnnotation(i, targetDir + chipTop.get + ".mems.conf")
@@ -207,7 +204,7 @@ sealed trait MultiTopApp extends LazyLogging { this: App =>
     // outputFileNameOverride: change to harnessOutput
     // conf file must change to harnessConf by mapping annotations
     optionsManager.firrtlOptions = firrtlOptions.copy(
-      customTransforms = firrtlOptions.customTransforms ++ harnessTransforms(topExtModules),
+      customTransforms = firrtlOptions.customTransforms ++ harnessTransforms,
       outputFileNameOverride = targetDir + harnessTop.get + ".v",
       annotations = firrtlOptions.annotations.map({
         case ReplSeqMemAnnotation(i, o) => ReplSeqMemAnnotation(i, targetDir + harnessTop.get + ".mems.conf")
