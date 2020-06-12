@@ -46,8 +46,10 @@ sealed trait MultiTopApp extends LazyLogging { this: App =>
 
   lazy val rootCircuitTarget = CircuitTarget(harnessTop.get)
 
-  def topAnnos(name: String, topExtModules: Seq[ExtModule]) = Some(ReParentCircuitAnnotation(rootCircuitTarget.module(name))) ++
-    Some(BlackBoxResourceFileNameAnno(targetDir + name + ".f"))
+  def topAnnos(name: String, topExtModules: Seq[ExtModule]) =
+    Seq(ReParentCircuitAnnotation(rootCircuitTarget.module(name))) ++
+      Seq(BlackBoxResourceFileNameAnno(targetDir + name + ".f"))  ++
+      Seq(LinkExtModulesAnnotation(topExtModules))
 
   def topOptions(name: String, topExtModules: Seq[ExtModule]) = firrtlOptions.copy(
     customTransforms = firrtlOptions.customTransforms.map{
@@ -76,6 +78,7 @@ sealed trait MultiTopApp extends LazyLogging { this: App =>
 
   def harnessTransforms(topExtModules: Seq[ExtModule]): Seq[Transform] = {
     Seq(
+      new ReParentCircuit, // TODO: Need to use the chip top renaming here
       //new ConvertToExtMod((m) => m.name == chipTop.get),
       new ConvertToExtMod,
       new RemoveUnusedModules,
@@ -144,10 +147,12 @@ sealed trait MultiTopApp extends LazyLogging { this: App =>
   protected def executeMultiTopAndChip(): Seq[ExtModule] = {
     // Execute top and get list of ExtModules to avoid collisions
     val topExtModules = executeMultiTop()
+    //val topExtModules = Seq[ExtModule]()
     
     val externals = chipTop ++ synTops
     
     val chipAnnos =
+      Seq(ReParentCircuitAnnotation(rootCircuitTarget.module(chipTop.get))) ++
       Seq(BlackBoxResourceFileNameAnno(targetDir + chipTop.get + ".f")) ++
       externals.map(ext => KeepNameAnnotation(rootCircuitTarget.module(ext))) ++
       harnessTop.map(ht => ModuleNameSuffixAnnotation(rootCircuitTarget, s"_in${ht}")) ++
