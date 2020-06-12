@@ -8,7 +8,7 @@ case object PeripheryRandomKey extends Field[List[RandomParams]]
 
 trait HasPeripheryRandom { this: BaseSubsystem =>
   val rndNodes = p(PeripheryRandomKey).map{ case key =>
-    Random.attach(RandomAttachParams(key, pbus, ibus.fromAsync)).ioNode.makeSink
+    RandomAttachParams(key).attachTo(this).ioNode.makeSink
   }
 }
 

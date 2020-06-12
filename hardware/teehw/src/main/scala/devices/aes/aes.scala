@@ -3,13 +3,25 @@ package uec.teehardware.devices.aes
 import chisel3._
 import chisel3.util._
 import freechips.rocketchip.config.Parameters
+import freechips.rocketchip.devices.tilelink.{BasicBusBlockerParams, TLClockBlocker}
 import freechips.rocketchip.diplomacy._
+import freechips.rocketchip.diplomaticobjectmodel.DiplomaticObjectModelAddressing
+import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{LogicalModuleTree, LogicalTreeNode}
+import freechips.rocketchip.diplomaticobjectmodel.model.{OMComponent, OMDevice, OMInterrupt, OMMemoryRegion}
 import freechips.rocketchip.interrupts._
+import freechips.rocketchip.prci.{ClockGroup, ClockSinkDomain}
 import freechips.rocketchip.regmapper._
+import freechips.rocketchip.subsystem.{Attachable, PBUS, TLBusWrapperLocation}
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.util._
 
 case class AESParams(address: BigInt)
+
+case class OMAESDevice(
+  memoryRegions: Seq[OMMemoryRegion],
+  interrupts: Seq[OMInterrupt],
+  _types: Seq[String] = Seq("OMAESDevice", "OMDevice", "OMComponent")
+) extends OMDevice
 
 class AESPortIO extends Bundle {
 }
@@ -106,46 +118,84 @@ abstract class AES(busWidthBytes: Int, val c: AESParams, divisorInit: Int = 0)
     )
   }
 
+  val logicalTreeNode = new LogicalTreeNode(() => Some(device)) {
+    def getOMComponents(resourceBindings: ResourceBindings, children: Seq[OMComponent] = Nil): Seq[OMComponent] = {
+      val Description(name, mapping) = device.describe(resourceBindings)
+      val memRegions = DiplomaticObjectModelAddressing.getOMMemoryRegions(name, resourceBindings, None)
+      val interrupts = DiplomaticObjectModelAddressing.describeInterrupts(name, resourceBindings)
+      Seq(
+        OMAESDevice(
+          memoryRegions = memRegions.map(_.copy(
+            name = "aes",
+            description = "AES Push-Register Device"
+          )),
+          interrupts = interrupts
+        )
+      )
+    }
+  }
+
 }
 
 class TLAES(busWidthBytes: Int, params: AESParams)(implicit p: Parameters)
   extends AES(busWidthBytes, params) with HasTLControlRegMap
 
 case class AESAttachParams(
-                             aespar: AESParams,
-                             controlBus: TLBusWrapper,
-                             intNode: IntInwardNode,
-                             controlXType: ClockCrossingType = NoCrossing,
-                             intXType: ClockCrossingType = NoCrossing,
-                             mclock: Option[ModuleValue[Clock]] = None,
-                             mreset: Option[ModuleValue[Bool]] = None)
-                           (implicit val p: Parameters)
+  aespar: AESParams,
+  controlWhere: TLBusWrapperLocation = PBUS,
+  blockerAddr: Option[BigInt] = None,
+  controlXType: ClockCrossingType = NoCrossing,
+  intXType: ClockCrossingType = NoCrossing)
+                          (implicit val p: Parameters) {
+
+  def attachTo(where: Attachable)(implicit p: Parameters): TLAES = {
+    val name = s"aes_${AES.nextId()}"
+    val cbus = where.locateTLBusWrapper(controlWhere)
+    val aesClockDomainWrapper = LazyModule(new ClockSinkDomain(take = None))
+    val aes = aesClockDomainWrapper { LazyModule(new TLAES(cbus.beatBytes, aespar)) }
+    aes.suggestName(name)
+
+    cbus.coupleTo(s"device_named_$name") { bus =>
+
+      val blockerOpt = blockerAddr.map { a =>
+        val blocker = LazyModule(new TLClockBlocker(BasicBusBlockerParams(a, cbus.beatBytes, cbus.beatBytes)))
+        cbus.coupleTo(s"bus_blocker_for_$name") { blocker.controlNode := TLFragmenter(cbus) := _ }
+        blocker
+      }
+
+      aesClockDomainWrapper.clockNode := (controlXType match {
+        case _: SynchronousCrossing =>
+          cbus.dtsClk.map(_.bind(aes.device))
+          cbus.fixedClockNode
+        case _: RationalCrossing =>
+          cbus.clockNode
+        case _: AsynchronousCrossing =>
+          val aesClockGroup = ClockGroup()
+          aesClockGroup := where.asyncClockGroupsNode
+          blockerOpt.map { _.clockNode := aesClockGroup } .getOrElse { aesClockGroup }
+      })
+
+      (aes.controlXing(controlXType)
+        := TLFragmenter(cbus)
+        := blockerOpt.map { _.node := bus } .getOrElse { bus })
+    }
+
+    (intXType match {
+      case _: SynchronousCrossing => where.ibus.fromSync
+      case _: RationalCrossing => where.ibus.fromRational
+      case _: AsynchronousCrossing => where.ibus.fromAsync
+    }) := aes.intXing(intXType)
+
+    LogicalModuleTree.add(where.logicalTreeNode, aes.logicalTreeNode)
+
+    aes
+  }
+}
 
 object AES {
   val nextId = {
     var i = -1; () => {
       i += 1; i
     }
-  }
-
-  def attach(params: AESAttachParams): TLAES = {
-    implicit val p = params.p
-    val name = s"aes ${nextId()}"
-    val cbus = params.controlBus
-    val aes = LazyModule(new TLAES(cbus.beatBytes, params.aespar))
-    aes.suggestName(name)
-
-    cbus.coupleTo(s"device_named_$name") {
-      aes.controlXing(params.controlXType) := TLFragmenter(cbus.beatBytes, cbus.blockBytes) := _
-    }
-    params.intNode := aes.intXing(params.intXType)
-    InModuleBody {
-      aes.module.clock := params.mclock.map(_.getWrappedValue).getOrElse(cbus.module.clock)
-    }
-    InModuleBody {
-      aes.module.reset := params.mreset.map(_.getWrappedValue).getOrElse(cbus.module.reset)
-    }
-
-    aes
   }
 }

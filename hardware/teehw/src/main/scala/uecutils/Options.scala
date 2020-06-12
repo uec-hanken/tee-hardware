@@ -5,13 +5,14 @@ import firrtl.ir._
 import firrtl.annotations._
 import firrtl.stage.FirrtlCircuitAnnotation
 import firrtl.passes.Pass
-
 import java.io.File
+
 import firrtl.annotations.AnnotationYamlProtocol._
-import firrtl.passes.memlib.ReplSeqMemAnnotation
+import firrtl.passes.memlib.{ReplSeqMem, ReplSeqMemAnnotation}
 import firrtl.transforms.BlackBoxResourceFileNameAnno
 import net.jcazevedo.moultingyaml._
-import com.typesafe.scalalogging.LazyLogging
+import logger.LazyLogging
+import barstools.tapeout.transforms._
 
 trait HasMultiTopOptions { self: ExecutionOptionsManager with HasFirrtlOptions =>
   var multiTopOptions = MultiTopOptions()

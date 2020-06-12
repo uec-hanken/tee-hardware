@@ -8,7 +8,7 @@ case object PeripheryAESKey extends Field[List[AESParams]]
 
 trait HasPeripheryAES { this: BaseSubsystem =>
   val aesNodes = p(PeripheryAESKey).map { case key =>
-    AES.attach(AESAttachParams(key, pbus, ibus.fromAsync)).ioNode.makeSink
+    AESAttachParams(key).attachTo(this).ioNode.makeSink
   }
 }
 

@@ -1,5 +1,8 @@
 package uec.teehardware
 
+import chisel3._
+import chisel3.util.{log2Up}
+
 import freechips.rocketchip.config._
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.devices.debug._
@@ -18,9 +21,9 @@ import uec.teehardware.devices.sha3._
 import uec.teehardware.devices.usb11hs._
 import uec.teehardware.devices.random._
 import boom.common._
-import boom.exu._
 import boom.ifu._
-import boom.bpu._
+import boom.exu._
+import boom.lsu._
 //import sifive.freedom.unleashed.DevKitFPGAFrequencyKey
 
 // The number of gpios that we want as input
@@ -94,20 +97,41 @@ case class BoomParams(n: Int) extends Config((site, here, up) => {
   case BoomTilesKey => {
     val mini = BoomTileParams(
       core = BoomCoreParams(
-        fetchWidth = 4, useCompressed = true, decodeWidth = 1, numRobEntries = 16,
+        // Defaults (or unbinded), just to have full control
+        decodeWidth = 1,
+        // WithSmallBooms
+        fetchWidth = 4, useCompressed = true, numRobEntries = 16,
         issueParams = Seq(
           IssueParams(issueWidth = 1, numEntries = 2, iqType = IQT_MEM.litValue, dispatchWidth = 1),
           IssueParams(issueWidth = 1, numEntries = 2, iqType = IQT_INT.litValue, dispatchWidth = 1),
           IssueParams(issueWidth = 1, numEntries = 2, iqType = IQT_FP.litValue, dispatchWidth = 1)),
         numIntPhysRegisters = 52, numFpPhysRegisters = 48, numLdqEntries = 4, numStqEntries = 4,
         maxBrCount = 2, numFetchBufferEntries = 8, ftq = FtqParameters(nEntries = 4),
-        btb = BoomBTBParameters(
-          btbsa = true, densebtb = false, bypassCalls = false, rasCheckForEmpty = false,
-          nSets = 16, nWays = 1, nRAS = 4, tagSz = 10),
-        bpdBaseOnly = None,
-        gshare = Some(GShareParameters(historyLength = 11, numSets = 1024)),
-        tage = None, bpdRandom = None, nPerfCounters = 1,
-        fpu = Some(freechips.rocketchip.tile.FPUParams(sfmaLatency = 4, dfmaLatency = 4, divSqrt = true))),
+        nPerfCounters = 1,
+        fpu = Some(freechips.rocketchip.tile.FPUParams(sfmaLatency = 4, dfmaLatency = 4, divSqrt = true)),
+        // WithTAGELBPD
+        bpdMaxMetaLength = 120,
+        globalHistoryLength = 64,
+        localHistoryLength = 1,
+        localHistoryNSets = 0,
+        branchPredictor = ((resp_in: BranchPredictionBankResponse, p: Parameters) => {
+          val loop = Module(new LoopBranchPredictorBank()(p))
+          val tage = Module(new TageBranchPredictorBank()(p))
+          val btb = Module(new BTBBranchPredictorBank()(p))
+          val bim = Module(new BIMBranchPredictorBank()(p))
+          val ubtb = Module(new FAMicroBTBBranchPredictorBank()(p))
+          val preds = Seq(loop, tage, btb, ubtb, bim)
+          preds.map(_.io := DontCare)
+
+          ubtb.io.resp_in(0)  := resp_in
+          bim.io.resp_in(0)   := ubtb.io.resp
+          btb.io.resp_in(0)   := bim.io.resp
+          tage.io.resp_in(0)  := btb.io.resp
+          loop.io.resp_in(0)  := tage.io.resp
+
+          (preds, loop.io.resp)
+        })
+      ),
       dcache = Some(DCacheParams(
         nSets = 16, nWays = 1,
         rowBits = site(SystemBusKey).beatBits,
@@ -212,15 +236,18 @@ class ChipConfig extends Config(
   new ChipPeripherals ++
   new WithJtagDTM            ++
   new WithNMemoryChannels(1) ++
+  new WithCoherentBusTopology ++ // This adds a L2 cache
+  //new WithIncoherentBusTopology ++ // This was the previous one
   new BaseConfig().alter((site,here,up) => {
     case SystemBusKey => up(SystemBusKey).copy(
+      beatBytes = 8,
       errorDevice = Some(DevNullParams(
         Seq(AddressSet(0x4000, 0xfff)),
         maxAtomic=site(XLen)/8,
         maxTransfer=128,
         region = RegionType.TRACKED)))
-    case PeripheryBusKey => up(PeripheryBusKey, site).copy(frequency =
-      BigDecimal(site(FreqKeyMHz)*1000000).setScale(0, BigDecimal.RoundingMode.HALF_UP).toBigInt,
+    case PeripheryBusKey => up(PeripheryBusKey, site).copy(dtsFrequency =
+      Some(BigDecimal(site(FreqKeyMHz)*1000000).setScale(0, BigDecimal.RoundingMode.HALF_UP).toBigInt),
       errorDevice = None)
     case DTSTimebase => BigInt(1000000)
     case JtagDTMKey => new JtagDTMConfig (

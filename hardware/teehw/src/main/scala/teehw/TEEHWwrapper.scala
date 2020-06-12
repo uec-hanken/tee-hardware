@@ -275,7 +275,7 @@ class TEEHWSoC(implicit override val p :Parameters) extends TEEHWbase {
   tlportw.get.d <> tlport.d
   // Clock and reset connection
   clock := sys_clk
-  reset := !rst_n || ndreset
+  reset := !rst_n || ndreset // This connects the debug reset and the general reset together
   areset := !jrst_n
 }
 

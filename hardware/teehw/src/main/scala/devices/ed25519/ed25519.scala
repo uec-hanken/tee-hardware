@@ -4,17 +4,29 @@ import chisel3._
 import chisel3.core.SyncReadMem
 import chisel3.util._
 import freechips.rocketchip.config.Parameters
+import freechips.rocketchip.devices.tilelink.{BasicBusBlockerParams, TLClockBlocker}
 import freechips.rocketchip.diplomacy._
+import freechips.rocketchip.diplomaticobjectmodel.DiplomaticObjectModelAddressing
+import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{LogicalModuleTree, LogicalTreeNode}
+import freechips.rocketchip.diplomaticobjectmodel.model.{OMComponent, OMDevice, OMInterrupt, OMMemoryRegion}
 import freechips.rocketchip.interrupts._
+import freechips.rocketchip.prci.{ClockGroup, ClockSinkDomain}
 import freechips.rocketchip.regmapper._
+import freechips.rocketchip.subsystem.{Attachable, PBUS, TLBusWrapperLocation}
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.util._
 
 case class ed25519Params(
-                       address: BigInt,
-                       incl_curve: Boolean = false,
-                       incl_base: Boolean = true,
-                       incl_sign: Boolean = true)
+  address: BigInt,
+  incl_curve: Boolean = false,
+  incl_base: Boolean = true,
+  incl_sign: Boolean = true)
+
+case class OMed255193Device(
+  memoryRegions: Seq[OMMemoryRegion],
+  interrupts: Seq[OMInterrupt],
+  _types: Seq[String] = Seq("OMed255193Device", "OMDevice", "OMComponent")
+) extends OMDevice
 
 class ed25519PortIO extends Bundle {
 }
@@ -332,7 +344,7 @@ abstract class ed25519(busWidthBytes: Int, val c: ed25519Params)
       // The actual ed25519_sign instantiation
       val sign_core = Module(new ed25519_sign_S_core)
       sign_core.io.clk := clock
-      sign_core.io.rst := reset
+      sign_core.io.rst := reset.asBool
       sign_core.io.core_ena := core_ena
       core_ready := sign_core.io.core_ready
       core_comp_done := sign_core.io.core_comp_done
@@ -377,46 +389,84 @@ abstract class ed25519(busWidthBytes: Int, val c: ed25519Params)
       (regs_base ++ regs_curve ++ regs_sign):_*
     )
   }
+
+  val logicalTreeNode = new LogicalTreeNode(() => Some(device)) {
+    def getOMComponents(resourceBindings: ResourceBindings, children: Seq[OMComponent] = Nil): Seq[OMComponent] = {
+      val Description(name, mapping) = device.describe(resourceBindings)
+      val memRegions = DiplomaticObjectModelAddressing.getOMMemoryRegions(name, resourceBindings, None)
+      val interrupts = DiplomaticObjectModelAddressing.describeInterrupts(name, resourceBindings)
+      Seq(
+        OMed255193Device(
+          memoryRegions = memRegions.map(_.copy(
+            name = "ed25519",
+            description = "ed25519 Push-Register Device"
+          )),
+          interrupts = interrupts
+        )
+      )
+    }
+  }
 }
 
 class TLed25519(busWidthBytes: Int, params: ed25519Params)(implicit p: Parameters)
   extends ed25519(busWidthBytes, params) with HasTLControlRegMap
 
 case class ed25519AttachParams(
-                             ed25519par: ed25519Params,
-                             controlBus: TLBusWrapper,
-                             intNode: IntInwardNode,
-                             controlXType: ClockCrossingType = NoCrossing,
-                             intXType: ClockCrossingType = NoCrossing,
-                             mclock: Option[ModuleValue[Clock]] = None,
-                             mreset: Option[ModuleValue[Bool]] = None)
-                           (implicit val p: Parameters)
+  ed25519par: ed25519Params,
+  controlWhere: TLBusWrapperLocation = PBUS,
+  blockerAddr: Option[BigInt] = None,
+  controlXType: ClockCrossingType = NoCrossing,
+  intXType: ClockCrossingType = NoCrossing)
+(implicit val p: Parameters)  {
 
-object ed25519 {
+  def attachTo(where: Attachable)(implicit p: Parameters): TLed25519 = {
+    val name = s"ed25519_${ED25519.nextId()}"
+    val cbus = where.locateTLBusWrapper(controlWhere)
+    val ed25519ClockDomainWrapper = LazyModule(new ClockSinkDomain(take = None))
+    val ed25519 = ed25519ClockDomainWrapper { LazyModule(new TLed25519(cbus.beatBytes, ed25519par)) }
+    ed25519.suggestName(name)
+
+    cbus.coupleTo(s"device_named_$name") { bus =>
+
+      val blockerOpt = blockerAddr.map { a =>
+        val blocker = LazyModule(new TLClockBlocker(BasicBusBlockerParams(a, cbus.beatBytes, cbus.beatBytes)))
+        cbus.coupleTo(s"bus_blocker_for_$name") { blocker.controlNode := TLFragmenter(cbus) := _ }
+        blocker
+      }
+
+      ed25519ClockDomainWrapper.clockNode := (controlXType match {
+        case _: SynchronousCrossing =>
+          cbus.dtsClk.map(_.bind(ed25519.device))
+          cbus.fixedClockNode
+        case _: RationalCrossing =>
+          cbus.clockNode
+        case _: AsynchronousCrossing =>
+          val ed25519ClockGroup = ClockGroup()
+          ed25519ClockGroup := where.asyncClockGroupsNode
+          blockerOpt.map { _.clockNode := ed25519ClockGroup } .getOrElse { ed25519ClockGroup }
+      })
+
+      (ed25519.controlXing(controlXType)
+        := TLFragmenter(cbus)
+        := blockerOpt.map { _.node := bus } .getOrElse { bus })
+    }
+
+    (intXType match {
+      case _: SynchronousCrossing => where.ibus.fromSync
+      case _: RationalCrossing => where.ibus.fromRational
+      case _: AsynchronousCrossing => where.ibus.fromAsync
+    }) := ed25519.intXing(intXType)
+
+    LogicalModuleTree.add(where.logicalTreeNode, ed25519.logicalTreeNode)
+
+    ed25519
+  }
+}
+
+object ED25519 {
   val nextId = {
     var i = -1; () => {
       i += 1; i
     }
-  }
-
-  def attach(params: ed25519AttachParams): TLed25519 = {
-    implicit val p = params.p
-    val name = s"ed25519 ${nextId()}"
-    val cbus = params.controlBus
-    val ed = LazyModule(new TLed25519(cbus.beatBytes, params.ed25519par))
-    ed.suggestName(name)
-
-    cbus.coupleTo(s"device_named_$name") {
-      ed.controlXing(params.controlXType) := TLFragmenter(cbus.beatBytes, cbus.blockBytes) := _
-    }
-    params.intNode := ed.intXing(params.intXType)
-    InModuleBody {
-      ed.module.clock := params.mclock.map(_.getWrappedValue).getOrElse(cbus.module.clock)
-    }
-    InModuleBody {
-      ed.module.reset := params.mreset.map(_.getWrappedValue).getOrElse(cbus.module.reset)
-    }
-
-    ed
   }
 }

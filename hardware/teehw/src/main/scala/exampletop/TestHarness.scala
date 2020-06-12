@@ -7,21 +7,23 @@ import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.devices.debug.Debug
 import freechips.rocketchip.diplomacy.LazyModule
 import freechips.rocketchip.util.AsyncResetReg
+import freechips.rocketchip.system._
 
 class TestHarness()(implicit p: Parameters) extends Module {
   val io = new Bundle {
     val success = Bool(OUTPUT)
   }
 
-  val dut = Module(LazyModule(new ExampleRocketSystem).module)
-  dut.reset := reset | dut.debug.map { debug => AsyncResetReg(debug.ndreset) }.getOrElse(false.B)
+  val ldut = LazyModule(new ExampleRocketSystemTEEHW)
+  val dut = Module(ldut.module)
+  dut.reset := (reset.asBool | dut.debug.map { debug => AsyncResetReg(debug.ndreset) }.getOrElse(false.B)).asBool
 
   dut.dontTouchPorts()
   dut.tieOffInterrupts()
-  dut.connectSimAXIMem()
-  dut.connectSimAXIMMIO()
-  dut.l2_frontend_bus_axi4.foreach(_.tieoff)
-  Debug.connectDebug(dut.debug, dut.psd, clock, reset, io.success)
+  SimAXIMem.connectMem(ldut)
+  SimAXIMem.connectMMIO(ldut)
+  ldut.l2_frontend_bus_axi4.foreach(_.tieoff)
+  Debug.connectDebug(dut.debug, dut.resetctrl, dut.psd, clock, reset.asBool, io.success)
 
   //dut.usb11hs.USBWireDataIn := 0.U
   //dut.usb11hs.vBusDetect := true.B

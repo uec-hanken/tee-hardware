@@ -186,20 +186,16 @@ VLOG_MODEL ?= $(MODEL)
 #########################################################################################
 # path to rocket-chip and testchipip
 #########################################################################################
-ROCKETCHIP_DIR      ?= $(base_dir)/hardware/chipyard/generators/rocket-chip
-TESTCHIP_DIR        ?= $(base_dir)/hardware/chipyard/generators/testchipip
-CHIPYARD_FIRRTL_DIR ?= $(base_dir)/hardware/chipyard/tools/firrtl
+ROCKETCHIP_DIR      = $(base_dir)/hardware/chipyard/generators/rocket-chip
+TESTCHIP_DIR        = $(base_dir)/hardware/chipyard/generators/testchipip
+CHIPYARD_FIRRTL_DIR = $(base_dir)/hardware/chipyard/tools/firrtl
 
 #########################################################################################
 # names of various files needed to compile and run things
 #########################################################################################
-# match the long_name to what the specific generator will output
-ifeq ($(GENERATOR_PACKAGE),freechips.rocketchip.system)
-	long_name=$(CONFIG_PACKAGE).$(CONFIG)
-else ifeq ($(GENERATOR_PACKAGE),hwacha)
+long_name = $(MODEL_PACKAGE).$(MODEL).$(CONFIG)
+ifeq ($(GENERATOR_PACKAGE),hwacha)
 	long_name=$(MODEL_PACKAGE).$(CONFIG)
-else
-	long_name = $(MODEL_PACKAGE).$(MODEL).$(CONFIG)
 endif
 
 FIRRTL_FILE ?= $(build_dir)/$(long_name).fir
@@ -220,11 +216,11 @@ HARNESS_SMEMS_CONF ?= $(build_dir)/$(long_name).harness.mems.conf
 HARNESS_SMEMS_FIR  ?= $(build_dir)/$(long_name).harness.mems.fir
 
 # files that contain lists of files needed for VCS or Verilator simulation
-sim_files                  ?= $(build_dir)/sim_files.f
-sim_top_blackboxes         ?= $(build_dir)/firrtl_black_box_resource_files.top.f
-sim_harness_blackboxes     ?= $(build_dir)/firrtl_black_box_resource_files.harness.f
+sim_files              ?= $(build_dir)/sim_files.f
+sim_top_blackboxes     ?= $(build_dir)/firrtl_black_box_resource_files.top.f
+sim_harness_blackboxes ?= $(build_dir)/firrtl_black_box_resource_files.harness.f
 # single file that contains all files needed for VCS or Verilator simulation (unique and without .h's)
-sim_common_files           ?= $(build_dir)/sim_files.common.f
+sim_common_files       ?= $(build_dir)/sim_files.common.f
 
 #########################################################################################
 # java arguments used in sbt
@@ -238,7 +234,7 @@ JAVA_ARGS ?= -Xmx$(JAVA_HEAP_SIZE) -Xss8M -XX:MaxPermSize=256M
 SCALA_VERSION=2.12.10
 SCALA_VERSION_MAJOR=$(basename $(SCALA_VERSION))
 
-SBT ?= java $(JAVA_ARGS) -jar $(ROCKETCHIP_DIR)/sbt-launch.jar ++$(SCALA_VERSION)
+SBT ?= java $(JAVA_ARGS) -jar $(ROCKETCHIP_DIR)/sbt-launch.jar
 
 #########################################################################################
 # output directory for tests
@@ -248,10 +244,17 @@ output_dir=$(sim_dir)/output/$(long_name)
 #########################################################################################
 # helper variables to run binaries
 #########################################################################################
+PERMISSIVE_ON=+permissive
+PERMISSIVE_OFF=+permissive-off
 BINARY ?=
-SIM_FLAGS ?=
+override SIM_FLAGS += +dramsim +max-cycles=$(timeout_cycles)
 VERBOSE_FLAGS ?= +verbose
 sim_out_name = $(subst $() $(),_,$(notdir $(basename $(BINARY))).$(long_name))
+
+#########################################################################################
+# build output directory for compilation
+#########################################################################################
+gen_dir=$(build_dir)
 
 #########################################################################################
 # vsrcs needed to run projects
@@ -265,8 +268,7 @@ sim_vsrcs = \
 	$(TOP_FILE) \
 	$(HARNESS_FILE) \
 	$(TOP_SMEMS_FILE) \
-	$(HARNESS_SMEMS_FILE) \
-	$(ADD_VSRC)
+	$(HARNESS_SMEMS_FILE)
 
 #########################################################################################
 # assembly/benchmark variables

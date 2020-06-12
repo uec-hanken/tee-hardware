@@ -4,13 +4,26 @@ import chisel3._
 import chisel3.util._
 import chisel3.util.random._
 import freechips.rocketchip.config.Parameters
+import freechips.rocketchip.devices.tilelink.{BasicBusBlockerParams, TLClockBlocker}
 import freechips.rocketchip.diplomacy._
+import freechips.rocketchip.diplomaticobjectmodel.DiplomaticObjectModelAddressing
+import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{LogicalModuleTree, LogicalTreeNode}
+import freechips.rocketchip.diplomaticobjectmodel.model.{OMComponent, OMDevice, OMInterrupt, OMMemoryRegion}
 import freechips.rocketchip.interrupts._
+import freechips.rocketchip.prci.{ClockGroup, ClockSinkDomain}
 import freechips.rocketchip.regmapper._
+import freechips.rocketchip.subsystem.{Attachable, PBUS, TLBusWrapperLocation}
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.util._
 
 case class RandomParams(address: BigInt)
+
+
+case class OMRANDOMDevice(
+  memoryRegions: Seq[OMMemoryRegion],
+  interrupts: Seq[OMInterrupt],
+  _types: Seq[String] = Seq("OMRANDOMDevice", "OMDevice", "OMComponent")
+) extends OMDevice
 
 class RandomPortIO extends Bundle {
 }
@@ -191,46 +204,84 @@ abstract class Random(busWidthBytes: Int, val c: RandomParams)
       (int_map ++ trng_map):_*
     )
   }
+
+  val logicalTreeNode = new LogicalTreeNode(() => Some(device)) {
+    def getOMComponents(resourceBindings: ResourceBindings, children: Seq[OMComponent] = Nil): Seq[OMComponent] = {
+      val Description(name, mapping) = device.describe(resourceBindings)
+      val memRegions = DiplomaticObjectModelAddressing.getOMMemoryRegions(name, resourceBindings, None)
+      val interrupts = DiplomaticObjectModelAddressing.describeInterrupts(name, resourceBindings)
+      Seq(
+        OMRANDOMDevice(
+          memoryRegions = memRegions.map(_.copy(
+            name = "random",
+            description = "RANDOM Push-Register Device"
+          )),
+          interrupts = interrupts
+        )
+      )
+    }
+  }
 }
 
-class TLRandom(busWidthBytes: Int, params: RandomParams)(implicit p: Parameters)
+class TLRANDOM(busWidthBytes: Int, params: RandomParams)(implicit p: Parameters)
   extends Random(busWidthBytes, params) with HasTLControlRegMap
 
 case class RandomAttachParams(
-   sha3par: RandomParams,
-   controlBus: TLBusWrapper,
-   intNode: IntInwardNode,
+   randompar: RandomParams,
+   controlWhere: TLBusWrapperLocation = PBUS,
+   blockerAddr: Option[BigInt] = None,
    controlXType: ClockCrossingType = NoCrossing,
-   intXType: ClockCrossingType = NoCrossing,
-   mclock: Option[ModuleValue[Clock]] = None,
-   mreset: Option[ModuleValue[Bool]] = None)
- (implicit val p: Parameters)
+   intXType: ClockCrossingType = NoCrossing)
+ (implicit val p: Parameters) {
 
-object Random {
+  def attachTo(where: Attachable)(implicit p: Parameters): TLRANDOM = {
+    val name = s"random_${RANDOM.nextId()}"
+    val cbus = where.locateTLBusWrapper(controlWhere)
+    val randomClockDomainWrapper = LazyModule(new ClockSinkDomain(take = None))
+    val random = randomClockDomainWrapper { LazyModule(new TLRANDOM(cbus.beatBytes, randompar)) }
+    random.suggestName(name)
+
+    cbus.coupleTo(s"device_named_$name") { bus =>
+
+      val blockerOpt = blockerAddr.map { a =>
+        val blocker = LazyModule(new TLClockBlocker(BasicBusBlockerParams(a, cbus.beatBytes, cbus.beatBytes)))
+        cbus.coupleTo(s"bus_blocker_for_$name") { blocker.controlNode := TLFragmenter(cbus) := _ }
+        blocker
+      }
+
+      randomClockDomainWrapper.clockNode := (controlXType match {
+        case _: SynchronousCrossing =>
+          cbus.dtsClk.map(_.bind(random.device))
+          cbus.fixedClockNode
+        case _: RationalCrossing =>
+          cbus.clockNode
+        case _: AsynchronousCrossing =>
+          val randomClockGroup = ClockGroup()
+          randomClockGroup := where.asyncClockGroupsNode
+          blockerOpt.map { _.clockNode := randomClockGroup } .getOrElse { randomClockGroup }
+      })
+
+      (random.controlXing(controlXType)
+        := TLFragmenter(cbus)
+        := blockerOpt.map { _.node := bus } .getOrElse { bus })
+    }
+
+    (intXType match {
+      case _: SynchronousCrossing => where.ibus.fromSync
+      case _: RationalCrossing => where.ibus.fromRational
+      case _: AsynchronousCrossing => where.ibus.fromAsync
+    }) := random.intXing(intXType)
+
+    LogicalModuleTree.add(where.logicalTreeNode, random.logicalTreeNode)
+
+    random
+  }
+}
+
+object RANDOM {
   val nextId = {
     var i = -1; () => {
       i += 1; i
     }
-  }
-
-  def attach(params: RandomAttachParams): TLRandom = {
-    implicit val p = params.p
-    val name = s"random ${nextId()}"
-    val cbus = params.controlBus
-    val rnd = LazyModule(new TLRandom(cbus.beatBytes, params.sha3par))
-    rnd.suggestName(name)
-
-    cbus.coupleTo(s"device_named_$name") {
-      rnd.controlXing(params.controlXType) := TLFragmenter(cbus.beatBytes, cbus.blockBytes) := _
-    }
-    params.intNode := rnd.intXing(params.intXType)
-    InModuleBody {
-      rnd.module.clock := params.mclock.map(_.getWrappedValue).getOrElse(cbus.module.clock)
-    }
-    InModuleBody {
-      rnd.module.reset := params.mreset.map(_.getWrappedValue).getOrElse(cbus.module.reset)
-    }
-
-    rnd
   }
 }
