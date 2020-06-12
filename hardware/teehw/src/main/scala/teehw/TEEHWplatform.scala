@@ -62,7 +62,10 @@ class TEEHWSystem(implicit p: Parameters) extends BaseSubsystem
     //    with CanHaveMasterTLMemPort // NOTE: Manually created the TL port
 {
   // The clock resource. This is just for put in the DTS the tlclock
-  //val tlclock = new FixedClockResource("tlclk", p(FreqKeyMHz))
+  // TODO: Now the clock is derived from the bus that is connected
+  // TODO: We need a way now to extract that one in the makefiles
+  // Letting this ONLY for compatibility
+  val tlclock = new FixedClockResource("tlclk", p(FreqKeyMHz))
 
   // Main memory controller (TL memory controller)
   val memdevice = new MemoryDevice
@@ -280,6 +283,14 @@ class TEEHWPlatform(implicit val p: Parameters) extends Module {
 
   // Add in debug-controlled reset.
   sys.reset := ResetCatchAndSync(clock, reset.toBool, 20)
+
+  // NEW: Reset system nows connects each core's reset independently
+  sys.resetctrl.map { rcio => rcio.hartIsInReset.map { _ := sys.reset.asBool() }}
+
+  // NEW: The debug system now manually connects the clock and reset
+  // Actually this helper only connects the clock, and the reset is from the DMI
+  // NOTE: This also connects the new sys.debug.get.dmactiveAck
+  Debug.connectDebugClockAndReset(sys.debug, clock)
 
   // The TL memory port. This is a configurable one for the address space
   // and the ports are exposed inside the "foreach". Do not worry, there is

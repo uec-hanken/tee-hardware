@@ -49,15 +49,16 @@ MACROCOMPILER_MODE ?= --mode synflops
 
 .PHONY: default
 # NOTE: We are going to add the true tapeout stuff here
+# TODO: Right now the separation of RocketTile and the top does not work
 default: verilog
 	cp -rf $(TEEHW_DIR)/optvsrc/* $(build_dir)
 	# We already had a compilation where the MODEL is the harness and the RocketTile is the top
 	# In this case: The TOP is the harness, the RocketTile is the top
-	cd $(base_dir) && $(SBT) "project $(SBT_PROJECT)" "runMain $(MODEL_PACKAGE).uecutils.GenerateTopAndHarness -o $(build_dir)/RocketTile.v -tho $(build_dir)/$(TOP).v -i $(FIRRTL_FILE) --syn-top RocketTile --harness-top $(TOP) -faf $(ANNO_FILE) -tsaof $(build_dir)/top.anno.json -tdf $(build_dir)/RocketTile.top.f -tsf $(build_dir)/RocketTile.fir -thaof $(build_dir)/RocketTile.anno.json -hdf $(build_dir)/top.harness.f -thf $(build_dir)/top.fir --infer-rw --repl-seq-mem -c:$(TOP):-o:$(build_dir)/RocketTile.mems.conf -thconf $(build_dir)/top.mems.conf -td $(build_dir)"
+	#cd $(base_dir) && $(SBT) "project $(SBT_PROJECT)" "runMain $(MODEL_PACKAGE).uecutils.GenerateTopAndHarness -o $(build_dir)/RocketTile.v -tho $(build_dir)/$(TOP).v -i $(FIRRTL_FILE) --syn-top RocketTile --harness-top $(TOP) -faf $(ANNO_FILE) -tsaof $(build_dir)/top.anno.json -tdf $(build_dir)/RocketTile.top.f -tsf $(build_dir)/RocketTile.fir -thaof $(build_dir)/RocketTile.anno.json -hdf $(build_dir)/top.harness.f -thf $(build_dir)/top.fir --infer-rw --repl-seq-mem -c:$(TOP):-o:$(build_dir)/RocketTile.mems.conf -thconf $(build_dir)/top.mems.conf -td $(build_dir)"
 	rename.ul $(MODEL_PACKAGE).$(MODEL).$(CONFIG) $(MODEL) $(build_dir)/*
 	# We also want to generate our memories
-	cd $(base_dir) && $(SBT) "project barstoolsMacros" "runMain barstools.macros.MacroCompiler -n $(build_dir)/RocketTile.mems.conf -v $(build_dir)/RocketTile.mems.v -f $(build_dir)/RocketTile.mems.fir $(MACROCOMPILER_MODE)"
-	cd $(base_dir) && $(SBT) "project barstoolsMacros" "runMain barstools.macros.MacroCompiler -n $(build_dir)/top.mems.conf -v $(build_dir)/top.mems.v -f $(build_dir)/top.mems.fir $(MACROCOMPILER_MODE)"
+	#cd $(base_dir) && $(SBT) "project barstoolsMacros" "runMain barstools.macros.MacroCompiler -n $(build_dir)/RocketTile.mems.conf -v $(build_dir)/RocketTile.mems.v -f $(build_dir)/RocketTile.mems.fir $(MACROCOMPILER_MODE)"
+	#cd $(base_dir) && $(SBT) "project barstoolsMacros" "runMain barstools.macros.MacroCompiler -n $(build_dir)/top.mems.conf -v $(build_dir)/top.mems.v -f $(build_dir)/top.mems.fir $(MACROCOMPILER_MODE)"
 
 verilog: $(TOP_FILE) $(HARNESS_FILE) $(ROM_FILE)
 
