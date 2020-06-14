@@ -144,6 +144,11 @@ uint64_t do_sbox(uint64_t a);
 // Main program
 
 int main(int argc, char** argv) {
+  // Only execute everything in core 0
+  if (read_csr(mhartid) != 0) {
+    while(1);
+  }
+
   unsigned long start_mcycle;
   unsigned long delta_mcycle;
   printstr("Hello world, FSBL\r\n");
