@@ -154,10 +154,10 @@ int main(int argc, char** argv) {
   printstr("Hello world, FSBL\r\n");
   
   // Do the SBOX acc
-  uint64_t k = do_sbox((uint64_t) 0xdeadbeef);
-  printstr("SBOX of 0xdeadbeef: ");
-  printhex32(k);
-  printstr("\r\n");
+  //uint64_t k = do_sbox((uint64_t) 0xdeadbeef);
+  //printstr("SBOX of 0xdeadbeef: ");
+  //printhex32(k);
+  //printstr("\r\n");
   
   // Test the hardware with the software SHA3
   byte hash[64];

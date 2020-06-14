@@ -167,11 +167,11 @@ case class RocketParams(n: Int) extends Config((site, here, up) => {
 })
 
 class Boom extends Config(
-  BoomParams(2) //Only Boom: 2 cores
+  BoomParams(1) //Only Boom: 2 cores
 )
 
 class Rocket extends Config(
-  RocketParams(2) //Only Rocket: 2 cores
+  RocketParams(1) //Only Rocket: 2 cores
 )
 
 class BoomRocket extends Config(

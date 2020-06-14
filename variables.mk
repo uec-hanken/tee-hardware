@@ -180,7 +180,7 @@ else ifeq ($(SUB_PROJECT),teehardware)
 	MODEL             ?= TestHarness
 	VLOG_MODEL        ?= TestHarness
 	MODEL_PACKAGE     ?= uec.teehardware.exampletop
-	CONFIG            ?= $(ISACONF)_$(BOARD)Config_$(BOOTSRC)_$(HYBRID)
+	CONFIG            ?= WithDebugDMI_$(ISACONF)_$(BOARD)Config_$(BOOTSRC)_$(HYBRID)
 	CONFIG_PACKAGE    ?= uec.teehardware
 	GENERATOR_PACKAGE ?= uec.teehardware.exampletop
 	TB                ?= TestDriver
@@ -191,7 +191,7 @@ else
 	MODEL             ?= $(SUB_PROJECT)
 	VLOG_MODEL        ?= TestHarness
 	MODEL_PACKAGE     ?= uec.teehardware
-	CONFIG            ?= $(ISACONF)_$(BOARD)Config_$(BOOTSRC)_$(HYBRID)_WithDebugDMI
+	CONFIG            ?= $(ISACONF)_$(BOARD)Config_$(BOOTSRC)_$(HYBRID)
 	CONFIG_PACKAGE    ?= uec.teehardware
 	GENERATOR_PACKAGE ?= uec.teehardware.exampletop
 	TB                ?= TestDriver
