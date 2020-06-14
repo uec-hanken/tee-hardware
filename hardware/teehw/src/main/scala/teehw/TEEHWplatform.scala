@@ -224,6 +224,7 @@ class TEEHWSystemModule[+L <: TEEHWSystem](_outer: L)
   val maskROMParams = p(PeripheryMaskROMKey)
   global_reset_vector := maskROMParams(0).address.U
 
+  // Connect hartid of all, and also the reset vector
   tile_inputs.zip(outer.hartIdList).foreach { case(wire, i) =>
     wire.hartid := i.U
     wire.reset_vector := global_reset_vector

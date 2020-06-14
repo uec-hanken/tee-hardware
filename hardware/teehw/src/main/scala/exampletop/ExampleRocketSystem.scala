@@ -3,6 +3,7 @@
 package uec.teehardware.exampletop
 
 import Chisel._
+import chipyard._
 import freechips.rocketchip.config._
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.tilelink._
@@ -65,11 +66,12 @@ class TEEHWJTAGConfig extends Config(
 )
 
 /** Example Top with periphery devices and ports, and a Rocket subsystem */
-class ExampleRocketSystemTEEHW(implicit p: Parameters) extends RocketSubsystem
+class ExampleRocketSystemTEEHW(implicit p: Parameters) extends BaseSubsystem
+  with HasChipyardTiles
     with HasPeripheryDebug
     with HasAsyncExtInterrupts
     with CanHaveMasterAXI4MemPort
-    with CanHaveMasterAXI4MMIOPort
+    //with CanHaveMasterAXI4MMIOPort
     with CanHaveSlaveAXI4Port
     with HasPeripherySHA3
     with HasPeripheryed25519
@@ -80,7 +82,9 @@ class ExampleRocketSystemTEEHW(implicit p: Parameters) extends RocketSubsystem
   override lazy val module = new ExampleRocketSystemTEEHWModuleImp(this)
 }
 
-class ExampleRocketSystemTEEHWModuleImp[+L <: ExampleRocketSystemTEEHW](_outer: L) extends RocketSubsystemModuleImp(_outer)
+class ExampleRocketSystemTEEHWModuleImp[+L <: ExampleRocketSystemTEEHW](_outer: L)
+  extends BaseSubsystemModuleImp(_outer)
+    with HasChipyardTilesModuleImp
     with HasRTCModuleImp
     with HasPeripheryDebugModuleImp
     with HasExtInterruptsModuleImp

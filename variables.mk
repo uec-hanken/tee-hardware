@@ -128,45 +128,73 @@ ADD_VSRC ?= $(SHA3_DIR)/f_permutation.v \
 
 TB ?= TestDriver
 
-ifeq ($(SUB_PROJECT),tracegen)
-	SBT_PROJECT       ?= tracegen
+ifeq ($(SUB_PROJECT),chipyard)
+	SBT_PROJECT       ?= chipyard
 	MODEL             ?= TestHarness
+	VLOG_MODEL        ?= TestHarness
 	MODEL_PACKAGE     ?= $(SBT_PROJECT)
-	CONFIG            ?= TraceGenConfig
+	CONFIG            ?= RocketConfig
 	CONFIG_PACKAGE    ?= $(SBT_PROJECT)
 	GENERATOR_PACKAGE ?= $(SBT_PROJECT)
-	TOP               ?= TraceGenSystem
-else ifeq ($(SUB_PROJECT),rocketchip)
-	SBT_PROJECT       ?= rocketchip
+	TB                ?= TestDriver
+	TOP               ?= ChipTop
+endif
+# for Hwacha developers
+ifeq ($(SUB_PROJECT),hwacha)
+	SBT_PROJECT       ?= chipyard
 	MODEL             ?= TestHarness
-	MODEL_PACKAGE     ?= freechips.rocketchip.system
-	CONFIG            ?= DefaultConfig
-	CONFIG_PACKAGE    ?= freechips.rocketchip.system
-	GENERATOR_PACKAGE ?= freechips.rocketchip.system
-	TOP               ?= ExampleRocketSystem
-else ifeq ($(SUB_PROJECT),hwacha)
-	SBT_PROJECT       ?= hwacha
-	MODEL             ?= TestHarness
+	VLOG_MODEL        ?= TestHarness
 	MODEL_PACKAGE     ?= freechips.rocketchip.system
 	CONFIG            ?= HwachaConfig
 	CONFIG_PACKAGE    ?= hwacha
-	GENERATOR_PACKAGE ?= hwacha
+	GENERATOR_PACKAGE ?= chipyard
+	TB                ?= TestDriver
 	TOP               ?= ExampleRocketSystem
+endif
+# For TestChipIP developers
+ifeq ($(SUB_PROJECT),testchipip)
+	SBT_PROJECT       ?= chipyard
+	MODEL             ?= TestHarness
+	VLOG_MODEL        ?= TestHarness
+	MODEL_PACKAGE     ?= chipyard.unittest
+	CONFIG            ?= TestChipUnitTestConfig
+	CONFIG_PACKAGE    ?= testchipip
+	GENERATOR_PACKAGE ?= chipyard
+	TB                ?= TestDriver
+	TOP               ?= UnitTestSuite
+endif
+# For IceNet developers
+ifeq ($(SUB_PROJECT),icenet)
+	SBT_PROJECT       ?= chipyard
+	MODEL             ?= TestHarness
+	VLOG_MODEL        ?= TestHarness
+	MODEL_PACKAGE     ?= chipyard.unittest
+	CONFIG            ?= IceNetUnitTestConfig
+	CONFIG_PACKAGE    ?= icenet
+	GENERATOR_PACKAGE ?= chipyard
+	TB                ?= TestDriver
+	TOP               ?= UnitTestSuite
+# Our TEE hardware
 else ifeq ($(SUB_PROJECT),teehardware)
 	SBT_PROJECT       ?= teehardware
 	MODEL             ?= TestHarness
+	VLOG_MODEL        ?= TestHarness
 	MODEL_PACKAGE     ?= uec.teehardware.exampletop
-	CONFIG            ?= TEEHWDefaultConfig
-	CONFIG_PACKAGE    ?= uec.teehardware.exampletop
-	GENERATOR_PACKAGE ?= uec.teehardware.exampletop
-	TOP               ?= ExampleRocketSystem
-else
-	SBT_PROJECT       ?= teehardware
-	MODEL             ?= $(SUB_PROJECT)
-	MODEL_PACKAGE     ?= uec.teehardware
 	CONFIG            ?= $(ISACONF)_$(BOARD)Config_$(BOOTSRC)_$(HYBRID)
 	CONFIG_PACKAGE    ?= uec.teehardware
 	GENERATOR_PACKAGE ?= uec.teehardware.exampletop
+	TB                ?= TestDriver
+	TOP               ?= ExampleRocketSystemTEEHW
+# Simulation-wise default config
+else
+	SBT_PROJECT       ?= teehardware
+	MODEL             ?= $(SUB_PROJECT)
+	VLOG_MODEL        ?= TestHarness
+	MODEL_PACKAGE     ?= uec.teehardware
+	CONFIG            ?= $(ISACONF)_$(BOARD)Config_$(BOOTSRC)_$(HYBRID)_WithDebugDMI
+	CONFIG_PACKAGE    ?= uec.teehardware
+	GENERATOR_PACKAGE ?= uec.teehardware.exampletop
+	TB                ?= TestDriver
 	TOP               ?= TEEHWSoC
 endif
 VLOG_MODEL ?= $(MODEL)

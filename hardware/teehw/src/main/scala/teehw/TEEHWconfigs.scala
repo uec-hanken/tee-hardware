@@ -295,3 +295,7 @@ class VC707Config extends Config(
     case DDRPortOther => false // For back to not external clock
   })
 )
+
+class WithDebugDMI extends Config((site, here, up) => {
+  case ExportDebug => up(ExportDebug, site).copy(protocols = Set(DMI))
+})

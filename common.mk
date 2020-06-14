@@ -184,7 +184,7 @@ endif
 # Rules for building DRAMSim2 library #
 #######################################
 
-dramsim_dir = $(base_dir)/tools/DRAMSim2
+dramsim_dir = $(base_dir)/hardware/chipyard/tools/DRAMSim2
 dramsim_lib = $(dramsim_dir)/libdramsim.a
 
 $(dramsim_lib):
