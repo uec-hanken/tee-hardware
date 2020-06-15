@@ -39,25 +39,19 @@ class RV64GC extends Config((site, here, up) => {
   case XLen => 64
 })
 
-class RV32GC extends Config((site, here, up) => {
-  case XLen => 32
-  /* Boom32 doesn't have FPU */
+class RV64IMAC extends Config((site, here, up) => {
+  case XLen => 64
+  case RocketTilesKey => up(RocketTilesKey, site) map { r =>
+    r.copy(core = r.core.copy(fpu = None))
+  }
   case BoomTilesKey => up(BoomTilesKey, site) map { r =>
     r.copy(core = r.core.copy(fpu = None,
       issueParams = r.core.issueParams.filter(_.iqType != IQT_FP.litValue)))
   }
 })
 
-class RV32IMAFC extends Config((site, here, up) => {
+class RV32GC extends Config((site, here, up) => {
   case XLen => 32
-  case RocketTilesKey => up(RocketTilesKey, site) map { r =>
-    r.copy(core = r.core.copy(fpu = r.core.fpu.map(_.copy(fLen = 32))))
-  }
-  /* Boom32 doesn't have FPU */
-  case BoomTilesKey => up(BoomTilesKey, site) map { r =>
-    r.copy(core = r.core.copy(fpu = None,
-      issueParams = r.core.issueParams.filter(_.iqType != IQT_FP.litValue)))
-  }
 })
 
 class RV32IMAC extends Config((site, here, up) => {
