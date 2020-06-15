@@ -12,7 +12,7 @@ base_dir=$(abspath ../..)
 sim_dir=$(abspath .)
 build_dir=$(sim_dir)/generated-src/$(long_name)
 ROMGEN ?= $(base_dir)/hardware/vlsi_rom_gen_real
-ROMBIN ?= $(base_dir)/hardware/chipyard/generators/rocket-chip/bootrom/bootrom.img
+ROMBIN ?= $(base_dir)/bootrom/bootrom.rv64.img
 ROMHEX ?= $(build_dir)/$(long_name).rom.hex
 
 BOARD?=DE4

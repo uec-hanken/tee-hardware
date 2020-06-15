@@ -4,7 +4,7 @@ import freechips.rocketchip.config.Field
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.subsystem.BaseSubsystem
 
-case object Peripheryed25519Key extends Field[List[ed25519Params]]
+case object Peripheryed25519Key extends Field[List[ed25519Params]](List())
 
 trait HasPeripheryed25519 { this: BaseSubsystem =>
   val ed25519Nodes = p(Peripheryed25519Key).map { case key =>

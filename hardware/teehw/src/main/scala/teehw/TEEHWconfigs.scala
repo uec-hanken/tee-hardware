@@ -167,11 +167,11 @@ case class RocketParams(n: Int) extends Config((site, here, up) => {
 })
 
 class Boom extends Config(
-  BoomParams(1) //Only Boom: 2 cores
+  BoomParams(2) //Only Boom: 2 cores
 )
 
 class Rocket extends Config(
-  RocketParams(1) //Only Rocket: 2 cores
+  RocketParams(2) //Only Rocket: 2 cores
 )
 
 class BoomRocket extends Config(
@@ -236,7 +236,9 @@ class ChipConfig extends Config(
   new ChipPeripherals ++
   new WithJtagDTM            ++
   new WithNMemoryChannels(1) ++
-  new WithCoherentBusTopology ++ // This adds a L2 cache
+  new chipyard.config.WithL2TLBs(entries = 1024) ++               // use L2 TLBs
+  new freechips.rocketchip.subsystem.WithInclusiveCache ++        // use Sifive L2 cache
+  new WithCoherentBusTopology ++                                  // This adds a L2 cache
   //new WithIncoherentBusTopology ++ // This was the previous one
   new BaseConfig().alter((site,here,up) => {
     case SystemBusKey => up(SystemBusKey).copy(
@@ -296,6 +298,15 @@ class VC707Config extends Config(
   })
 )
 
-class WithDebugDMI extends Config((site, here, up) => {
+import testchipip.SerialKey
+
+class WithSimulation extends Config((site, here, up) => {
+  // Force the DMI
   case ExportDebug => up(ExportDebug, site).copy(protocols = Set(DMI))
+  // Force also the Serial interface
+  case SerialKey => true
+    // Change the BootROM stuff
+  case BootROMParams => BootROMParams(
+    contentFileName = s"./bootrom/bootrom.rv${site(XLen)}.img")
+  case PeripheryMaskROMKey => List()
 })

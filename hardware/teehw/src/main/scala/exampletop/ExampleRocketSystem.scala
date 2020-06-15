@@ -14,6 +14,7 @@ import freechips.rocketchip.system._
 import freechips.rocketchip.config._
 import freechips.rocketchip.devices.debug._
 import freechips.rocketchip.tile._
+import testchipip._
 import uec.teehardware.devices.sha3._
 import uec.teehardware.devices.ed25519._
 import uec.teehardware.devices.aes._
@@ -66,32 +67,30 @@ class TEEHWJTAGConfig extends Config(
 )
 
 /** Example Top with periphery devices and ports, and a Rocket subsystem */
-class ExampleRocketSystemTEEHW(implicit p: Parameters) extends BaseSubsystem
-  with HasChipyardTiles
-    with HasPeripheryDebug
+class ExampleRocketSystemTEEHW(implicit p: Parameters) extends Subsystem
     with HasAsyncExtInterrupts
     with CanHaveMasterAXI4MemPort
     //with CanHaveMasterAXI4MMIOPort
-    with CanHaveSlaveAXI4Port
+    //with CanHaveSlaveAXI4Port
     with HasPeripherySHA3
     with HasPeripheryed25519
     with HasPeripheryAES
     with HasPeripheryRandom
     //with HasPeripheryUSB11HS
+    with CanHavePeripherySerial
     with HasPeripheryBootROM {
   override lazy val module = new ExampleRocketSystemTEEHWModuleImp(this)
 }
 
 class ExampleRocketSystemTEEHWModuleImp[+L <: ExampleRocketSystemTEEHW](_outer: L)
-  extends BaseSubsystemModuleImp(_outer)
-    with HasChipyardTilesModuleImp
+  extends SubsystemModuleImp(_outer)
     with HasRTCModuleImp
-    with HasPeripheryDebugModuleImp
     with HasExtInterruptsModuleImp
     with HasPeripherySHA3ModuleImp
     with HasPeripheryed25519ModuleImp
     with HasPeripheryAESModuleImp
-    with HasPeripheryBootROMModuleImp
     with HasPeripheryRandomModuleImp
     //with HasPeripheryUSB11HSModuleImp
+    with CanHavePeripherySerialModuleImp
+    with HasPeripheryBootROMModuleImp
     with DontTouch

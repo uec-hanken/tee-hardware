@@ -4,7 +4,7 @@ import freechips.rocketchip.config.Field
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.subsystem.BaseSubsystem
 
-case object PeripherySHA3Key extends Field[List[SHA3Params]]
+case object PeripherySHA3Key extends Field[List[SHA3Params]](List())
 
 trait HasPeripherySHA3 { this: BaseSubsystem =>
   val sha3Nodes = p(PeripherySHA3Key).map{ case key =>

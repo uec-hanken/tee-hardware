@@ -174,18 +174,18 @@ ifeq ($(SUB_PROJECT),icenet)
 	GENERATOR_PACKAGE ?= chipyard
 	TB                ?= TestDriver
 	TOP               ?= UnitTestSuite
-# Our TEE hardware
+# Simulation-wise default config for TEE
 else ifeq ($(SUB_PROJECT),teehardware)
 	SBT_PROJECT       ?= teehardware
 	MODEL             ?= TestHarness
 	VLOG_MODEL        ?= TestHarness
 	MODEL_PACKAGE     ?= uec.teehardware.exampletop
-	CONFIG            ?= WithDebugDMI_$(ISACONF)_$(BOARD)Config_$(BOOTSRC)_$(HYBRID)
+	CONFIG            ?= WithSimulation_$(ISACONF)_$(BOARD)Config_$(BOOTSRC)_$(HYBRID)
 	CONFIG_PACKAGE    ?= uec.teehardware
 	GENERATOR_PACKAGE ?= uec.teehardware.exampletop
 	TB                ?= TestDriver
 	TOP               ?= ExampleRocketSystemTEEHW
-# Simulation-wise default config
+# Our TEE hardware
 else
 	SBT_PROJECT       ?= teehardware
 	MODEL             ?= $(SUB_PROJECT)
