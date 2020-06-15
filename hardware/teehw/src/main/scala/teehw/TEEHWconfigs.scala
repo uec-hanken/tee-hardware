@@ -43,12 +43,8 @@ class RV32GC extends Config((site, here, up) => {
   case XLen => 32
   /* Boom32 doesn't have FPU */
   case BoomTilesKey => up(BoomTilesKey, site) map { r =>
-    r.copy(core = r.core.copy(
-      issueParams = Seq( // In all, numEntries was 8
-        IssueParams(issueWidth=1, numEntries=2, iqType=IQT_MEM.litValue, dispatchWidth=1),
-        IssueParams(issueWidth=1, numEntries=2, iqType=IQT_INT.litValue, dispatchWidth=1)),
-      fpu = None
-    ))
+    r.copy(core = r.core.copy(fpu = None,
+      issueParams = r.core.issueParams.filter(_.iqType != IQT_FP.litValue)))
   }
 })
 
@@ -59,12 +55,8 @@ class RV32IMAFC extends Config((site, here, up) => {
   }
   /* Boom32 doesn't have FPU */
   case BoomTilesKey => up(BoomTilesKey, site) map { r =>
-    r.copy(core = r.core.copy(
-      issueParams = Seq( // In all, numEntries was 8
-        IssueParams(issueWidth=1, numEntries=2, iqType=IQT_MEM.litValue, dispatchWidth=1),
-        IssueParams(issueWidth=1, numEntries=2, iqType=IQT_INT.litValue, dispatchWidth=1)),
-      fpu = None
-    ))
+    r.copy(core = r.core.copy(fpu = None,
+      issueParams = r.core.issueParams.filter(_.iqType != IQT_FP.litValue)))
   }
 })
 
@@ -74,12 +66,8 @@ class RV32IMAC extends Config((site, here, up) => {
     r.copy(core = r.core.copy(fpu = None))
   }
   case BoomTilesKey => up(BoomTilesKey, site) map { r =>
-    r.copy(core = r.core.copy(
-      issueParams = Seq( // In all, numEntries was 8
-        IssueParams(issueWidth=1, numEntries=2, iqType=IQT_MEM.litValue, dispatchWidth=1),
-        IssueParams(issueWidth=1, numEntries=2, iqType=IQT_INT.litValue, dispatchWidth=1)),
-      fpu = None
-    ))
+    r.copy(core = r.core.copy(fpu = None,
+      issueParams = r.core.issueParams.filter(_.iqType != IQT_FP.litValue)))
   }
 })
 
@@ -90,32 +78,42 @@ class RV32IMAC extends Config((site, here, up) => {
  CacheBlockBytes = (default) 64;
  => default cache size = 64 * 4 * 64 = 16KBytes
 */
-case class BoomParams(n: Int) extends Config((site, here, up) => {
+class WithMiniBoom(n: Int) extends Config((site, here, up) => {
   case BoomTilesKey => {
     val mini = BoomTileParams(
       core = BoomCoreParams(
-        fetchWidth = 4, useCompressed = true, decodeWidth = 1, numRobEntries = 16,
+        mulDiv = Some(MulDivParams(mulUnroll = 8, mulEarlyOut = true, divEarlyOut = true)),
+        useCompressed = true,
+        fetchWidth = 4,
+        decodeWidth = 1,
+        numRobEntries = 16,
         issueParams = Seq(
           IssueParams(issueWidth = 1, numEntries = 2, iqType = IQT_MEM.litValue, dispatchWidth = 1),
           IssueParams(issueWidth = 1, numEntries = 2, iqType = IQT_INT.litValue, dispatchWidth = 1),
           IssueParams(issueWidth = 1, numEntries = 2, iqType = IQT_FP.litValue, dispatchWidth = 1)),
-        numIntPhysRegisters = 52, numFpPhysRegisters = 48, numLdqEntries = 4, numStqEntries = 4,
-        maxBrCount = 2, numFetchBufferEntries = 8, ftq = FtqParameters(nEntries = 4),
-        btb = BoomBTBParameters(
-          btbsa = true, densebtb = false, bypassCalls = false, rasCheckForEmpty = false,
-          nSets = 16, nWays = 1, nRAS = 4, tagSz = 10),
-        bpdBaseOnly = None,
+        numIntPhysRegisters = 52,
+        numFpPhysRegisters = 48,
+        numLdqEntries = 4, numStqEntries = 4,
+        maxBrCount = 2,
+        numFetchBufferEntries = 8,
+        ftq = FtqParameters(nEntries = 4),
+        btb = BoomBTBParameters(nSets = 16, nWays = 1, nRAS = 4, tagSz = 10,
+          btbsa = true, densebtb = false, bypassCalls = false, rasCheckForEmpty = false),
+        enableBranchPredictor = true,
+        bpdBaseOnly = None, bpdRandom = None,
+        tage = None,
         gshare = Some(GShareParameters(historyLength = 11, numSets = 1024)),
-        tage = None, bpdRandom = None, nPerfCounters = 1,
+        nPerfCounters = 1,
         fpu = Some(freechips.rocketchip.tile.FPUParams(sfmaLatency = 4, dfmaLatency = 4, divSqrt = true))),
+      btb = Some(BTBParams(nEntries = 0, updatesOutOfOrder = true)),
       dcache = Some(DCacheParams(
-        nSets = 16, nWays = 1,
         rowBits = site(SystemBusKey).beatBits,
+        nSets = 16, nWays = 1, nTLBEntries = 8,
         nMSHRs = 2, // was 2, NOTE: Cannot be strictly 0 (restriction), and cannot be 1 (width error) in boom
-        blockBytes = site(CacheBlockBytes), nTLBEntries = 8)),
+        blockBytes = site(CacheBlockBytes))),
       icache = Some(ICacheParams(
-        nSets = 16, nWays = 1,
         rowBits = site(SystemBusKey).beatBits,
+        nSets = 16, nWays = 1,
         blockBytes = site(CacheBlockBytes),
         fetchBytes = 2*4)) // 2 = instrWidth (bytes), 4 = fetchWidth, has to be instrWidth*fetchWidth
     ) /* NOTES: Cannot set fetchBytes in the icache to 2*2 in fetchWidth = 2 because
@@ -125,41 +123,49 @@ case class BoomParams(n: Int) extends Config((site, here, up) => {
   }
 })
 
-case class RocketParams(n: Int) extends Config((site, here, up) => {
+class WithSmallCacheBigCore(n: Int) extends Config((site, here, up) => {
   case RocketTilesKey => {
     val big = RocketTileParams(
       core = RocketCoreParams(mulDiv = Some(MulDivParams(
         mulUnroll = 8, mulEarlyOut = true, divEarlyOut = true))),
       dcache = Some(DCacheParams(
-        nSets = 16, nWays = 1, nMSHRs = 0,
         rowBits = site(SystemBusKey).beatBits,
+        nSets = 16, nWays = 1, nMSHRs = 0,
         blockBytes = site(CacheBlockBytes))),
       icache = Some(ICacheParams(
-        nSets = 16, nWays = 1,
         rowBits = site(SystemBusKey).beatBits,
+        nSets = 16, nWays = 1,
         blockBytes = site(CacheBlockBytes))))
     List.tabulate(n)(i => big.copy(hartId = i))
   }
 })
 
 class Boom extends Config(
-  BoomParams(2) //Only Boom: 2 cores
+  //Only Boom: 2 cores
+  new WithNBoomCores(2) //SmallBoom by default
+  //new WithMiniBoom(2) //or use the MiniBoom version
 )
 
 class Rocket extends Config(
-  RocketParams(2) //Only Rocket: 2 cores
+  //Only Rocket: 2 cores
+  new WithNBigCores(2) //BigRocket by default
+  //new WithSmallCacheBigCore(2) //or use the reduced cache version
 )
 
 class BoomRocket extends Config(
   new WithRenumberHarts(rocketFirst = false) ++ //Boom first, Rocket second
-  BoomParams(1) ++
-  RocketParams(1)
+  new WithNBoomCores(1) ++
+  new WithNBigCores(1)
+  //new WithMiniBoom(1) ++
+  //new WithSmallCacheBigCore(1)
 )
 
 class RocketBoom extends Config(
   new WithRenumberHarts(rocketFirst = true) ++ //Rocket first, Boom second
-  BoomParams(1) ++
-  RocketParams(1)
+  new WithNBoomCores(1) ++
+  new WithNBigCores(1)
+  //new WithMiniBoom(1) ++
+  //new WithSmallCacheBigCore(1)
 )
 
 class BOOTROM extends Config((site, here, up) => {
