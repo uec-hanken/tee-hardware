@@ -27,8 +27,8 @@ XIP_TARGET_ADDR?=0x20000000
 elf := xip.elf
 #$(elf): xip.S $(dtb)
 #	$(CC) $(CFLAGS) -DXIP_TARGET_ADDR=$(XIP_TARGET_ADDR) -DDEVICE_TREE='"$(dtb)"' $(LFLAGS) -o $@ $<
-$(elf): xip.S
-	$(CC) $(CFLAGS) -DXIP_TARGET_ADDR=$(XIP_TARGET_ADDR) $(LFLAGS) -o $@ $<
+$(elf): xip.S linker.ld
+	$(CC) $(CFLAGS) -DXIP_TARGET_ADDR=$(XIP_TARGET_ADDR) $(LFLAGS) -Tlinker.ld -o $@ $<
 
 .PHONY: elf
 elf: $(elf)

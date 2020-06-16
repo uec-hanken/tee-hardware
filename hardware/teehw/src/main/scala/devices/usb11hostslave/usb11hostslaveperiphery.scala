@@ -18,10 +18,6 @@ trait HasPeripheryUSB11HS { this: BaseSubsystem =>
   }
 }
 
-trait HasPeripheryUSB11HSBundle {
-  val uart: Seq[USB11HSPortIO]
-}
-
 trait HasPeripheryUSB11HSModuleImp extends LazyModuleImp {
   val outer: HasPeripheryUSB11HS
   val usb11hs = outer.usb11hs.zipWithIndex.map{

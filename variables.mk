@@ -177,14 +177,14 @@ ifeq ($(SUB_PROJECT),icenet)
 # Simulation-wise default config for TEE
 else ifeq ($(SUB_PROJECT),teehardware)
 	SBT_PROJECT       ?= teehardware
-	MODEL             ?= TestHarness
-	VLOG_MODEL        ?= TestHarness
-	MODEL_PACKAGE     ?= uec.teehardware.exampletop
+	MODEL             ?= TEEHWHarness
+	VLOG_MODEL        ?= TEEHWHarness
+	MODEL_PACKAGE     ?= uec.teehardware
 	CONFIG            ?= WithSimulation_$(ISACONF)_$(BOARD)Config_$(BOOTSRC)_$(HYBRID)
 	CONFIG_PACKAGE    ?= uec.teehardware
 	GENERATOR_PACKAGE ?= uec.teehardware.exampletop
 	TB                ?= TestDriver
-	TOP               ?= ExampleRocketSystemTEEHW
+	TOP               ?= TEEHWSystem
 # Our TEE hardware
 else
 	SBT_PROJECT       ?= teehardware

@@ -11,14 +11,15 @@ endif
 base_dir=$(abspath ../..)
 sim_dir=$(abspath .)
 build_dir=$(sim_dir)/generated-src/$(long_name)
+bootrom_dir=$(base_dir)/software/freedom-u540-c000-bootloader
+xip_dir=$(base_dir)/software/xip
 ROMGEN ?= $(base_dir)/hardware/vlsi_rom_gen_real
-ROMBIN ?= $(base_dir)/bootrom/bootrom.rv64.img
-ROMHEX ?= $(build_dir)/$(long_name).rom.hex
 
 BOARD?=DE4
 ISACONF?=RV64GC
 BOOTSRC?=BOOTROM
 HYBRID?=BoomRocket
+ROMHEX ?= $(xip_dir)/xip.hex $(bootrom_dir)/FPGAzsbl.hex
 
 #########################################################################################
 # include shared variables
@@ -62,9 +63,13 @@ include $(base_dir)/common.mk
 #########################################################################################
 # ROM rules
 #########################################################################################
-$(ROM_FILE): $(ROMBIN) $(ROMGEN)
-	od -t x4 -An -w4 -v $(ROMBIN) > $(ROMHEX)
+$(ROM_FILE): $(ROMHEX) $(ROMGEN)
 	$(ROMGEN) $(ROM_CONF_FILE) $(ROMHEX) > $(ROM_FILE)
+
+$(ROMHEX):
+	make -C $(bootrom_dir) BUILD_DIR=$(build_dir) long_name=$(long_name) BOARD=$(BOARD) TEEHW=1 ISACONF=$(ISACONF) clean
+	make -C $(bootrom_dir) BUILD_DIR=$(build_dir) long_name=$(long_name) BOARD=$(BOARD) TEEHW=1 ISACONF=$(ISACONF) FPGAzsbl.hex
+	make -C $(xip_dir) ISACONF=$(ISACONF) hex
 
 #########################################################################################
 # verilator binary and flags
@@ -182,6 +187,6 @@ $(output_dir)/none.vpd: $(sim_debug)
 #########################################################################################
 # general cleanup rule
 #########################################################################################
-.PHONY: clean
+.PHONY: clean $(ROMHEX)
 clean:
 	rm -rf $(gen_dir) $(sim_prefix)-*
