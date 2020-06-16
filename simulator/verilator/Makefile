@@ -69,7 +69,8 @@ $(ROM_FILE): $(ROMHEX) $(ROMGEN)
 $(ROMHEX):
 	make -C $(bootrom_dir) BUILD_DIR=$(build_dir) long_name=$(long_name) BOARD=$(BOARD) TEEHW=1 ISACONF=$(ISACONF) clean
 	make -C $(bootrom_dir) BUILD_DIR=$(build_dir) long_name=$(long_name) BOARD=$(BOARD) TEEHW=1 ISACONF=$(ISACONF) FPGAzsbl.hex
-	make -C $(xip_dir) ISACONF=$(ISACONF) hex
+	make -C $(xip_dir) ISACONF=$(ISACONF) XIP_TARGET_ADDR=0x80000000 clean
+	make -C $(xip_dir) ISACONF=$(ISACONF) XIP_TARGET_ADDR=0x80000000 hex
 
 #########################################################################################
 # verilator binary and flags
