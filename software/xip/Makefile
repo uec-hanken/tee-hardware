@@ -13,7 +13,7 @@ CC=riscv32-unknown-elf-gcc
 OBJCOPY=riscv32-unknown-elf-objcopy
 CFLAGS_ARCH=-march=rv32imac -mabi=ilp32
 endif
-CFLAGS=$(CFLAGS_ARCH) -O2 -std=gnu11 -Wall -I. -nostartfiles -fno-common -g
+CFLAGS=$(CFLAGS_ARCH) -O2 -std=gnu11 -Wall -I. -nostartfiles -fno-common -g $(ADD_OPTS)
 LFLAGS=-static -nostdlib
 XIP_TARGET_ADDR?=0x20000000
 

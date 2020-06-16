@@ -17,6 +17,7 @@ sim_debug = $(sim_dir)/$(sim_prefix)-$(MODEL_PACKAGE)-$(CONFIG)-debug
 ROM_FILE = $(build_dir)/$(long_name).rom.v
 ROM_CONF_FILE = $(build_dir)/$(long_name).rom.conf
 DTS_FILE = $(build_dir)/$(long_name).dts
+xip_dir=$(base_dir)/software/xip
 
 PERMISSIVE_ON=
 PERMISSIVE_OFF=
@@ -53,18 +54,18 @@ include $(base_dir)/common.mk
 # ROM generation
 #########################################################################################
 $(ROM_FILE): $(ROM_CONF_FILE) $(ROMGEN)
-	make -C $(bootrom_dir) BUILD_DIR=$(build_dir) long_name=$(long_name) BOARD=$(BOARD) ROMGEN=$(ROMGEN) ROM_CONF_FILE=$(ROM_CONF_FILE) ROM_FILE=$(ROM_FILE) TEEHW=1 ISACONF=$(ISACONF) clean
-	make -C $(bootrom_dir) BUILD_DIR=$(build_dir) long_name=$(long_name) BOARD=$(BOARD) ROMGEN=$(ROMGEN) ROM_CONF_FILE=$(ROM_CONF_FILE) ROM_FILE=$(ROM_FILE) TEEHW=1 ISACONF=$(ISACONF) romgen
-ifeq ($(BOOTSRC),QSPI) #overwrite the rom.v with xip
-	make -C $(xip_dir) BUILD_DIR=$(build_dir) long_name=$(long_name) ROMGEN=$(ROMGEN) ROM_CONF_FILE=$(ROM_CONF_FILE) ROM_FILE=$(ROM_FILE) ISACONF=$(ISACONF) romgen
-endif
+	make -C $(bootrom_dir) BUILD_DIR=$(build_dir) long_name=$(long_name) BOARD=$(BOARD) TEEHW=1 ISACONF=$(ISACONF) clean
+	make -C $(bootrom_dir) BUILD_DIR=$(build_dir) long_name=$(long_name) BOARD=$(BOARD) TEEHW=1 ISACONF=$(ISACONF) FPGAzsbl.hex
+	make -C $(xip_dir) ISACONF=$(ISACONF) XIP_TARGET_ADDR=0x20000000 ADD_OPTS=-DSKIP_HANG clean
+	make -C $(xip_dir) ISACONF=$(ISACONF) XIP_TARGET_ADDR=0x20000000 ADD_OPTS=-DSKIP_HANG hex
+	$(ROMGEN) $(ROM_CONF_FILE) $(xip_dir)/xip.hex $(bootrom_dir)/FPGAzsbl.hex > $(ROM_FILE)
 
 #########################################################################################
 # general cleanup rule
 #########################################################################################
-.PHONY: clean
+.PHONY: clean $(ROM_FILE)
 clean:
 	rm -rf $(build_dir) $(sim_prefix)-*
-	make -C $(bootrom_dir) clean
-	make -C $(xip_dir) clean
+	make -C $(bootrom_dir) BUILD_DIR=$(build_dir) long_name=$(long_name) BOARD=$(BOARD) TEEHW=1 ISACONF=$(ISACONF) clean
+	make -C $(xip_dir) ISACONF=$(ISACONF) XIP_TARGET_ADDR=0x20000000 ADD_OPTS=-DSKIP_HANG clean
 
