@@ -15,10 +15,13 @@ bootrom_dir=$(base_dir)/software/freedom-u540-c000-bootloader
 xip_dir=$(base_dir)/software/xip
 ROMGEN ?= $(base_dir)/hardware/vlsi_rom_gen_real
 
-BOARD?=DE4
-ISACONF?=RV64GC
-BOOTSRC?=BOOTROM
-HYBRID?=BoomRocket
+BOARD=DE4
+ISACONF=RV64GC
+MBUS=MBus64
+BOOTSRC=BOOTROM
+PCIE=WoPCIe
+DDRCLK=WoSepaDDRClk
+HYBRID=BoomRocket
 ROMHEX ?= $(xip_dir)/xip.hex $(bootrom_dir)/FPGAzsbl.hex
 
 #########################################################################################
