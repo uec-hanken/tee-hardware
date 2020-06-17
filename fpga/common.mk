@@ -55,7 +55,7 @@ include $(base_dir)/common.mk
 #########################################################################################
 $(ROM_FILE): $(ROM_CONF_FILE) $(ROMGEN)
 	make -C $(bootrom_dir) BUILD_DIR=$(build_dir) long_name=$(long_name) BOARD=$(BOARD) TEEHW=1 ISACONF=$(ISACONF) clean
-	make -C $(bootrom_dir) BUILD_DIR=$(build_dir) long_name=$(long_name) BOARD=$(BOARD) TEEHW=1 ISACONF=$(ISACONF) FPGAzsbl.hex
+	make -C $(bootrom_dir) BUILD_DIR=$(build_dir) long_name=$(long_name) BOARD=$(BOARD) TEEHW=1 ISACONF=$(ISACONF) FPGAzsbl.hex FPGAfsbl.bin
 	make -C $(xip_dir) ISACONF=$(ISACONF) XIP_TARGET_ADDR=0x20000000 ADD_OPTS=-DSKIP_HANG clean
 	make -C $(xip_dir) ISACONF=$(ISACONF) XIP_TARGET_ADDR=0x20000000 ADD_OPTS=-DSKIP_HANG hex
 	$(ROMGEN) $(ROM_CONF_FILE) $(xip_dir)/xip.hex $(bootrom_dir)/FPGAzsbl.hex > $(ROM_FILE)
