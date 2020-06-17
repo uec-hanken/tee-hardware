@@ -134,33 +134,31 @@ class WithSmallCacheBigCore(n: Int) extends Config((site, here, up) => {
   }
 })
 
-class Boom extends Config(
-  //Only Boom: 2 cores
-  new WithNBoomCores(2) //SmallBoom by default
-  //new WithMiniBoom(2) //or use the MiniBoom version
-)
+//Only Boom: 2 cores
+class Boom extends Config( new WithNBoomCores(2) )
+class BoomReduced extends Config( new WithMiniBoom(2) )
 
-class Rocket extends Config(
-  //Only Rocket: 2 cores
-  new WithNBigCores(2) //BigRocket by default
-  //new WithSmallCacheBigCore(2) //or use the reduced cache version
-)
+//Only Rocket: 2 cores
+class Rocket extends Config( new WithNBigCores(2) )
+class RocketReduced extends Config( new WithSmallCacheBigCore(2) )
 
 class BoomRocket extends Config(
   new WithRenumberHarts(rocketFirst = false) ++ //Boom first, Rocket second
   new WithNBoomCores(1) ++
-  new WithNBigCores(1)
-  //new WithMiniBoom(1) ++
-  //new WithSmallCacheBigCore(1)
-)
+  new WithNBigCores(1) )
+class BoomRocketReduced extends Config(
+  new WithRenumberHarts(rocketFirst = false) ++ //Boom first, Rocket second
+  new WithMiniBoom(1) ++
+  new WithSmallCacheBigCore(1) )
 
 class RocketBoom extends Config(
   new WithRenumberHarts(rocketFirst = true) ++ //Rocket first, Boom second
   new WithNBoomCores(1) ++
-  new WithNBigCores(1)
-  //new WithMiniBoom(1) ++
-  //new WithSmallCacheBigCore(1)
-)
+  new WithNBigCores(1) )
+class RocketBoomReduced extends Config(
+  new WithRenumberHarts(rocketFirst = true) ++ //Rocket first, Boom second
+  new WithMiniBoom(1) ++
+  new WithSmallCacheBigCore(1) )
 
 class BOOTROM extends Config((site, here, up) => {
   case PeripheryMaskROMKey => List(
