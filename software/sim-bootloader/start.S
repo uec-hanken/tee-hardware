@@ -1,5 +1,6 @@
 // See LICENSE for license details.
 #include <encoding.h>
+#include <smp.h>
 
 	.section .init
 	.globl _start
@@ -50,8 +51,13 @@ _start:
   // Initialize the global pointer
 	la gp, __global_pointer$
 .option pop
-	la sp, _sp
+	csrr t0, mhartid
+  slli t0, t0, 12
+  la sp, _sp
+  sub sp, sp, t0
 	mv s0, sp
+	
+  smp_pause(s1, s2)
 
 #ifdef TEXT_IN_RAM
 	/* Load text and read-only sections */
@@ -93,6 +99,8 @@ _start:
 	addi a0, a0, 4
 	bltu a0, a1, 1b
 2:
+
+  smp_resume(s1, s2)
 
   // Prepare the execution environment
   auipc ra, 0         // Put ra here, the debugger understands this as end of stack

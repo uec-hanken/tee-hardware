@@ -14,6 +14,8 @@
 #include "devices/aes.h"
 #include "devices/random.h"
 
+#define CLINT_CTRL_ADDR _AC(0x2000000,UL)
+#define CLINT_CTRL_SIZE _AC(0x10000,UL)
 #define SHA3_CTRL_ADDR   _AC(0x64003000,UL)
 #define SHA3_CTRL_SIZE   _AC(0x1000,UL)
 #define ED25519_CTRL_ADDR   _AC(0x64004000,UL)
