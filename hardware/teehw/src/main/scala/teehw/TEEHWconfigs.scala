@@ -194,8 +194,6 @@ class ChipPeripherals extends Config((site, here, up) => {
     USB11HSParams(address = BigInt(0x64008000L)))
   case PeripheryRandomKey => List(
     RandomParams(address = BigInt(0x64009000L)))
-  case IncludePCIe => false
-  case DDRPortOther => false
 })
 
 class MBus32 extends Config((site, here, up) => {
@@ -212,6 +210,22 @@ class MBus64 extends Config((site, here, up) => {
     size = x"0_4000_0000",
     beatBytes = 8,
     idBits = 4), 1))
+})
+
+class WPCIe extends Config((site, here, up) => {
+  case IncludePCIe => true
+})
+
+class WoPCIe extends Config((site, here, up) => {
+  case IncludePCIe => false
+})
+
+class WSepaDDRClk extends Config((site, here, up) => {
+  case DDRPortOther => true
+})
+
+class WoSepaDDRClk extends Config((site, here, up) => {
+  case DDRPortOther => false
 })
 
 // Chip Configs

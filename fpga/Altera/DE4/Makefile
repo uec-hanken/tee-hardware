@@ -18,6 +18,8 @@ BOARD=DE4
 ISACONF=RV64GC
 MBUS=MBus64
 BOOTSRC=BOOTROM
+PCIE=WoPCIe
+DDRCLK=WoSepaDDRClk
 HYBRID=BoomRocket
 
 #########################################################################################
