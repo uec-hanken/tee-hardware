@@ -45,33 +45,19 @@ class RV64GC extends Config((site, here, up) => {
   case XLen => 64
 })
 
-class RV32GC extends Config((site, here, up) => {
-  case XLen => 32
-  /* Boom32 doesn't have FPU */
+class RV64IMAC extends Config((site, here, up) => {
+  case XLen => 64
+  case RocketTilesKey => up(RocketTilesKey, site) map { r =>
+    r.copy(core = r.core.copy(fpu = None))
+  }
   case BoomTilesKey => up(BoomTilesKey, site) map { r =>
-    r.copy(core = r.core.copy(
-      issueParams = Seq( // In all, numEntries was 8
-        IssueParams(issueWidth=1, numEntries=2, iqType=IQT_MEM.litValue, dispatchWidth=1),
-        IssueParams(issueWidth=1, numEntries=2, iqType=IQT_INT.litValue, dispatchWidth=1)),
-      fpu = None
-    ))
+    r.copy(core = r.core.copy(fpu = None,
+      issueParams = r.core.issueParams.filter(_.iqType != IQT_FP.litValue)))
   }
 })
 
-class RV32IMAFC extends Config((site, here, up) => {
+class RV32GC extends Config((site, here, up) => {
   case XLen => 32
-  case RocketTilesKey => up(RocketTilesKey, site) map { r =>
-    r.copy(core = r.core.copy(fpu = r.core.fpu.map(_.copy(fLen = 32))))
-  }
-  /* Boom32 doesn't have FPU */
-  case BoomTilesKey => up(BoomTilesKey, site) map { r =>
-    r.copy(core = r.core.copy(
-      issueParams = Seq( // In all, numEntries was 8
-        IssueParams(issueWidth=1, numEntries=2, iqType=IQT_MEM.litValue, dispatchWidth=1),
-        IssueParams(issueWidth=1, numEntries=2, iqType=IQT_INT.litValue, dispatchWidth=1)),
-      fpu = None
-    ))
-  }
 })
 
 class RV32IMAC extends Config((site, here, up) => {
@@ -80,12 +66,8 @@ class RV32IMAC extends Config((site, here, up) => {
     r.copy(core = r.core.copy(fpu = None))
   }
   case BoomTilesKey => up(BoomTilesKey, site) map { r =>
-    r.copy(core = r.core.copy(
-      issueParams = Seq( // In all, numEntries was 8
-        IssueParams(issueWidth=1, numEntries=2, iqType=IQT_MEM.litValue, dispatchWidth=1),
-        IssueParams(issueWidth=1, numEntries=2, iqType=IQT_INT.litValue, dispatchWidth=1)),
-      fpu = None
-    ))
+    r.copy(core = r.core.copy(fpu = None,
+      issueParams = r.core.issueParams.filter(_.iqType != IQT_FP.litValue)))
   }
 })
 
@@ -96,7 +78,7 @@ class RV32IMAC extends Config((site, here, up) => {
  CacheBlockBytes = (default) 64;
  => default cache size = 64 * 4 * 64 = 16KBytes
 */
-case class BoomParams(n: Int) extends Config((site, here, up) => {
+class WithMiniBoom(n: Int) extends Config((site, here, up) => {
   case BoomTilesKey => {
     val mini = BoomTileParams(
       core = BoomCoreParams(
@@ -104,6 +86,7 @@ case class BoomParams(n: Int) extends Config((site, here, up) => {
         decodeWidth = 1,
         // WithSmallBooms
         fetchWidth = 4, useCompressed = true, numRobEntries = 16,
+        mulDiv = Some(MulDivParams(mulUnroll = 8, mulEarlyOut = true, divEarlyOut = true)),
         issueParams = Seq(
           IssueParams(issueWidth = 1, numEntries = 2, iqType = IQT_MEM.litValue, dispatchWidth = 1),
           IssueParams(issueWidth = 1, numEntries = 2, iqType = IQT_INT.litValue, dispatchWidth = 1),
@@ -136,13 +119,13 @@ case class BoomParams(n: Int) extends Config((site, here, up) => {
         })
       ),
       dcache = Some(DCacheParams(
-        nSets = 16, nWays = 1,
         rowBits = site(SystemBusKey).beatBits,
+        nSets = 16, nWays = 1, nTLBEntries = 8,
         nMSHRs = 2, // was 2, NOTE: Cannot be strictly 0 (restriction), and cannot be 1 (width error) in boom
-        blockBytes = site(CacheBlockBytes), nTLBEntries = 8)),
+        blockBytes = site(CacheBlockBytes))),
       icache = Some(ICacheParams(
-        nSets = 16, nWays = 1,
         rowBits = site(SystemBusKey).beatBits,
+        nSets = 16, nWays = 1,
         blockBytes = site(CacheBlockBytes),
         fetchBytes = 2*4)) // 2 = instrWidth (bytes), 4 = fetchWidth, has to be instrWidth*fetchWidth
     ) /* NOTES: Cannot set fetchBytes in the icache to 2*2 in fetchWidth = 2 because
@@ -152,42 +135,48 @@ case class BoomParams(n: Int) extends Config((site, here, up) => {
   }
 })
 
-case class RocketParams(n: Int) extends Config((site, here, up) => {
+class WithSmallCacheBigCore(n: Int) extends Config((site, here, up) => {
   case RocketTilesKey => {
     val big = RocketTileParams(
       core = RocketCoreParams(mulDiv = Some(MulDivParams(
         mulUnroll = 8, mulEarlyOut = true, divEarlyOut = true))),
       dcache = Some(DCacheParams(
-        nSets = 16, nWays = 1, nMSHRs = 0,
         rowBits = site(SystemBusKey).beatBits,
+        nSets = 16, nWays = 1, nMSHRs = 0,
         blockBytes = site(CacheBlockBytes))),
       icache = Some(ICacheParams(
-        nSets = 16, nWays = 1,
         rowBits = site(SystemBusKey).beatBits,
+        nSets = 16, nWays = 1,
         blockBytes = site(CacheBlockBytes))))
     List.tabulate(n)(i => big.copy(hartId = i))
   }
 })
 
-class Boom extends Config(
-  BoomParams(2) //Only Boom: 2 cores
-)
+//Only Boom: 2 cores
+class Boom extends Config( new WithNBoomCores(2) )
+class BoomReduced extends Config( new WithMiniBoom(2) )
 
-class Rocket extends Config(
-  RocketParams(2) //Only Rocket: 2 cores
-)
+//Only Rocket: 2 cores
+class Rocket extends Config( new WithNBigCores(2) )
+class RocketReduced extends Config( new WithSmallCacheBigCore(2) )
 
 class BoomRocket extends Config(
   new WithRenumberHarts(rocketFirst = false) ++ //Boom first, Rocket second
-  BoomParams(1) ++
-  RocketParams(1)
-)
+  new WithNBoomCores(1) ++
+  new WithNBigCores(1) )
+class BoomRocketReduced extends Config(
+  new WithRenumberHarts(rocketFirst = false) ++ //Boom first, Rocket second
+  new WithMiniBoom(1) ++
+  new WithSmallCacheBigCore(1) )
 
 class RocketBoom extends Config(
   new WithRenumberHarts(rocketFirst = true) ++ //Rocket first, Boom second
-  BoomParams(1) ++
-  RocketParams(1)
-)
+  new WithNBoomCores(1) ++
+  new WithNBigCores(1) )
+class RocketBoomReduced extends Config(
+  new WithRenumberHarts(rocketFirst = true) ++ //Rocket first, Boom second
+  new WithMiniBoom(1) ++
+  new WithSmallCacheBigCore(1) )
 
 class BOOTROM extends Config((site, here, up) => {
   case PeripheryMaskROMKey => List(
@@ -224,21 +213,46 @@ class ChipPeripherals extends Config((site, here, up) => {
     USB11HSParams(address = BigInt(0x64008000L)))
   case PeripheryRandomKey => List(
     RandomParams(address = BigInt(0x64009000L)))
+})
+
+class MBus32 extends Config((site, here, up) => {
   case ExtMem => Some(MemoryPortParams(MasterPortParams(
     base = x"0_8000_0000",
     size = x"0_4000_0000",
-    beatBytes = 4,// This is for supporting 32 bits outside. BEFORE: site(MemoryBusKey).beatBytes,
+    beatBytes = 4,
     idBits = 4), 1))
+})
+
+class MBus64 extends Config((site, here, up) => {
+  case ExtMem => Some(MemoryPortParams(MasterPortParams(
+    base = x"0_8000_0000",
+    size = x"0_4000_0000",
+    beatBytes = 8,
+    idBits = 4), 1))
+})
+
+class WPCIe extends Config((site, here, up) => {
+  case IncludePCIe => true
+})
+
+class WoPCIe extends Config((site, here, up) => {
   case IncludePCIe => false
+})
+
+class WSepaDDRClk extends Config((site, here, up) => {
   case DDRPortOther => true
+})
+
+class WoSepaDDRClk extends Config((site, here, up) => {
+  case DDRPortOther => false
 })
 
 // Chip Configs
 class ChipConfig extends Config(
-  new WithNExtTopInterrupts(0)   ++
-  new WithNBreakpoints(4)    ++
+  new WithNExtTopInterrupts(0) ++
+  new WithNBreakpoints(4) ++
   new ChipPeripherals ++
-  new WithJtagDTM            ++
+  new WithJtagDTM ++
   new WithNMemoryChannels(1) ++
   new chipyard.config.WithL2TLBs(entries = 1024) ++               // use L2 TLBs
   new freechips.rocketchip.subsystem.WithInclusiveCache ++        // use Sifive L2 cache
@@ -262,26 +276,18 @@ class ChipConfig extends Config(
       idcodeManufId = 0x489,  // As Assigned by JEDEC to SiFive. Only used in wrappers / test harnesses.
       debugIdleCycles = 5)    // Reasonable guess for synchronization
     case FreqKeyMHz => 100.0
-    case DDRPortOther => true
   })
 )
 
 class DE4Config extends Config(
   new ChipConfig().alter((site,here,up) => {
     case FreqKeyMHz => 100.0
-    case DDRPortOther => true
   })
 )
 
 class TR4Config extends Config(
   new ChipConfig().alter((site,here,up) => {
     case FreqKeyMHz => 100.0
-    /*case ExtMem => Some(MemoryPortParams(MasterPortParams( // For back to 64 bits
-      base = x"0_8000_0000",
-      size = x"0_4000_0000",
-      beatBytes = 8,
-      idBits = 4), 1))*/
-    case DDRPortOther => false // For back to not external clock
   })
 )
 
@@ -293,13 +299,6 @@ class VC707Config extends Config(
       MaskROMParams(address = BigInt(0x10000), depth = 128, name = "BootROM"),
       MaskROMParams(address = BigInt(0x20000000), depth = 2048, name = "ZSBL"))
     case PeripherySPIFlashKey => List() // disable SPIFlash
-    case IncludePCIe => false // This is for including the PCIe
-    case ExtMem => Some(MemoryPortParams(MasterPortParams( // For back to 64 bits
-      base = x"0_8000_0000",
-      size = x"0_4000_0000",
-      beatBytes = 8,
-      idBits = 4), 1))
-    case DDRPortOther => false // For back to not external clock
   })
 )
 

@@ -14,11 +14,13 @@ xip_dir=$(base_dir)/software/xip
 SUB_PROJECT ?= FPGADE4
 ROMGEN ?= $(base_dir)/hardware/vlsi_rom_gen_real
 
-BOARD?=DE4
-ISACONF?=RV64GC
-BOOTSRC?=BOOTROM
-HYBRID?=BoomRocket
-SEPARE?=BoomTile,RocketTile,USB11HS,TLAES,TLed25519,TLSHA3
+BOARD=DE4
+ISACONF=RV64GC
+MBUS=MBus64
+BOOTSRC=BOOTROM
+PCIE=WoPCIe
+DDRCLK=WoSepaDDRClk
+HYBRID=BoomRocket
 
 #########################################################################################
 # Common rules for FPGA
