@@ -20,6 +20,7 @@ BOOTSRC=BOOTROM
 PCIE=WoPCIe
 DDRCLK=WoSepaDDRClk
 HYBRID=BoomRocket
+SEPARE?=BoomTile,RocketTile,USB11HS,TLAES,TLed25519,TLSHA3
 
 #########################################################################################
 # Common rules for FPGA
