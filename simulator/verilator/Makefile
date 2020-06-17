@@ -14,6 +14,7 @@ build_dir=$(sim_dir)/generated-src/$(long_name)
 bootrom_dir=$(base_dir)/software/freedom-u540-c000-bootloader
 xip_dir=$(base_dir)/software/xip
 ROMGEN ?= $(base_dir)/hardware/vlsi_rom_gen_real
+gen_dir=$(sim_dir)/generated-src
 
 BOARD=DE4
 ISACONF=RV64GC
@@ -74,6 +75,16 @@ $(ROMHEX):
 	make -C $(bootrom_dir) BUILD_DIR=$(build_dir) long_name=$(long_name) BOARD=$(BOARD) TEEHW=1 ISACONF=$(ISACONF) FPGAzsbl.hex
 	make -C $(xip_dir) ISACONF=$(ISACONF) XIP_TARGET_ADDR=0x80000000 clean
 	make -C $(xip_dir) ISACONF=$(ISACONF) XIP_TARGET_ADDR=0x80000000 hex
+
+#######################################
+# Rules for building DRAMSim2 library #
+#######################################
+
+dramsim_dir = $(base_dir)/hardware/chipyard/tools/DRAMSim2
+dramsim_lib = $(dramsim_dir)/libdramsim.a
+
+$(dramsim_lib):
+	$(MAKE) -C $(dramsim_dir) $(notdir $@)
 
 #########################################################################################
 # verilator binary and flags

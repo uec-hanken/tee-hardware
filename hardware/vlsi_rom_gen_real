@@ -130,18 +130,22 @@ def main():
         (failures, total) = doctest.testmod(verbose=True)
         sys.exit(1 if failures else 0)
 
-    if len(sys.argv) < 3:
-        sys.exit('Please give a .conf file as input, and also a .hex')
+    if len(sys.argv) < 2:
+        sys.exit('Please give a .conf file as input')
 
     print('// This file created by ' + __file__)
     with open(sys.argv[1]) as fp:
         lines = fp.readlines()
-        if len(lines) > 1:
-            warnings.warn('vlsi_rom_gen_real detected multiple ROMs. ROM contents will be duplicated.')
+        count = 2
         for line in lines:
-            verilog = gen_rom(rom_hex_file=sys.argv[2],
-                              **parse_line(line))
+            parsed = parse_line(line)
+            # Check if this is enough .hex files
+            if len(sys.argv) < (count + 1):
+                sys.exit('Not enough arguments. Trying to generate memory ' + parsed['name'])
+            verilog = gen_rom(rom_hex_file=sys.argv[count],
+                              **parsed)
             print(verilog)
+            count = count + 1
 
 if __name__ == '__main__':
     main()
