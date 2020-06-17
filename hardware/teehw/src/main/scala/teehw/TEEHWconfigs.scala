@@ -24,16 +24,19 @@ import boom.bpu._
 //import sifive.freedom.unleashed.DevKitFPGAFrequencyKey
 
 // The number of gpios that we want as input
-case object GPIOInKey extends Field[Int]
+case object GPIOInKey extends Field[Int](8)
 
 // Frequency
-case object FreqKeyMHz extends Field[Double]
+case object FreqKeyMHz extends Field[Double](100.0)
 
 // Include the PCIe
-case object IncludePCIe extends Field[Boolean]
+case object IncludePCIe extends Field[Boolean](false)
 
 // When external the DDR port, has to run at another freq
-case object DDRPortOther extends Field[Boolean]
+case object DDRPortOther extends Field[Boolean](false)
+
+// Our own reset vector
+case object TEEHWResetVector extends Field[Int](0x10040)
 
 class RV64GC extends Config((site, here, up) => {
   case XLen => 64
@@ -162,13 +165,14 @@ class RocketBoomReduced extends Config(
 
 class BOOTROM extends Config((site, here, up) => {
   case PeripheryMaskROMKey => List(
-    MaskROMParams(address = BigInt(0x20000000), depth = 2048, name = "BootROM"))
+    MaskROMParams(address = BigInt(0x10000), depth = 128, name = "BootROM"),
+    MaskROMParams(address = BigInt(0x20000000), depth = 2048, name = "ZSBL"))
   case PeripherySPIFlashKey => List() // disable SPIFlash
 })
 
 class QSPI extends Config((site, here, up) => {
   case PeripheryMaskROMKey => List( //move BootROM back to 0x10000
-    MaskROMParams(address = 0x10000, depth = 16, name = "BootROM")) //smallest allowed depth is 16
+    MaskROMParams(address = 0x10000, depth = 128, name = "BootROM")) //smallest allowed depth is 16
   case PeripherySPIFlashKey => List(
     SPIFlashParams(fAddress = 0x20000000, rAddress = 0x64005000, defaultSampleDel = 3))
 })
@@ -272,7 +276,27 @@ class VC707Config extends Config(
     case FreqKeyMHz => 80.0
     /* Force to use BootROM because VC707 doesn't have enough GPIOs for QSPI */
     case PeripheryMaskROMKey => List(
-      MaskROMParams(address = BigInt(0x20000000), depth = 2048, name = "BootROM"))
+      MaskROMParams(address = BigInt(0x10000), depth = 128, name = "BootROM"),
+      MaskROMParams(address = BigInt(0x20000000), depth = 2048, name = "ZSBL"))
     case PeripherySPIFlashKey => List() // disable SPIFlash
   })
 )
+
+class WithProcessorsInHang extends Config((site,here,up) => {
+  case TEEHWResetVector => 0x10040
+})
+
+import testchipip.SerialKey
+
+class WithSimulation extends Config((site, here, up) => {
+  // Force the DMI to NOT be JTAG
+  case ExportDebug => up(ExportDebug, site).copy(protocols = Set(DMI))
+  // Force also the Serial interface
+  case SerialKey => true
+  // Change the Reset Vector
+  case TEEHWResetVector => 0x10040 // The hang vector in this case, to support the Serial load
+  // DDRPortOther is unsupported
+  case DDRPortOther => false
+  // USB11HS has problems compiling on verilator.
+  case PeripheryUSB11HSKey => List()
+})

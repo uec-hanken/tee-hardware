@@ -5,7 +5,7 @@ import freechips.rocketchip.config.Field
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.subsystem.BaseSubsystem
 
-case object PeripheryUSB11HSKey extends Field[List[USB11HSParams]]
+case object PeripheryUSB11HSKey extends Field[List[USB11HSParams]](List())
 
 trait HasPeripheryUSB11HS { this: BaseSubsystem =>
   val usb11hsDevs = p(PeripheryUSB11HSKey).map { case key =>

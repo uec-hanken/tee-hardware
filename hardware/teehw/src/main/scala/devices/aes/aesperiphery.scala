@@ -4,7 +4,7 @@ import freechips.rocketchip.config.Field
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.subsystem.BaseSubsystem
 
-case object PeripheryAESKey extends Field[List[AESParams]]
+case object PeripheryAESKey extends Field[List[AESParams]](List())
 
 trait HasPeripheryAES { this: BaseSubsystem =>
   val aesNodes = p(PeripheryAESKey).map { case key =>

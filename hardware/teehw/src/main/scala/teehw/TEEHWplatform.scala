@@ -26,6 +26,7 @@ import uec.teehardware.devices.sha3._
 import uec.teehardware.devices.usb11hs._
 import uec.rocketchip.subsystem._
 import chipyard._
+import testchipip.{CanHavePeripherySerial, CanHavePeripherySerialModuleImp}
 
 class SlowMemIsland(blockBytes: Int, val crossing: ClockCrossingType = AsynchronousCrossing(8))(implicit p: Parameters)
     extends LazyModule
@@ -44,8 +45,7 @@ class SlowMemIsland(blockBytes: Int, val crossing: ClockCrossingType = Asynchron
   }
 }
 
-class TEEHWSystem(implicit p: Parameters) extends BaseSubsystem
-    with HasChipyardTiles
+class TEEHWSystem(implicit p: Parameters) extends Subsystem
     with HasHierarchicalBusTopology
     with HasPeripheryDebug
     with HasPeripheryGPIO
@@ -61,6 +61,7 @@ class TEEHWSystem(implicit p: Parameters) extends BaseSubsystem
     //    with HasPeripheryMaskROMSlave // NOTE: This is already included inside the RocketSubsystem
     //    with CanHaveMasterAXI4MemPort // NOTE: A TL->Axi4 is already done outside the system
     //    with CanHaveMasterTLMemPort // NOTE: Manually created the TL port
+  with CanHavePeripherySerial // ONLY for simulations
 {
   // The clock resource. This is just for put in the DTS the tlclock
   val tlclock = new FixedClockResource("tlclk", p(FreqKeyMHz))
@@ -169,8 +170,7 @@ class TEEHWSystem(implicit p: Parameters) extends BaseSubsystem
 
 
 class TEEHWSystemModule[+L <: TEEHWSystem](_outer: L)
-  extends BaseSubsystemModuleImp(_outer)
-    with HasChipyardTilesModuleImp
+  extends SubsystemModuleImp(_outer)
     with HasRTCModuleImp
     with HasPeripheryDebugModuleImp
     with HasPeripheryGPIOModuleImp
@@ -186,6 +186,8 @@ class TEEHWSystemModule[+L <: TEEHWSystem](_outer: L)
     //    with HasPeripherySPIModuleImp // NOTE: Already included
     //    with CanHaveMasterAXI4MemPortModuleImp // NOTE: A TL->Axi4 is already done outside the system
     //    with CanHaveMasterTLMemPortModuleImp // NOTE: Manually created the TL port
+    with CanHavePeripherySerialModuleImp
+    with DontTouch
 {
   // Main memory controller
   val slowmemck = if(p(DDRPortOther)) {
@@ -217,18 +219,10 @@ class TEEHWSystemModule[+L <: TEEHWSystem](_outer: L)
     Some(p)
   } else None
 
-  // System module creation
-  // Reset vector is set to the location of the first mask rom
-  val maskROMParams = p(PeripheryMaskROMKey)
-  global_reset_vector := maskROMParams(0).address.U
-
-  tile_inputs.zip(outer.hartIdList).foreach { case(wire, i) =>
-    wire.hartid := i.U
-    wire.reset_vector := global_reset_vector
-  }
-
-  // create file with boom params
-  ElaborationArtefacts.add("""core.config""", outer.tiles.map(x => x.module.toString).mkString("\n"))
+  // Connect the global reset vector to the designed reset
+  // It can be 0x10000 for avoid the hang
+  // But it can be also 0x10040 for debugging purposes
+  global_reset_vector := p(TEEHWResetVector).U
 }
 
 object PinGen {

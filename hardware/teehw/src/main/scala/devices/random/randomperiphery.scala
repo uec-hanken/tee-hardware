@@ -4,7 +4,7 @@ import freechips.rocketchip.config.Field
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.subsystem.BaseSubsystem
 
-case object PeripheryRandomKey extends Field[List[RandomParams]]
+case object PeripheryRandomKey extends Field[List[RandomParams]](List())
 
 trait HasPeripheryRandom { this: BaseSubsystem =>
   val rndNodes = p(PeripheryRandomKey).map{ case key =>
