@@ -196,13 +196,24 @@ class ChipPeripherals extends Config((site, here, up) => {
     USB11HSParams(address = BigInt(0x64008000L)))
   case PeripheryRandomKey => List(
     RandomParams(address = BigInt(0x64009000L)))
+  case IncludePCIe => false
+  case DDRPortOther => true
+})
+
+class MBus32 extends Config((site, here, up) => {
   case ExtMem => Some(MemoryPortParams(MasterPortParams(
     base = x"0_8000_0000",
     size = x"0_4000_0000",
-    beatBytes = 4,// This is for supporting 32 bits outside. BEFORE: site(MemoryBusKey).beatBytes,
+    beatBytes = 4,
     idBits = 4), 1))
-  case IncludePCIe => false
-  case DDRPortOther => true
+})
+
+class MBus64 extends Configgit ((site, here, up) => {
+  case ExtMem => Some(MemoryPortParams(MasterPortParams(
+    base = x"0_8000_0000",
+    size = x"0_4000_0000",
+    beatBytes = 8,
+    idBits = 4), 1))
 })
 
 // Chip Configs
@@ -243,11 +254,6 @@ class DE4Config extends Config(
 class TR4Config extends Config(
   new ChipConfig().alter((site,here,up) => {
     case FreqKeyMHz => 100.0
-    /*case ExtMem => Some(MemoryPortParams(MasterPortParams( // For back to 64 bits
-      base = x"0_8000_0000",
-      size = x"0_4000_0000",
-      beatBytes = 8,
-      idBits = 4), 1))*/
     case DDRPortOther => false // For back to not external clock
   })
 )
@@ -260,11 +266,6 @@ class VC707Config extends Config(
       MaskROMParams(address = BigInt(0x20000000), depth = 2048, name = "BootROM"))
     case PeripherySPIFlashKey => List() // disable SPIFlash
     case IncludePCIe => false // This is for including the PCIe
-    case ExtMem => Some(MemoryPortParams(MasterPortParams( // For back to 64 bits
-      base = x"0_8000_0000",
-      size = x"0_4000_0000",
-      beatBytes = 8,
-      idBits = 4), 1))
     case DDRPortOther => false // For back to not external clock
   })
 )

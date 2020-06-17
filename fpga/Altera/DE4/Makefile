@@ -16,6 +16,7 @@ ROMGEN ?= $(base_dir)/hardware/vlsi_rom_gen_real
 
 BOARD=DE4
 ISACONF=RV64GC
+MBUS=MBus64
 BOOTSRC=BOOTROM
 HYBRID=BoomRocket
 

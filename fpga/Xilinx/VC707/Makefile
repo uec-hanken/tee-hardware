@@ -15,6 +15,7 @@ ROMGEN ?= $(base_dir)/hardware/vlsi_rom_gen_real
 
 BOARD=VC707
 ISACONF=RV64GC
+MBUS=MBus64
 BOOTSRC=BOOTROM
 HYBRID=BoomRocket
 
