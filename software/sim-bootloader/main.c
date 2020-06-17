@@ -144,15 +144,25 @@ uint64_t do_sbox(uint64_t a);
 // Main program
 
 int main(int argc, char** argv) {
+  // Only execute everything in core 0
+  int core = read_csr(mhartid);
+  if (core != 0) {
+    printstr("Core Trapped: ");
+    printhex32(core);
+    while(1);
+  }
+
   unsigned long start_mcycle;
   unsigned long delta_mcycle;
   printstr("Hello world, FSBL\r\n");
+  for(int k = 0; k < 100; k++);
+  tohost_exit(0);
   
   // Do the SBOX acc
-  uint64_t k = do_sbox((uint64_t) 0xdeadbeef);
-  printstr("SBOX of 0xdeadbeef: ");
-  printhex32(k);
-  printstr("\r\n");
+  //uint64_t k = do_sbox((uint64_t) 0xdeadbeef);
+  //printstr("SBOX of 0xdeadbeef: ");
+  //printhex32(k);
+  //printstr("\r\n");
   
   // Test the hardware with the software SHA3
   byte hash[64];

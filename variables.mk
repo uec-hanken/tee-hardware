@@ -154,12 +154,12 @@ else ifeq ($(SUB_PROJECT),hwacha)
 	TOP               ?= ExampleRocketSystem
 else ifeq ($(SUB_PROJECT),teehardware)
 	SBT_PROJECT       ?= teehardware
-	MODEL             ?= TestHarness
-	MODEL_PACKAGE     ?= uec.teehardware.exampletop
-	CONFIG            ?= TEEHWDefaultConfig
-	CONFIG_PACKAGE    ?= uec.teehardware.exampletop
+	MODEL             ?= TEEHWHarness
+	MODEL_PACKAGE     ?= uec.teehardware
+	CONFIG            ?= WithSimulation_$(ISACONF)_$(BOARD)Config_$(DDRCLK)_$(PCIE)_$(MBUS)_$(BOOTSRC)_$(HYBRID)
+	CONFIG_PACKAGE    ?= uec.teehardware
 	GENERATOR_PACKAGE ?= uec.teehardware.exampletop
-	TOP               ?= ExampleRocketSystem
+	TOP               ?= TEEHWSoC
 else
 	SBT_PROJECT       ?= teehardware
 	MODEL             ?= $(SUB_PROJECT)
