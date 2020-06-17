@@ -195,7 +195,7 @@ class ChipPeripherals extends Config((site, here, up) => {
   case PeripheryRandomKey => List(
     RandomParams(address = BigInt(0x64009000L)))
   case IncludePCIe => false
-  case DDRPortOther => true
+  case DDRPortOther => false
 })
 
 class MBus32 extends Config((site, here, up) => {
@@ -206,7 +206,7 @@ class MBus32 extends Config((site, here, up) => {
     idBits = 4), 1))
 })
 
-class MBus64 extends Configgit ((site, here, up) => {
+class MBus64 extends Config((site, here, up) => {
   case ExtMem => Some(MemoryPortParams(MasterPortParams(
     base = x"0_8000_0000",
     size = x"0_4000_0000",
@@ -216,10 +216,10 @@ class MBus64 extends Configgit ((site, here, up) => {
 
 // Chip Configs
 class ChipConfig extends Config(
-  new WithNExtTopInterrupts(0)   ++
-  new WithNBreakpoints(4)    ++
+  new WithNExtTopInterrupts(0) ++
+  new WithNBreakpoints(4) ++
   new ChipPeripherals ++
-  new WithJtagDTM            ++
+  new WithJtagDTM ++
   new WithNMemoryChannels(1) ++
   new BaseConfig().alter((site,here,up) => {
     case SystemBusKey => up(SystemBusKey).copy(
@@ -238,21 +238,18 @@ class ChipConfig extends Config(
       idcodeManufId = 0x489,  // As Assigned by JEDEC to SiFive. Only used in wrappers / test harnesses.
       debugIdleCycles = 5)    // Reasonable guess for synchronization
     case FreqKeyMHz => 100.0
-    case DDRPortOther => true
   })
 )
 
 class DE4Config extends Config(
   new ChipConfig().alter((site,here,up) => {
     case FreqKeyMHz => 100.0
-    case DDRPortOther => true
   })
 )
 
 class TR4Config extends Config(
   new ChipConfig().alter((site,here,up) => {
     case FreqKeyMHz => 100.0
-    case DDRPortOther => false // For back to not external clock
   })
 )
 
@@ -263,7 +260,5 @@ class VC707Config extends Config(
     case PeripheryMaskROMKey => List(
       MaskROMParams(address = BigInt(0x20000000), depth = 2048, name = "BootROM"))
     case PeripherySPIFlashKey => List() // disable SPIFlash
-    case IncludePCIe => false // This is for including the PCIe
-    case DDRPortOther => false // For back to not external clock
   })
 )
