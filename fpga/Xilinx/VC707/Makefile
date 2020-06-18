@@ -13,13 +13,13 @@ bootrom_dir=$(base_dir)/software/freedom-u540-c000-bootloader
 SUB_PROJECT ?= FPGAVC707
 ROMGEN ?= $(base_dir)/hardware/vlsi_rom_gen_real
 
-BOARD=VC707
-ISACONF=RV64GC
-MBUS=MBus64
-BOOTSRC=BOOTROM
-PCIE=WoPCIe
-DDRCLK=WoSepaDDRClk
-HYBRID=BoomRocket
+BOARD?=VC707
+ISACONF?=RV64GC
+MBUS?=MBus64
+BOOTSRC?=BOOTROM
+PCIE?=WoPCIe
+DDRCLK?=WoSepaDDRClk
+HYBRID?=BoomRocket
 SEPARE?=BoomTile,RocketTile,USB11HS,TLAES,TLed25519,TLSHA3
 
 #########################################################################################
