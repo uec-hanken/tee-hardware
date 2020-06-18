@@ -162,7 +162,7 @@ class TEEHWHarness()(implicit p: Parameters) extends Module {
   // Tie down UART
   // NOTE: Why UART does not have a function for tie down that?
   // Only exist testchipip.UARTAdapter.connect
-  UARTAdapter.connect(dut.uart, 115200) // If you want it, just uncomment it
+  UARTAdapter.connect(uart = dut.uart, baudrate = BigInt(115200)) // If you want it, just uncomment it
   /*dut.uart.foreach{ case uart:UARTPortIO =>
       uart.rxd := true.B
       // uart.txd ignored
