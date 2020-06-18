@@ -6,6 +6,7 @@
 #include "ge.h"
 #include "ed25519_test_vectors_rfc8032.h"
 #include "encoding.h"
+#include "uart/uart.h"
 
 typedef unsigned char byte;
 
@@ -147,16 +148,30 @@ int main(int argc, char** argv) {
   // Only execute everything in core 0
   int core = read_csr(mhartid);
   if (core != 0) {
-    printstr("Core Trapped: ");
+    printstr("Core Trapped: \r\n");
     printhex32(core);
+    printstr("\r\n");
     while(1);
   }
 
   unsigned long start_mcycle;
   unsigned long delta_mcycle;
   printstr("Hello world, FSBL\r\n");
-  for(int k = 0; k < 100; k++);
-  tohost_exit(0);
+  
+  // Get to activate the UART flags
+  UART0_REG(UART_REG_TXCTRL) = 1;
+  UART0_REG(UART_REG_RXCTRL) = 1;
+  printstr("The UART has a divider of: ");
+  printhex32(UART0_REG(UART_REG_DIV));
+  UART0_REG(UART_REG_DIV) = uart_min_clk_divisor(100000000ULL, 115200);
+  printstr("\r\nThe UART assigned divider of: ");
+  printhex32(UART0_REG(UART_REG_DIV));
+  printstr("\r\n");
+    
+  uart_puts((void*)UART0_CTRL_ADDR, "UART\r\n");
+  while ((int) _REG32(UART0_CTRL_ADDR, UART_REG_TXFIFO) < 0);
+  //for(int k = 0; k < 1000; k++);
+  //tohost_exit(0);
   
   // Do the SBOX acc
   //uint64_t k = do_sbox((uint64_t) 0xdeadbeef);

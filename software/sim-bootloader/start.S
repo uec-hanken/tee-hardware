@@ -59,22 +59,6 @@ _start:
 	
   smp_pause(s1, s2)
 
-#ifdef TEXT_IN_RAM
-	/* Load text and read-only sections */
-	la a0, _text_lma
-	la a1, _text
-	la a2, _etext
-	bgeu a1, a2, 2f
-1:
-	lw t0, (a0)
-	sw t0, (a1)
-	lw t0, (a1)
-	addi a0, a0, 4
-	addi a1, a1, 4
-	bltu a1, a2, 1b
-2:
-#endif // TEXT_IN_RAM
-
 	/* Load data section */
 	la a0, _data_lma
 	la a1, _data
