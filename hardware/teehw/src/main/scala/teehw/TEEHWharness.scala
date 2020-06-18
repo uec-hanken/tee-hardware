@@ -162,11 +162,11 @@ class TEEHWHarness()(implicit p: Parameters) extends Module {
   // Tie down UART
   // NOTE: Why UART does not have a function for tie down that?
   // Only exist testchipip.UARTAdapter.connect
-  // UARTAdapter.connect(dut.uart, 115200) // If you want it, just uncomment it
-  dut.uart.foreach{ case uart:UARTPortIO =>
+  UARTAdapter.connect(dut.uart, 115200) // If you want it, just uncomment it
+  /*dut.uart.foreach{ case uart:UARTPortIO =>
       uart.rxd := true.B
       // uart.txd ignored
-  }
+  }*/ // If you want to activate the tie down, uncomment these
 
   // Tie down qspi and spi
   // NOTE: Those also does not have a function for tie down

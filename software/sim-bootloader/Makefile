@@ -21,7 +21,7 @@ CFLAGS_ARCH=-march=rv32imac -mabi=ilp32
 endif
 
 exe = sim-bootloader.elf
-OBJS = start.o main.o memcpy.o strlen.o tiny-AES-c/aes.o sha3/sha3.o ed25519/fe.o ed25519/ge.o ed25519/keypair.o ed25519/sc.o ed25519/sign.o ed25519/verify.o
+OBJS = start.o main.o memcpy.o strlen.o tiny-AES-c/aes.o sha3/sha3.o ed25519/fe.o ed25519/ge.o ed25519/keypair.o ed25519/sc.o ed25519/sign.o ed25519/verify.o uart/uart.o
 INCLUDE = -I. -I./tiny-AES-c -I./sha3 -I./ed25519 -I../../hardware/chipyard/tests
 CFLAGS = $(CFLAGS_ARCH) -mcmodel=medany
 LDFLAGS = $(CFLAGS_ARCH) -Os -nostartfiles -nostdlib -Wl,-Bstatic,-T,./ram.lds,-Map,$(addsuffix .map, $(basename $(exe))),--strip-debug

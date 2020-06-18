@@ -13,6 +13,7 @@
 #include "devices/ed25519.h"
 #include "devices/aes.h"
 #include "devices/random.h"
+#include "devices/uart.h"
 
 #define CLINT_CTRL_ADDR _AC(0x2000000,UL)
 #define CLINT_CTRL_SIZE _AC(0x10000,UL)
@@ -26,6 +27,8 @@
 #define USB11HS_CTRL_SIZE   _AC(0x1000,UL)
 #define RANDOM_CTRL_ADDR   _AC(0x64009000,UL)
 #define RANDOM_CTRL_SIZE   _AC(0x1000,UL)
+#define UART0_CTRL_ADDR   _AC(0x64000000,UL)
+#define UART0_CTRL_SIZE   _AC(0x1000,UL)
 
 
 // Helper functions
@@ -46,6 +49,8 @@
 #define AES_REG64(offset) _REG64(AES_CTRL_ADDR, offset)
 #define RANDOM_REG(offset) _REG32(RANDOM_CTRL_ADDR, offset)
 #define RANDOM_REG64(offset) _REG64(RANDOM_CTRL_ADDR, offset)
+#define UART0_REG(offset) _REG32(UART0_CTRL_ADDR, offset)
+#define UART0_REG64(offset) _REG64(UART0_CTRL_ADDR, offset)
 
 // Helpers for getting and setting individual bit fields, shifting the values
 // for you.

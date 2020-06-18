@@ -25,6 +25,7 @@ interrupt_loop: // trigger MSIP interrupts for other harts so that they also boo
 _hang: // reset vector
   la a0, _start      // on MSIP interrupt, go to _start
   csrw mtvec, a0
+  csrwi 0x7c1, 0x8   // Disables the Out-of-Order execution of boom
   li a0, 8           // MIE or MSIP bit
   csrw mie, a0       // set only MSIP in MIE CSR
   csrw mideleg, zero // no delegation
