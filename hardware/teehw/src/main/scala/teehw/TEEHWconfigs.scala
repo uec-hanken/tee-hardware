@@ -253,7 +253,6 @@ class ChipConfig extends Config(
   new WithNBreakpoints(4) ++
   new ChipPeripherals ++
   new WithJtagDTM ++
-  new WithNMemoryChannels(1) ++
   new chipyard.config.WithL2TLBs(entries = 1024) ++               // use L2 TLBs
   new freechips.rocketchip.subsystem.WithInclusiveCache ++        // use Sifive L2 cache
   new WithCoherentBusTopology ++                                  // This adds a L2 cache
@@ -282,12 +281,16 @@ class ChipConfig extends Config(
 class DE4Config extends Config(
   new ChipConfig().alter((site,here,up) => {
     case FreqKeyMHz => 100.0
+    /* DE4 is not support PCIe (yet) */
+    case IncludePCIe => false
   })
 )
 
 class TR4Config extends Config(
   new ChipConfig().alter((site,here,up) => {
     case FreqKeyMHz => 100.0
+    /* TR4 is not support PCIe (yet) */
+    case IncludePCIe => false
   })
 )
 
