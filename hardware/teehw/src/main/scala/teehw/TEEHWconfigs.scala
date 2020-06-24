@@ -95,6 +95,7 @@ class WithMiniBoom(n: Int) extends Config((site, here, up) => {
         maxBrCount = 2, numFetchBufferEntries = 8, ftq = FtqParameters(nEntries = 4),
         nPerfCounters = 1,
         fpu = Some(freechips.rocketchip.tile.FPUParams(sfmaLatency = 4, dfmaLatency = 4, divSqrt = true)),
+        nL2TLBEntries = 256,
         // WithTAGELBPD
         bpdMaxMetaLength = 120,
         globalHistoryLength = 64,
@@ -139,7 +140,8 @@ class WithSmallCacheBigCore(n: Int) extends Config((site, here, up) => {
   case RocketTilesKey => {
     val big = RocketTileParams(
       core = RocketCoreParams(mulDiv = Some(MulDivParams(
-        mulUnroll = 8, mulEarlyOut = true, divEarlyOut = true))),
+        mulUnroll = 8, mulEarlyOut = true, divEarlyOut = true)),
+        nL2TLBEntries = 256),
       dcache = Some(DCacheParams(
         rowBits = site(SystemBusKey).beatBits,
         nSets = 16, nWays = 1, nMSHRs = 0,
@@ -153,17 +155,18 @@ class WithSmallCacheBigCore(n: Int) extends Config((site, here, up) => {
 })
 
 //Only Boom: 2 cores
-class Boom extends Config( new WithNBoomCores(2) )
+class Boom extends Config( new WithNBoomCores(2) ++ new chipyard.config.WithL2TLBs(entries = 1024))
 class BoomReduced extends Config( new WithMiniBoom(2) )
 
 //Only Rocket: 2 cores
-class Rocket extends Config( new WithNBigCores(2) )
+class Rocket extends Config( new WithNBigCores(2) ++ new chipyard.config.WithL2TLBs(entries = 1024) )
 class RocketReduced extends Config( new WithSmallCacheBigCore(2) )
 
 class BoomRocket extends Config(
   new WithRenumberHarts(rocketFirst = false) ++ //Boom first, Rocket second
   new WithNBoomCores(1) ++
-  new WithNBigCores(1) )
+  new WithNBigCores(1) ++
+  new chipyard.config.WithL2TLBs(entries = 1024) ) // use L2 TLBs
 class BoomRocketReduced extends Config(
   new WithRenumberHarts(rocketFirst = false) ++ //Boom first, Rocket second
   new WithMiniBoom(1) ++
@@ -172,7 +175,8 @@ class BoomRocketReduced extends Config(
 class RocketBoom extends Config(
   new WithRenumberHarts(rocketFirst = true) ++ //Rocket first, Boom second
   new WithNBoomCores(1) ++
-  new WithNBigCores(1) )
+  new WithNBigCores(1) ++
+  new chipyard.config.WithL2TLBs(entries = 1024) ) // use L2 TLBs
 class RocketBoomReduced extends Config(
   new WithRenumberHarts(rocketFirst = true) ++ //Rocket first, Boom second
   new WithMiniBoom(1) ++
@@ -253,7 +257,6 @@ class ChipConfig extends Config(
   new WithNBreakpoints(4) ++
   new ChipPeripherals ++
   new WithJtagDTM ++
-  new chipyard.config.WithL2TLBs(entries = 1024) ++               // use L2 TLBs
   new freechips.rocketchip.subsystem.WithInclusiveCache ++        // use Sifive L2 cache
   new WithCoherentBusTopology ++                                  // This adds a L2 cache
   //new WithIncoherentBusTopology ++ // This was the previous one
