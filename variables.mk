@@ -156,7 +156,7 @@ else ifeq ($(SUB_PROJECT),teehardware)
 	SBT_PROJECT       ?= teehardware
 	MODEL             ?= TEEHWHarness
 	MODEL_PACKAGE     ?= uec.teehardware
-	CONFIG            ?= WithSimulation_$(ISACONF)_$(MBUS)_$(DDRCLK)_$(PCIE)_$(BOARD)Config_$(BOOTSRC)_$(HYBRID)
+	CONFIG            ?= WithSimulation_$(ISACONF)_$(MBUS)_$(BOARD)Config_$(DDRCLK)_$(PCIE)_$(BOOTSRC)_$(HYBRID)
 	CONFIG_PACKAGE    ?= uec.teehardware
 	GENERATOR_PACKAGE ?= uec.teehardware.exampletop
 	TOP               ?= TEEHWSystem
@@ -164,7 +164,7 @@ else
 	SBT_PROJECT       ?= teehardware
 	MODEL             ?= $(SUB_PROJECT)
 	MODEL_PACKAGE     ?= uec.teehardware
-	CONFIG            ?= $(ISACONF)_$(MBUS)_$(DDRCLK)_$(PCIE)_$(BOARD)Config_$(BOOTSRC)_$(HYBRID)
+	CONFIG            ?= $(ISACONF)_$(MBUS)_$(BOARD)Config_$(DDRCLK)_$(PCIE)_$(BOOTSRC)_$(HYBRID)
 	CONFIG_PACKAGE    ?= uec.teehardware
 	GENERATOR_PACKAGE ?= uec.teehardware.exampletop
 	TOP               ?= TEEHWSoC

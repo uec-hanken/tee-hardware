@@ -238,7 +238,6 @@ class ChipConfig extends Config(
   new WithNBreakpoints(4) ++
   new ChipPeripherals ++
   new WithJtagDTM ++
-  new WithNMemoryChannels(1) ++
   new BaseConfig().alter((site,here,up) => {
     case SystemBusKey => up(SystemBusKey).copy(
       errorDevice = Some(DevNullParams(
@@ -262,12 +261,16 @@ class ChipConfig extends Config(
 class DE4Config extends Config(
   new ChipConfig().alter((site,here,up) => {
     case FreqKeyMHz => 100.0
+    /* DE4 is not support PCIe (yet) */
+    case IncludePCIe => false
   })
 )
 
 class TR4Config extends Config(
   new ChipConfig().alter((site,here,up) => {
     case FreqKeyMHz => 100.0
+    /* TR4 is not support PCIe (yet) */
+    case IncludePCIe => false
   })
 )
 
