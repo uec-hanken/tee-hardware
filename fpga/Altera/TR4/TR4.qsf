@@ -719,150 +719,174 @@ set_location_assignment PIN_AN7 -to HSMB_TX_p[16]
 #============================================================
 # HSMC
 #============================================================
+#set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO0_D[6]
+#set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO0_D[7]
+#set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO0_D[8]
+#set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO0_D[9]
+#set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO0_D[10]
+#set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO0_D[11]
+#set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO0_D[12]
+#set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO0_D[13]
+#set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO0_D[14]
+#set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO0_D[15]
+#set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO0_D[16]
+#set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO0_D[17]
+#set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO0_D[18]
+#set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO0_D[19]
+#set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO0_D[20]
+#set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO0_D[21]
+#set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO0_D[22]
+#set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO0_D[23]
+#set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO0_D[24]
+#set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO0_D[25]
+#set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO0_D[26]
+#set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO0_D[27]
+#set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO0_D[29]
+#set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO0_D[31]
+#set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO0_D[33]
+#set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO0_D[35]
+#set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO1_D[0]
+#set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO1_D[1]
+#set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO1_D[2]
+#set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO1_D[3]
+#set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO1_D[5]
+#set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO1_D[7]
+#set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO1_D[9]
+#set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO1_D[11]
+#set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO1_D[12]
+#set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO1_D[13]
+#set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO1_D[14]
+#set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO1_D[15]
+#set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO1_D[16]
+#set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO1_D[17]
+#set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO1_D[19]
+#set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO1_D[21]
+#set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO1_D[23]
+#set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO1_D[25]
+#set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO1_D[26]
+#set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO1_D[27]
+#set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO1_D[28]
+#set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO1_D[29]
+#set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO1_D[30]
+#set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO1_D[31]
+#set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO1_D[32]
+#set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO1_D[33]
+#set_location_assignment PIN_AC32 -to GPIO0_D[6]
+#set_location_assignment PIN_AH33 -to GPIO0_D[7]
+#set_location_assignment PIN_AH34 -to GPIO0_D[8]
+#set_location_assignment PIN_AJ34 -to GPIO0_D[9]
+#set_location_assignment PIN_AH35 -to GPIO0_D[10]
+#set_location_assignment PIN_AJ35 -to GPIO0_D[11]
+#set_location_assignment PIN_AK34 -to GPIO0_D[12]
+#set_location_assignment PIN_AL34 -to GPIO0_D[13]
+#set_location_assignment PIN_AK35 -to GPIO0_D[14]
+#set_location_assignment PIN_AL35 -to GPIO0_D[15]
+#set_location_assignment PIN_AM34 -to GPIO0_D[16]
+#set_location_assignment PIN_AN34 -to GPIO0_D[17]
+#set_location_assignment PIN_AM35 -to GPIO0_D[18]
+#set_location_assignment PIN_AN35 -to GPIO0_D[19]
+#set_location_assignment PIN_AJ32 -to GPIO0_D[20]
+#set_location_assignment PIN_AJ26 -to GPIO0_D[21]
+#set_location_assignment PIN_AK33 -to GPIO0_D[22]
+#set_location_assignment PIN_AK26 -to GPIO0_D[23]
+#set_location_assignment PIN_AF25 -to GPIO0_D[24]
+#set_location_assignment PIN_AV29 -to GPIO0_D[25]
+#set_location_assignment PIN_AG25 -to GPIO0_D[26]
+#set_location_assignment PIN_AW30 -to GPIO0_D[27]
+#set_location_assignment PIN_AT28 -to GPIO0_D[29]
+#set_location_assignment PIN_AU28 -to GPIO0_D[31]
+#set_location_assignment PIN_AP28 -to GPIO0_D[33]
+#set_location_assignment PIN_AR28 -to GPIO0_D[35]
+#set_location_assignment PIN_AB27 -to GPIO1_D[0]
+#set_location_assignment PIN_AE25 -to GPIO1_D[1]
+#set_location_assignment PIN_AB28 -to GPIO1_D[2]
+#set_location_assignment PIN_AD25 -to GPIO1_D[3]
+#set_location_assignment PIN_AU29 -to GPIO1_D[5]
+#set_location_assignment PIN_AT29 -to GPIO1_D[7]
+#set_location_assignment PIN_AW33 -to GPIO1_D[9]
+#set_location_assignment PIN_AW34 -to GPIO1_D[11]
+#set_location_assignment PIN_AW31 -to GPIO1_D[12]
+#set_location_assignment PIN_AH24 -to GPIO1_D[13]
+#set_location_assignment PIN_AV31 -to GPIO1_D[14]
+#set_location_assignment PIN_AG24 -to GPIO1_D[15]
+#set_location_assignment PIN_AL27 -to GPIO1_D[16]
+#set_location_assignment PIN_AW27 -to GPIO1_D[17]
+#set_location_assignment PIN_AW28 -to GPIO1_D[19]
+#set_location_assignment PIN_AD30 -to GPIO1_D[21]
+#set_location_assignment PIN_AD31 -to GPIO1_D[23]
+#set_location_assignment PIN_AE30 -to GPIO1_D[25]
+#set_location_assignment PIN_AB31 -to GPIO1_D[26]
+#set_location_assignment PIN_AE31 -to GPIO1_D[27]
+#set_location_assignment PIN_AG31 -to GPIO1_D[28]
+#set_location_assignment PIN_AE28 -to GPIO1_D[29]
+#set_location_assignment PIN_AG32 -to GPIO1_D[30]
+#set_location_assignment PIN_AE29 -to GPIO1_D[31]
+#set_location_assignment PIN_AF29 -to GPIO1_D[32]
+#set_location_assignment PIN_AD28 -to GPIO1_D[33]
+
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to USBFullSpeed
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to USBWireDataIn[0]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to USBWireDataIn[1]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to USBWireCtrlOut
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to USBWireDataOut[1]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to USBWireDataOut[0]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO0_D[6]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO0_D[7]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO0_D[8]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO0_D[9]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO0_D[10]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO0_D[11]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO0_D[12]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO0_D[13]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO0_D[14]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO0_D[15]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO0_D[16]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO0_D[17]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO0_D[18]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO0_D[19]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO0_D[20]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO0_D[21]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO0_D[22]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO0_D[23]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO0_D[24]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO0_D[25]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO0_D[26]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO0_D[27]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sdio_sdio_clk
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO0_D[29]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sdio_sdio_cmd
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO0_D[31]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sdio_sdio_dat_0
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO0_D[33]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to sdio_sdio_dat_3
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO0_D[35]
-set_location_assignment PIN_AF34 -to USBFullSpeed
-set_location_assignment PIN_AG34 -to USBWireDataIn[0]
-set_location_assignment PIN_AE35 -to USBWireDataIn[1]
-set_location_assignment PIN_AG35 -to USBWireCtrlOut
-set_location_assignment PIN_AC31 -to USBWireDataOut[1]
-set_location_assignment PIN_AH32 -to USBWireDataOut[0]
-set_location_assignment PIN_AC32 -to GPIO0_D[6]
-set_location_assignment PIN_AH33 -to GPIO0_D[7]
-set_location_assignment PIN_AH34 -to GPIO0_D[8]
-set_location_assignment PIN_AJ34 -to GPIO0_D[9]
-set_location_assignment PIN_AH35 -to GPIO0_D[10]
-set_location_assignment PIN_AJ35 -to GPIO0_D[11]
-set_location_assignment PIN_AK34 -to GPIO0_D[12]
-set_location_assignment PIN_AL34 -to GPIO0_D[13]
-set_location_assignment PIN_AK35 -to GPIO0_D[14]
-set_location_assignment PIN_AL35 -to GPIO0_D[15]
-set_location_assignment PIN_AM34 -to GPIO0_D[16]
-set_location_assignment PIN_AN34 -to GPIO0_D[17]
-set_location_assignment PIN_AM35 -to GPIO0_D[18]
-set_location_assignment PIN_AN35 -to GPIO0_D[19]
-set_location_assignment PIN_AJ32 -to GPIO0_D[20]
-set_location_assignment PIN_AJ26 -to GPIO0_D[21]
-set_location_assignment PIN_AK33 -to GPIO0_D[22]
-set_location_assignment PIN_AK26 -to GPIO0_D[23]
-set_location_assignment PIN_AF25 -to GPIO0_D[24]
-set_location_assignment PIN_AV29 -to GPIO0_D[25]
-set_location_assignment PIN_AG25 -to GPIO0_D[26]
-set_location_assignment PIN_AW30 -to GPIO0_D[27]
-set_location_assignment PIN_AV32 -to sdio_sdio_clk
-set_location_assignment PIN_AT28 -to GPIO0_D[29]
-set_location_assignment PIN_AW32 -to sdio_sdio_cmd
-set_location_assignment PIN_AU28 -to GPIO0_D[31]
-set_location_assignment PIN_AV28 -to sdio_sdio_dat_0
-set_location_assignment PIN_AP28 -to GPIO0_D[33]
-set_location_assignment PIN_AW29 -to sdio_sdio_dat_3
-set_location_assignment PIN_AR28 -to GPIO0_D[35]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO1_D[0]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO1_D[1]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO1_D[2]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO1_D[3]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to jtag_jtag_TDI
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO1_D[5]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to jtag_jtag_TMS
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO1_D[7]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to jtag_jtag_TCK
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO1_D[9]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to jtag_jtag_TDO
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO1_D[11]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO1_D[12]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO1_D[13]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO1_D[14]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO1_D[15]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO1_D[16]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO1_D[17]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to qspi_qspi_cs
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO1_D[19]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to qspi_qspi_sck
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO1_D[21]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to qspi_qspi_miso
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO1_D[23]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to qspi_qspi_mosi
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO1_D[25]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO1_D[26]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO1_D[27]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO1_D[28]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO1_D[29]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO1_D[30]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO1_D[31]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO1_D[32]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO1_D[33]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to UART_TXD
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to UART_RXD
-set_location_assignment PIN_AB27 -to GPIO1_D[0]
-set_location_assignment PIN_AE25 -to GPIO1_D[1]
-set_location_assignment PIN_AB28 -to GPIO1_D[2]
-set_location_assignment PIN_AD25 -to GPIO1_D[3]
-set_location_assignment PIN_AP27 -to jtag_jtag_TDI
-set_location_assignment PIN_AU29 -to GPIO1_D[5]
-set_location_assignment PIN_AN27 -to jtag_jtag_TMS
-set_location_assignment PIN_AT29 -to GPIO1_D[7]
-set_location_assignment PIN_AL25 -to jtag_jtag_TCK
-set_location_assignment PIN_AW33 -to GPIO1_D[9]
-set_location_assignment PIN_AP26 -to jtag_jtag_TDO
-set_location_assignment PIN_AW34 -to GPIO1_D[11]
-set_location_assignment PIN_AW31 -to GPIO1_D[12]
-set_location_assignment PIN_AH24 -to GPIO1_D[13]
-set_location_assignment PIN_AV31 -to GPIO1_D[14]
-set_location_assignment PIN_AG24 -to GPIO1_D[15]
-set_location_assignment PIN_AL27 -to GPIO1_D[16]
-set_location_assignment PIN_AW27 -to GPIO1_D[17]
-set_location_assignment PIN_AH26 -to qspi_qspi_cs
-set_location_assignment PIN_AW28 -to GPIO1_D[19]
-set_location_assignment PIN_AK27 -to qspi_qspi_sck
-set_location_assignment PIN_AD30 -to GPIO1_D[21]
-set_location_assignment PIN_AE24 -to qspi_qspi_miso
-set_location_assignment PIN_AD31 -to GPIO1_D[23]
-set_location_assignment PIN_AB30 -to qspi_qspi_mosi
-set_location_assignment PIN_AE30 -to GPIO1_D[25]
-set_location_assignment PIN_AB31 -to GPIO1_D[26]
-set_location_assignment PIN_AE31 -to GPIO1_D[27]
-set_location_assignment PIN_AG31 -to GPIO1_D[28]
-set_location_assignment PIN_AE28 -to GPIO1_D[29]
-set_location_assignment PIN_AG32 -to GPIO1_D[30]
-set_location_assignment PIN_AE29 -to GPIO1_D[31]
-set_location_assignment PIN_AF29 -to GPIO1_D[32]
-set_location_assignment PIN_AD28 -to GPIO1_D[33]
-set_location_assignment PIN_AG30 -to UART_TXD
-set_location_assignment PIN_AD29 -to UART_RXD
+
+#set_location_assignment PIN_AF34 -to USBFullSpeed
+#set_location_assignment PIN_AG34 -to USBWireDataIn[0]
+#set_location_assignment PIN_AE35 -to USBWireDataIn[1]
+#set_location_assignment PIN_AG35 -to USBWireCtrlOut
+#set_location_assignment PIN_AC31 -to USBWireDataOut[1]
+#set_location_assignment PIN_AH32 -to USBWireDataOut[0]
+#set_location_assignment PIN_AV32 -to sdio_sdio_clk
+#set_location_assignment PIN_AW32 -to sdio_sdio_cmd
+#set_location_assignment PIN_AV28 -to sdio_sdio_dat_0
+#set_location_assignment PIN_AW29 -to sdio_sdio_dat_3
+#set_location_assignment PIN_AP27 -to jtag_jtag_TDI
+#set_location_assignment PIN_AN27 -to jtag_jtag_TMS
+#set_location_assignment PIN_AL25 -to jtag_jtag_TCK
+#set_location_assignment PIN_AP26 -to jtag_jtag_TDO
+#set_location_assignment PIN_AH26 -to qspi_qspi_cs
+#set_location_assignment PIN_AK27 -to qspi_qspi_sck
+#set_location_assignment PIN_AE24 -to qspi_qspi_miso
+#set_location_assignment PIN_AB30 -to qspi_qspi_mosi
+#set_location_assignment PIN_AG30 -to UART_TXD
+#set_location_assignment PIN_AD29 -to UART_RXD
+
+set_location_assignment PIN_AC28 -to USBFullSpeed
+set_location_assignment PIN_AK25 -to USBWireDataIn[0]
+set_location_assignment PIN_AB27 -to USBWireDataIn[1]
+set_location_assignment PIN_AJ25 -to USBWireCtrlOut
+set_location_assignment PIN_AB28 -to USBWireDataOut[1]
+set_location_assignment PIN_AM26 -to USBWireDataOut[0]
+set_location_assignment PIN_AJ26 -to sdio_sdio_clk
+set_location_assignment PIN_AF25 -to sdio_sdio_cmd
+set_location_assignment PIN_AK26 -to sdio_sdio_dat_0
+set_location_assignment PIN_AG25 -to sdio_sdio_dat_3
+set_location_assignment PIN_AG35 -to jtag_jtag_TDI
+set_location_assignment PIN_AG34 -to jtag_jtag_TMS
+set_location_assignment PIN_AB31 -to jtag_jtag_TCK
+set_location_assignment PIN_AB30 -to jtag_jtag_TDO
+set_location_assignment PIN_AT28 -to qspi_qspi_cs
+set_location_assignment PIN_AN26 -to qspi_qspi_sck
+set_location_assignment PIN_AP28 -to qspi_qspi_miso
+set_location_assignment PIN_AR28 -to qspi_qspi_mosi
+set_location_assignment PIN_AE35 -to UART_TXD
+set_location_assignment PIN_AF34 -to UART_RXD
+
 #============================================================
 # HSMD
 #============================================================
