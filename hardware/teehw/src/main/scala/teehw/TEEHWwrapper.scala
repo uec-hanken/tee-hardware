@@ -637,16 +637,16 @@ class FPGADE4(implicit val p :Parameters) extends RawModule {
     ).module)
 
     // Clock and reset (for TL stuff)
-    clock := mod.io.ckrst.dimmclk_clk
+    clock := mod.io.ckrst.qsys_clk
     reset := SLIDE_SW(3)
-    chip.sys_clk := mod.io.ckrst.dimmclk_clk
+    chip.sys_clk := mod.io.ckrst.qsys_clk
     chip.rst_n := !SLIDE_SW(3)
     if(p(DDRPortOther)) {
-      chip.ChildClock.get := mod.io.ckrst.ext_clk_clk
+      chip.ChildClock.get := mod.io.ckrst.io_clk
       chip.ChildReset.get := SLIDE_SW(3)
-      mod.clock := mod.io.ckrst.ext_clk_clk
+      mod.clock := mod.io.ckrst.io_clk
     }
-    else mod.clock := mod.io.ckrst.dimmclk_clk
+    else mod.clock := mod.io.ckrst.qsys_clk
 
     // Quartus Platform connections
     M1_DDR2_addr := mod.io.qport.memory_mem_a
@@ -665,10 +665,9 @@ class FPGADE4(implicit val p :Parameters) extends RawModule {
     M1_DDR2_odt := mod.io.qport.memory_mem_odt
     mod.io.qport.oct_rdn := M1_DDR2_oct_rdn
     mod.io.qport.oct_rup := M1_DDR2_oct_rup
-    mod.io.ckrst.refclk_sys_clk := OSC_50_BANK3.asUInt()
-    mod.io.ckrst.refclk_usb_clk := OSC_50_BANK5.asUInt()
-    mod.io.ckrst.reset_sys_reset_n := CPU_RESET_n
-    mod.io.ckrst.reset_usb_reset_n := CPU_RESET_n
+    mod.io.ckrst.ddr_ref_clk := OSC_50_BANK3.asUInt()
+    mod.io.ckrst.qsys_ref_clk := OSC_50_BANK5.asUInt()
+    mod.io.ckrst.system_reset_n := CPU_RESET_n
 
     // TileLink Interface from platform
     mod.io.tlport.a <> chip.tlport.a
@@ -701,7 +700,7 @@ class FPGADE4(implicit val p :Parameters) extends RawModule {
       USBWireCtrlOut.get := chip.usb11hs.get.USBWireCtrlOut
       USBWireDataOut.get := chip.usb11hs.get.USBWireDataOut
 
-      chip.usb11hs.get.usbClk := mod.io.ckrst.usb_clk_clk
+      chip.usb11hs.get.usbClk := mod.io.ckrst.usb_clk
       
       // Removed by Thuc
       //USBWireDataOutTick.get := chip.usb11hs.get.USBWireDataOutTick
@@ -905,16 +904,16 @@ class FPGATR4(implicit val p :Parameters) extends RawModule {
     ).module)
 
     // Clock and reset (for TL stuff)
-    clock := mod.io.ckrst.dimmclk_clk
+    clock := mod.io.ckrst.qsys_clk
     reset := SW(1)
-    chip.sys_clk := mod.io.ckrst.dimmclk_clk
+    chip.sys_clk := mod.io.ckrst.qsys_clk
     chip.rst_n := !SW(2)
     if(p(DDRPortOther)) {
-      chip.ChildClock.get := mod.io.ckrst.ext_clk_clk
+      chip.ChildClock.get := mod.io.ckrst.io_clk
       chip.ChildReset.get := SW(3)
-      mod.clock := mod.io.ckrst.ext_clk_clk
+      mod.clock := mod.io.ckrst.io_clk
     }
-    else mod.clock := mod.io.ckrst.dimmclk_clk
+    else mod.clock := mod.io.ckrst.qsys_clk
 
     // Quartus Platform connections
     mem_a := mod.io.qport.memory_mem_a
@@ -934,10 +933,9 @@ class FPGATR4(implicit val p :Parameters) extends RawModule {
     mem_reset_n := mod.io.qport.memory_mem_reset_n.getOrElse(true.B)
     mod.io.qport.oct_rdn := mem_oct_rdn
     mod.io.qport.oct_rup := mem_oct_rup
-    mod.io.ckrst.refclk_sys_clk := OSC_50_BANK1.asUInt()
-    mod.io.ckrst.refclk_usb_clk := OSC_50_BANK4.asUInt() // TODO: This is okay?
-    mod.io.ckrst.reset_sys_reset_n := BUTTON(2)
-    mod.io.ckrst.reset_usb_reset_n := BUTTON(3)
+    mod.io.ckrst.ddr_ref_clk := OSC_50_BANK1.asUInt()
+    mod.io.ckrst.qsys_ref_clk := OSC_50_BANK4.asUInt() // TODO: This is okay?
+    mod.io.ckrst.system_reset_n := BUTTON(2)
 
     // TileLink Interface from platform
     mod.io.tlport.a <> chip.tlport.a
@@ -966,7 +964,7 @@ class FPGATR4(implicit val p :Parameters) extends RawModule {
       USBWireCtrlOut.get := chip.usb11hs.get.USBWireCtrlOut
       USBWireDataOut.get := chip.usb11hs.get.USBWireDataOut
 
-      chip.usb11hs.get.usbClk := mod.io.ckrst.usb_clk_clk
+      chip.usb11hs.get.usbClk := mod.io.ckrst.usb_clk
       
       //USBWireDataOutTick.get := chip.usb11hs.get.USBWireDataOutTick
       //USBWireDataInTick.get := chip.usb11hs.get.USBWireDataInTick

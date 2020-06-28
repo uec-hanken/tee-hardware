@@ -2003,72 +2003,6 @@ set_instance_assignment -name MEM_INTERFACE_DELAY_CHAIN_CONFIG FLEXIBLE_TIMING -
 set_instance_assignment -name MEM_INTERFACE_DELAY_CHAIN_CONFIG FLEXIBLE_TIMING -to mem_dqs_n[5]
 set_instance_assignment -name MEM_INTERFACE_DELAY_CHAIN_CONFIG FLEXIBLE_TIMING -to mem_dqs_n[6]
 set_instance_assignment -name MEM_INTERFACE_DELAY_CHAIN_CONFIG FLEXIBLE_TIMING -to mem_dqs_n[7]
-set_instance_assignment -name GLOBAL_SIGNAL "GLOBAL CLOCK" -to u0|uniphy_ddr3|p0|controller_phy_inst|memphy_top_inst|upll_memphy|altpll_component|auto_generated|wire_pll1_clk[1]
-set_instance_assignment -name GLOBAL_SIGNAL "GLOBAL CLOCK" -to u0|uniphy_ddr3|p0|controller_phy_inst|memphy_top_inst|upll_memphy|altpll_component|auto_generated|wire_pll1_clk[2]
-set_instance_assignment -name GLOBAL_SIGNAL "DUAL-REGIONAL CLOCK" -to u0|uniphy_ddr3|p0|controller_phy_inst|memphy_top_inst|upll_memphy|altpll_component|auto_generated|wire_pll1_clk[3]
-set_instance_assignment -name GLOBAL_SIGNAL "DUAL-REGIONAL CLOCK" -to u0|uniphy_ddr3|p0|controller_phy_inst|memphy_top_inst|upll_memphy|altpll_component|auto_generated|wire_pll1_clk[5]
-set_instance_assignment -name GLOBAL_SIGNAL "DUAL-REGIONAL CLOCK" -to u0|uniphy_ddr3|p0|controller_phy_inst|memphy_top_inst|upll_memphy|altpll_component|auto_generated|wire_pll1_clk[6]
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|uniphy_ddr3|p0|controller_phy_inst|memphy_top_inst|umemphy|ureset|phy_reset_mem_stable_n
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|uniphy_ddr3|p0|controller_phy_inst|memphy_top_inst|umemphy|ureset|phy_reset_n
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|uniphy_ddr3|p0|controller_phy_inst|memphy_top_inst|umemphy|usequencer|sequencer_inst|sequencer_rw_mgr_inst|rw_mgr_inst|rw_mgr_core_inst|rw_soft_reset_n
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|uniphy_ddr3|p0|controller_phy_inst|memphy_top_inst|umemphy|uread_datapath|reset_n_fifo_write_side[0]
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|uniphy_ddr3|p0|controller_phy_inst|memphy_top_inst|umemphy|uread_datapath|reset_n_fifo_wraddress[0]
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|uniphy_ddr3|p0|controller_phy_inst|memphy_top_inst|umemphy|uread_datapath|reset_n_fifo_write_side[1]
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|uniphy_ddr3|p0|controller_phy_inst|memphy_top_inst|umemphy|uread_datapath|reset_n_fifo_wraddress[1]
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|uniphy_ddr3|p0|controller_phy_inst|memphy_top_inst|umemphy|uread_datapath|reset_n_fifo_write_side[2]
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|uniphy_ddr3|p0|controller_phy_inst|memphy_top_inst|umemphy|uread_datapath|reset_n_fifo_wraddress[2]
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|uniphy_ddr3|p0|controller_phy_inst|memphy_top_inst|umemphy|uread_datapath|reset_n_fifo_write_side[3]
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|uniphy_ddr3|p0|controller_phy_inst|memphy_top_inst|umemphy|uread_datapath|reset_n_fifo_wraddress[3]
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|uniphy_ddr3|p0|controller_phy_inst|memphy_top_inst|umemphy|uread_datapath|reset_n_fifo_write_side[4]
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|uniphy_ddr3|p0|controller_phy_inst|memphy_top_inst|umemphy|uread_datapath|reset_n_fifo_wraddress[4]
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|uniphy_ddr3|p0|controller_phy_inst|memphy_top_inst|umemphy|uread_datapath|reset_n_fifo_write_side[5]
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|uniphy_ddr3|p0|controller_phy_inst|memphy_top_inst|umemphy|uread_datapath|reset_n_fifo_wraddress[5]
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|uniphy_ddr3|p0|controller_phy_inst|memphy_top_inst|umemphy|uread_datapath|reset_n_fifo_write_side[6]
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|uniphy_ddr3|p0|controller_phy_inst|memphy_top_inst|umemphy|uread_datapath|reset_n_fifo_wraddress[6]
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|uniphy_ddr3|p0|controller_phy_inst|memphy_top_inst|umemphy|uread_datapath|reset_n_fifo_write_side[7]
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|uniphy_ddr3|p0|controller_phy_inst|memphy_top_inst|umemphy|uread_datapath|reset_n_fifo_wraddress[7]
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|uniphy_ddr3|p0|controller_phy_inst|memphy_top_inst|umemphy|uread_datapath|read_capture_clk_div2[0]
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|uniphy_ddr3|p0|controller_phy_inst|memphy_top_inst|umemphy|uread_datapath|read_capture_clk_div2[1]
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|uniphy_ddr3|p0|controller_phy_inst|memphy_top_inst|umemphy|uread_datapath|read_capture_clk_div2[2]
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|uniphy_ddr3|p0|controller_phy_inst|memphy_top_inst|umemphy|uread_datapath|read_capture_clk_div2[3]
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|uniphy_ddr3|p0|controller_phy_inst|memphy_top_inst|umemphy|uread_datapath|read_capture_clk_div2[4]
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|uniphy_ddr3|p0|controller_phy_inst|memphy_top_inst|umemphy|uread_datapath|read_capture_clk_div2[5]
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|uniphy_ddr3|p0|controller_phy_inst|memphy_top_inst|umemphy|uread_datapath|read_capture_clk_div2[6]
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|uniphy_ddr3|p0|controller_phy_inst|memphy_top_inst|umemphy|uread_datapath|read_capture_clk_div2[7]
-set_instance_assignment -name ENABLE_BENEFICIAL_SKEW_OPTIMIZATION_FOR_NON_GLOBAL_CLOCKS ON -to u0|uniphy_ddr3|p0
-set_instance_assignment -name PLL_ENFORCE_USER_PHASE_SHIFT ON -to u0|uniphy_ddr3|p0|controller_phy_inst|memphy_top_inst|upll_memphy|altpll_component|auto_generated|pll1
-set_instance_assignment -name GLOBAL_SIGNAL "GLOBAL CLOCK" -to u0|uniphy_ddr3|pll0|upll_memphy|auto_generated|clk[1]
-set_instance_assignment -name GLOBAL_SIGNAL "GLOBAL CLOCK" -to u0|uniphy_ddr3|pll0|upll_memphy|auto_generated|clk[2]
-set_instance_assignment -name GLOBAL_SIGNAL "DUAL-REGIONAL CLOCK" -to u0|uniphy_ddr3|pll0|upll_memphy|auto_generated|clk[3]
-set_instance_assignment -name GLOBAL_SIGNAL "DUAL-REGIONAL CLOCK" -to u0|uniphy_ddr3|pll0|upll_memphy|auto_generated|clk[5]
-set_instance_assignment -name GLOBAL_SIGNAL "DUAL-REGIONAL CLOCK" -to u0|uniphy_ddr3|pll0|upll_memphy|auto_generated|clk[6]
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|uniphy_ddr3|p0|umemphy|ureset|phy_reset_mem_stable_n
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|uniphy_ddr3|p0|umemphy|ureset|phy_reset_n
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|uniphy_ddr3|s0|sequencer_rw_mgr_inst|rw_mgr_inst|rw_mgr_core_inst|rw_soft_reset_n
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|uniphy_ddr3|p0|umemphy|uread_datapath|reset_n_fifo_write_side[0]
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|uniphy_ddr3|p0|umemphy|uread_datapath|reset_n_fifo_wraddress[0]
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|uniphy_ddr3|p0|umemphy|uread_datapath|reset_n_fifo_write_side[1]
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|uniphy_ddr3|p0|umemphy|uread_datapath|reset_n_fifo_wraddress[1]
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|uniphy_ddr3|p0|umemphy|uread_datapath|reset_n_fifo_write_side[2]
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|uniphy_ddr3|p0|umemphy|uread_datapath|reset_n_fifo_wraddress[2]
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|uniphy_ddr3|p0|umemphy|uread_datapath|reset_n_fifo_write_side[3]
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|uniphy_ddr3|p0|umemphy|uread_datapath|reset_n_fifo_wraddress[3]
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|uniphy_ddr3|p0|umemphy|uread_datapath|reset_n_fifo_write_side[4]
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|uniphy_ddr3|p0|umemphy|uread_datapath|reset_n_fifo_wraddress[4]
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|uniphy_ddr3|p0|umemphy|uread_datapath|reset_n_fifo_write_side[5]
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|uniphy_ddr3|p0|umemphy|uread_datapath|reset_n_fifo_wraddress[5]
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|uniphy_ddr3|p0|umemphy|uread_datapath|reset_n_fifo_write_side[6]
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|uniphy_ddr3|p0|umemphy|uread_datapath|reset_n_fifo_wraddress[6]
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|uniphy_ddr3|p0|umemphy|uread_datapath|reset_n_fifo_write_side[7]
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|uniphy_ddr3|p0|umemphy|uread_datapath|reset_n_fifo_wraddress[7]
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|uniphy_ddr3|p0|umemphy|uread_datapath|read_capture_clk_div2[0]
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|uniphy_ddr3|p0|umemphy|uread_datapath|read_capture_clk_div2[1]
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|uniphy_ddr3|p0|umemphy|uread_datapath|read_capture_clk_div2[2]
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|uniphy_ddr3|p0|umemphy|uread_datapath|read_capture_clk_div2[3]
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|uniphy_ddr3|p0|umemphy|uread_datapath|read_capture_clk_div2[4]
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|uniphy_ddr3|p0|umemphy|uread_datapath|read_capture_clk_div2[5]
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|uniphy_ddr3|p0|umemphy|uread_datapath|read_capture_clk_div2[6]
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to u0|uniphy_ddr3|p0|umemphy|uread_datapath|read_capture_clk_div2[7]
 set_instance_assignment -name ENABLE_BENEFICIAL_SKEW_OPTIMIZATION_FOR_NON_GLOBAL_CLOCKS ON -to u0|uniphy_ddr3
 set_instance_assignment -name PLL_ENFORCE_USER_PHASE_SHIFT ON -to u0|uniphy_ddr3|pll0|upll_memphy|auto_generated|pll1
 set_instance_assignment -name IO_STANDARD "DIFFERENTIAL 1.5-V SSTL CLASS I" -to mem_ck
@@ -2180,7 +2114,6 @@ set_location_assignment PIN_AR14 -to TEMP_CLK
 set_location_assignment PIN_AP14 -to TEMP_DATA
 set_location_assignment PIN_AH13 -to TEMP_INT_n
 set_location_assignment PIN_AK14 -to TEMP_OVERT_n
-
 
 
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
