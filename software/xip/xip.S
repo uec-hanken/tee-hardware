@@ -58,4 +58,4 @@ boot_core_hart0:   // begin executing code at XIP_TARGET_ADDR
   mret
 
 _dtb:
-  .incbin DEVICE_TREE
+//  .incbin DEVICE_TREE
