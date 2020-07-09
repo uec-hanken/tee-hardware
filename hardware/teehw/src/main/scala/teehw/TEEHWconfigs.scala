@@ -184,14 +184,14 @@ class RocketBoomReduced extends Config(
 
 class BOOTROM extends Config((site, here, up) => {
   case PeripheryMaskROMKey => List(
-    MaskROMParams(address = BigInt(0x10000), depth = 128, name = "BootROM"),
-    MaskROMParams(address = BigInt(0x20000000), depth = 2048, name = "ZSBL"))
+    MaskROMParams(address = BigInt(0x10000), depth = 4096, name = "BootROM"),
+    MaskROMParams(address = BigInt(0x20000000), depth = 4096, name = "ZSBL"))
   case PeripherySPIFlashKey => List() // disable SPIFlash
 })
 
 class QSPI extends Config((site, here, up) => {
   case PeripheryMaskROMKey => List( //move BootROM back to 0x10000
-    MaskROMParams(address = 0x10000, depth = 128, name = "BootROM")) //smallest allowed depth is 16
+    MaskROMParams(address = 0x10000, depth = 4096, name = "BootROM")) //smallest allowed depth is 16
   case PeripherySPIFlashKey => List(
     SPIFlashParams(fAddress = 0x20000000, rAddress = 0x64005000, defaultSampleDel = 3))
 })
@@ -302,8 +302,8 @@ class VC707Config extends Config(
     case FreqKeyMHz => 80.0
     /* Force to use BootROM because VC707 doesn't have enough GPIOs for QSPI */
     case PeripheryMaskROMKey => List(
-      MaskROMParams(address = BigInt(0x10000), depth = 128, name = "BootROM"),
-      MaskROMParams(address = BigInt(0x20000000), depth = 2048, name = "ZSBL"))
+      MaskROMParams(address = BigInt(0x10000), depth = 4096, name = "BootROM"),
+      MaskROMParams(address = BigInt(0x20000000), depth = 4096, name = "ZSBL"))
     case PeripherySPIFlashKey => List() // disable SPIFlash
   })
 )
