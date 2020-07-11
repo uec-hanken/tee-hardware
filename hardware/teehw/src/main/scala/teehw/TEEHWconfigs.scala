@@ -306,6 +306,8 @@ class VC707Config extends Config(
       MaskROMParams(address = BigInt(0x20000000), depth = 4096, name = "BootROM"))
     case TEEHWResetVector => 0x20000000
     case PeripherySPIFlashKey => List() // disable SPIFlash
+    /* Force to disable USB1.1, because there are no pins */
+    case PeripheryUSB11HSKey => List()
   })
 )
 
