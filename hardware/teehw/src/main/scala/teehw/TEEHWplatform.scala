@@ -223,9 +223,9 @@ class TEEHWSystemModule[+L <: TEEHWSystem](_outer: L)
     Some(p)
   } else None
 
-  // Connect the global reset vector to the designed reset
-  // It can be 0x10000 for avoid the hang
-  // But it can be also 0x10040 for debugging purposes
+  // Connect the global reset vector
+  // In BootROM scenario: 0x20000000
+  // In QSPI & sim scenarios: 0x10040
   global_reset_vector := p(TEEHWResetVector).U
 }
 

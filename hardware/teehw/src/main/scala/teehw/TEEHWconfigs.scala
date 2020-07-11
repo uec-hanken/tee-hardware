@@ -184,14 +184,15 @@ class RocketBoomReduced extends Config(
 
 class BOOTROM extends Config((site, here, up) => {
   case PeripheryMaskROMKey => List(
-    MaskROMParams(address = BigInt(0x10000), depth = 4096, name = "BootROM"),
-    MaskROMParams(address = BigInt(0x20000000), depth = 4096, name = "ZSBL"))
+    MaskROMParams(address = BigInt(0x20000000), depth = 4096, name = "BootROM"))
+  case TEEHWResetVector => 0x20000000
   case PeripherySPIFlashKey => List() // disable SPIFlash
 })
 
 class QSPI extends Config((site, here, up) => {
   case PeripheryMaskROMKey => List( //move BootROM back to 0x10000
     MaskROMParams(address = 0x10000, depth = 4096, name = "BootROM")) //smallest allowed depth is 16
+  case TEEHWResetVector => 0x10040
   case PeripherySPIFlashKey => List(
     SPIFlashParams(fAddress = 0x20000000, rAddress = 0x64005000, defaultSampleDel = 3))
 })
@@ -302,15 +303,11 @@ class VC707Config extends Config(
     case FreqKeyMHz => 80.0
     /* Force to use BootROM because VC707 doesn't have enough GPIOs for QSPI */
     case PeripheryMaskROMKey => List(
-      MaskROMParams(address = BigInt(0x10000), depth = 4096, name = "BootROM"),
-      MaskROMParams(address = BigInt(0x20000000), depth = 4096, name = "ZSBL"))
+      MaskROMParams(address = BigInt(0x20000000), depth = 4096, name = "BootROM"))
+    case TEEHWResetVector => 0x20000000
     case PeripherySPIFlashKey => List() // disable SPIFlash
   })
 )
-
-class WithProcessorsInHang extends Config((site,here,up) => {
-  case TEEHWResetVector => 0x10040
-})
 
 import testchipip.SerialKey
 
@@ -319,7 +316,10 @@ class WithSimulation extends Config((site, here, up) => {
   case ExportDebug => up(ExportDebug, site).copy(protocols = Set(DMI))
   // Force also the Serial interface
   case SerialKey => true
-  // Change the Reset Vector
+  /* Force to use QSPI-scenario because then the XIP will be put in the BootROM */
+  /* Simulation needs the hang function in the XIP */
+  case PeripheryMaskROMKey => List(
+    MaskROMParams(address = BigInt(0x10000), depth = 4096, name = "BootROM"))
   case TEEHWResetVector => 0x10040 // The hang vector in this case, to support the Serial load
   // DDRPortOther is unsupported
   case DDRPortOther => false
