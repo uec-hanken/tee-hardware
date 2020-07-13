@@ -27,7 +27,7 @@ elf := xip.elf
 #$(elf): xip.S linker.ld $(dtb)
 #	$(CC) $(CFLAGS) -DXIP_TARGET_ADDR=$(XIP_TARGET_ADDR) -DDEVICE_TREE='"$(dtb)"' $(LFLAGS) -Tlinker.ld -o $@ $<
 $(elf): xip.S linker.ld
-       $(CC) $(CFLAGS) -DXIP_TARGET_ADDR=$(XIP_TARGET_ADDR) $(LFLAGS) -Tlinker.ld -o $@ $<
+	$(CC) $(CFLAGS) -DXIP_TARGET_ADDR=$(XIP_TARGET_ADDR) $(LFLAGS) -Tlinker.ld -o $@ $<
 
 .PHONY: elf
 elf: $(elf)
@@ -55,5 +55,5 @@ $(romgen): $(hex)
 romgen: $(romgen)
 
 .PHONY: clean
-clean::
+clean:
 	rm -rf $(hex) $(elf) $(bin) $(romgen)

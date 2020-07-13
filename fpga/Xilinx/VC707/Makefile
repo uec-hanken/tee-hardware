@@ -16,12 +16,13 @@ ROMGEN ?= $(base_dir)/hardware/vlsi_rom_gen_real
 
 BOARD?=VC707
 ISACONF?=RV64GC
+#VC707 can only use MBus64 #TODO
 MBUS?=MBus64
 BOOTSRC?=BOOTROM
 PCIE?=WoPCIe
 DDRCLK?=WoSepaDDRClk
 HYBRID?=BoomRocket
-SEPARE?=BoomTile,RocketTile,USB11HS,TLAES,TLed25519,TLSHA3
+SEPARE?=BoomTile,RocketTile,TLAES,TLed25519,TLSHA3
 
 #########################################################################################
 # Common rules for FPGA
