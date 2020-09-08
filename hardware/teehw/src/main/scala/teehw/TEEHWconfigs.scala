@@ -1,8 +1,7 @@
 package uec.teehardware
 
 import chisel3._
-import chisel3.util.{log2Up}
-
+import chisel3.util.log2Up
 import freechips.rocketchip.config._
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.devices.debug._
@@ -24,6 +23,7 @@ import boom.common._
 import boom.ifu._
 import boom.exu._
 import boom.lsu._
+import uec.teehardware.opentitan.rv_core_ibex.WithNIbexCores
 //import sifive.freedom.unleashed.DevKitFPGAFrequencyKey
 
 // The number of gpios that we want as input
@@ -181,6 +181,8 @@ class RocketBoomReduced extends Config(
   new WithRenumberHarts(rocketFirst = true) ++ //Rocket first, Boom second
   new WithMiniBoom(1) ++
   new WithSmallCacheBigCore(1) )
+
+class Ibex extends Config(new WithNIbexCores(1))
 
 class BOOTROM extends Config((site, here, up) => {
   case PeripheryMaskROMKey => List(

@@ -25,7 +25,6 @@ import uec.teehardware.devices.random._
 import uec.teehardware.devices.sha3._
 import uec.teehardware.devices.usb11hs._
 import uec.rocketchip.subsystem._
-import chipyard._
 import testchipip.{CanHavePeripherySerial, CanHavePeripherySerialModuleImp}
 
 class SlowMemIsland(blockBytes: Int, val crossing: ClockCrossingType = AsynchronousCrossing(8))(implicit p: Parameters)
@@ -45,7 +44,7 @@ class SlowMemIsland(blockBytes: Int, val crossing: ClockCrossingType = Asynchron
   }
 }
 
-class TEEHWSystem(implicit p: Parameters) extends Subsystem
+class TEEHWSystem(implicit p: Parameters) extends TEEHWSubsystem
     with HasPeripheryDebug
     with HasPeripheryGPIO
     with HasPeripherySHA3
@@ -173,7 +172,7 @@ class TEEHWSystem(implicit p: Parameters) extends Subsystem
 
 
 class TEEHWSystemModule[+L <: TEEHWSystem](_outer: L)
-  extends SubsystemModuleImp(_outer)
+  extends TEEHWSubsystemModuleImp(_outer)
     with HasRTCModuleImp
     with HasPeripheryDebugModuleImp
     with HasPeripheryGPIOModuleImp

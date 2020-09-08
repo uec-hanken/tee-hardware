@@ -19,3 +19,6 @@
 [submodule "software/sim-bootloader/tiny-AES-c"]
 	path = software/sim-bootloader/tiny-AES-c
 	url = https://github.com/kokke/tiny-AES-c.git
+[submodule "hardware/opentitan"]
+	path = hardware/opentitan
+	url = https://github.com/lowRISC/opentitan.git

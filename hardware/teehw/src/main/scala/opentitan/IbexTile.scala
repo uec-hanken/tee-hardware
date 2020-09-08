@@ -1,0 +1,286 @@
+// See LICENSE
+
+package uec.teehardware.opentitan.rv_core_ibex
+
+import java.lang.reflect.InvocationTargetException
+
+import chisel3._
+import chisel3.util._
+import chisel3.experimental.{IntParam, StringParam}
+
+import scala.collection.mutable.ListBuffer
+import freechips.rocketchip.config._
+import freechips.rocketchip.subsystem._
+import freechips.rocketchip.devices.tilelink._
+import freechips.rocketchip.diplomacy._
+import freechips.rocketchip.diplomaticobjectmodel.logicaltree.LogicalTreeNode
+import freechips.rocketchip.rocket._
+import freechips.rocketchip.subsystem.RocketCrossingParams
+import freechips.rocketchip.tilelink._
+import freechips.rocketchip.interrupts._
+import freechips.rocketchip.util._
+import freechips.rocketchip.tile._
+import freechips.rocketchip.amba.axi4._
+
+case object IbexTilesKey extends Field[Seq[IbexTileParams]](Nil)
+
+case class IbexCoreParams
+(
+  bootFreqHz: BigInt = BigInt(1700000000),
+  nPMPs: Int = 8,
+  pmpGranularity: Int = 4,
+  useDebug: Boolean = true,
+  nLocalInterrupts: Int = 0,
+  nPerfCounters: Int = 1,
+  RV32M: String = "ibex_pkg::RV32MSingleCycle",
+  RV32B: String = "ibex_pkg::RV32BNone",
+  RegFile: String = "ibex_pkg::RegFileFF",
+  BranchTargetALU: Boolean = false,
+  BranchPredictor: Boolean = false,
+  WritebackStage: Boolean = false,
+  SecureIbex: Boolean = false,
+  PipeLine: Boolean = false,
+  useRVE: Boolean = false
+) extends CoreParams {
+  /* DO NOT CHANGE BELOW THIS */
+  val useVM: Boolean = false // TODO: Check
+  val useUser: Boolean = true // Checked
+  val useSupervisor: Boolean = false // Checked
+  val useAtomics: Boolean = false // Checked
+  val useAtomicsOnlyForIO: Boolean = false // copied from Rocket
+  val useCompressed: Boolean = true // Checked. Also forced
+  override val useVector: Boolean = false // Checked
+  val useSCIE: Boolean = false // TODO: What?
+  val mulDiv: Option[MulDivParams] =
+    if(RV32M == "ibex_pkg::RV32MNone") None
+    else if (RV32M == "ibex_pkg::RV32MSingleCycle") Some(MulDivParams(1, 1, false, false, 1))
+    else if (RV32M == "ibex_pkg::RV32MFast") Some(MulDivParams(3, 3, false, false, 4))
+    else if (RV32M == "ibex_pkg::RV32MSlow") Some(MulDivParams(8, 8, false, false, 8)) // TODO: Check
+    else {
+      throw new IllegalArgumentException(s"The following statement is not valid in RV32M parameters in Ibex (Did you forgot to append ibex_pkg::): ${RV32M}")
+      None
+    }
+  val fpu: Option[FPUParams] = None // Checked
+  val nBreakpoints: Int = 0 // TODO: Check
+  val useBPWatch: Boolean = false // TODO: What?
+  val haveBasicCounters: Boolean = true // Checked
+  val haveFSDirty: Boolean = false // TODO: What?
+  val misaWritable: Boolean = false // Checked
+  val haveCFlush: Boolean = false // Checked
+  val nL2TLBEntries: Int = 512 // TODO: At this point, I am afraid to ask, but maybe is related to the L2 cache observation from the processor
+  val mtvecInit: Option[BigInt] = Some(BigInt(1)) // Checked
+  val mtvecWritable: Boolean = true // Checked
+  val instBits: Int = if (useCompressed) 16 else 32
+  val lrscCycles: Int = 80 // TODO: What?
+  val decodeWidth: Int = 1 // TODO: Check
+  val fetchWidth: Int = 1 // TODO: Check
+  val retireWidth: Int = 2 // TODO: Check
+}
+
+case class IbexTileParams
+(
+  name: Option[String] = Some("ariane_tile"),
+  hartId: Int = 0,
+  core: IbexCoreParams = IbexCoreParams(),
+  icache: Option[ICacheParams] = Some(ICacheParams()), // TODO: The existence alone is checked only. No visible way to configure sizes
+  ICacheECC: Boolean = false,
+  boundaryBuffers: Boolean = false
+) extends TileParams {
+  /* DO NOT CHANGE BELOW THIS */
+  val btb: Option[BTBParams] = None // TODO: What?
+  val beuAddr: Option[BigInt] = None // TODO: What?
+  val blockerCtrlAddr: Option[BigInt] = None // TODO: What?
+  val dcache: Option[DCacheParams] = None // No Dcache
+}
+
+class IbexTile
+(
+  val ibexParams: IbexTileParams,
+  crossing: ClockCrossingType,
+  lookup: LookupByHartIdImpl,
+  q: Parameters,
+  logicalTreeNode: LogicalTreeNode
+)
+  extends BaseTile(ibexParams, crossing, lookup, q)
+    with SinksExternalInterrupts
+    with SourcesExternalNotifications
+{
+  /**
+    * Setup parameters:
+    * Private constructor ensures altered LazyModule.p is used implicitly
+    */
+  def this(params: IbexTileParams, crossing: RocketCrossingParams, lookup: LookupByHartIdImpl, logicalTreeNode: LogicalTreeNode)(implicit p: Parameters) =
+    this(params, crossing.crossingType, lookup, p, logicalTreeNode)
+
+  val intOutwardNode = IntIdentityNode()
+  val slaveNode = TLIdentityNode()
+  val masterNode = visibilityNode
+
+  tlOtherMastersNode := tlMasterXbar.node
+  masterNode :=* tlOtherMastersNode
+  DisableMonitors { implicit p => tlSlaveXbar.node :*= slaveNode }
+
+  val cpuDevice: SimpleDevice = new SimpleDevice("cpu", Seq("lowRISC,ibex", "riscv")) {
+    override def parent = Some(ResourceAnchors.cpus)
+    override def describe(resources: ResourceBindings): Description = {
+      val Description(name, mapping) = super.describe(resources)
+      Description(name, mapping ++
+        cpuProperties ++
+        nextLevelCacheProperty ++
+        tileProperties)
+    }
+  }
+
+  ResourceBinding {
+    Resource(cpuDevice, "reg").bind(ResourceAddress(hartId))
+  }
+
+  override def makeMasterBoundaryBuffers(implicit p: Parameters) = {
+    if (!ibexParams.boundaryBuffers) super.makeMasterBoundaryBuffers
+    else TLBuffer(BufferParams.none, BufferParams.flow, BufferParams.none, BufferParams.flow, BufferParams(1))
+  }
+
+  override def makeSlaveBoundaryBuffers(implicit p: Parameters) = {
+    if (!ibexParams.boundaryBuffers) super.makeSlaveBoundaryBuffers
+    else TLBuffer(BufferParams.flow, BufferParams.none, BufferParams.none, BufferParams.none, BufferParams.none)
+  }
+
+  override lazy val module = new IbexTileModuleImp(this)
+
+  // Create the fixed TL nodes to connect the processor
+  val iPortName = "ibex-imem-port-tl"
+  val dPortName = "ibex-dmem-port-tl"
+  val idBits = 4
+  val beatBytes = 4 // Because is always 32 bits
+
+  val imemNode = TLClientNode(Seq.tabulate(1) { channel =>
+    TLMasterPortParameters.v1(
+      clients = Seq(TLClientParameters(
+        name = iPortName,
+        sourceId = IdRange(0, 1 << idBits)
+      )),
+      requestFields = Seq(
+        new tl_a_user_t_ExtraField()
+      ),
+      responseKeys = Seq(
+        UIntExtra
+      )
+    )
+  })
+
+  val dmemNode =  TLClientNode(Seq.tabulate(1) { channel =>
+    TLMasterPortParameters.v1(
+      clients = Seq(TLClientParameters(
+        name = iPortName,
+        sourceId = IdRange(0, 1 << idBits)
+      )),
+      requestFields = Seq(
+        tl_a_user_t_ExtraField()
+      ),
+      responseKeys = Seq(
+        UIntExtra
+      )
+    )
+  })
+
+  val imemTap = TLIdentityNode()
+  val dmemTap = TLIdentityNode()
+
+  // Connect the ports to the bus
+  (tlMasterXbar.node
+    := imemTap
+    := TLBuffer()
+    := TLFIFOFixer(TLFIFOFixer.all) // fix FIFO ordering
+    := TLWidthWidget(beatBytes) // reduce size of TL
+    := imemNode
+    )
+  (tlMasterXbar.node
+    := dmemTap
+    := TLBuffer()
+    := TLFIFOFixer(TLFIFOFixer.all) // fix FIFO ordering
+    := TLWidthWidget(beatBytes) // reduce size of TL
+    := dmemNode
+    )
+
+  def connectIbexInterrupts(debug: Bool, msip: Bool, mtip: Bool, meip: Bool) {
+    val (interrupts, _) = intSinkNode.in(0)
+    debug := interrupts(0)
+    msip := interrupts(1)
+    mtip := interrupts(2)
+    meip := interrupts(3)
+  }
+}
+
+class IbexTileModuleImp(outer: IbexTile) extends BaseTileModuleImp(outer){
+  // annotate the parameters
+  Annotated.params(this, outer.ibexParams)
+
+  require(p(SubsystemResetSchemeKey)  == ResetSynchronous,
+    "Ibex only supports synchronous reset at this time")
+
+  require(p(XLen) == 32,
+    "Ibex only suports RV32")
+
+  val debugBaseAddr = BigInt(0x0) // CONSTANT: based on default debug module
+  val debugSz = BigInt(0x1000) // CONSTANT: based on default debug module
+  val tohostAddr = BigInt(0x80001000L) // CONSTANT: based on default sw (assume within extMem region)
+  val fromhostAddr = BigInt(0x80001040L) // CONSTANT: based on default sw (assume within extMem region)
+
+
+  // connect the ariane core
+  val core = Module(new IbexBlackbox(
+    PMPEnable = outer.ibexParams.core.nPMPs != 0,
+    PMPGranularity = outer.ibexParams.core.pmpGranularity,
+    PMPNumRegions = outer.ibexParams.core.nPMPs,
+    MHPMCounterNum = outer.ibexParams.core.nPerfCounters,
+    MHPMCounterWidth = 32,
+    RV32E = outer.ibexParams.core.useRVE,
+    RV32M = outer.ibexParams.core.RV32M,
+    RV32B = outer.ibexParams.core.RV32B,
+    RegFile = outer.ibexParams.core.RegFile,
+    BranchTargetALU = outer.ibexParams.core.BranchTargetALU,
+    WritebackStage = outer.ibexParams.core.WritebackStage,
+    ICache = outer.ibexParams.icache.nonEmpty,
+    ICacheECC = outer.ibexParams.ICacheECC,
+    BranchPredictor = outer.ibexParams.core.BranchPredictor,
+    DbgTriggerEn = true, // Always debugger
+    SecureIbex = outer.ibexParams.core.SecureIbex,
+    DmHaltAddr = debugBaseAddr + BigInt(0x800),
+    DmExceptionAddr = debugBaseAddr + BigInt(0x808),
+    PipeLine = outer.ibexParams.core.PipeLine
+  ))
+
+  core.io.clk_i := clock
+  core.io.rst_ni := ~reset.asBool
+  core.io.boot_addr_i := constants.reset_vector
+  core.io.hart_id_i := constants.hartid
+
+  outer.connectIbexInterrupts(core.io.debug_req_i, core.io.irq_software_i, core.io.irq_timer_i, core.io.irq_external_i)
+
+  // No trace
+  outer.traceSourceNode.bundle := DontCare
+  outer.traceSourceNode.bundle map (t => t.valid := false.B)
+
+  // connect the TL interfaces
+  outer.imemNode.out foreach {
+    case (out, edgeOut) =>
+      out.a <> core.io.tl_i.a
+      core.io.tl_i.d <> out.d
+      out.b.ready := true.B
+      out.c.valid := false.B
+      out.e.valid := false.B
+  }
+  outer.dmemNode.out foreach {
+    case (out, edgeOut) =>
+      out.a <> core.io.tl_d.a
+      core.io.tl_d.d <> out.d
+      out.b.ready := true.B
+      out.c.valid := false.B
+      out.e.valid := false.B
+  }
+
+  // Miscellaneous connections
+  core.io.fetch_enable_i := true.B
+  core.io.esc_tx_i := 0.U.asTypeOf(new esc_tx_t)
+  core.io.test_en_i := false.B
+}
