@@ -129,6 +129,7 @@ VERILATOR_NONCC_OPTS = \
 	--output-split-cfuncs 100 \
 	--max-num-width 1048576 \
 	-f $(sim_common_files) \
+	+incdir+$(OPENTITAN_DIR)/hw/ip/prim/rtl/ \
 	$(sim_vsrcs)
 
 VERILATOR_DEFINES = \

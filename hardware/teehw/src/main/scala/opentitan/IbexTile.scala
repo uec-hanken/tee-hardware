@@ -26,7 +26,7 @@ case object IbexTilesKey extends Field[Seq[IbexTileParams]](Nil)
 
 case class IbexCoreParams
 (
-  bootFreqHz: BigInt = BigInt(1700000000),
+  bootFreqHz: BigInt = BigInt(1000000000),
   nPMPs: Int = 8,
   pmpGranularity: Int = 4,
   useDebug: Boolean = true,
@@ -79,7 +79,7 @@ case class IbexCoreParams
 
 case class IbexTileParams
 (
-  name: Option[String] = Some("ariane_tile"),
+  name: Option[String] = Some("ibex_tile"),
   hartId: Int = 0,
   core: IbexCoreParams = IbexCoreParams(),
   icache: Option[ICacheParams] = Some(ICacheParams()), // TODO: The existence alone is checked only. No visible way to configure sizes
@@ -227,7 +227,7 @@ class IbexTileModuleImp(outer: IbexTile) extends BaseTileModuleImp(outer){
   val fromhostAddr = BigInt(0x80001040L) // CONSTANT: based on default sw (assume within extMem region)
 
 
-  // connect the ariane core
+  // connect the ibex core
   val core = Module(new IbexBlackbox(
     PMPEnable = outer.ibexParams.core.nPMPs != 0,
     PMPGranularity = outer.ibexParams.core.pmpGranularity,

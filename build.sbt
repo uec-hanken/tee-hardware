@@ -169,7 +169,10 @@ lazy val nvdla = (project in file("hardware/chipyard/generators/nvdla"))
 
 lazy val tapeout = conditionalDependsOn(project in file("./hardware/chipyard/tools/barstools/tapeout/"))
   .dependsOn(chisel_testers, testchipip)
-  .settings(commonSettings)
+  .settings(
+    commonSettings,
+    Compile / unmanagedResourceDirectories += file("./hardware/teehw/src/main/resources/"), // For adding the teehw IP
+  )
   .settings(libraryDependencies ++= Seq("io.github.daviddenton" %% "handlebars-scala-fork" % "2.3.0"))
 
 lazy val mdf = (project in file("./hardware/chipyard/tools/barstools/mdf/scalalib/"))

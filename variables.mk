@@ -38,6 +38,7 @@ ED25519_DIR ?= $(TEEHW_DIR)/optvsrc/Ed25519/Ed25519_mul
 ED25519_SIGN_DIR ?= $(TEEHW_DIR)/optvsrc/Ed25519/Ed25519_sign
 AES_DIR ?= $(TEEHW_DIR)/optvsrc/AES
 USB11HS_DIR ?= $(TEEHW_DIR)/optvsrc/USB
+OPENTITAN_DIR ?= $(base_dir)/hardware/opentitan
 
 ADD_VSRC ?= $(SHA3_DIR)/f_permutation.v \
 	$(SHA3_DIR)/round2in1.v \

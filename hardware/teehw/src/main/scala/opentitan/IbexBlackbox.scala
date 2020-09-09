@@ -140,29 +140,11 @@ class IbexBlackbox
     val core_sleep_o = Output(Bool())
   })
 
-  // Packages resources first
-  addResource("/hardware/opentitan/hw/top_earlgrey/rtl/top_pkg.sv")
-  addResource("/hardware/opentitan/hw/ip/tlul/rtl/tlul_pkg.sv")
-  addResource("/hardware/opentitan/hw/ip/prim/rtl/prim_esc_pkg.sv")
-  addResource("/hardware/opentitan/hw/vendor/lowrisc_ibex/rtl/ibex_pkg.sv")
+  // pre-process the verilog to remove "includes" and combine into one file
+  val make = "make -C hardware/teehw/src/main/resources ibex"
+  val proc = make
+  require (proc.! == 0, "Failed to run preprocessing step")
 
-  // Actual RTL
-  addResource("/vsrc/rv_core_ibex_blackbox/IbexBlackbox.sv")
-  addResource("/hardware/opentitan/hw/ip/rv_core_ibex/rtl/rv_core_ibex.sv")
-  addResource("/hardware/opentitan/hw/vendor/lowrisc_ibex/rtl/ibex_alu.sv")
-  addResource("/hardware/opentitan/hw/vendor/lowrisc_ibex/rtl/ibex_compressed_decoder.sv")
-  addResource("/hardware/opentitan/hw/vendor/lowrisc_ibex/rtl/ibex_controller.sv")
-  addResource("/hardware/opentitan/hw/vendor/lowrisc_ibex/rtl/ibex_counter.sv")
-  addResource("/hardware/opentitan/hw/vendor/lowrisc_ibex/rtl/ibex_cs_registers.sv")
-  addResource("/hardware/opentitan/hw/vendor/lowrisc_ibex/rtl/ibex_decoder.sv")
-  addResource("/hardware/opentitan/hw/vendor/lowrisc_ibex/rtl/ibex_ex_block.sv")
-  addResource("/hardware/opentitan/hw/vendor/lowrisc_ibex/rtl/ibex_id_stage.sv")
-  addResource("/hardware/opentitan/hw/vendor/lowrisc_ibex/rtl/ibex_if_stage.sv")
-  addResource("/hardware/opentitan/hw/vendor/lowrisc_ibex/rtl/ibex_load_store_unit.sv")
-  addResource("/hardware/opentitan/hw/vendor/lowrisc_ibex/rtl/ibex_multdiv_slow.sv")
-  addResource("/hardware/opentitan/hw/vendor/lowrisc_ibex/rtl/ibex_multdiv_fast.sv")
-  addResource("/hardware/opentitan/hw/vendor/lowrisc_ibex/rtl/ibex_prefetch_buffer.sv")
-  addResource("/hardware/opentitan/hw/vendor/lowrisc_ibex/rtl/ibex_fetch_fifo.sv")
-  addResource("/hardware/opentitan/hw/vendor/lowrisc_ibex/rtl/ibex_register_file_ff.sv")
-  addResource("/hardware/opentitan/hw/vendor/lowrisc_ibex/rtl/ibex_core.sv")
+  // add wrapper/blackbox after it is pre-processed
+  addResource("/IbexBlackbox.preprocessed.sv")
 }
