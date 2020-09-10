@@ -19,10 +19,13 @@ IBEX_OPENTITAN_PKGS = \
 	$(opentitan_dir)/hw/top_earlgrey/rtl/top_pkg.sv \
 	$(opentitan_dir)/hw/ip/tlul/rtl/tlul_pkg.sv \
 	$(opentitan_dir)/hw/ip/prim/rtl/prim_esc_pkg.sv \
+	$(opentitan_dir)/hw/ip/prim/rtl/prim_util_pkg.sv \
 	$(opentitan_dir)/hw/vendor/lowrisc_ibex/rtl/ibex_pkg.sv
 
 IBEX_OPENTITAN_VSRCS = \
-	$(opentitan_dir)/hw/ip/rv_core_ibex/rtl/rv_core_ibex.sv \
+	$(opentitan_dir)/hw/ip/tlul/rtl/tlul_adapter_host.sv \
+	$(opentitan_dir)/hw/ip/tlul/rtl/tlul_fifo_sync.sv \
+	$(vsrc_dir)/vsrc/rv_core_ibex_blackbox/prim_ram_1p.sv \
 	$(opentitan_dir)/hw/vendor/lowrisc_ibex/rtl/ibex_alu.sv \
 	$(opentitan_dir)/hw/vendor/lowrisc_ibex/rtl/ibex_compressed_decoder.sv \
 	$(opentitan_dir)/hw/vendor/lowrisc_ibex/rtl/ibex_controller.sv \
@@ -30,6 +33,7 @@ IBEX_OPENTITAN_VSRCS = \
 	$(opentitan_dir)/hw/vendor/lowrisc_ibex/rtl/ibex_cs_registers.sv \
 	$(opentitan_dir)/hw/vendor/lowrisc_ibex/rtl/ibex_decoder.sv \
 	$(opentitan_dir)/hw/vendor/lowrisc_ibex/rtl/ibex_ex_block.sv \
+	$(opentitan_dir)/hw/vendor/lowrisc_ibex/rtl/ibex_icache.sv \
 	$(opentitan_dir)/hw/vendor/lowrisc_ibex/rtl/ibex_id_stage.sv \
 	$(opentitan_dir)/hw/vendor/lowrisc_ibex/rtl/ibex_if_stage.sv \
 	$(opentitan_dir)/hw/vendor/lowrisc_ibex/rtl/ibex_load_store_unit.sv \
@@ -38,7 +42,10 @@ IBEX_OPENTITAN_VSRCS = \
 	$(opentitan_dir)/hw/vendor/lowrisc_ibex/rtl/ibex_prefetch_buffer.sv \
 	$(opentitan_dir)/hw/vendor/lowrisc_ibex/rtl/ibex_fetch_fifo.sv \
 	$(opentitan_dir)/hw/vendor/lowrisc_ibex/rtl/ibex_register_file_ff.sv \
-	$(opentitan_dir)/hw/vendor/lowrisc_ibex/rtl/ibex_core.sv
+	$(opentitan_dir)/hw/vendor/lowrisc_ibex/rtl/ibex_wb_stage.sv \
+	$(opentitan_dir)/hw/vendor/lowrisc_ibex/rtl/ibex_pmp.sv \
+	$(opentitan_dir)/hw/vendor/lowrisc_ibex/rtl/ibex_core.sv \
+	$(opentitan_dir)/hw/ip/rv_core_ibex/rtl/rv_core_ibex.sv
 
 IBEX_OPENTITAN_WRAPPER = \
 	$(vsrc_dir)/vsrc/rv_core_ibex_blackbox/IbexBlackbox.sv
@@ -50,7 +57,7 @@ IBEX_ALL_VSRCS = $(IBEX_OPENTITAN_PKGS) $(IBEX_OPENTITAN_VSRCS) $(IBEX_OPENTITAN
 #########################################################################################
 
 lookup_dirs = $(shell find -L $(opentitan_dir) -name target -prune -o -type d -print 2> /dev/null | grep '.*/\($(1)\)$$')
-INC_DIR_NAMES ?= rtl
+INC_DIR_NAMES ?= rtl icache
 INC_DIRS ?= $(foreach dir_name,$(INC_DIR_NAMES),$(call lookup_dirs,$(dir_name)))
 
 # these flags are specific to Chipyard

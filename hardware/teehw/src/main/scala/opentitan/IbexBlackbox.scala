@@ -147,4 +147,5 @@ class IbexBlackbox
 
   // add wrapper/blackbox after it is pre-processed
   addResource("/IbexBlackbox.preprocessed.sv")
+  addResource("/opentitan/hw/vendor/lowrisc_ibex/syn/rtl/prim_clock_gating.v")
 }
