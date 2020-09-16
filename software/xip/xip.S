@@ -1,11 +1,17 @@
 // Jump directly to XIP_TARGET_ADDR
 
-// #define XIP_TARGET_ADDR 0x20000000
+#ifndef XIP_TARGET_ADDR
+#define XIP_TARGET_ADDR 0x20000000
+#endif
 
-// boot all cores (only hart 0) and jump to main program execution
+#ifndef XIP_IMPL
+#define XIP_IMPL 0
+#endif
+
 .section .text.start, "ax", @progbits
 .globl _start
 _start:
+// boot all cores (only hart 0) and jump to main program execution
   li a1, 0x2000000 // base address of clint
   csrr a0, mhartid
   bnez a0, boot_core
@@ -20,7 +26,15 @@ interrupt_loop: // trigger MSIP interrupts for other harts so that they also boo
 
 // this boot ROM doesn't know about any boot devices, so it just spins,
 // waiting for the serial interface to load the program and interrupt it
+#if XIP_IMPL==0
 .section .text.hang, "ax", @progbits
+#else
+.section .text.hang, "ax", @progbits
+.globl _hang_jmp
+_hang_jmp: // Other-system reset vector
+  j _hang
+.section .text.ibexboot, "ax", @progbits
+#endif
 .globl _hang
 _hang: // reset vector
   la a0, _start      // on MSIP interrupt, go to _start
@@ -28,7 +42,9 @@ _hang: // reset vector
   csrwi 0x7c1, 0x8   // Disables the Out-of-Order execution of boom
   li a0, 8           // MIE or MSIP bit
   csrw mie, a0       // set only MSIP in MIE CSR
+#if XIP_IMPL==0
   csrw mideleg, zero // no delegation
+#endif
   csrs mstatus, a0   // set MIE in mstatus CSR
 #ifdef SKIP_HANG
   csrr a0, mhartid
@@ -55,7 +71,12 @@ boot_core_hart0:   // begin executing code at XIP_TARGET_ADDR
   la a1, _dtb      // dtb address for next level bootloader
   li a2, 0x80      // set mstatus MPIE to 0
   csrc mstatus, a2
+#if XIP_IMPL==0
   mret
+#else
+  li t0, XIP_TARGET_ADDR
+  jr t0
+#endif
 
 _dtb:
 //  .incbin DEVICE_TREE

@@ -16,8 +16,10 @@ else ifeq ($(ISACONF),RV64IMAC)
 CFLAGS_ARCH=-march=rv64imac -mabi=lp64
 else ifeq ($(ISACONF),RV32GC)
 CFLAGS_ARCH=-march=rv32imafdc -mabi=ilp32d
-else #RV32IMAC
+else ifeq ($(ISACONF),RV32IMAC)
 CFLAGS_ARCH=-march=rv32imac -mabi=ilp32
+else #RV32IM
+CFLAGS_ARCH=-march=rv32im -mabi=ilp32
 endif
 
 exe = sim-bootloader.elf
@@ -41,5 +43,5 @@ $(exe): $(OBJS)
 	$(CC) $(INCLUDE) -c $< -o $@ $(CFLAGS)
 
 clean:
-	rm -rfv sha3/*.o ed25519/*.o *.o $(exe) *.dump *.bin *.hex *.map
+	rm -rfv sha3/*.o ed25519/*.o tiny-AES-c/*.o uart/*.o *.o $(exe) *.dump *.bin *.hex *.map
 

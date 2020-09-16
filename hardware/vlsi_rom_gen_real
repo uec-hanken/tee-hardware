@@ -33,10 +33,10 @@ module {name}(
 """
 
 verilog_template_2 = """
-        default: out = {output_width}'d0;
+        default: out <= {output_width}'d0;
       endcase
     end else begin
-      out = {output_width}'d0;
+      out <= {output_width}'d0;
     end
   end
 
@@ -73,7 +73,7 @@ def gen_rom(name, width, depth, rom_hex_file):
         line = line.replace(" ", "")
         line = line.replace("\n", "")
         if line:
-            strrom += "        " + str(address_bits) + "'d" + str(address) + ": out = " + str(width) + "'h" + line + ";\n"
+            strrom += "        " + str(address_bits) + "'d" + str(address) + ": out <= " + str(width) + "'h" + line + ";\n"
             address += 1
     
     return str1 + "\n" + strrom + "\n" + str2

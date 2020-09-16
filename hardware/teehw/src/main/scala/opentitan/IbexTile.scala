@@ -150,14 +150,13 @@ class IbexTile
   // Create the fixed TL nodes to connect the processor
   val iPortName = "ibex-imem-port-tl"
   val dPortName = "ibex-dmem-port-tl"
-  val idBits = 4
   val beatBytes = 4 // Because is always 32 bits
 
   val imemNode = TLClientNode(Seq.tabulate(1) { channel =>
     TLMasterPortParameters.v1(
       clients = Seq(TLClientParameters(
         name = iPortName,
-        sourceId = IdRange(0, 1 << idBits)
+        sourceId = IdRange(0, 2) // MAX_REQS(2) in rv_core_ibex
       )),
       requestFields = Seq(
         new tl_a_user_t_ExtraField()
@@ -172,7 +171,7 @@ class IbexTile
     TLMasterPortParameters.v1(
       clients = Seq(TLClientParameters(
         name = iPortName,
-        sourceId = IdRange(0, 1 << idBits)
+        sourceId = IdRange(0, 2) // MAX_REQS(2) in rv_core_ibex
       )),
       requestFields = Seq(
         tl_a_user_t_ExtraField()
@@ -190,15 +189,15 @@ class IbexTile
   (tlMasterXbar.node
     := imemTap
     := TLBuffer()
-    := TLFIFOFixer(TLFIFOFixer.all) // fix FIFO ordering
     := TLWidthWidget(beatBytes) // reduce size of TL
+    := TLSourceShrinker(1)
     := imemNode
     )
   (tlMasterXbar.node
     := dmemTap
     := TLBuffer()
-    := TLFIFOFixer(TLFIFOFixer.all) // fix FIFO ordering
     := TLWidthWidget(beatBytes) // reduce size of TL
+    := TLSourceShrinker(1)
     := dmemNode
     )
 

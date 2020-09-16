@@ -90,19 +90,26 @@ class IbexBlackbox
     with HasBlackBoxResource
 {
   // The TLparams. Those are very specitic
+  // from top_pkg.sv
+  val TL_AW = 32
+  val TL_DW = 32
+  val TL_AIW = 8    // a_source, d_source
+  val TL_DIW = 1    // d_sink
+  val TL_DUW = 16   // d_user
+  val TL_DBW = (TL_DW>>3)
+  val TL_SZW = log2Ceil(log2Ceil(TL_DBW)+1)
   val TLparams = new TLBundleParameters(
-    // from top_pkg.sv
-    addressBits = 32,
-    dataBits = 32,
-    sourceBits = 8,
-    sinkBits = 1,
-    sizeBits = 32,
+    addressBits = TL_AW,
+    dataBits = TL_DW,
+    sourceBits = TL_AIW,
+    sinkBits = TL_DIW,
+    sizeBits = TL_SZW,
     echoFields = Seq(),
     requestFields = Seq(
       tl_a_user_t_ExtraField()
     ),
     responseFields = Seq(
-      UIntExtraField(16)
+      UIntExtraField(TL_DUW)
     ),
     hasBCE = false
   )

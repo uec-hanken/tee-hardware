@@ -6,4 +6,6 @@ SECTIONS
     .text.start : { *(.text.start) }
     . = ROM_BASE + 0x40;
     .text.hang : { *(.text.hang) }
+    . = ROM_BASE + 0x80; /* ... This will help with the boot in the Ibex */
+    .text.ibexboot : { *(.text.ibexboot) }
 }
