@@ -211,7 +211,7 @@ int main(int argc, char** argv) {
   
   // Software keypair
   start_mcycle = read_csr(mcycle);
-  ed25519_create_keypair(public_key_1, private_key, seed);
+  //ed25519_create_keypair(public_key_1, private_key, seed);
   delta_mcycle = read_csr(mcycle) - start_mcycle;
   printstr("\r\nSoftware public key\r\n");
   for(int i = 0; i < 8; i++) 
@@ -237,7 +237,7 @@ int main(int argc, char** argv) {
   
   // Software sign
   start_mcycle = read_csr(mcycle);
-  ed25519_sign(signature_1, "hello", 5, public_key_1, private_key);
+  //ed25519_sign(signature_1, "hello", 5, public_key_1, private_key);
   delta_mcycle = read_csr(mcycle) - start_mcycle;
   printstr("\r\nSoftware signature\r\n");
   for(int i = 0; i < 16; i++) 
@@ -321,7 +321,7 @@ int main(int argc, char** argv) {
     while(RANDOM_REG(RANDOM_TRNG_BUSY));
   }
   
-  printstr("\r\nUSB Write: ");
+  /*printstr("\r\nUSB Write: ");
   *((unsigned char*)0x10008000) = 0xEA;
   *((unsigned char*)0x10008001) = 0xEA;
   *((unsigned char*)0x10008002) = 0xEA;
@@ -329,7 +329,7 @@ int main(int argc, char** argv) {
   printhex32(*((unsigned char*)0x10008000));
   printhex32(*((unsigned char*)0x10008001));
   printhex32(*((unsigned char*)0x10008002));
-  printstr("\r\n");
+  printstr("\r\n");*/
   
   tohost_exit(0);
   return 0;

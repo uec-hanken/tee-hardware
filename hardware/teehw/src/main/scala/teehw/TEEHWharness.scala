@@ -136,12 +136,23 @@ class TEEHWHarness()(implicit p: Parameters) extends Module {
       // REMEMBER: no usage of channels B, C and E (except for some TL Monitors)
   }
 
-  // Debug tie off (This also handles the reset system)
-  Debug.tieoffDebug(dut.debug, dut.resetctrl, Some(dut.psd))
-  dut.debug.foreach { d =>
-    d.clockeddmi.foreach({ cdmi => cdmi.dmi.req.bits := DontCare; cdmi.dmiClock := clock })
-    d.dmactiveAck := DontCare
-    d.clock := clock
+  // Debug connections (This also handles the reset system)
+  val debug_success = WireInit(false.B)
+  if(dut.debug.nonEmpty) {
+    // Debug tie off, only if there is dmi
+    if(dut.debug.get.systemjtag.isEmpty) {
+      Debug.tieoffDebug(dut.debug, dut.resetctrl, Some(dut.psd))
+      dut.debug.foreach { d =>
+        d.clockeddmi.foreach({ cdmi => cdmi.dmi.req.bits := DontCare; cdmi.dmiClock := clock })
+        d.dmactiveAck := DontCare
+        d.clock := clock
+      }
+    }
+
+    // If the debug have JTAG, then connect it
+    else {
+      Debug.connectDebug(dut.debug, dut.resetctrl, dut.psd, clock, reset.asBool(), debug_success)
+    }
   }
 
   // Don't touch stuff (avoids firrtl of cutting down hardware because Dead Code Elimination)
@@ -151,6 +162,7 @@ class TEEHWHarness()(implicit p: Parameters) extends Module {
   io.success := false.B
   val ser_success = SerialAdapter.connectSimSerial(dut.serial, clock, reset)
   when (ser_success) { io.success := true.B }
+  when (debug_success) { io.success := true.B }
 
   // Tie down USB11HS
   dut.usb11hs.foreach{ case usb =>

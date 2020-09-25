@@ -317,7 +317,7 @@ import testchipip.SerialKey
 
 class WithSimulation extends Config((site, here, up) => {
   // Force the DMI to NOT be JTAG
-  case ExportDebug => up(ExportDebug, site).copy(protocols = Set(DMI))
+  //case ExportDebug => up(ExportDebug, site).copy(protocols = Set(DMI))
   // Force also the Serial interface
   case SerialKey => true
   /* Force to use QSPI-scenario because then the XIP will be put in the BootROM */

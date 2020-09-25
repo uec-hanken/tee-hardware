@@ -191,6 +191,7 @@ class IbexTile
     := TLBuffer()
     := TLWidthWidget(beatBytes) // reduce size of TL
     := TLSourceShrinker(1)
+    := TLFragmenter(cacheBlockBytes, beatBytes)
     := imemNode
     )
   (tlMasterXbar.node
@@ -198,6 +199,7 @@ class IbexTile
     := TLBuffer()
     := TLWidthWidget(beatBytes) // reduce size of TL
     := TLSourceShrinker(1)
+    := TLFragmenter(cacheBlockBytes, beatBytes)
     := dmemNode
     )
 
@@ -268,6 +270,8 @@ class IbexTileModuleImp(outer: IbexTile) extends BaseTileModuleImp(outer){
       out.b.ready := true.B
       out.c.valid := false.B
       out.e.valid := false.B
+
+      //assert(!(out.a.fire() && out.a.bits.opcode === TLMessages.PutPartialData), "It happened! In imem")
   }
   outer.dmemNode.out foreach {
     case (out, edgeOut) =>
@@ -276,6 +280,8 @@ class IbexTileModuleImp(outer: IbexTile) extends BaseTileModuleImp(outer){
       out.b.ready := true.B
       out.c.valid := false.B
       out.e.valid := false.B
+
+      //assert(!(out.a.fire() && out.a.bits.opcode === TLMessages.PutPartialData), "It happened! In dmem")
   }
 
   // Miscellaneous connections
