@@ -183,6 +183,28 @@ class RocketBoomReduced extends Config(
   new WithSmallCacheBigCore(1) )
 
 class Ibex extends Config(new WithNIbexCores(1))
+class Rocket1 extends Config(
+  (new WithNSmallCores(1)).alter((site, here, up) => {
+    case RocketTilesKey => up(RocketTilesKey, site) map { r =>
+      r.copy(
+      btb = None,
+      dcache = Some(DCacheParams(
+        rowBits = site(SystemBusKey).beatBits,
+        nSets = 256, // 16Kb scratchpad
+        nWays = 1,
+        nTLBEntries = 4,
+        nMSHRs = 0,
+        blockBytes = site(CacheBlockBytes),
+        scratch = Some(0x80000000L))),
+      icache = Some(ICacheParams(
+        rowBits = site(SystemBusKey).beatBits,
+        nSets = 64,
+        nWays = 1,
+        nTLBEntries = 4,
+        blockBytes = site(CacheBlockBytes)))
+      )
+    }
+  }))
 
 class BOOTROM extends Config((site, here, up) => {
   case PeripheryMaskROMKey => List(
@@ -222,6 +244,22 @@ class ChipPeripherals extends Config((site, here, up) => {
     RandomParams(address = BigInt(0x64009000L)))
 })
 
+class NoSecurityPeripherals extends Config((site, here, up) => {
+  case PeripheryUARTKey => List(
+    UARTParams(address = BigInt(0x64000000L)))
+  case PeripherySPIKey => List(
+    SPIParams(rAddress = BigInt(0x64001000L)))
+  case PeripheryGPIOKey => List(
+    GPIOParams(address = BigInt(0x64002000L), width = 16))
+  case GPIOInKey => 8
+  case PeripherySHA3Key => List()
+  case Peripheryed25519Key => List()
+  case PeripheryI2CKey => List()
+  case PeripheryAESKey => List()
+  case PeripheryUSB11HSKey => List()
+  case PeripheryRandomKey => List()
+})
+
 class MBus32 extends Config((site, here, up) => {
   case ExtMem => Some(MemoryPortParams(MasterPortParams(
     base = x"0_8000_0000",
@@ -236,6 +274,10 @@ class MBus64 extends Config((site, here, up) => {
     size = x"0_4000_0000",
     beatBytes = 8,
     idBits = 4), 1))
+})
+
+class MBusNone extends Config((site, here, up) => {
+  case ExtMem => None
 })
 
 class WPCIe extends Config((site, here, up) => {
@@ -284,6 +326,31 @@ class ChipConfig extends Config(
   })
 )
 
+class MicroConfig extends Config(
+  new WithNExtTopInterrupts(0) ++
+  new WithNBreakpoints(1) ++
+  new NoSecurityPeripherals ++
+  new WithJtagDTM ++
+  new WithNMemoryChannels(0) ++
+  new WithNBanks(0) ++
+  //new WithJustOneBus ++
+  new WithIncoherentBusTopology ++
+  new BaseConfig().alter((site,here,up) => {
+    case SystemBusKey => up(SystemBusKey).copy(
+      errorDevice = None)
+    case PeripheryBusKey => up(PeripheryBusKey, site).copy(dtsFrequency =
+      Some(BigDecimal(site(FreqKeyMHz)*1000000).setScale(0, BigDecimal.RoundingMode.HALF_UP).toBigInt),
+      errorDevice = None)
+    case DTSTimebase => BigInt(1000000)
+    case JtagDTMKey => new JtagDTMConfig (
+      idcodeVersion = 2,      // 1 was legacy (FE310-G000, Acai).
+      idcodePartNum = 0x000,  // Decided to simplify.
+      idcodeManufId = 0x489,  // As Assigned by JEDEC to SiFive. Only used in wrappers / test harnesses.
+      debugIdleCycles = 5)    // Reasonable guess for synchronization
+    case FreqKeyMHz => 100.0
+  })
+)
+
 class DE4Config extends Config(
   new ChipConfig().alter((site,here,up) => {
     case FreqKeyMHz => 100.0
@@ -302,6 +369,19 @@ class TR4Config extends Config(
 
 class VC707Config extends Config(
   new ChipConfig().alter((site,here,up) => {
+    case FreqKeyMHz => 80.0
+    /* Force to use BootROM because VC707 doesn't have enough GPIOs for QSPI */
+    case PeripheryMaskROMKey => List(
+      MaskROMParams(address = BigInt(0x20000000), depth = 4096, name = "BootROM"))
+    case TEEHWResetVector => 0x20000000
+    case PeripherySPIFlashKey => List() // disable SPIFlash
+    /* Force to disable USB1.1, because there are no pins */
+    case PeripheryUSB11HSKey => List()
+  })
+)
+
+class VC707MiniConfig extends Config(
+  new MicroConfig().alter((site,here,up) => {
     case FreqKeyMHz => 80.0
     /* Force to use BootROM because VC707 doesn't have enough GPIOs for QSPI */
     case PeripheryMaskROMKey => List(

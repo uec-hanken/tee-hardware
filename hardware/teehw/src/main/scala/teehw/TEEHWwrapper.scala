@@ -90,20 +90,20 @@ class TEEHWwrapper(implicit p :Parameters) extends RawModule {
     attach(jtag_rst, JTAG_RST.io.PAD)
 
     // QSPI (SPI as flash memory) TODO: Should be optional
-    (qspi_cs zip system.io.pins.qspi.get.cs).foreach {
+    (qspi_cs zip system.io.pins.qspi.head.cs).foreach {
       case (g, i) =>
         val QSPI_CS = Module(new GPIO_24_A)
         PinToGPIO_24_A(QSPI_CS.io, i)
         attach(g, QSPI_CS.io.PAD)
     }
-    (qspi_dq zip system.io.pins.qspi.get.dq).foreach {
+    (qspi_dq zip system.io.pins.qspi.head.dq).foreach {
       case (g, i) =>
         val QSPI_DQ = Module(new GPIO_24_A)
         PinToGPIO_24_A(QSPI_DQ.io, i)
         attach(g, QSPI_DQ.io.PAD)
     }
     val QSPI_SCK = Module(new GPIO_24_A)
-    PinToGPIO_24_A(QSPI_SCK.io, system.io.pins.qspi.get.sck)
+    PinToGPIO_24_A(QSPI_SCK.io, system.io.pins.qspi.head.sck)
     attach(qspi_sck, QSPI_SCK.io.PAD)
 
     // SPI (SPI as SD?)
@@ -140,10 +140,11 @@ class TEEHWwrapper(implicit p :Parameters) extends RawModule {
     //attach(i2c_scl, I2C_SCL.io.PAD)
 
     // The memory port
-    // TODO: This is awfully dirty. I mean it should get the work done
-    //system.io.tlport.getElements.head
-    tlport = Some(IO(new TLUL(system.sys.outer.memTLNode.in.head._1.params)))
-    tlport.get <> system.io.tlport
+    tlport = system.io.tlport.map{case sysport =>
+      val tlport = IO(new TLUL(sysport.params))
+      tlport <> sysport
+      tlport
+    }
   }
 }
 
@@ -169,24 +170,21 @@ class TEEHWbase(implicit val p :Parameters) extends RawModule {
     val sdio_dat_2 = (Analog(1.W))
     val sdio_dat_3 = (Output(Bool()))
   })
-  val qspi = if(p(PeripherySPIFlashKey).nonEmpty)
-    Some(IO(new Bundle {
+  val qspi = p(PeripherySPIFlashKey).map{ _ =>
+    IO(new Bundle {
       val qspi_cs = (Output(UInt(p(PeripherySPIFlashKey).head.csWidth.W)))
       val qspi_sck = (Output(Bool()))
       val qspi_miso = (Input(Bool()))
       val qspi_mosi = (Output(Bool()))
       val qspi_wp = (Output(Bool()))
       val qspi_hold = (Output(Bool()))
-    }))
-  else None
+    })}
   val uart_txd = IO(Output(Bool()))
   val uart_rxd = IO(Input(Bool()))
-  val usb11hs = if(p(PeripheryUSB11HSKey).nonEmpty) Some(IO(new USB11HSPortIO)) else None
-  val ChildClock = if(p(DDRPortOther)) Some(IO(Input(Clock()))) else None
-  val ChildReset = if(p(DDRPortOther)) Some(IO(Input(Bool()))) else None
-  val pciePorts =
-    if(p(IncludePCIe)) Some(IO(new XilinxVC707PCIeX1IO))
-    else None
+  val usb11hs = p(PeripheryUSB11HSKey).map{ _ => IO(new USB11HSPortIO)}
+  val ChildClock = p(DDRPortOther).option(IO(Input(Clock())))
+  val ChildReset = p(DDRPortOther).option(IO(Input(Bool())))
+  val pciePorts = p(IncludePCIe).option(IO(new XilinxVC707PCIeX1IO))
   // These are later connected
   val clock = Wire(Clock())
   val reset = Wire(Bool()) // System reset (for cores)
@@ -224,13 +222,13 @@ class TEEHWbase(implicit val p :Parameters) extends RawModule {
     system.io.jtag_reset := areset
 
     // QSPI (SPI as flash memory)
-    if(p(PeripherySPIFlashKey).nonEmpty) {
-      qspi.get.qspi_cs := BasePinToRegular(system.io.pins.qspi.get.cs)
-      qspi.get.qspi_sck := BasePinToRegular(system.io.pins.qspi.get.sck)
-      qspi.get.qspi_mosi := BasePinToRegular(system.io.pins.qspi.get.dq(0))
-      BasePinToRegular(system.io.pins.qspi.get.dq(1), qspi.get.qspi_miso)
-      qspi.get.qspi_wp := BasePinToRegular(system.io.pins.qspi.get.dq(2))
-      qspi.get.qspi_hold := BasePinToRegular(system.io.pins.qspi.get.dq(3))
+    (system.io.pins.qspi zip qspi).foreach { case (sysqspi, portspi) =>
+      portspi.qspi_cs := BasePinToRegular(sysqspi.cs)
+      portspi.qspi_sck := BasePinToRegular(sysqspi.sck)
+      portspi.qspi_mosi := BasePinToRegular(sysqspi.dq(0))
+      BasePinToRegular(sysqspi.dq(1), portspi.qspi_miso)
+      portspi.qspi_wp := BasePinToRegular(sysqspi.dq(2))
+      portspi.qspi_hold := BasePinToRegular(sysqspi.dq(3))
     }
 
     // SPI (SPI as SD?)
@@ -246,20 +244,16 @@ class TEEHWbase(implicit val p :Parameters) extends RawModule {
     uart_txd := BasePinToRegular(system.io.pins.uart.txd)
 
     // USB11
-    if(p(PeripheryUSB11HSKey).nonEmpty) usb11hs.get <> system.io.usb11hs.get
+    (usb11hs zip system.io.usb11hs).foreach{ case (port, sysport) => port <> sysport }
 
     // The memory port
-    tlportw = Some(system.io.tlport)
-    memdevice = Some(system.sys.outer.memdevice)
-    if(p(DDRPortOther)) {
-      system.io.ChildClock.get := ChildClock.get
-      system.io.ChildReset.get := ChildReset.get
-    }
+    tlportw = system.io.tlport
+    memdevice = Some(new MemoryDevice)
+    (ChildClock zip system.io.ChildClock).foreach{ case (port, sysport) => sysport := port }
+    (ChildReset zip system.io.ChildReset).foreach{ case (port, sysport) => sysport := port }
 
     // PCIe port (if available)
-    if(p(IncludePCIe)) {
-      pciePorts.get <> system.io.pciePorts.get
-    }
+    (pciePorts zip system.io.pciePorts).foreach{ case (port, sysport) => port <> sysport }
   }
   val cacheBlockBytes = cacheBlockBytesOpt.get
 }
@@ -269,10 +263,12 @@ class TEEHWSoC(implicit override val p :Parameters) extends TEEHWbase {
   val sys_clk = IO(Input(Clock()))
   val rst_n = IO(Input(Bool()))
   val jrst_n = IO(Input(Bool()))
-  val tlport = IO(new TLUL(tlportw.get.params))
+  val tlport = tlportw.map{tl => IO(new TLUL(tl.params))}
   // TL port connection
-  tlport.a <> tlportw.get.a
-  tlportw.get.d <> tlport.d
+  (tlportw zip tlport).foreach{case (base, chip) =>
+    chip.a <> base.a
+    base.d <> chip.d
+  }
   // Clock and reset connection
   clock := sys_clk
   reset := !rst_n || ndreset // This connects the debug reset and the general reset together
@@ -305,19 +301,13 @@ class FPGAVC707(implicit val p :Parameters) extends RawModule {
   val uart_txd = IO(Output(Bool()))
   val uart_rxd = IO(Input(Bool()))
 
-  val USBFullSpeed = if(p(PeripheryUSB11HSKey).nonEmpty) Some(IO(Output(Bool()))) else None // D12 / LA05_N / J1_23
-  val USBWireDataIn = if(p(PeripheryUSB11HSKey).nonEmpty) Some(IO(Input(Bits(2.W)))) else None // H7 / LA02_P / J1_9 // H8 / LA02_N / J1_11
-  val USBWireCtrlOut = if(p(PeripheryUSB11HSKey).nonEmpty) Some(IO(Output(Bool()))) else None // D11 / LA05_P / J1_21
-  val USBWireDataOut = if(p(PeripheryUSB11HSKey).nonEmpty) Some(IO(Output(Bits(2.W)))) else None // G9 / LA03_P / J1_13 // G10 / LA03_N / J1_15
-  
-  // Removed by Thuc
-  //val USBWireDataOutTick = if(p(PeripheryUSB11HSKey).nonEmpty) Some(IO(Output(Bool()))) else None // H10 / LA04_P / J1_17
-  //val USBWireDataInTick = if(p(PeripheryUSB11HSKey).nonEmpty) Some(IO(Output(Bool()))) else None // H11 / LA04_N / J1_19
-  //val USBDPlusPullup = if(p(PeripheryUSB11HSKey).nonEmpty) Some(IO(Output(Bool()))) else None // C10 / LA06_P / J1_25
-  //val USBDMinusPullup = if(p(PeripheryUSB11HSKey).nonEmpty) Some(IO(Output(Bool()))) else None // C11 / LA06_N / J1_27
-  //val vBusDetect = if(p(PeripheryUSB11HSKey).nonEmpty) Some(IO(Input(Bool()))) else None // H13 / LA07_P / J1_29
+  val USB = p(PeripheryUSB11HSKey).map{_ => IO(new Bundle {
+    val FullSpeed = Output(Bool()) // D12 / LA05_N / J1_23
+    val WireDataIn = Input(Bits(2.W)) // H7 / LA02_P / J1_9 // H8 / LA02_N / J1_11
+    val WireCtrlOut = Output(Bool()) // D11 / LA05_P / J1_21
+    val WireDataOut = Output(Bits(2.W)) // G9 / LA03_P / J1_13 // G10 / LA03_N / J1_15
+  })}
 
-  var ddr: Option[VC707MIGIODDR] = None
   val sys_clock_p = IO(Input(Clock()))
   val sys_clock_n = IO(Input(Clock()))
   val sys_clock_ibufds = Module(new IBUFDS())
@@ -336,49 +326,55 @@ class FPGAVC707(implicit val p :Parameters) extends RawModule {
   val clock = Wire(Clock())
   val reset = Wire(Bool())
 
-  val pciePorts =
-    if(p(IncludePCIe)) Some(IO(new XilinxVC707PCIeX1Pads))
-    else None
+  val pciePorts = p(IncludePCIe).option(IO(new XilinxVC707PCIeX1Pads))
 
   withClockAndReset(clock, reset) {
     // Instance our converter, and connect everything
     val chip = Module(new TEEHWSoC)
-    val mod = Module(LazyModule(new TLULtoMIG(chip.cacheBlockBytes, chip.tlportw.get.params)).module)
-
-    // DDR port only
-    ddr = Some(IO(new VC707MIGIODDR(mod.depth)))
-    ddr.get <> mod.io.ddrport
-    // MIG connections, like resets and stuff
-    mod.io.ddrport.sys_clk_i := sys_clk_i.asUInt()
-    mod.io.ddrport.aresetn := !reset_0
-    mod.io.ddrport.sys_rst := reset_1
-
-    // TileLink Interface from platform
-    mod.io.tlport.a <> chip.tlport.a
-    chip.tlport.d <> mod.io.tlport.d
 
     // PLL instance
     val c = new PLLParameters(
-      name ="pll",
-      input = PLLInClockParameters(
-        freqMHz = 200.0,
-        feedback = true
-      ),
+      name = "pll",
+      input = PLLInClockParameters(freqMHz = 200.0, feedback = true),
       req = Seq(
-        PLLOutClockParameters(
-          freqMHz = 48.0
-        ),
-        PLLOutClockParameters(
-          freqMHz = 50.0
-        ),
-        PLLOutClockParameters(
-          freqMHz = p(FreqKeyMHz)
-        )
+        PLLOutClockParameters(freqMHz = 48.0),
+        PLLOutClockParameters(freqMHz = 50.0),
+        PLLOutClockParameters(freqMHz = p(FreqKeyMHz))
       )
     )
     val pll = Module(new Series7MMCM(c))
     pll.io.clk_in1 := sys_clk_i
     pll.io.reset := reset_0
+
+    // The DDR port
+    val ddr = chip.tlport.map{ case chiptl =>
+      val mod = Module(LazyModule(new TLULtoMIG(chip.cacheBlockBytes, chip.tlportw.get.params)).module)
+
+      // DDR port only
+      val ddr = IO(new VC707MIGIODDR(mod.depth))
+      ddr <> mod.io.ddrport
+      // MIG connections, like resets and stuff
+      mod.io.ddrport.sys_clk_i := sys_clk_i.asUInt()
+      mod.io.ddrport.aresetn := !reset_0
+      mod.io.ddrport.sys_rst := reset_1
+
+      // TileLink Interface from platform
+      mod.io.tlport.a <> chiptl.a
+      chiptl.d <> mod.io.tlport.d
+
+      if(p(DDRPortOther)) {
+        chip.ChildClock.foreach(_ := pll.io.clk_out2.getOrElse(false.B))
+        chip.ChildReset.foreach(_ := reset_2)
+        mod.clock := pll.io.clk_out2.getOrElse(false.B)
+      }
+      else {
+        chip.ChildClock.foreach(_ := pll.io.clk_out3.getOrElse(false.B))
+        chip.ChildReset.foreach(_ := reset_2)
+        mod.clock := pll.io.clk_out3.getOrElse(false.B)
+      }
+
+      (ddr, mod.io.ddrport.init_calib_complete)
+    }
 
     // Main clock and reset assignments
     clock := pll.io.clk_out3.get
@@ -387,7 +383,7 @@ class FPGAVC707(implicit val p :Parameters) extends RawModule {
     chip.rst_n := !reset_2
 
     // The rest of the platform connections
-    gpio_out := Cat(reset_0, reset_1, reset_2, reset_3, mod.io.ddrport.init_calib_complete)
+    gpio_out := Cat(reset_0, reset_1, reset_2, reset_3, ddr.map(_._2).getOrElse(false.B))
     chip.gpio_in := gpio_in
     jtag <> chip.jtag
     chip.jtag.jtag_TCK := IBUFG(jtag.jtag_TCK.asClock).asUInt
@@ -397,38 +393,25 @@ class FPGAVC707(implicit val p :Parameters) extends RawModule {
     chip.jrst_n := !reset_3
 
     // USB phy connections
-    if(p(PeripheryUSB11HSKey).nonEmpty){
-      USBFullSpeed.get := chip.usb11hs.get.USBFullSpeed
-      chip.usb11hs.get.USBWireDataIn := USBWireDataIn.get
-      USBWireCtrlOut.get := chip.usb11hs.get.USBWireCtrlOut
-      USBWireDataOut.get := chip.usb11hs.get.USBWireDataOut
-      
-      chip.usb11hs.get.usbClk := pll.io.clk_out1.getOrElse(false.B)
-      
-      // Deleted by Thuc
-      //USBWireDataOutTick.get := chip.usb11hs.get.USBWireDataOutTick
-      //USBWireDataInTick.get := chip.usb11hs.get.USBWireDataInTick
-      //USBDPlusPullup.get := chip.usb11hs.get.USBDPlusPullup
-      //USBDMinusPullup.get := chip.usb11hs.get.USBDMinusPullup
-      //chip.usb11hs.get.vBusDetect := vBusDetect.get
+    (chip.usb11hs zip USB).foreach{ case (chipport, port) =>
+      port.FullSpeed := chipport.USBFullSpeed
+      chipport.USBWireDataIn := port.WireDataIn
+      port.WireCtrlOut := chipport.USBWireCtrlOut
+      port.WireDataOut := chipport.USBWireDataOut
+
+      chipport.usbClk := pll.io.clk_out1.getOrElse(false.B)
     }
 
-    if(p(DDRPortOther)) {
-      chip.ChildClock.get := pll.io.clk_out2.getOrElse(false.B)
-      chip.ChildReset.get := reset_2
-      mod.clock := pll.io.clk_out2.getOrElse(false.B)
-    }
-    else mod.clock := pll.io.clk_out3.get
-
-    if(p(IncludePCIe)) {
-      chip.pciePorts.get.REFCLK_rxp := pciePorts.get.REFCLK_rxp
-      chip.pciePorts.get.REFCLK_rxn := pciePorts.get.REFCLK_rxn
-      pciePorts.get.pci_exp_txp := chip.pciePorts.get.pci_exp_txp
-      pciePorts.get.pci_exp_txn := chip.pciePorts.get.pci_exp_txn
-      chip.pciePorts.get.pci_exp_rxp := pciePorts.get.pci_exp_rxp
-      chip.pciePorts.get.pci_exp_rxn := pciePorts.get.pci_exp_rxn
-      chip.pciePorts.get.axi_aresetn := !reset_0
-      chip.pciePorts.get.axi_ctl_aresetn := !reset_0
+    // PCIe (if available)
+    (pciePorts zip chip.pciePorts).foreach{ case (port, chipport) =>
+      chipport.REFCLK_rxp := port.REFCLK_rxp
+      chipport.REFCLK_rxn := port.REFCLK_rxn
+      port.pci_exp_txp := chipport.pci_exp_txp
+      port.pci_exp_txn := chipport.pci_exp_txn
+      chipport.pci_exp_rxp := port.pci_exp_rxp
+      chipport.pci_exp_rxn := port.pci_exp_rxn
+      chipport.axi_aresetn := !reset_0
+      chipport.axi_ctl_aresetn := !reset_0
     }
   }
 }
@@ -540,27 +523,22 @@ class FPGADE4(implicit val p :Parameters) extends RawModule {
     val jtag_TCK = (Input(Bool()))
     val jtag_TDO = (Output(Bool()))
   })
-  val qspi = if(p(PeripherySPIFlashKey).nonEmpty)
-    Some(IO(new Bundle {
+  val qspi = p(PeripherySPIFlashKey).map{_ =>
+    IO(new Bundle {
       val qspi_cs = (Output(UInt(p(PeripherySPIFlashKey).head.csWidth.W)))
       val qspi_sck = (Output(Bool()))
       val qspi_miso = (Input(Bool()))
       val qspi_mosi = (Output(Bool()))
       val qspi_wp = (Output(Bool()))
       val qspi_hold = (Output(Bool()))
-    }))
-    else None
-  val USBFullSpeed = if(p(PeripheryUSB11HSKey).nonEmpty) Some(IO(Output(Bool()))) else None // GPIO0_D[7]
-  val USBWireDataIn = if(p(PeripheryUSB11HSKey).nonEmpty) Some(IO(Input(Bits(2.W)))) else None // GPIO0_D[1:0]
-  val USBWireCtrlOut = if(p(PeripheryUSB11HSKey).nonEmpty) Some(IO(Output(Bool()))) else None // GPIO0_D[6]
-  val USBWireDataOut = if(p(PeripheryUSB11HSKey).nonEmpty) Some(IO(Output(Bits(2.W)))) else None // GPIO0_D[3:2]
-  
-  // Removed by Thuc
-  //val USBWireDataOutTick = if(p(PeripheryUSB11HSKey).nonEmpty) Some(IO(Output(Bool()))) else None // GPIO0_D[4]
-  //val USBWireDataInTick = if(p(PeripheryUSB11HSKey).nonEmpty) Some(IO(Output(Bool()))) else None // GPIO0_D[5]
-  //val USBDPlusPullup = if(p(PeripheryUSB11HSKey).nonEmpty) Some(IO(Output(Bool()))) else None // GPIO0_D[8]
-  //val USBDMinusPullup = if(p(PeripheryUSB11HSKey).nonEmpty) Some(IO(Output(Bool()))) else None // GPIO0_D[9]
-  //val vBusDetect = if(p(PeripheryUSB11HSKey).nonEmpty) Some(IO(Input(Bool()))) else None // GPIO0_D[10]
+    })}
+
+  val USB = p(PeripheryUSB11HSKey).map{_ => IO(new Bundle {
+    val FullSpeed = Output(Bool()) // GPIO0_D[7]
+    val WireDataIn = Input(Bits(2.W)) // GPIO0_D[1:0]
+    val WireCtrlOut = Output(Bool()) // GPIO0_D[6]
+    val WireDataOut = Output(Bits(2.W)) // GPIO0_D[3:2]
+  })}
 
   ///////////  EXT_IO /////////
   //val EXT_IO = IO(Analog(1.W))
@@ -670,8 +648,9 @@ class FPGADE4(implicit val p :Parameters) extends RawModule {
     mod.io.ckrst.system_reset_n := CPU_RESET_n
 
     // TileLink Interface from platform
-    mod.io.tlport.a <> chip.tlport.a
-    chip.tlport.d <> mod.io.tlport.d
+    // TODO: Make the DDR optional. Need to stop using the Quartus Platform
+    mod.io.tlport.a <> chip.tlport.get.a
+    chip.tlport.get.d <> mod.io.tlport.d
 
     // The rest of the platform connections
     val chipshell_led = chip.gpio_out 	// output [7:0]
@@ -684,7 +663,7 @@ class FPGADE4(implicit val p :Parameters) extends RawModule {
     )
     chip.gpio_in := SW(7,0)			// input  [7:0]
     jtag <> chip.jtag
-    if(p(PeripherySPIFlashKey).nonEmpty) qspi.get <> chip.qspi.get
+    (chip.qspi zip qspi).foreach { case (sysqspi, portspi) => portspi <> sysqspi}
     chip.uart_rxd := UART_RXD	// UART_TXD
     UART_TXD := chip.uart_txd 	// UART_RXD
     SD_CLK := chip.sdio.sdio_clk 	// output
@@ -694,20 +673,13 @@ class FPGADE4(implicit val p :Parameters) extends RawModule {
     chip.jrst_n := !SLIDE_SW(2)
 
     // USB phy connections
-    if(p(PeripheryUSB11HSKey).nonEmpty) {
-      USBFullSpeed.get := chip.usb11hs.get.USBFullSpeed
-      chip.usb11hs.get.USBWireDataIn := USBWireDataIn.get
-      USBWireCtrlOut.get := chip.usb11hs.get.USBWireCtrlOut
-      USBWireDataOut.get := chip.usb11hs.get.USBWireDataOut
+    (chip.usb11hs zip USB).foreach{ case (chipport, port) =>
+      port.FullSpeed := chipport.USBFullSpeed
+      chipport.USBWireDataIn := port.WireDataIn
+      port.WireCtrlOut := chipport.USBWireCtrlOut
+      port.WireDataOut := chipport.USBWireDataOut
 
-      chip.usb11hs.get.usbClk := mod.io.ckrst.usb_clk
-      
-      // Removed by Thuc
-      //USBWireDataOutTick.get := chip.usb11hs.get.USBWireDataOutTick
-      //USBWireDataInTick.get := chip.usb11hs.get.USBWireDataInTick
-      //USBDPlusPullup.get := chip.usb11hs.get.USBDPlusPullup
-      //USBDMinusPullup.get := chip.usb11hs.get.USBDMinusPullup
-      //chip.usb11hs.get.vBusDetect := vBusDetect.get
+      chipport.usbClk := mod.io.ckrst.usb_clk
     }
   }
 }
@@ -861,28 +833,23 @@ class FPGATR4(implicit val p :Parameters) extends RawModule {
     val sdio_dat_2 = (Analog(1.W))
     val sdio_dat_3 = (Output(Bool()))
   })
-  val qspi = if(p(PeripherySPIFlashKey).nonEmpty)
-    Some(IO(new Bundle {
+  val qspi = p(PeripherySPIFlashKey).map{_ =>
+    IO(new Bundle {
       val qspi_cs = (Output(UInt(p(PeripherySPIFlashKey).head.csWidth.W)))
       val qspi_sck = (Output(Bool()))
       val qspi_miso = (Input(Bool()))
       val qspi_mosi = (Output(Bool()))
       val qspi_wp = (Output(Bool()))
       val qspi_hold = (Output(Bool()))
-    }))
-  else None
-  val USBFullSpeed = if(p(PeripheryUSB11HSKey).nonEmpty) Some(IO(Output(Bool()))) else None // HSMC_TX_p[10] / PIN_AW27 / GPIO1_D17 GPIO1[20]
-  val USBWireDataIn = if(p(PeripheryUSB11HSKey).nonEmpty) Some(IO(Input(Bits(2.W)))) else None // HSMC_TX_p[7] HSMC_TX_n[7] / PIN_AB30 PIN_AB31 / GPIO1_D24 GPIO1_D26 GPIO1[27,31]
-  val USBWireCtrlOut = if(p(PeripheryUSB11HSKey).nonEmpty) Some(IO(Output(Bool()))) else None // HSMC_TX_n[10] / PIN_AW28 / GPIO1_D19 GPIO[22]
-  val USBWireDataOut = if(p(PeripheryUSB11HSKey).nonEmpty) Some(IO(Output(Bits(2.W)))) else None // HSMC_TX_p[8] HSMC_TX_n[8] / PIN_AL27 PIN_AH26 / GPIO1_D16 GPIO1_D18 GPIO1[19,21]
-  
-  // Removed by Thuc
-  //val USBWireDataOutTick = if(p(PeripheryUSB11HSKey).nonEmpty) Some(IO(Output(Bool()))) else None // HSMC_TX_n[9] / PIN_AE24 / GPIO1_D22 GPIO1[25]
-  //val USBWireDataInTick = if(p(PeripheryUSB11HSKey).nonEmpty) Some(IO(Output(Bool()))) else None // HSMC_TX_p[9] / PIN_AK27 / GPIO1_D20 GPIO1[23]
-  //val USBDPlusPullup = if(p(PeripheryUSB11HSKey).nonEmpty) Some(IO(Output(Bool()))) else None // HSMC_TX_n[11] / PIN_AG24 / GPIO1_D15 GPIO1[18]
-  //val USBDMinusPullup = if(p(PeripheryUSB11HSKey).nonEmpty) Some(IO(Output(Bool()))) else None // HSMC_TX_p[11] / PIN_AH24 / GPIO1_D13 GPIO1[16]
-  //val vBusDetect = if(p(PeripheryUSB11HSKey).nonEmpty) Some(IO(Input(Bool()))) else None // HSMC_TX_n[12] / PIN_AV31 / GPIO1_D14 GPIO1[17]
+    })}
 
+  val USB = p(PeripheryUSB11HSKey).map{_ => IO(new Bundle {
+    val FullSpeed = Output(Bool()) // HSMC_TX_p[10] / PIN_AW27 / GPIO1_D17 GPIO1[20]
+    val WireDataIn = Input(Bits(2.W)) // HSMC_TX_p[7] HSMC_TX_n[7] / PIN_AB30 PIN_AB31 / GPIO1_D24 GPIO1_D26 GPIO1[27,31]
+    val WireCtrlOut = Output(Bool()) // HSMC_TX_n[10] / PIN_AW28 / GPIO1_D19 GPIO[22]
+    val WireDataOut = Output(Bits(2.W)) // HSMC_TX_p[8] HSMC_TX_n[8] / PIN_AL27 PIN_AH26 / GPIO1_D16 GPIO1_D18 GPIO1[19,21]
+  })}
+  
   //////////// Uart //////////
   val UART_TXD = IO(Output(Bool()))
   val UART_RXD = IO(Input(Bool()))
@@ -938,8 +905,9 @@ class FPGATR4(implicit val p :Parameters) extends RawModule {
     mod.io.ckrst.system_reset_n := BUTTON(2)
 
     // TileLink Interface from platform
-    mod.io.tlport.a <> chip.tlport.a
-    chip.tlport.d <> mod.io.tlport.d
+    // TODO: Make the DDR optional. Need to stop using the Quartus Platform
+    mod.io.tlport.a <> chip.tlport.get.a
+    chip.tlport.get.d <> mod.io.tlport.d
 
     // The rest of the platform connections
     val chipshell_led = chip.gpio_out 	// TODO: Not used! LED [3:0]
@@ -951,26 +919,20 @@ class FPGATR4(implicit val p :Parameters) extends RawModule {
     )
     chip.gpio_in := Cat(BUTTON(3), BUTTON(1,0), SW(1,0))
     jtag <> chip.jtag
-    if(p(PeripherySPIFlashKey).nonEmpty) qspi.get <> chip.qspi.get
+    (chip.qspi zip qspi).foreach { case (sysqspi, portspi) => portspi <> sysqspi}
     chip.uart_rxd := UART_RXD	// UART_TXD
-    UART_TXD := chip.uart_txd 	// UART_RXD
+    UART_TXD := chip.uart_txd // UART_RXD
     sdio <> chip.sdio
     chip.jrst_n := !SW(0)
 
     // USB phy connections
-    if(p(PeripheryUSB11HSKey).nonEmpty) {
-      USBFullSpeed.get := chip.usb11hs.get.USBFullSpeed
-      chip.usb11hs.get.USBWireDataIn := USBWireDataIn.get
-      USBWireCtrlOut.get := chip.usb11hs.get.USBWireCtrlOut
-      USBWireDataOut.get := chip.usb11hs.get.USBWireDataOut
+    (chip.usb11hs zip USB).foreach{ case (chipport, port) =>
+      port.FullSpeed := chipport.USBFullSpeed
+      chipport.USBWireDataIn := port.WireDataIn
+      port.WireCtrlOut := chipport.USBWireCtrlOut
+      port.WireDataOut := chipport.USBWireDataOut
 
-      chip.usb11hs.get.usbClk := mod.io.ckrst.usb_clk
-      
-      //USBWireDataOutTick.get := chip.usb11hs.get.USBWireDataOutTick
-      //USBWireDataInTick.get := chip.usb11hs.get.USBWireDataInTick
-      //USBDPlusPullup.get := chip.usb11hs.get.USBDPlusPullup
-      //USBDMinusPullup.get := chip.usb11hs.get.USBDMinusPullup
-      //chip.usb11hs.get.vBusDetect := vBusDetect.get
+      chipport.usbClk := mod.io.ckrst.usb_clk
     }
   }
 }

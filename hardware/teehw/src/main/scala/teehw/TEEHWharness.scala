@@ -113,27 +113,39 @@ class TEEHWHarness()(implicit p: Parameters) extends Module {
   // This is the new way (just look at chipyard.IOBinders package about details)
 
   // Simulated memory.
-  // Step 1: Our conversion
-  val simdram = LazyModule(new TLULtoSimDRAM(ldut.p(CacheBlockBytes), dut.outer.memTLNode.in.head._1.params))
-  val simdrammod = Module(simdram.module)
-  // Step 2: Perform the conversion from TL to our TLUL port (Remember we do in this way because chip)
-  dut.mem_tl.foreach{
-    case ioi:TLBundle =>
-      // Connect outside the ones that can be untied
-      simdrammod.io.tlport.a.valid := ioi.a.valid
-      ioi.a.ready := simdrammod.io.tlport.a.ready
-      simdrammod.io.tlport.a.bits := ioi.a.bits
+  dut.memPorts.foreach{
+    case (ioh, other) =>
+      ioh.foreach { case ioi: TLBundle =>
+        // Step 1: Our conversion
+        val simdram = LazyModule(new TLULtoSimDRAM(ldut.p(CacheBlockBytes), ioi.params))
+        val simdrammod = Module(simdram.module)
+        // Step 2: Perform the conversion from TL to our TLUL port (Remember we do in this way because chip)
 
-      ioi.d.valid := simdrammod.io.tlport.d.valid
-      simdrammod.io.tlport.d.ready := ioi.d.ready
-      ioi.d.bits := simdrammod.io.tlport.d.bits
+        // Connect outside the ones that can be untied
+        simdrammod.io.tlport.a.valid := ioi.a.valid
+        ioi.a.ready := simdrammod.io.tlport.a.ready
+        simdrammod.io.tlport.a.bits := ioi.a.bits
 
-      // Tie off the channels we dont need...
-      ioi.b.bits := 0.U.asTypeOf(new TLBundleB(dut.outer.memTLNode.in.head._1.params))
-      ioi.b.valid := false.B
-      ioi.c.ready := false.B
-      ioi.e.ready := false.B
-      // REMEMBER: no usage of channels B, C and E (except for some TL Monitors)
+        ioi.d.valid := simdrammod.io.tlport.d.valid
+        simdrammod.io.tlport.d.ready := ioi.d.ready
+        ioi.d.bits := simdrammod.io.tlport.d.bits
+
+        // Tie off the channels we dont need...
+        ioi.b.bits := 0.U.asTypeOf(new TLBundleB(ioi.params))
+        ioi.b.valid := false.B
+        ioi.c.ready := false.B
+        ioi.e.ready := false.B
+        // REMEMBER: no usage of channels B, C and E (except for some TL Monitors)
+
+        // If the other-clock-memory is activated, we need to associate the clock and the reset
+        // NOTE: Please consider that supporting other-clock is not on the boundaries of this
+        // simulation. Please refrain of activating DDRPortOther
+        other.foreach {
+          case slowmemck =>
+            slowmemck.ChildClock := clock
+            slowmemck.ChildReset := reset
+        }
+      }
   }
 
   // Debug connections (This also handles the reset system)
@@ -224,15 +236,6 @@ class TEEHWHarness()(implicit p: Parameters) extends Module {
       pcie.pci_exp_rxn := false.B
       pcie.REFCLK_rxp := false.B
       pcie.REFCLK_rxn := false.B
-  }
-
-  // If the other-clock-memory is activated, we need to associate the clock and the reset
-  // NOTE: Please consider that supporting other-clock is not on the boundaries of this
-  // simulation. Please refrain of activating DDRPortOther
-  dut.slowmemck.foreach{
-    case slowmemck =>
-      slowmemck.ChildClock := clock
-      slowmemck.ChildReset := reset
   }
 
 }

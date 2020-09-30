@@ -3,8 +3,8 @@
 #########################################################################################
 base_dir=$(abspath ../../../../..)
 chipyard_dir=$(base_dir)/hardware/chipyard
-vsrc_dir=$(abspath .)
-opentitan_dir=$(vsrc_dir)/opentitan
+vsrc_dir=$(base_dir)/hardware/teehw/vsrc/
+opentitan_dir=$(base_dir)/hardware/opentitan
 
 # name of output pre-processed verilog file
 IBEX_PREPROC_VERILOG = IbexBlackbox.preprocessed.sv
@@ -25,7 +25,8 @@ IBEX_OPENTITAN_PKGS = \
 IBEX_OPENTITAN_VSRCS = \
 	$(opentitan_dir)/hw/ip/tlul/rtl/tlul_adapter_host.sv \
 	$(opentitan_dir)/hw/ip/tlul/rtl/tlul_fifo_sync.sv \
-	$(vsrc_dir)/vsrc/rv_core_ibex_blackbox/prim_ram_1p.sv \
+	$(opentitan_dir)/hw/vendor/lowrisc_ibex/syn/rtl/prim_clock_gating.v \
+	$(vsrc_dir)/rv_core_ibex_blackbox/prim_ram_1p.sv \
 	$(opentitan_dir)/hw/vendor/lowrisc_ibex/rtl/ibex_alu.sv \
 	$(opentitan_dir)/hw/vendor/lowrisc_ibex/rtl/ibex_compressed_decoder.sv \
 	$(opentitan_dir)/hw/vendor/lowrisc_ibex/rtl/ibex_controller.sv \
@@ -48,7 +49,7 @@ IBEX_OPENTITAN_VSRCS = \
 	$(opentitan_dir)/hw/ip/rv_core_ibex/rtl/rv_core_ibex.sv
 
 IBEX_OPENTITAN_WRAPPER = \
-	$(vsrc_dir)/vsrc/rv_core_ibex_blackbox/IbexBlackbox.sv
+	$(vsrc_dir)/rv_core_ibex_blackbox/IbexBlackbox.sv
 
 IBEX_ALL_VSRCS = $(IBEX_OPENTITAN_PKGS) $(IBEX_OPENTITAN_VSRCS) $(IBEX_OPENTITAN_WRAPPER)
 

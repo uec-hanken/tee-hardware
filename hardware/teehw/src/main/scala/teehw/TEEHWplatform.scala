@@ -69,38 +69,40 @@ class TEEHWSystem(implicit p: Parameters) extends TEEHWSubsystem
   val tlclock = new FixedClockResource("tlclk", p(FreqKeyMHz))
 
   // Main memory controller (TL memory controller)
-  val memdevice = new MemoryDevice
-  val mainMemParam = TLManagerPortParameters(
-    managers = Seq(TLManagerParameters(
-      address = AddressSet.misaligned(p(ExtMem).get.master.base,  p(ExtMem).get.master.size),
-      resources = memdevice.reg,
-      regionType = RegionType.UNCACHED, // cacheable
-      executable = true,
-      supportsGet = TransferSizes(1, mbus.blockBytes),
-      supportsPutFull = TransferSizes(1, mbus.blockBytes),
-      supportsPutPartial = TransferSizes(1, mbus.blockBytes),
-      fifoId             = Some(0),
-      mayDenyPut         = true,
-      mayDenyGet         = true
-    )),
-    beatBytes = p(ExtMem).get.master.beatBytes
-  )
-  val memTLNode = TLManagerNode(Seq(mainMemParam))
-  val island = if(p(DDRPortOther)) {
-    //val source = LazyModule(new TLAsyncCrossingSource())
-    //val sink = LazyModule(new TLAsyncCrossingSink(AsyncQueueParams(depth = 1, sync = 3, safe = true, narrow = false)))
-    //val buffer  = LazyModule(new TLBuffer) // We removed a buffer in the TOP
-    val island = LazyModule(new SlowMemIsland(mbus.blockBytes))
-    //memTLNode := buffer.node := island.node := mbus.toDRAMController(Some("tl"))()
-    island.crossTLIn(island.node) := mbus.toDRAMController(Some("tl"))()
-    memTLNode := island.node
-    Some(island)
-  } else {
-    val buffer  = LazyModule(new TLBuffer)
-    memTLNode := buffer.node := mbus.toDRAMController(Some("tl"))()
-    None
+  val memctl: Option[(TLManagerNode, Option[SlowMemIsland])] = p(ExtMem).map{ A =>
+    val memdevice = new MemoryDevice
+    val mainMemParam = TLManagerPortParameters(
+      managers = Seq(TLManagerParameters(
+        address = AddressSet.misaligned(A.master.base,  A.master.size),
+        resources = memdevice.reg,
+        regionType = RegionType.UNCACHED, // cacheable
+        executable = true,
+        supportsGet = TransferSizes(1, mbus.blockBytes),
+        supportsPutFull = TransferSizes(1, mbus.blockBytes),
+        supportsPutPartial = TransferSizes(1, mbus.blockBytes),
+        fifoId             = Some(0),
+        mayDenyPut         = true,
+        mayDenyGet         = true
+      )),
+      beatBytes = A.master.beatBytes
+    )
+    val memTLNode = TLManagerNode(Seq(mainMemParam))
+    val island = if(p(DDRPortOther)) {
+      //val source = LazyModule(new TLAsyncCrossingSource())
+      //val sink = LazyModule(new TLAsyncCrossingSink(AsyncQueueParams(depth = 1, sync = 3, safe = true, narrow = false)))
+      //val buffer  = LazyModule(new TLBuffer) // We removed a buffer in the TOP
+      val island = LazyModule(new SlowMemIsland(mbus.blockBytes))
+      //memTLNode := buffer.node := island.node := mbus.toDRAMController(Some("tl"))()
+      island.crossTLIn(island.node) := mbus.toDRAMController(Some("tl"))()
+      memTLNode := island.node
+      Some(island)
+    } else {
+      val buffer  = LazyModule(new TLBuffer)
+      memTLNode := buffer.node := mbus.toDRAMController(Some("tl"))()
+      None
+    }
+    (memTLNode, island)
   }
-
 
   // SPI to MMC conversion.
   // TODO: There is an intention from Sifive to do MMC, but has to be manual
@@ -193,19 +195,22 @@ class TEEHWSystemModule[+L <: TEEHWSystem](_outer: L)
     with DontTouch
 {
   // Main memory controller
-  val slowmemck = if(p(DDRPortOther)) {
-    val slowmemck = IO(new Bundle {
-      val ChildClock = Input(Clock())
-      val ChildReset = Input(Bool())
-    })
-    outer.island.get.module.io.ChildClock := slowmemck.ChildClock
-    outer.island.get.module.io.ChildReset := slowmemck.ChildReset
-    Some(slowmemck)
+  val memPorts = outer.memctl.map { A =>
+    val (memTLnode: TLManagerNode, island: Option[SlowMemIsland]) = A
+    val slowmemck = island.map { island =>
+      val slowmemck = IO(new Bundle {
+        val ChildClock = Input(Clock())
+        val ChildReset = Input(Bool())
+      })
+      island.module.io.ChildClock := slowmemck.ChildClock
+      island.module.io.ChildReset := slowmemck.ChildReset
+      slowmemck
+    }
+    val mem_tl = IO(HeterogeneousBag.fromNode(memTLnode.in))
+    (mem_tl zip memTLnode.in).foreach { case (io, (bundle, _)) => io <> bundle }
+    (mem_tl, slowmemck)
   }
-  else None
-
-  val mem_tl = IO(HeterogeneousBag.fromNode(outer.memTLNode.in))
-  (mem_tl zip outer.memTLNode.in).foreach { case (io, (bundle, _)) => io <> bundle }
+  val mem_tl = memPorts.map(_._1) // For making work HeterogeneousBag
 
   // SPI to MMC conversion
   val spi  = outer.spiNodes.zipWithIndex.map  { case(n,i) => n.makeIO()(ValName(s"spi_$i")) }
@@ -216,11 +221,11 @@ class TEEHWSystemModule[+L <: TEEHWSystem](_outer: L)
   // QSPI flash implementation.
   val qspi = outer.qspiNodes.zipWithIndex.map { case(n,i) => n.makeIO()(ValName(s"qspi_$i")) }
 
-  val pciePorts = if(p(IncludePCIe)) {
-    val p = IO(new XilinxVC707PCIeX1IO)
-    p <> outer.pcie.get.module.io.port
-    Some(p)
-  } else None
+  val pciePorts = outer.pcie.map { pcie =>
+    val port = IO(new XilinxVC707PCIeX1IO)
+    port <> pcie.module.io.port
+    port
+  }
 
   // Connect the global reset vector
   // In BootROM scenario: 0x20000000
@@ -245,7 +250,7 @@ class TLUL(val params: TLBundleParameters) extends Bundle {
   val d = Flipped(Decoupled(new TLBundleD(params)))
 }
 
-class TEEHWPlatformIO(val params: TLBundleParameters)
+class TEEHWPlatformIO(val params: Option[TLBundleParameters] = None)
                     (implicit val p: Parameters) extends Bundle {
   val pins = new Bundle {
     val jtag = new JTAGPins(() => PinGen(), false)
@@ -253,28 +258,24 @@ class TEEHWPlatformIO(val params: TLBundleParameters)
     val uart = new UARTPins(() => PinGen())
     //val i2c = new I2CPins(() => PinGen())
     val spi = new SPIPins(() => PinGen(), p(PeripherySPIKey)(0))
-    val qspi =
-      if(p(PeripherySPIFlashKey).isEmpty) None
-      else Some(new SPIPins(() => PinGen(), p(PeripherySPIFlashKey)(0)))
+    val qspi = p(PeripherySPIFlashKey).map{A => new SPIPins(() => PinGen(), A)}
   }
-  val usb11hs = if(p(PeripheryUSB11HSKey).nonEmpty) Some(new USB11HSPortIO) else None
+  val usb11hs = p(PeripheryUSB11HSKey).map{_ => new USB11HSPortIO}
   val jtag_reset = Input(Bool())
   val ndreset = Output(Bool())
-  val tlport = new TLUL(params)
-  val ChildClock = if(p(DDRPortOther)) Some(Input(Clock())) else None
-  val ChildReset = if(p(DDRPortOther)) Some(Input(Bool())) else None
-  val pciePorts =
-    if(p(IncludePCIe)) Some(new XilinxVC707PCIeX1IO)
-    else None
+  val tlport = params.map{par => new TLUL(par)}
+  val ChildClock = p(DDRPortOther).option(Input(Clock()))
+  val ChildReset = p(DDRPortOther).option(Input(Bool()))
+  val pciePorts = p(IncludePCIe).option(new XilinxVC707PCIeX1IO)
 }
 
 
 class TEEHWPlatform(implicit val p: Parameters) extends Module {
   val sys = Module(LazyModule(new TEEHWSystem).module)
 
-  // Not actually sure if "sys.outer.memTLNode.head.in.head._1.params" is the
+  // Not actually sure if "node.head.in.head._1.params" (where node is A._1) is the
   // correct way to get the params... TODO: Get the correct way
-  val io = IO(new TEEHWPlatformIO(sys.outer.memTLNode.in.head._1.params) )
+  val io = IO(new TEEHWPlatformIO(sys.outer.memctl.map{A => A._1.in.head._1.params} ) )
 
   // Add in debug-controlled reset.
   sys.reset := ResetCatchAndSync(clock, reset.toBool, 20)
@@ -290,33 +291,37 @@ class TEEHWPlatform(implicit val p: Parameters) extends Module {
   // The TL memory port. This is a configurable one for the address space
   // and the ports are exposed inside the "foreach". Do not worry, there is
   // only one memory (unless you configure multiple memories).
-  if(p(DDRPortOther)) {
-    sys.slowmemck.get.ChildClock := io.ChildClock.get
-    sys.slowmemck.get.ChildReset := io.ChildReset.get
-  }
-  sys.mem_tl.foreach{
-    case ioi:TLBundle =>
-      // Connect outside the ones that can be untied
-      io.tlport.a.valid := ioi.a.valid
-      ioi.a.ready := io.tlport.a.ready
-      io.tlport.a.bits := ioi.a.bits
 
-      ioi.d.valid := io.tlport.d.valid
-      io.tlport.d.ready := ioi.d.ready
-      ioi.d.bits := io.tlport.d.bits
+  (sys.memPorts zip io.tlport).foreach{
+    case ((ioh, other), tlport: TLUL) =>
+      ioh.foreach{ case ioi: TLBundle =>
+        // Connect outside the ones that can be untied
+        tlport.a.valid := ioi.a.valid
+        ioi.a.ready := tlport.a.ready
+        tlport.a.bits := ioi.a.bits
 
-      // Tie off the channels we dont need...
-      // ... I mean, we did tell the TLNodeParams that we only want Get and Put
-      ioi.b.bits := 0.U.asTypeOf(new TLBundleB(sys.outer.memTLNode.in.head._1.params))
-      ioi.b.valid := false.B
-      ioi.c.ready := false.B
-      ioi.e.ready := false.B
-      // Important NOTE: We did check connections until the mbus in verilog
-      // and there is no usage of channels B, C and E (except for some TL Monitors)
+        ioi.d.valid := tlport.d.valid
+        tlport.d.ready := ioi.d.ready
+        ioi.d.bits := tlport.d.bits
+
+        // Tie off the channels we dont need...
+        // ... I mean, we did tell the TLNodeParams that we only want Get and Put
+        ioi.b.bits := 0.U.asTypeOf(new TLBundleB(ioi.params))
+        ioi.b.valid := false.B
+        ioi.c.ready := false.B
+        ioi.e.ready := false.B
+        // Important NOTE: We did check connections until the mbus in verilog
+        // and there is no usage of channels B, C and E (except for some TL Monitors)
+      }
+
+      ((other zip io.ChildClock) zip io.ChildReset).map{ case ((k, ck), rst) =>
+        k.ChildClock := ck
+        k.ChildReset := rst
+      }
   }
 
   // Connect the USB to the outside (only the first one)
-  if(sys.usb11hs.nonEmpty) io.usb11hs.get <> sys.usb11hs(0)
+  (sys.usb11hs zip io.usb11hs).foreach{ case (sysusb, usbport) => sysusb <> usbport }
 
   //-----------------------------------------------------------------------
   // Check for unsupported rocket-chip connections
@@ -338,8 +343,9 @@ class TEEHWPlatform(implicit val p: Parameters) extends Module {
   GPIOPinsFromPort(io.pins.gpio, sys.gpio(0))
 
   // Dedicated SPI Pads
-  if(p(PeripherySPIFlashKey).nonEmpty)
-    SPIPinsFromPort(io.pins.qspi.get, sys.qspi(0), clock = sys.clock, reset = sys.reset.toBool, syncStages = 3)
+  (io.pins.qspi zip sys.qspi).foreach { case (pins_qspi, sys_qspi) =>
+    SPIPinsFromPort(pins_qspi, sys_qspi, clock = sys.clock, reset = sys.reset.toBool, syncStages = 3)
+  }
   SPIPinsFromPort(io.pins.spi, sys.spi(0), clock = sys.clock, reset = sys.reset.toBool, syncStages = 3)
 
   // JTAG Debug Interface
