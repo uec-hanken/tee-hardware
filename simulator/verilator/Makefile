@@ -100,8 +100,8 @@ VERILATOR_CC_OPTS = \
 	$(RISCV)/lib/libfesvr.a \
 	$(dramsim_lib)
 
-# default flags added for ariane
-ARIANE_VERILATOR_FLAGS = \
+# normal flags used for chipyard builds
+CHIPYARD_VERILATOR_FLAGS = \
 	--unroll-count 256 \
 	-Werror-PINMISSING \
 	-Werror-IMPLICIT \
@@ -111,11 +111,9 @@ ARIANE_VERILATOR_FLAGS = \
 	-Wno-UNUSED \
 	-Wno-UNOPTFLAT \
 	-Wno-BLKANDNBLK \
+	-Wno-REDEFMACRO \
+	-Wno-WIDTH \
 	-Wno-style \
-	-Wall
-
-# normal flags used for chipyard builds (that are incompatible with ariane)
-CHIPYARD_VERILATOR_FLAGS = \
 	--assert
 
 # Use --timescale to approximate timescale behavior of pre-4.034
@@ -124,7 +122,7 @@ VERILATOR_NONCC_OPTS = \
 	$(TIMESCALE_OPTS) \
 	--top-module $(VLOG_MODEL) \
 	-Wno-fatal \
-	$(shell if ! grep -iq "module.*ariane" $(build_dir)/*.*v; then echo "$(CHIPYARD_VERILATOR_FLAGS)"; else echo "$(ARIANE_VERILATOR_FLAGS)"; fi) \
+	$(CHIPYARD_VERILATOR_FLAGS) \
 	--output-split 10000 \
 	--output-split-cfuncs 100 \
 	--max-num-width 1048576 \

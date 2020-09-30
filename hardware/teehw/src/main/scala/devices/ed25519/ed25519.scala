@@ -15,6 +15,7 @@ import freechips.rocketchip.regmapper._
 import freechips.rocketchip.subsystem.{Attachable, PBUS, TLBusWrapperLocation}
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.util._
+import sys.process._
 
 case class ed25519Params(
   address: BigInt,
@@ -31,7 +32,7 @@ case class OMed255193Device(
 class ed25519PortIO extends Bundle {
 }
 
-class ed25519_base_point_multiplier extends BlackBox {
+class ed25519_base_point_multiplier extends BlackBox with HasBlackBoxResource {
   override def desiredName = "ed25519_mul_TOP_wrapper"
   val io = IO(new Bundle {
     val clk = Input(Clock())
@@ -44,6 +45,14 @@ class ed25519_base_point_multiplier extends BlackBox {
     val k_din = Input(UInt(32.W))
     val qy_dout = Output(UInt(32.W))
   })
+
+  // pre-process the verilog to remove "includes" and combine into one file
+  val make = "make -C hardware/teehw/src/main/resources ed25519_base"
+  val proc = make
+  require (proc.! == 0, "Failed to run preprocessing step")
+
+  // add wrapper/blackbox after it is pre-processed
+  addResource("/ed25519_base.preprocessed.v")
 }
 
 class curve25519_modular_multiplier extends BlackBox {
@@ -63,7 +72,7 @@ class curve25519_modular_multiplier extends BlackBox {
   })
 }
 
-class ed25519_sign_S_core extends BlackBox {
+class ed25519_sign_S_core extends BlackBox with HasBlackBoxResource {
   override def desiredName = "ed25519_sign_S_core_TOP_wrapper"
   val io = IO(new Bundle {
     val clk = Input(Clock())
@@ -76,6 +85,14 @@ class ed25519_sign_S_core extends BlackBox {
     val hashd_sm = Input(UInt(512.W))
     val core_S = Output(UInt(256.W))
   })
+
+  // pre-process the verilog to remove "includes" and combine into one file
+  val make = "make -C hardware/teehw/src/main/resources ed25519_sign"
+  val proc = make
+  require (proc.! == 0, "Failed to run preprocessing step")
+
+  // add wrapper/blackbox after it is pre-processed
+  addResource("/ed25519_sign.preprocessed.v")
 }
 
 abstract class ed25519(busWidthBytes: Int, val c: ed25519Params)

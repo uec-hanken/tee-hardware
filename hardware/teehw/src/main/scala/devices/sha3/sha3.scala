@@ -1,6 +1,7 @@
 package uec.teehardware.devices.sha3
 
 import chisel3._
+import chisel3.util.HasBlackBoxResource
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.devices.tilelink.{BasicBusBlockerParams, TLClockBlocker}
 import freechips.rocketchip.diplomacy._
@@ -13,6 +14,7 @@ import freechips.rocketchip.regmapper._
 import freechips.rocketchip.subsystem.{Attachable, PBUS, TLBusWrapperLocation}
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.util._
+import sys.process._
 
 case class SHA3Params(address: BigInt)
 
@@ -25,7 +27,7 @@ case class OMSHA3Device(
 class SHA3PortIO extends Bundle {
 }
 
-class keccak extends BlackBox {
+class keccak extends BlackBox with HasBlackBoxResource {
   override def desiredName = "SHA3_TOP_wrapper"
   val io = IO(new Bundle {
     val clk = Input(Clock())
@@ -38,6 +40,14 @@ class keccak extends BlackBox {
     val out = Output(UInt(512.W))
     val out_ready = Output(Bool())
   })
+
+  // pre-process the verilog to remove "includes" and combine into one file
+  val make = "make -C hardware/teehw/src/main/resources sha3"
+  val proc = make
+  require (proc.! == 0, "Failed to run preprocessing step")
+
+  // add wrapper/blackbox after it is pre-processed
+  addResource("/SHA3.preprocessed.v")
 }
 
 abstract class SHA3(busWidthBytes: Int, val c: SHA3Params)

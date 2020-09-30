@@ -16,6 +16,7 @@ import freechips.rocketchip.subsystem._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.util._
 import uec.teehardware.devices.wb2axip._
+import sys.process._
 
 case class USB11HSParams(address: BigInt)
 
@@ -40,7 +41,7 @@ class USB11HSPortIO extends Bundle {
   //val vBusDetect = Input(Bool())
 }
 
-class usbHostSlave extends BlackBox {
+class usbHostSlave extends BlackBox with HasBlackBoxResource {
   val io = IO(new USB11HSPortIO {
     // Wishbone group
     val clk_i = Input(Clock())
@@ -63,6 +64,14 @@ class usbHostSlave extends BlackBox {
     val slaveNAKSentIntOut = Output(Bool())
     val slaveVBusDetIntOut = Output(Bool())
   })
+
+  // pre-process the verilog to remove "includes" and combine into one file
+  val make = "make -C hardware/teehw/src/main/resources usb11hs"
+  val proc = make
+  require (proc.! == 0, "Failed to run preprocessing step")
+
+  // add wrapper/blackbox after it is pre-processed
+  addResource("/usb11hs.preprocessed.v")
 }
 
 class USB11HS(blockBytes: Int, beatBytes: Int, params: USB11HSParams)(implicit p: Parameters) extends LazyModule {

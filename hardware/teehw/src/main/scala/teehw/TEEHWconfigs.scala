@@ -329,7 +329,7 @@ class ChipConfig extends Config(
 class MicroConfig extends Config(
   new WithNExtTopInterrupts(0) ++
   new WithNBreakpoints(1) ++
-  new NoSecurityPeripherals ++
+  new ChipPeripherals ++
   new WithJtagDTM ++
   new WithNMemoryChannels(0) ++
   new WithNBanks(0) ++
@@ -396,6 +396,8 @@ class VC707MiniConfig extends Config(
 import testchipip.SerialKey
 
 class WithSimulation extends Config((site, here, up) => {
+  // Frequency is always 100.0 MHz in simulation mode
+  case FreqKeyMHz => 100.0
   // Force the DMI to NOT be JTAG
   //case ExportDebug => up(ExportDebug, site).copy(protocols = Set(DMI))
   // Force also the Serial interface

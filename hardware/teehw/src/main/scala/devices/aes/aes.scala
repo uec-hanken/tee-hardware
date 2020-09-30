@@ -14,6 +14,7 @@ import freechips.rocketchip.regmapper._
 import freechips.rocketchip.subsystem.{Attachable, PBUS, TLBusWrapperLocation}
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.util._
+import sys.process._
 
 case class AESParams(address: BigInt)
 
@@ -26,7 +27,7 @@ case class OMAESDevice(
 class AESPortIO extends Bundle {
 }
 
-class aes_core extends BlackBox {
+class aes_core extends BlackBox with HasBlackBoxResource {
   override def desiredName = "aes_core_TOP_wrapper"
   val io = IO(new Bundle {
     val clk = Input(Clock())
@@ -44,6 +45,14 @@ class aes_core extends BlackBox {
     val result = Output(UInt(128.W))
     val result_valid = Output(Bool())
   })
+
+  // pre-process the verilog to remove "includes" and combine into one file
+  val make = "make -C hardware/teehw/src/main/resources aes"
+  val proc = make
+  require (proc.! == 0, "Failed to run preprocessing step")
+
+  // add wrapper/blackbox after it is pre-processed
+  addResource("/aes.preprocessed.v")
 }
 
 abstract class AES(busWidthBytes: Int, val c: AESParams, divisorInit: Int = 0)

@@ -1,2 +1,3 @@
 *.preprocessed.sv
+*.preprocessed.v
 
