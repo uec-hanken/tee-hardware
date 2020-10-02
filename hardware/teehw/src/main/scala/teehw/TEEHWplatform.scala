@@ -24,7 +24,13 @@ import uec.teehardware.devices.ed25519._
 import uec.teehardware.devices.random._
 import uec.teehardware.devices.sha3._
 import uec.teehardware.devices.usb11hs._
-import uec.rocketchip.subsystem._
+import uec.teehardware.devices.opentitan.aes._
+import uec.teehardware.devices.opentitan.alert._
+import uec.teehardware.devices.opentitan.flash_ctrl._
+import uec.teehardware.devices.opentitan.hmac._
+import uec.teehardware.devices.opentitan.keymgr._
+import uec.teehardware.devices.opentitan.kmac._
+import uec.teehardware.devices.opentitan.otp_ctrl._
 import testchipip.{CanHavePeripherySerial, CanHavePeripherySerialModuleImp}
 
 class SlowMemIsland(blockBytes: Int, val crossing: ClockCrossingType = AsynchronousCrossing(8))(implicit p: Parameters)
@@ -241,7 +247,7 @@ object PinGen {
 }
 
 //-------------------------------------------------------------------------
-// E300ArtyDevKitPlatformIO
+// TEEHWPlatformIO
 //-------------------------------------------------------------------------
 
 // TODO: Why this does not exist?

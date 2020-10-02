@@ -19,12 +19,18 @@ import uec.teehardware.devices.ed25519._
 import uec.teehardware.devices.sha3._
 import uec.teehardware.devices.usb11hs._
 import uec.teehardware.devices.random._
+import uec.teehardware.devices.opentitan.aes._
+import uec.teehardware.devices.opentitan.alert._
+import uec.teehardware.devices.opentitan.flash_ctrl._
+import uec.teehardware.devices.opentitan.hmac._
+import uec.teehardware.devices.opentitan.keymgr._
+import uec.teehardware.devices.opentitan.kmac._
+import uec.teehardware.devices.opentitan.otp_ctrl._
 import boom.common._
 import boom.ifu._
 import boom.exu._
 import boom.lsu._
-import uec.teehardware.opentitan.rv_core_ibex.WithNIbexCores
-//import sifive.freedom.unleashed.DevKitFPGAFrequencyKey
+import uec.teehardware.ibex._
 
 // The number of gpios that we want as input
 case object GPIOInKey extends Field[Int](8)
@@ -230,6 +236,7 @@ class ChipPeripherals extends Config((site, here, up) => {
   case PeripheryGPIOKey => List(
     GPIOParams(address = BigInt(0x64002000L), width = 16))
   case GPIOInKey => 8
+    // TEEHW devices
   case PeripherySHA3Key => List(
     SHA3Params(address = BigInt(0x64003000L)))
   case Peripheryed25519Key => List(
@@ -242,6 +249,8 @@ class ChipPeripherals extends Config((site, here, up) => {
     USB11HSParams(address = BigInt(0x64008000L)))
   case PeripheryRandomKey => List(
     RandomParams(address = BigInt(0x64009000L)))
+    // OpenTitan devices
+  case PeripheryAESOTKey => List()
 })
 
 class NoSecurityPeripherals extends Config((site, here, up) => {
@@ -393,15 +402,13 @@ class VC707MiniConfig extends Config(
   })
 )
 
-import testchipip.SerialKey
-
 class WithSimulation extends Config((site, here, up) => {
-  // Frequency is always 100.0 MHz in simulation mode
+  // Frequency is always 100.0 MHz in simulation mode, independent of the board
   case FreqKeyMHz => 100.0
   // Force the DMI to NOT be JTAG
   //case ExportDebug => up(ExportDebug, site).copy(protocols = Set(DMI))
   // Force also the Serial interface
-  case SerialKey => true
+  case testchipip.SerialKey => true
   /* Force to use QSPI-scenario because then the XIP will be put in the BootROM */
   /* Simulation needs the hang function in the XIP */
   case PeripheryMaskROMKey => List(

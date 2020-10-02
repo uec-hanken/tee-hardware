@@ -1,6 +1,6 @@
 // See LICENSE
 
-package uec.teehardware.opentitan.rv_core_ibex
+package uec.teehardware.ibex
 
 import java.lang.reflect.InvocationTargetException
 

@@ -1,6 +1,6 @@
 // See LICENSE
 
-package uec.teehardware.opentitan.rv_core_ibex
+package uec.teehardware.ibex
 
 import chisel3._
 import chisel3.util.{log2Up}

@@ -1,4 +1,4 @@
-package uec.teehardware.opentitan.rv_core_ibex
+package uec.teehardware.ibex
 
 import sys.process._
 import chisel3._
@@ -7,40 +7,8 @@ import chisel3.experimental.{IntParam, RawParam, StringParam}
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.util._
 import uec.teehardware._
-
-class tl_a_user_t extends Bundle {
-  val rsvd1 = UInt(7.W)
-  val parity_en = Bool()
-  val parity = UInt(8.W)
-}
-
-case object tl_a_user_t_Extra extends ControlKey[tl_a_user_t]("tl_a_user_t")
-case class tl_a_user_t_ExtraField() extends BundleField(tl_a_user_t_Extra) {
-  def data = Output(new tl_a_user_t())
-  def default(x: tl_a_user_t) = {
-    x.rsvd1   := 0.U
-    x.parity_en := false.B
-    x.parity := 0.U
-  }
-}
-
-case object UIntExtra extends ControlKey[UInt]("uint")
-case class UIntExtraField(size: Int) extends BundleField(UIntExtra) {
-  def data = Output(UInt(size.W))
-  def default(x: UInt) = {
-    x := 0.U
-  }
-}
-
-class esc_tx_t extends Bundle{
-  val esc_p = Bool()
-  val esc_n = Bool()
-}
-
-class esc_rx_t extends Bundle{
-  val resp_p = Bool()
-  val resp_n = Bool()
-}
+import uec.teehardware.devices.opentitan._
+import uec.teehardware.devices.opentitan.top_pkg._
 
 class IbexBlackbox
 (
@@ -90,14 +58,6 @@ class IbexBlackbox
     with HasBlackBoxResource
 {
   // The TLparams. Those are very specitic
-  // from top_pkg.sv
-  val TL_AW = 32
-  val TL_DW = 32
-  val TL_AIW = 8    // a_source, d_source
-  val TL_DIW = 1    // d_sink
-  val TL_DUW = 16   // d_user
-  val TL_DBW = (TL_DW>>3)
-  val TL_SZW = log2Ceil(log2Ceil(TL_DBW)+1)
   val TLparams = new TLBundleParameters(
     addressBits = TL_AW,
     dataBits = TL_DW,
