@@ -64,23 +64,6 @@ class aes_wrapper
 
   require(SecStartTriggerDelay >= 0, "SecStartTriggerDelay needs to be positive")
 
-  // The TLparams. Those are very specitic
-  val TLparams = new TLBundleParameters(
-    addressBits = TL_AW,
-    dataBits = TL_DW,
-    sourceBits = TL_AIW,
-    sinkBits = TL_DIW,
-    sizeBits = TL_SZW,
-    echoFields = Seq(),
-    requestFields = Seq(
-      tl_a_user_t_ExtraField()
-    ),
-    responseFields = Seq(
-      UIntExtraField(TL_DUW)
-    ),
-    hasBCE = false
-  )
-
   val io = IO(new Bundle {
     // Clock and Reset
     val clk_i = Input(Clock())
@@ -90,7 +73,7 @@ class aes_wrapper
     val idle_o = Output(Bool())
 
     // Bus interface
-    val tl = Flipped(new TLBundle(TLparams))
+    val tl = Flipped(new TLBundle(OpenTitanTLparams))
 
     // Alerts
     val alert_rx_i = Vec(aes_reg_pkg.NumAlerts, Input(new alert_rx_t()))
@@ -98,12 +81,13 @@ class aes_wrapper
   })
 
   // pre-process the verilog to remove "includes" and combine into one file
-  val make = "make -C hardware/teehw/src/main/resources aes2"
+  val make = "make -C hardware/teehw/src/main/resources aesot"
   val proc = make
   require (proc.! == 0, "Failed to run preprocessing step")
 
   // add wrapper/blackbox after it is pre-processed
-  addResource("/aes2.preprocessed.v")
+  addResource("/aesot.preprocessed.sv")
+  addResource("/aesot.preprocessed.v")
 }
 
 class AESOT(blockBytes: Int, beatBytes: Int, params: AESOTParams)(implicit p: Parameters) extends LazyModule {
@@ -122,21 +106,18 @@ class AESOT(blockBytes: Int, beatBytes: Int, params: AESOTParams)(implicit p: Pa
   // Allow this device to extend the DTS mapping
   def extraResources(resources: ResourceBindings) = Map[String, Seq[ResourceValue]]()
 
-  // Create our interrupt node
-  val intnode = IntSourceNode(IntSourcePortSimple(num = 0, resources = Seq(Resource(device, "int"))))
-
   // Create the alert node
   val alertnode = AlertSourceNode(AlertSourcePortSimple(num = aes_reg_pkg.NumAlerts, resources = Seq(Resource(device, "alert"))))
 
-  val peripheralParam = TLManagerPortParameters(
+  val peripheralParam = TLSlavePortParameters.v1(
     managers = Seq(TLManagerParameters(
       address = AddressSet.misaligned(params.address,  0x1000),
       resources = device.reg,
       regionType = RegionType.GET_EFFECTS, // NOT cacheable
       executable = false,
-      supportsGet = TransferSizes(1, 1),
-      supportsPutFull = TransferSizes(1, 1),
-      supportsPutPartial = TransferSizes(1, 1),
+      supportsGet = TransferSizes(1, 4),
+      supportsPutFull = TransferSizes(1, 4),
+      supportsPutPartial = TransferSizes(1, 4),
       fifoId             = Some(0)
     )),
     beatBytes = 4 // 32-bit stuff
@@ -146,18 +127,17 @@ class AESOT(blockBytes: Int, beatBytes: Int, params: AESOTParams)(implicit p: Pa
   // Conversion nodes
   //val axifrag = LazyModule(new AXI4Fragmenter())
   val tlwidth = LazyModule(new TLWidthWidget(beatBytes))
-  val tlfrag = LazyModule(new TLFragmenter(1, blockBytes))
+  val tlfrag = LazyModule(new TLFragmenter(4, blockBytes))
   val node = TLBuffer()
 
   peripheralNode :=
-    tlfrag.node :=
     tlwidth.node :=
+    tlfrag.node :=
     node
 
   lazy val module = new LazyModuleImp(this) {
 
     val io = port
-    val (interrupts, _) = intnode.out(0) // Expose the interrupt signals
     val (alerts, _) = alertnode.out(0) // Expose the alert signals
 
     // Instance the AES black box
@@ -216,6 +196,7 @@ class AESOT(blockBytes: Int, beatBytes: Int, params: AESOTParams)(implicit p: Pa
 case class AESOTAttachParams
 (
   par: AESOTParams,
+  alertNode: AlertInwardNode,
   controlWhere: TLBusWrapperLocation = PBUS,
   blockerAddr: Option[BigInt] = None,
   controlXType: ClockCrossingType = NoCrossing,
@@ -239,7 +220,7 @@ case class AESOTAttachParams
 
       clockDomainWrapper.clockNode := (controlXType match {
         case _: SynchronousCrossing =>
-          cbus.dtsClk.map(_.bind(per.device))
+          cbus.dtsClk.foreach(_.bind(per.device))
           cbus.fixedClockNode
         case _: RationalCrossing =>
           cbus.clockNode
@@ -253,11 +234,7 @@ case class AESOTAttachParams
         := blockerOpt.map { _.node := bus } .getOrElse { bus })
     }
 
-    (intXType match {
-      case _: SynchronousCrossing => where.ibus.fromSync
-      case _: RationalCrossing => where.ibus.fromRational
-      case _: AsynchronousCrossing => where.ibus.fromAsync
-    }) := per.intnode
+    alertNode := per.alertnode
 
     LogicalModuleTree.add(where.logicalTreeNode, per.logicalTreeNode)
 

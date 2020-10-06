@@ -228,8 +228,8 @@ class TLULtoMIG(cacheBlockBytes: Int, TLparams: TLBundleParameters)(implicit p :
 
   // Create a dummy node where we can attach our silly TL port
   val node = TLClientNode(Seq.tabulate(1) { channel =>
-    TLClientPortParameters(
-      clients = Seq(TLClientParameters(
+    TLMasterPortParameters.v1(
+      clients = Seq(TLMasterParameters.v1(
         name = "dummy",
         sourceId = IdRange(0, 64) // CKDUR: The maximum ID possible goes here.
       ))
@@ -286,8 +286,8 @@ class TLtoPCIe(cacheBlockBytes: Int,
 
   // Create dummy nodes where we can attach our silly TL ports
   val nodeSlave = TLClientNode(Seq.tabulate(1) { channel =>
-    TLClientPortParameters(
-      clients = Seq(TLClientParameters(
+    TLMasterPortParameters.v1(
+      clients = Seq(TLMasterParameters.v1(
         name = "dummy",
         sourceId = IdRange(0, 64), // CKDUR: The maximum ID possible goes here.
       ))
@@ -296,7 +296,7 @@ class TLtoPCIe(cacheBlockBytes: Int,
 
   // TODO: MODIFY EVERYTHING
   val device = new MemoryDevice
-  val nodeMaster = TLManagerNode(Seq(TLManagerPortParameters(
+  val nodeMaster = TLManagerNode(Seq(TLSlavePortParameters.v1(
     managers = Seq(TLManagerParameters(
       address = AddressSet.misaligned(0x0, -1), // TODO The whole space, I think
       resources = pcie.axi_to_pcie_x1.device.reg,
@@ -644,8 +644,8 @@ class TLULtoQuartusPlatform( cacheBlockBytes: Int,
 
   // Create a dummy node where we can attach our silly TL port
   val node = TLClientNode(Seq.tabulate(1) { channel =>
-    TLClientPortParameters(
-      clients = Seq(TLClientParameters(
+    TLMasterPortParameters.v1(
+      clients = Seq(TLMasterParameters.v1(
         name = "dummy",
         sourceId = IdRange(0, 64), // CKDUR: The maximum ID possible goes here.
       ))

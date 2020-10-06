@@ -5,12 +5,13 @@ import freechips.rocketchip.config.Field
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.subsystem.BaseSubsystem
 import freechips.rocketchip.util.HeterogeneousBag
+import uec.teehardware._
 
 case object PeripheryAESOTKey extends Field[List[AESOTParams]](List())
 
-trait HasPeripheryAESOT { this: BaseSubsystem =>
+trait HasPeripheryAESOT { this: TEEHWSubsystem =>
   val aesotDevs = p(PeripheryAESOTKey).map { case key =>
-    AESOTAttachParams(key).attachTo(this)
+    AESOTAttachParams(key, alertnode).attachTo(this)
   }
   val aesot = aesotDevs.map {
     case i =>

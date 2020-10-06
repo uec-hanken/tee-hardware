@@ -14,4 +14,7 @@ include ed25519_base.mk
 include ed25519_sign.mk
 include aes.mk
 include usb11.mk
+include aesot.mk
+include hmac.mk
+include alert.mk
 

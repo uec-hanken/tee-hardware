@@ -23,7 +23,7 @@ trait CanHaveMasterTLMemPort { this: BaseSubsystem =>
       val base = AddressSet(memPortParams.base, memPortParams.size - 1)
       val filter = AddressSet(channel * 128, ~((nMemoryChannels - 1) * 128))
 
-      TLManagerPortParameters(
+      TLSlavePortParameters.v1(
         managers = Seq(TLManagerParameters(
           address = base.intersect(filter).toList,
           resources = device.reg,

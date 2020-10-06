@@ -58,6 +58,10 @@ class TEEHWSystem(implicit p: Parameters) extends TEEHWSubsystem
     with HasPeripheryAES
     with HasPeripheryUSB11HS
     with HasPeripheryRandom
+    // The opentitan components
+    with HasPeripheryAESOT
+    with HasPeripheryHMAC
+    // The components that are directly instantiated here. Needed to be re-factored from the original
     //    with HasPeripheryI2C
     //    with HasPeripheryUART // NOTE: Already included
     //    with HasPeripherySPIFlash // NOTE: Already included
@@ -77,7 +81,7 @@ class TEEHWSystem(implicit p: Parameters) extends TEEHWSubsystem
   // Main memory controller (TL memory controller)
   val memctl: Option[(TLManagerNode, Option[SlowMemIsland])] = p(ExtMem).map{ A =>
     val memdevice = new MemoryDevice
-    val mainMemParam = TLManagerPortParameters(
+    val mainMemParam = TLSlavePortParameters.v1(
       managers = Seq(TLManagerParameters(
         address = AddressSet.misaligned(A.master.base,  A.master.size),
         resources = memdevice.reg,
@@ -190,6 +194,10 @@ class TEEHWSystemModule[+L <: TEEHWSystem](_outer: L)
     with HasPeripheryUSB11HSModuleImp
     with HasPeripheryRandomModuleImp
     with HasResetVectorWire
+    // The opentitan components
+    with HasPeripheryAESOTModuleImp
+    with HasPeripheryHMACModuleImp
+    // The components that are directly instantiated here. Needed to be re-factored from the original
     //    with HasPeripheryI2CModuleImp
     //    with HasPeripheryUARTModuleImp // NOTE: Already included
     //    with HasPeripherySPIFlashModuleImp // NOTE: Already included

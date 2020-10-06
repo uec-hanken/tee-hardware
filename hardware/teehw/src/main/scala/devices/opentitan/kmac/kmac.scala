@@ -19,18 +19,11 @@ import uec.teehardware.devices.opentitan._
 import uec.teehardware.devices.opentitan.top_pkg._
 import sys.process._
 
-object aes_reg_pkg {
-  def NumRegsKey = 8
-  def NumRegsIv = 4
-  def NumRegsData = 4
-  def NumAlerts = 2
-}
+case class KMACParams(address: BigInt)
 
-case class AESOTParams(address: BigInt)
-
-case class OMAESOTDevice
+case class OMKMACDevice
 (
   memoryRegions: Seq[OMMemoryRegion],
   interrupts: Seq[OMInterrupt],
-  _types: Seq[String] = Seq("OMAESDevice", "OMDevice", "OMComponent")
+  _types: Seq[String] = Seq("OMKMACDevice", "OMDevice", "OMComponent")
 ) extends OMDevice

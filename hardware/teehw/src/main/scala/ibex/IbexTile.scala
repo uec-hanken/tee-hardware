@@ -21,6 +21,8 @@ import freechips.rocketchip.interrupts._
 import freechips.rocketchip.util._
 import freechips.rocketchip.tile._
 import freechips.rocketchip.amba.axi4._
+import uec.teehardware.devices.opentitan._
+import uec.teehardware.devices.opentitan.top_pkg._
 
 case object IbexTilesKey extends Field[Seq[IbexTileParams]](Nil)
 
@@ -154,7 +156,7 @@ class IbexTile
 
   val imemNode = TLClientNode(Seq.tabulate(1) { channel =>
     TLMasterPortParameters.v1(
-      clients = Seq(TLClientParameters(
+      clients = Seq(TLMasterParameters.v1(
         name = iPortName,
         sourceId = IdRange(0, 2) // MAX_REQS(2) in rv_core_ibex
       )),
@@ -169,7 +171,7 @@ class IbexTile
 
   val dmemNode =  TLClientNode(Seq.tabulate(1) { channel =>
     TLMasterPortParameters.v1(
-      clients = Seq(TLClientParameters(
+      clients = Seq(TLMasterParameters.v1(
         name = iPortName,
         sourceId = IdRange(0, 2) // MAX_REQS(2) in rv_core_ibex
       )),

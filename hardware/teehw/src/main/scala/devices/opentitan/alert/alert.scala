@@ -24,16 +24,16 @@ object alert_reg_pkg {
   def N_ESC_SEV = 4
 }
 
-case class ALERTParams(address: BigInt)
+case class AlertParams(address: BigInt)
 
-case class OMALERTDevice
+case class OMAlertDevice
 (
   memoryRegions: Seq[OMMemoryRegion],
   interrupts: Seq[OMInterrupt],
-  _types: Seq[String] = Seq("OMALERTDevice", "OMDevice", "OMComponent")
+  _types: Seq[String] = Seq("OMAlertDevice", "OMDevice", "OMComponent")
 ) extends OMDevice
 
-class ALERTPortIO extends Bundle {
+class AlertPortIO extends Bundle {
   val esc_rx_i = Vec(alert_reg_pkg.N_ESC_SEV, Input(new esc_rx_t()))
   val esc_tx_o = Vec(alert_reg_pkg.N_ESC_SEV, Output(new esc_tx_t()))
 }
@@ -94,6 +94,7 @@ class alert_wrapper
   require (proc.! == 0, "Failed to run preprocessing step")
 
   // add wrapper/blackbox after it is pre-processed
+  addResource("/alert.preprocessed.sv")
   addResource("/alert.preprocessed.v")
 
   // TODO: Do the inline
@@ -105,17 +106,17 @@ class alert_wrapper
     """.stripMargin)
 }
 
-class ALERT(blockBytes: Int, beatBytes: Int, params: ALERTParams)(implicit p: Parameters) extends LazyModule {
+class Alert(blockBytes: Int, beatBytes: Int, params: AlertParams)(implicit p: Parameters) extends LazyModule {
 
   // Create a simple device for this peripheral
-  val device = new SimpleDevice("ALERT", Seq("lowRISC,alert-0.5")) {
+  val device = new SimpleDevice("Alert", Seq("lowRISC,alert-0.5")) {
     override def describe(resources: ResourceBindings): Description = {
       val Description(name, mapping) = super.describe(resources)
       Description(name, mapping ++ extraResources(resources))
     }
   }
 
-  val ioNode = BundleBridgeSource(() => (new ALERTPortIO).cloneType)
+  val ioNode = BundleBridgeSource(() => (new AlertPortIO).cloneType)
   val port = InModuleBody { ioNode.bundle }
 
   // Allow this device to extend the DTS mapping
@@ -125,24 +126,30 @@ class ALERT(blockBytes: Int, beatBytes: Int, params: ALERTParams)(implicit p: Pa
   val intnode = IntSourceNode(IntSourcePortSimple(num = 4, resources = Seq(Resource(device, "int"))))
 
   // Then also create the nexus node for the alert
-  val alertnode: AlertSinkNode = AlertSinkNode(Seq(AlertSinkPortParameters(Seq(AlertSinkParameters()))))
+  // TODO: We use nexus here, but the alerts does not "Input alert" and "generate alerts"
+  // TODO: We only require all the alerts, and plain connect them to the original OpenTitan alert module.
+  val alertnode: AlertNexusNode = AlertNexusNode(
+    sinkFn   = { _ => AlertSinkPortParameters(Seq(AlertSinkParameters())) },
+    sourceFn = { _ => AlertSourcePortParameters(Seq()) }, // TODO: So, no generation of alerts.
+    outputRequiresInput = false,
+    inputRequiresOutput = false)
   lazy val sources = alertnode.edges.in.map(_.source)
   lazy val flatSources = (sources zip sources.map(_.num).scanLeft(0)(_+_).init).map {
     case (s, o) => s.sources.map(z => z.copy(range = z.range.offset(o)))
   }.flatten
 
-  // Negotiated sizes
-  def nDevices: Int = alertnode.edges.in.map(_.source.num).sum
+  // Negotiated sizes (Note: nAlertNodes and nAlert are not the same)
+  def nAlert: Int = alertnode.edges.in.map(_.source.num).sum
 
-  val peripheralParam = TLManagerPortParameters(
+  val peripheralParam = TLSlavePortParameters.v1(
     managers = Seq(TLManagerParameters(
       address = AddressSet.misaligned(params.address,  0x1000),
       resources = device.reg,
       regionType = RegionType.GET_EFFECTS, // NOT cacheable
       executable = false,
-      supportsGet = TransferSizes(1, 1),
-      supportsPutFull = TransferSizes(1, 1),
-      supportsPutPartial = TransferSizes(1, 1),
+      supportsGet = TransferSizes(1, 4),
+      supportsPutFull = TransferSizes(1, 4),
+      supportsPutPartial = TransferSizes(1, 4),
       fifoId             = Some(0)
     )),
     beatBytes = 4 // 32-bit stuff
@@ -152,12 +159,12 @@ class ALERT(blockBytes: Int, beatBytes: Int, params: ALERTParams)(implicit p: Pa
   // Conversion nodes
   //val axifrag = LazyModule(new AXI4Fragmenter())
   val tlwidth = LazyModule(new TLWidthWidget(beatBytes))
-  val tlfrag = LazyModule(new TLFragmenter(1, blockBytes))
+  val tlfrag = LazyModule(new TLFragmenter(4, blockBytes))
   val node = TLBuffer()
 
   peripheralNode :=
-    tlfrag.node :=
     tlwidth.node :=
+    tlfrag.node :=
     node
 
   lazy val module = new LazyModuleImp(this) {
@@ -168,15 +175,15 @@ class ALERT(blockBytes: Int, beatBytes: Int, params: ALERTParams)(implicit p: Pa
     // Actual alerts here
     val (alerts, _) = alertnode.in(0)
 
-    println(s"Alert map (${nDevices} alerts):")
+    println(s"Alert map (${nAlert} alerts):")
     flatSources.foreach { s =>
       // +1 because 0 is reserved, +1-1 because the range is half-open
       println(s"  [${s.range.start+1}, ${s.range.end}] => ${s.name}")
     }
     println("")
 
-    // Instance the ALERT black box
-    val blackbox = Module(new alert_wrapper(nDevices))
+    // Instance the Alert black box
+    val blackbox = Module(new alert_wrapper(nAlert))
 
     // Obtain the TL bundle
     val (tl_in, tl_edge) = peripheralNode.in(0) // Extract the port from the node
@@ -189,9 +196,9 @@ class ALERT(blockBytes: Int, beatBytes: Int, params: ALERTParams)(implicit p: Pa
     // TODO: Because lowRISC do not like to use parameters (unless is convenient),
     // TODO: we need to only support up to 4 alerts, because that is the way
     // TODO: we can do it without modifying the original OT code
-    require(nDevices <= alert_reg_pkg.NAlerts, "Tell lowRISC to support more alerts")
+    require(nAlert <= alert_reg_pkg.NAlerts, "Tell lowRISC to support more alerts")
     for(i <- 0 until alert_reg_pkg.NAlerts) {
-      if(i < nDevices) {
+      if(i < nAlert) {
         blackbox.io.alert_tx_o(i).alert_n := alerts(i).alert_tx.alert_n
         blackbox.io.alert_tx_o(i).alert_p := alerts(i).alert_tx.alert_p
         alerts(i).alert_rx.ping_n := blackbox.io.alert_rx_i(i).ping_n
@@ -206,8 +213,8 @@ class ALERT(blockBytes: Int, beatBytes: Int, params: ALERTParams)(implicit p: Pa
     }
 
     // The escalates are connected separatelly
-    (port.esc_rx_i zip blackbox.io.esc_rx_i).foreach { case (a, b) => a := b }
-    (port.esc_tx_o zip blackbox.io.esc_tx_o).foreach { case (a, b) => b := a }
+    (port.esc_rx_i zip blackbox.io.esc_rx_i).foreach { case (a, b) => b := a }
+    (port.esc_tx_o zip blackbox.io.esc_tx_o).foreach { case (a, b) => a := b }
 
     // Connect the interrupts
     interrupts(0) := blackbox.io.intr_classa_o
@@ -231,10 +238,10 @@ class ALERT(blockBytes: Int, beatBytes: Int, params: ALERTParams)(implicit p: Pa
       val memRegions = DiplomaticObjectModelAddressing.getOMMemoryRegions(name, resourceBindings, None)
       val interrupts = DiplomaticObjectModelAddressing.describeInterrupts(name, resourceBindings)
       Seq(
-        OMALERTDevice(
+        OMAlertDevice(
           memoryRegions = memRegions.map(_.copy(
-            name = "ALERT",
-            description = "OpenTitan ALERT-SHA256 HWIP"
+            name = "Alert",
+            description = "OpenTitan Alert-SHA256 HWIP"
           )),
           interrupts = interrupts
         )
@@ -243,20 +250,23 @@ class ALERT(blockBytes: Int, beatBytes: Int, params: ALERTParams)(implicit p: Pa
   }
 }
 
-case class ALERTAttachParams
+case class AlertAttachParams
 (
-  par: ALERTParams,
+  par: AlertParams,
+  alertNode: AlertOutwardNode,
   controlWhere: TLBusWrapperLocation = PBUS,
   blockerAddr: Option[BigInt] = None,
   controlXType: ClockCrossingType = NoCrossing,
   intXType: ClockCrossingType = NoCrossing)
 (implicit val p: Parameters) {
 
-  def attachTo(where: Attachable)(implicit p: Parameters): ALERT = {
-    val name = s"ALERT_${ALERT.nextId()}"
+  def attachTo(where: Attachable)(implicit p: Parameters): Alert = {
+    val name = s"Alert_${Alert.nextId()}"
     val cbus = where.locateTLBusWrapper(controlWhere)
     val clockDomainWrapper = LazyModule(new ClockSinkDomain(take = None))
-    val per = clockDomainWrapper { LazyModule(new ALERT(cbus.blockBytes, cbus.beatBytes, par)) }
+
+    // The Alert lazymodule.
+    val per = clockDomainWrapper { LazyModule(new Alert(cbus.blockBytes, cbus.beatBytes, par)) }
     per.suggestName(name)
 
     cbus.coupleTo(s"device_named_$name") { bus =>
@@ -269,7 +279,7 @@ case class ALERTAttachParams
 
       clockDomainWrapper.clockNode := (controlXType match {
         case _: SynchronousCrossing =>
-          cbus.dtsClk.map(_.bind(per.device))
+          cbus.dtsClk.foreach(_.bind(per.device))
           cbus.fixedClockNode
         case _: RationalCrossing =>
           cbus.clockNode
@@ -289,13 +299,15 @@ case class ALERTAttachParams
       case _: AsynchronousCrossing => where.ibus.fromAsync
     }) := per.intnode
 
+    per.alertnode :=* alertNode
+
     LogicalModuleTree.add(where.logicalTreeNode, per.logicalTreeNode)
 
     per
   }
 }
 
-object ALERT {
+object Alert {
   val nextId = {
     var i = -1; () => {
       i += 1; i

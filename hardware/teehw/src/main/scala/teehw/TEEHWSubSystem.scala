@@ -7,32 +7,31 @@
 package uec.teehardware
 
 import chisel3._
-import chisel3.internal.sourceinfo.{SourceInfo}
-
+import chisel3.internal.sourceinfo.SourceInfo
 import freechips.rocketchip.config.{Field, Parameters}
 import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.devices.debug.{HasPeripheryDebug, HasPeripheryDebugModuleImp}
 import freechips.rocketchip.diplomacy._
-import freechips.rocketchip.diplomaticobjectmodel.model.{OMInterrupt}
-import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{RocketTileLogicalTreeNode, LogicalModuleTree}
+import freechips.rocketchip.diplomaticobjectmodel.model.OMInterrupt
+import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{LogicalModuleTree, RocketTileLogicalTreeNode}
 import freechips.rocketchip.tile._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.interrupts._
 import freechips.rocketchip.util._
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.amba.axi4._
-
-import boom.common.{BoomTile, BoomTilesKey, BoomCrossingKey, BoomTileParams}
-import ariane.{ArianeTile, ArianeTilesKey, ArianeCrossingKey, ArianeTileParams}
-import uec.teehardware.opentitan.rv_core_ibex.{IbexTile, IbexTilesKey,IbexCrossingKey, IbexTileParams}
-
-import testchipip.{DromajoHelper}
+import boom.common.{BoomCrossingKey, BoomTile, BoomTileParams, BoomTilesKey}
+import ariane.{ArianeCrossingKey, ArianeTile, ArianeTileParams, ArianeTilesKey}
+import uec.teehardware.ibex._
+import testchipip.DromajoHelper
+import uec.teehardware.devices.opentitan.alert._
 
 trait HasTEEHWTiles extends HasTiles
   with CanHavePeripheryPLIC
   with CanHavePeripheryCLINT
   with HasPeripheryDebug
-{ this: BaseSubsystem =>
+  with HasPeripheryAlert
+{ this: TEEHWSubsystem =>
 
   val module: HasTEEHWTilesModuleImp
 
@@ -90,11 +89,23 @@ trait HasTEEHWTiles extends HasTiles
 
 trait HasTEEHWTilesModuleImp extends HasTilesModuleImp
   with HasPeripheryDebugModuleImp
+  with HasPeripheryAlertModuleImp
 {
   val outer: HasTEEHWTiles
 }
 
-class TEEHWSubsystem(implicit p: Parameters) extends BaseSubsystem
+// The base subsystem for the TEE system. Just contains the alerts for now
+abstract class TEEHWBaseSubsystem(implicit p: Parameters) extends BaseSubsystem {
+  override val module: TEEHWBaseSubsystemModuleImp[TEEHWBaseSubsystem]
+
+  // The alert nexus
+  val alertnode = AlertXbar.apply
+}
+
+abstract class TEEHWBaseSubsystemModuleImp[+L <: TEEHWBaseSubsystem](_outer: L) extends BaseSubsystemModuleImp(_outer) {
+}
+
+class TEEHWSubsystem(implicit p: Parameters) extends TEEHWBaseSubsystem
   with HasTEEHWTiles
 {
   override lazy val module = new TEEHWSubsystemModuleImp(this)
@@ -102,7 +113,7 @@ class TEEHWSubsystem(implicit p: Parameters) extends BaseSubsystem
   def getOMInterruptDevice(resourceBindingsMap: ResourceBindingsMap): Seq[OMInterrupt] = Nil
 }
 
-class TEEHWSubsystemModuleImp[+L <: TEEHWSubsystem](_outer: L) extends BaseSubsystemModuleImp(_outer)
+class TEEHWSubsystemModuleImp[+L <: TEEHWSubsystem](_outer: L) extends TEEHWBaseSubsystemModuleImp(_outer)
   with HasResetVectorWire
   with HasTEEHWTilesModuleImp
 {

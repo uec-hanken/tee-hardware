@@ -60,6 +60,10 @@ object AlertSinkPortSimple
 }
 
 case class AlertEdge(source: AlertSourcePortParameters, sink: AlertSinkPortParameters, params: Parameters, sourceInfo: SourceInfo)
+  extends FormatEdge{
+  // TODO: Maybe we can improve these?
+  def formatEdge = "Alert node\n"
+}
 class AlertEdgeIn(source: AlertSourcePortParameters, sink: AlertSinkPortParameters, params: Parameters, sourceInfo: SourceInfo)
   extends AlertEdge(source, sink, params, sourceInfo)
 class AlertEdgeOut(source: AlertSourcePortParameters, sink: AlertSinkPortParameters, params: Parameters, sourceInfo: SourceInfo)

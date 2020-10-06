@@ -94,7 +94,7 @@ class USB11HS(blockBytes: Int, beatBytes: Int, params: USB11HSParams)(implicit p
   // Create our interrupt node
   val intnode = IntSourceNode(IntSourcePortSimple(num = 10, resources = Seq(Resource(device, "int"))))
 
-  val peripheralParam = TLManagerPortParameters(
+  val peripheralParam = TLSlavePortParameters.v1(
     managers = Seq(TLManagerParameters(
       address = AddressSet.misaligned(params.address,  0x1000),
       resources = device.reg,

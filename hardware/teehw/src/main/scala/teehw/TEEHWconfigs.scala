@@ -250,7 +250,12 @@ class ChipPeripherals extends Config((site, here, up) => {
   case PeripheryRandomKey => List(
     RandomParams(address = BigInt(0x64009000L)))
     // OpenTitan devices
-  case PeripheryAESOTKey => List()
+  case PeripheryAESOTKey => List(
+    AESOTParams(address = BigInt(0x64010000L)))
+  case PeripheryHMACKey => List(
+    HMACParams(address = BigInt(0x64011000L)))
+  case PeripheryAlertKey =>
+    AlertParams(address = BigInt(0x64100000L))
 })
 
 class NoSecurityPeripherals extends Config((site, here, up) => {
@@ -267,6 +272,10 @@ class NoSecurityPeripherals extends Config((site, here, up) => {
   case PeripheryAESKey => List()
   case PeripheryUSB11HSKey => List()
   case PeripheryRandomKey => List()
+  case PeripheryAESOTKey => List()
+  case PeripheryHMACKey => List()
+  case PeripheryAlertKey =>
+    AlertParams(address = BigInt(0x64100000L))
 })
 
 class MBus32 extends Config((site, here, up) => {

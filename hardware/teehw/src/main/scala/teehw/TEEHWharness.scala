@@ -3,16 +3,16 @@
 package uec.teehardware
 
 import chisel3._
-import freechips.rocketchip.amba.axi4.{AXI4Deinterleaver, AXI4IdIndexer, AXI4SlaveNode, AXI4SlaveParameters, AXI4SlavePortParameters, AXI4UserYanker}
+import freechips.rocketchip.amba.axi4._
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.devices.debug.Debug
-import freechips.rocketchip.diplomacy.{AddressSet, IdRange, LazyModule, LazyModuleImp, MemoryDevice, RegionType, TransferSizes}
-import freechips.rocketchip.subsystem.{CacheBlockBytes, ExtMem}
+import freechips.rocketchip.diplomacy._
+import freechips.rocketchip.subsystem._
 import freechips.rocketchip.util.AsyncResetReg
 import freechips.rocketchip.system._
-import freechips.rocketchip.tilelink.{TLBundle, TLBundleB, TLBundleParameters, TLClientNode, TLClientParameters, TLClientPortParameters, TLToAXI4}
+import freechips.rocketchip.tilelink._
 import sifive.blocks.devices.gpio.GPIOPortIO
-import sifive.blocks.devices.spi.{PeripherySPIFlashKey, SPIPortIO}
+import sifive.blocks.devices.spi._
 import sifive.blocks.devices.uart._
 import testchipip.{SerialAdapter, SimDRAM, SimSPIFlashModel}
 
@@ -25,8 +25,8 @@ class TLULtoSimDRAM( cacheBlockBytes: Int,
 
   // Create a dummy node where we can attach our TL port
   val node = TLClientNode(Seq.tabulate(1) { channel =>
-    TLClientPortParameters(
-      clients = Seq(TLClientParameters(
+    TLMasterPortParameters.v1(
+      clients = Seq(TLMasterParameters.v1(
         name = "dummy",
         sourceId = IdRange(0, 64), // CKDUR: The maximum ID possible goes here.
       ))

@@ -52,30 +52,13 @@ class hmac_wrapper
   )
     with HasBlackBoxResource {
 
-  // The TLparams. Those are very specitic
-  val TLparams = new TLBundleParameters(
-    addressBits = TL_AW,
-    dataBits = TL_DW,
-    sourceBits = TL_AIW,
-    sinkBits = TL_DIW,
-    sizeBits = TL_SZW,
-    echoFields = Seq(),
-    requestFields = Seq(
-      tl_a_user_t_ExtraField()
-    ),
-    responseFields = Seq(
-      UIntExtraField(TL_DUW)
-    ),
-    hasBCE = false
-  )
-
   val io = IO(new Bundle {
     // Clock and Reset
     val clk_i = Input(Clock())
     val rst_ni = Input(Bool())
 
     // Bus interface
-    val tl = Flipped(new TLBundle(TLparams))
+    val tl = Flipped(new TLBundle(OpenTitanTLparams))
 
     // Interrupts
     val intr_hmac_done_o = Output(Bool())
@@ -93,6 +76,7 @@ class hmac_wrapper
   require (proc.! == 0, "Failed to run preprocessing step")
 
   // add wrapper/blackbox after it is pre-processed
+  addResource("/hmac.preprocessed.sv")
   addResource("/hmac.preprocessed.v")
 }
 
@@ -118,15 +102,15 @@ class HMAC(blockBytes: Int, beatBytes: Int, params: HMACParams)(implicit p: Para
   // Create the alert node
   val alertnode = AlertSourceNode(AlertSourcePortSimple(num = hmac_reg_pkg.NumAlerts, resources = Seq(Resource(device, "alert"))))
 
-  val peripheralParam = TLManagerPortParameters(
+  val peripheralParam = TLSlavePortParameters.v1(
     managers = Seq(TLManagerParameters(
       address = AddressSet.misaligned(params.address,  0x1000),
       resources = device.reg,
       regionType = RegionType.GET_EFFECTS, // NOT cacheable
       executable = false,
-      supportsGet = TransferSizes(1, 1),
-      supportsPutFull = TransferSizes(1, 1),
-      supportsPutPartial = TransferSizes(1, 1),
+      supportsGet = TransferSizes(1, 4),
+      supportsPutFull = TransferSizes(1, 4),
+      supportsPutPartial = TransferSizes(1, 4),
       fifoId             = Some(0)
     )),
     beatBytes = 4 // 32-bit stuff
@@ -136,12 +120,12 @@ class HMAC(blockBytes: Int, beatBytes: Int, params: HMACParams)(implicit p: Para
   // Conversion nodes
   //val axifrag = LazyModule(new AXI4Fragmenter())
   val tlwidth = LazyModule(new TLWidthWidget(beatBytes))
-  val tlfrag = LazyModule(new TLFragmenter(1, blockBytes))
+  val tlfrag = LazyModule(new TLFragmenter(4, blockBytes))
   val node = TLBuffer()
 
   peripheralNode :=
-    tlfrag.node :=
     tlwidth.node :=
+    tlfrag.node :=
     node
 
   lazy val module = new LazyModuleImp(this) {
@@ -208,6 +192,7 @@ class HMAC(blockBytes: Int, beatBytes: Int, params: HMACParams)(implicit p: Para
 case class HMACAttachParams
 (
   par: HMACParams,
+  alertNode: AlertInwardNode,
   controlWhere: TLBusWrapperLocation = PBUS,
   blockerAddr: Option[BigInt] = None,
   controlXType: ClockCrossingType = NoCrossing,
@@ -231,7 +216,7 @@ case class HMACAttachParams
 
       clockDomainWrapper.clockNode := (controlXType match {
         case _: SynchronousCrossing =>
-          cbus.dtsClk.map(_.bind(per.device))
+          cbus.dtsClk.foreach(_.bind(per.device))
           cbus.fixedClockNode
         case _: RationalCrossing =>
           cbus.clockNode
@@ -250,6 +235,8 @@ case class HMACAttachParams
       case _: RationalCrossing => where.ibus.fromRational
       case _: AsynchronousCrossing => where.ibus.fromAsync
     }) := per.intnode
+
+    alertNode := per.alertnode
 
     LogicalModuleTree.add(where.logicalTreeNode, per.logicalTreeNode)
 
