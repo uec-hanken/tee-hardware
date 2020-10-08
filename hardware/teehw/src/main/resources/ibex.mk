@@ -7,22 +7,15 @@ opentitan_dir=$(base_dir)/hardware/opentitan
 IBEX_PREPROC_SVERILOG = IbexBlackbox.preprocessed.sv
 IBEX_PREPROC_VERILOG = IbexBlackbox.preprocessed.v
 
-.PHONY: default $(IBEX_PREPROC_SVERILOG) $(IBEX_PREPROC_VERILOG)
+.PHONY: ibex $(IBEX_PREPROC_SVERILOG) $(IBEX_PREPROC_VERILOG)
 ibex: $(IBEX_PREPROC_SVERILOG) $(IBEX_PREPROC_VERILOG)
 
 #########################################################################################
 # includes and vsrcs
 #########################################################################################
-IBEX_OPENTITAN_PKGS = \
-	$(opentitan_dir)/hw/top_earlgrey/rtl/top_pkg.sv \
-	$(opentitan_dir)/hw/ip/tlul/rtl/tlul_pkg.sv \
-	$(opentitan_dir)/hw/ip/prim/rtl/prim_esc_pkg.sv \
-	$(opentitan_dir)/hw/ip/prim/rtl/prim_util_pkg.sv \
-	$(opentitan_dir)/hw/vendor/lowrisc_ibex/rtl/ibex_pkg.sv
+IBEX_OPENTITAN_PKGS = 
 
 IBEX_OPENTITAN_VSRCS = \
-	$(opentitan_dir)/hw/ip/tlul/rtl/tlul_adapter_host.sv \
-	$(opentitan_dir)/hw/ip/tlul/rtl/tlul_fifo_sync.sv \
 	$(vsrc_dir)/rv_core_ibex_blackbox/prim_ram_1p.sv \
 	$(opentitan_dir)/hw/vendor/lowrisc_ibex/rtl/ibex_alu.sv \
 	$(opentitan_dir)/hw/vendor/lowrisc_ibex/rtl/ibex_compressed_decoder.sv \
@@ -72,7 +65,7 @@ IBEX_PREPROC_DEFINES ?= \
 	$(IBEX_EXTRA_PREPROC_DEFINES)
 
 $(IBEX_PREPROC_SVERILOG): $(IBEX_ALL_VSRCS)
-	mkdir -p $(dir $(IBEX_PREPROC_VERILOG))
+	mkdir -p $(dir $(IBEX_PREPROC_SVERILOG))
 	$(foreach def,$(IBEX_PREPROC_DEFINES),echo "\`define $(def)" >> def.v; )
 	$(foreach def,$(IBEX_PREPROC_DEFINES),echo "\`undef $(def)" >> undef.v; )
 	cat def.v $(IBEX_ALL_VSRCS) undef.v > combined.sv
@@ -90,7 +83,4 @@ $(IBEX_PREPROC_VERILOG): $(IBEX_ALL_VERSRCS)
 	sed -i '/define.tmp.h/d' combined.v
 	$(PREPROC_SCRIPT) combined.v $@ $(IBEX_INC_DIRS)
 	rm -rf combined.v def.v undef.v
-
-clean:
-	rm -rf $(IBEX_PREPROC_SVERILOG) $(IBEX_PREPROC_VERILOG)
 

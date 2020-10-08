@@ -12,7 +12,7 @@ case object PeripheryAlertKey extends Field[AlertParams](AlertParams(address = B
 trait HasPeripheryAlert { this: TEEHWSubsystem =>
   //println(alertnode.toString)
   val alertDev =
-    AlertAttachParams(p(PeripheryAlertKey), alertnode).attachTo(this)
+    AlertAttachParams(p(PeripheryAlertKey), alertnode, escnode).attachTo(this)
   val alert =
       alertDev.ioNode.makeSink()
 }

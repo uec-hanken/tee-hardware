@@ -4,13 +4,13 @@
 
 /**
  */
-module hmac_wrapper #(
-  parameter logic [hmac_reg_pkg::NumAlerts-1:0] AlertAsyncOn = {hmac_reg_pkg::NumAlerts{1'b1}} 
+module nmi_gen_wrapper #(
+  localparam int unsigned N_ESC_SEV = 3
 ) (
   // Clock and Reset
   input  logic        clk_i,
   input  logic        rst_ni,
-
+  
   // Instruction memory interface
   input  logic                         tl_a_valid,
   output logic                         tl_a_ready,
@@ -37,24 +37,38 @@ module hmac_wrapper #(
   output logic  [top_pkg::TL_DUW-1:0]  tl_d_bits_user_uint,
   output logic                         tl_d_bits_corrupt,
   output logic                         tl_d_bits_denied,
+  
+  // Interrupt Requests
+  output logic                    intr_esc0_o,
+  output logic                    intr_esc1_o,
+  output logic                    intr_esc2_o,
+  
+  // Reset Requests
+  output logic                    nmi_rst_req_o,
+  
+  // Escalation outputs
 
-  // Interrupts
-  output logic                         intr_hmac_done_o,
-  output logic                         intr_fifo_empty_o,
-  output logic                         intr_hmac_err_o,
+  input  logic                         esc_tx_i_0_esc_p,
+  input  logic                         esc_tx_i_0_esc_n,
 
-  // Alerts
-  input  logic                         alert_rx_i_0_ping_p,
-  input  logic                         alert_rx_i_0_ping_n,
-  input  logic                         alert_rx_i_0_ack_p,
-  input  logic                         alert_rx_i_0_ack_n,
+  output logic                         esc_rx_o_0_resp_p,
+  output logic                         esc_rx_o_0_resp_n,
 
-  output logic                         alert_tx_o_0_alert_p,
-  output logic                         alert_tx_o_0_alert_n
+  input  logic                         esc_tx_i_1_esc_p,
+  input  logic                         esc_tx_i_1_esc_n,
+
+  output logic                         esc_rx_o_1_resp_p,
+  output logic                         esc_rx_o_1_resp_n,
+
+  input  logic                         esc_tx_i_2_esc_p,
+  input  logic                         esc_tx_i_2_esc_n,
+
+  output logic                         esc_rx_o_2_resp_p,
+  output logic                         esc_rx_o_2_resp_n
 
 );
 
-  // tl connections
+  // TL connections
 
   wire tlul_pkg::tl_h2d_t tl_i;
   wire tlul_pkg::tl_d2h_t tl_o;
@@ -88,34 +102,45 @@ module hmac_wrapper #(
 
   assign tl_a_ready = tl_o.a_ready;
   
-  // That "weird" alert port connections
+  // That "weird" esc port connections
 
-  wire prim_alert_pkg::alert_tx_t[0:0] alert_tx_o;
-  wire prim_alert_pkg::alert_rx_t[0:0] alert_rx_i;
+  wire prim_esc_pkg::esc_tx_t[N_ESC_SEV:0] esc_tx_i;
+  wire prim_esc_pkg::esc_rx_t[N_ESC_SEV:0] esc_rx_o;
   
-  assign alert_rx_i[0].ping_p = alert_rx_i_0_ping_p;
-  assign alert_rx_i[0].ping_n = alert_rx_i_0_ping_n; 
-  assign alert_rx_i[0].ack_p = alert_rx_i_0_ack_p;
-  assign alert_rx_i[0].ack_n = alert_rx_i_0_ack_n;
-  assign alert_tx_o_0_alert_p = alert_tx_o[0].alert_p;
-  assign alert_tx_o_0_alert_n = alert_tx_o[0].alert_n;
+  assign esc_tx_i[0].esc_p = esc_tx_i_0_esc_p;
+  assign esc_tx_i[0].esc_n = esc_tx_i_0_esc_n;
+  
+  assign esc_rx_o_0_resp_p = esc_rx_o[0].resp_p;
+  assign esc_rx_o_0_resp_n = esc_rx_o[0].resp_n;
+  
+  assign esc_tx_i[1].esc_p = esc_tx_i_1_esc_p;
+  assign esc_tx_i[1].esc_n = esc_tx_i_1_esc_n;
+  
+  assign esc_rx_o_1_resp_p = esc_rx_o[1].resp_p;
+  assign esc_rx_o_1_resp_n = esc_rx_o[1].resp_n;
+  
+  assign esc_tx_i[2].esc_p = esc_tx_i_2_esc_p;
+  assign esc_tx_i[2].esc_n = esc_tx_i_2_esc_n;
+  
+  assign esc_rx_o_2_resp_p = esc_rx_o[2].resp_p;
+  assign esc_rx_o_2_resp_n = esc_rx_o[2].resp_n;
 
-  hmac #(
-    .AlertAsyncOn             ( AlertAsyncOn             )
-  ) u_aes (
+  nmi_gen u_nmi_gen (
     // clock and reset
     .clk_i                (clk_i),
     .rst_ni               (rst_ni),
     // TL-UL buses
     .tl_o                 (tl_o),
     .tl_i                 (tl_i),
-    // Interrupts
-    .intr_hmac_done_o     (intr_hmac_done_o),
-    .intr_fifo_empty_o    (intr_fifo_empty_o),
-    .intr_hmac_err_o      (intr_hmac_err_o),
+    // Interrupt Requests
+    .intr_esc0_o          (intr_esc0_o),
+    .intr_esc1_o          (intr_esc1_o),
+    .intr_esc2_o          (intr_esc2_o),
+    // Reset Requests
+    .nmi_rst_req_o        (nmi_rst_req_o),
     // Alert
-    .alert_rx_i           (alert_rx_i),
-    .alert_tx_o           (alert_tx_o)
+    .esc_rx_o             (esc_rx_o),
+    .esc_tx_i             (esc_tx_i)
   );
 
 endmodule

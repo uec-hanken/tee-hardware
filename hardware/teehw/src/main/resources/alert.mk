@@ -4,29 +4,18 @@
 opentitan_dir=$(base_dir)/hardware/opentitan
 
 # name of output pre-processed verilog file
-ALERT_PREPROC_SVERILOG = AlertBlackbox.preprocessed.sv
-ALERT_PREPROC_VERILOG = AlertBlackbox.preprocessed.v
+ALERT_PREPROC_SVERILOG = alert.preprocessed.sv
+ALERT_PREPROC_VERILOG = alert.preprocessed.v
 
-.PHONY: default $(ALERT_PREPROC_SVERILOG) $(ALERT_PREPROC_VERILOG)
+.PHONY: alert $(ALERT_PREPROC_SVERILOG) $(ALERT_PREPROC_VERILOG)
 alert: $(ALERT_PREPROC_SVERILOG) $(ALERT_PREPROC_VERILOG)
 
 #########################################################################################
 # includes and vsrcs
 #########################################################################################
-ALERT_OPENTITAN_PKGS = \
-	$(opentitan_dir)/hw/top_earlgrey/rtl/top_pkg.sv \
-	$(opentitan_dir)/hw/ip/tlul/rtl/tlul_pkg.sv \
-	$(opentitan_dir)/hw/ip/prim/rtl/prim_esc_pkg.sv \
-	$(opentitan_dir)/hw/ip/prim/rtl/prim_alert_pkg.sv \
-	$(opentitan_dir)/hw/ip/prim/rtl/prim_util_pkg.sv \
-	$(opentitan_dir)/hw/ip/alert_handler/rtl/alert_pkg.sv \
-	$(opentitan_dir)/hw/ip/alert_handler/rtl/alert_handler_reg_pkg.sv
+ALERT_OPENTITAN_PKGS = 
 
 ALERT_OPENTITAN_VSRCS = \
-	$(opentitan_dir)/hw/ip/tlul/rtl/tlul_adapter_host.sv \
-	$(opentitan_dir)/hw/ip/tlul/rtl/tlul_fifo_sync.sv \
-	$(opentitan_dir)/hw/ip/prim/rtl/prim_alert_receiver.sv \
-	$(opentitan_dir)/hw/ip/prim/rtl/prim_alert_sender.sv \
 	$(opentitan_dir)/hw/ip/alert_handler/rtl/alert_handler.sv \
 	$(opentitan_dir)/hw/ip/alert_handler/rtl/alert_handler_accu.sv \
 	$(opentitan_dir)/hw/ip/alert_handler/rtl/alert_handler_class.sv \
@@ -60,7 +49,7 @@ ALERT_PREPROC_DEFINES ?= \
 	$(ALERT_EXTRA_PREPROC_DEFINES)
 
 $(ALERT_PREPROC_SVERILOG): $(ALERT_ALL_VSRCS)
-	mkdir -p $(dir $(ALERT_PREPROC_VERILOG))
+	mkdir -p $(dir $(ALERT_PREPROC_SVERILOG))
 	$(foreach def,$(ALERT_PREPROC_DEFINES),echo "\`define $(def)" >> def.v; )
 	$(foreach def,$(ALERT_PREPROC_DEFINES),echo "\`undef $(def)" >> undef.v; )
 	cat def.v $(ALERT_ALL_VSRCS) undef.v > combined.sv
@@ -78,7 +67,4 @@ $(ALERT_PREPROC_VERILOG): $(ALERT_ALL_VERSRCS)
 	sed -i '/define.tmp.h/d' combined.v
 	$(PREPROC_SCRIPT) combined.v $@ $(ALERT_INC_DIRS)
 	rm -rf combined.v def.v undef.v
-
-clean:
-	rm -rf $(ALERT_PREPROC_SVERILOG) $(ALERT_PREPROC_VERILOG)
 

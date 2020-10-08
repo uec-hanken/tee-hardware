@@ -44,9 +44,8 @@ class hmac_wrapper
 )
   extends BlackBox(
     Map(
-      "AlertAsyncOn" -> RawParam( // Default: 1'b1
-        hmac_reg_pkg.NumAlerts.toString + "'b" +
-          AlertAsyncOn.map(if(_) "1" else "0").reduce((a,b) => b+a)
+      "AlertAsyncOn" -> IntParam( // Default: all ones
+        AlertAsyncOn.map(if(_) 1 else 0).fold(0)((a,b) => a<<1+b)
       )
     )
   )
@@ -66,16 +65,24 @@ class hmac_wrapper
     val intr_hmac_err_o = Output(Bool())
 
     // Alerts
-    val alert_rx_i = Vec(hmac_reg_pkg.NumAlerts, Input(new alert_rx_t()))
-    val alert_tx_o = Vec(hmac_reg_pkg.NumAlerts, Output(new alert_tx_t()))
+    val alert_rx_i = Input(Vec(hmac_reg_pkg.NumAlerts, new alert_rx_t()))
+    val alert_tx_o = Output(Vec(hmac_reg_pkg.NumAlerts, new alert_tx_t()))
   })
 
   // pre-process the verilog to remove "includes" and combine into one file
   val make = "make -C hardware/teehw/src/main/resources hmac"
-  val proc = make
-  require (proc.! == 0, "Failed to run preprocessing step")
+  val make_pkgs = "make -C hardware/teehw/src/main/resources pkgs"
+  val make_tlul = "make -C hardware/teehw/src/main/resources tlul"
+  val make_prim = "make -C hardware/teehw/src/main/resources prim"
+  require (make.! == 0, "Failed to run preprocessing step")
+  require (make_pkgs.! == 0, "Failed to run preprocessing step")
+  require (make_tlul.! == 0, "Failed to run preprocessing step")
+  require (make_prim.! == 0, "Failed to run preprocessing step")
 
   // add wrapper/blackbox after it is pre-processed
+  addResource("/aaaa_pkgs.preprocessed.sv")
+  addResource("/tlul.preprocessed.sv")
+  addResource("/prim.preprocessed.sv")
   addResource("/hmac.preprocessed.sv")
   addResource("/hmac.preprocessed.v")
 }

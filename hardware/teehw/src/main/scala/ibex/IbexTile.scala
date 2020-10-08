@@ -22,9 +22,15 @@ import freechips.rocketchip.util._
 import freechips.rocketchip.tile._
 import freechips.rocketchip.amba.axi4._
 import uec.teehardware.devices.opentitan._
+import uec.teehardware.devices.opentitan.nmi_gen._
 import uec.teehardware.devices.opentitan.top_pkg._
 
 case object IbexTilesKey extends Field[Seq[IbexTileParams]](Nil)
+
+class IbexPortIO extends Bundle {
+  //val esc_rx_i = Output(new esc_rx_t())
+  //val esc_tx_o = Input(new esc_tx_t())
+}
 
 case class IbexCoreParams
 (
@@ -136,6 +142,9 @@ class IbexTile
   ResourceBinding {
     Resource(cpuDevice, "reg").bind(ResourceAddress(hartId))
   }
+
+  // Create the escalaments
+  val escnode = EscSinkNode(EscSinkPortSimple())
 
   override def makeMasterBoundaryBuffers(implicit p: Parameters) = {
     if (!ibexParams.boundaryBuffers) super.makeMasterBoundaryBuffers
@@ -286,8 +295,12 @@ class IbexTileModuleImp(outer: IbexTile) extends BaseTileModuleImp(outer){
       //assert(!(out.a.fire() && out.a.bits.opcode === TLMessages.PutPartialData), "It happened! In dmem")
   }
 
+  // Escalaments connections
+  val (esc, _) = outer.escnode.in(0)
+  core.io.esc_tx_i := esc.esc_tx
+  esc.esc_rx := core.io.esc_rx_o
+
   // Miscellaneous connections
   core.io.fetch_enable_i := true.B
-  core.io.esc_tx_i := 0.U.asTypeOf(new esc_tx_t)
   core.io.test_en_i := false.B
 }

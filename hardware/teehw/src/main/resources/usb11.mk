@@ -6,7 +6,7 @@ USB11HS_DIR ?= $(optvsrc_dir)/USB11HS
 # name of output pre-processed verilog file
 USB11HS_PREPROC_VERILOG = usb11hs.preprocessed.v
 
-.PHONY: default $(USB11HS_PREPROC_VERILOG)
+.PHONY: usb11hs $(USB11HS_PREPROC_VERILOG)
 usb11hs:  $(USB11HS_PREPROC_VERILOG)
 
 #########################################################################################
@@ -92,7 +92,4 @@ $(USB11HS_PREPROC_VERILOG): $(USB11HS_ALL_VSRCS)
 	sed -i '/define.tmp.h/d' combined.v
 	$(PREPROC_SCRIPT) combined.v $@ $(USB11HS_INC_DIRS)
 	rm -rf combined.v def.v undef.v
-
-clean:
-	rm -rf $(USB11HS_PREPROC_VERILOG)
 

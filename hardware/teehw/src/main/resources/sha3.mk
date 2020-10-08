@@ -6,7 +6,7 @@ SHA3_DIR ?= $(optvsrc_dir)/SHA3
 # name of output pre-processed verilog file
 SHA3_PREPROC_VERILOG = SHA3.preprocessed.v
 
-.PHONY: default $(SHA3_PREPROC_VERILOG)
+.PHONY: sha3 $(SHA3_PREPROC_VERILOG)
 sha3:  $(SHA3_PREPROC_VERILOG)
 
 #########################################################################################
@@ -53,7 +53,4 @@ $(SHA3_PREPROC_VERILOG): $(SHA3_ALL_VSRCS)
 	sed -i '/define.tmp.h/d' combined.v
 	$(PREPROC_SCRIPT) combined.v $@ $(SHA3_INC_DIRS)
 	rm -rf combined.v def.v undef.v
-
-clean:
-	rm -rf $(SHA3_PREPROC_VERILOG)
 

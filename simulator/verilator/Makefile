@@ -113,6 +113,7 @@ CHIPYARD_VERILATOR_FLAGS = \
 	-Wno-BLKANDNBLK \
 	-Wno-REDEFMACRO \
 	-Wno-WIDTH \
+	-Wno-WIDTHCONCAT \
 	-Wno-style \
 	--assert
 

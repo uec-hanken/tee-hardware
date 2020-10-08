@@ -6,7 +6,7 @@ AES_DIR ?= $(optvsrc_dir)/AES
 # name of output pre-processed verilog file
 AES_PREPROC_VERILOG = aes.preprocessed.v
 
-.PHONY: default $(AES_PREPROC_VERILOG)
+.PHONY: aes $(AES_PREPROC_VERILOG)
 aes:  $(AES_PREPROC_VERILOG)
 
 #########################################################################################
@@ -58,7 +58,4 @@ $(AES_PREPROC_VERILOG): $(AES_ALL_VSRCS)
 	sed -i '/define.tmp.h/d' combined.v
 	$(PREPROC_SCRIPT) combined.v $@ $(AES_INC_DIRS)
 	rm -rf combined.v def.v undef.v
-
-clean:
-	rm -rf $(AES_PREPROC_VERILOG)
 

@@ -25,12 +25,14 @@ import ariane.{ArianeCrossingKey, ArianeTile, ArianeTileParams, ArianeTilesKey}
 import uec.teehardware.ibex._
 import testchipip.DromajoHelper
 import uec.teehardware.devices.opentitan.alert._
+import uec.teehardware.devices.opentitan.nmi_gen._
 
 trait HasTEEHWTiles extends HasTiles
   with CanHavePeripheryPLIC
   with CanHavePeripheryCLINT
   with HasPeripheryDebug
   with HasPeripheryAlert
+  with HasPeripheryNmiGen
 { this: TEEHWSubsystem =>
 
   val module: HasTEEHWTilesModuleImp
@@ -69,7 +71,9 @@ trait HasTEEHWTiles extends HasTiles
           LazyModule(new ArianeTile(a, crossing, PriorityMuxHartIdFromSeq(arianeTileParams), logicalTreeNode))
         }
         case i: IbexTileParams => {
-          LazyModule(new IbexTile(i, crossing, PriorityMuxHartIdFromSeq(ibexTileParams), logicalTreeNode))
+          val t = LazyModule(new IbexTile(i, crossing, PriorityMuxHartIdFromSeq(ibexTileParams), logicalTreeNode))
+          t.escnode := escnode
+          t
         }
       }
       connectMasterPortsToSBus(tile, crossing)
@@ -79,6 +83,10 @@ trait HasTEEHWTiles extends HasTiles
       tile
     }
   }
+
+  // If the Ibex is not present, esc be connected to nothing
+  val IbexExists = allTilesInfo.map(_._1).exists { case _: IbexTileParams => true; case _ => false }
+  if(!IbexExists) EscEmpty.apply := escnode
 
 
   def coreMonitorBundles = tiles.map {
@@ -90,6 +98,7 @@ trait HasTEEHWTiles extends HasTiles
 trait HasTEEHWTilesModuleImp extends HasTilesModuleImp
   with HasPeripheryDebugModuleImp
   with HasPeripheryAlertModuleImp
+  with HasPeripheryNmiGenModuleImp
 {
   val outer: HasTEEHWTiles
 }
@@ -100,6 +109,8 @@ abstract class TEEHWBaseSubsystem(implicit p: Parameters) extends BaseSubsystem 
 
   // The alert nexus
   val alertnode = AlertXbar.apply
+  // The esc nexus
+  val escnode = EscXbar.apply
 }
 
 abstract class TEEHWBaseSubsystemModuleImp[+L <: TEEHWBaseSubsystem](_outer: L) extends BaseSubsystemModuleImp(_outer) {

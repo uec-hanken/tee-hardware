@@ -1,4 +1,4 @@
-package uec.teehardware.devices.opentitan.aes
+package uec.teehardware.devices.opentitan.nmi_gen
 
 import chisel3._
 import chisel3.experimental._
@@ -16,71 +16,53 @@ import freechips.rocketchip.subsystem.{Attachable, PBUS, TLBusWrapperLocation}
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.util._
 import uec.teehardware.devices.opentitan._
-import uec.teehardware.devices.opentitan.alert._
 import uec.teehardware.devices.opentitan.top_pkg._
-
 import sys.process._
 
-object aes_reg_pkg {
-  def NumRegsKey = 8
-  def NumRegsIv = 4
-  def NumRegsData = 4
-  def NumAlerts = 2
+object nmi_gen_reg_pkg {
+  def N_ESC_SEV = 3
 }
 
-case class AESOTParams(address: BigInt)
+case class NmiGenParams(address: BigInt)
 
-case class OMAESOTDevice
+case class OMNmiGenDevice
 (
   memoryRegions: Seq[OMMemoryRegion],
   interrupts: Seq[OMInterrupt],
-  _types: Seq[String] = Seq("OMAESOTDevice", "OMDevice", "OMComponent")
+  _types: Seq[String] = Seq("OMNmiGenDevice", "OMDevice", "OMComponent")
 ) extends OMDevice
 
-class AESOTPortIO extends Bundle {
+class NmiGenPortIO extends Bundle {
 }
 
-class aes_wrapper
-(
-  AES192Enable: Boolean = true,
-  Masking: Boolean = false, // If true, needs a masked sbox
-  SBoxImpl: String = "aes_pkg::SBoxImplLut",
-  SecStartTriggerDelay: Int = 0, // Has to be unsigned no?
-  AlertAsyncOn: Seq[Boolean] = Seq.fill(aes_reg_pkg.NumAlerts)(true)
-)
-  extends BlackBox(
-    Map(
-      "AES192Enable" -> IntParam(if(AES192Enable) 1 else 0),
-      "Masking" -> IntParam(if(Masking) 1 else 0),
-      "SBoxImpl" -> RawParam(SBoxImpl),
-      "SecStartTriggerDelay" -> IntParam(SecStartTriggerDelay),
-      "AlertAsyncOn" -> IntParam( // Default: all ones
-        AlertAsyncOn.map(if(_) 1 else 0).fold(0)((a,b) => a<<1+b)
-      )
-    )
-  )
-    with HasBlackBoxResource {
-
-  require(SecStartTriggerDelay >= 0, "SecStartTriggerDelay needs to be positive")
+class nmi_gen_wrapper
+  extends BlackBox
+    with HasBlackBoxResource  with HasBlackBoxInline {
 
   val io = IO(new Bundle {
     // Clock and Reset
     val clk_i = Input(Clock())
     val rst_ni = Input(Bool())
 
-    // Idle indicator for clock manager
-    val idle_o = Output(Bool())
-
     // Bus interface
     val tl = Flipped(new TLBundle(OpenTitanTLparams))
 
-    // Alerts
-    val alert_rx_i = Input(Vec(aes_reg_pkg.NumAlerts, new alert_rx_t()))
-    val alert_tx_o = Output(Vec(aes_reg_pkg.NumAlerts, new alert_tx_t()))
+    // Interrupts
+    val intr_esc0_o = Output(Bool())
+    val intr_esc1_o = Output(Bool())
+    val intr_esc2_o = Output(Bool())
+
+    // Reset requests
+    val nmi_rst_req_o = Output(Bool())
+
+    // Escs
+    // This particular only supports 3 escalaments
+    val esc_rx_o = Output(Vec(nmi_gen_reg_pkg.N_ESC_SEV, new esc_rx_t()))
+    val esc_tx_i = Input(Vec(nmi_gen_reg_pkg.N_ESC_SEV, new esc_tx_t()))
   })
 
   // pre-process the verilog to remove "includes" and combine into one file
-  val make = "make -C hardware/teehw/src/main/resources aesot"
+  val make = "make -C hardware/teehw/src/main/resources nmi_gen"
   val make_pkgs = "make -C hardware/teehw/src/main/resources pkgs"
   val make_tlul = "make -C hardware/teehw/src/main/resources tlul"
   val make_prim = "make -C hardware/teehw/src/main/resources prim"
@@ -93,28 +75,37 @@ class aes_wrapper
   addResource("/aaaa_pkgs.preprocessed.sv")
   addResource("/tlul.preprocessed.sv")
   addResource("/prim.preprocessed.sv")
-  addResource("/aesot.preprocessed.sv")
-  addResource("/aesot.preprocessed.v")
+  addResource("/nmi_gen.preprocessed.sv")
+  addResource("/nmi_gen.preprocessed.v")
 }
 
-class AESOT(blockBytes: Int, beatBytes: Int, params: AESOTParams)(implicit p: Parameters) extends LazyModule {
+class NmiGen(blockBytes: Int, beatBytes: Int, params: NmiGenParams)(implicit p: Parameters) extends LazyModule {
 
   // Create a simple device for this peripheral
-  val device = new SimpleDevice("aesot", Seq("lowRISC,aes-1.0")) {
+  val device = new SimpleDevice("Esc", Seq("lowRISC,esc-0.5")) {
     override def describe(resources: ResourceBindings): Description = {
       val Description(name, mapping) = super.describe(resources)
       Description(name, mapping ++ extraResources(resources))
     }
   }
 
-  val ioNode = BundleBridgeSource(() => (new AESOTPortIO).cloneType)
+  val ioNode = BundleBridgeSource(() => (new NmiGenPortIO).cloneType)
   val port = InModuleBody { ioNode.bundle }
 
   // Allow this device to extend the DTS mapping
   def extraResources(resources: ResourceBindings) = Map[String, Seq[ResourceValue]]()
 
-  // Create the alert node
-  val alertnode = AlertSourceNode(AlertSourcePortSimple(num = aes_reg_pkg.NumAlerts, resources = Seq(Resource(device, "alert"))))
+  // Create our interrupt node
+  val intnode = IntSourceNode(IntSourcePortSimple(num = 3, resources = Seq(Resource(device, "int"))))
+
+  // Then also create the nexus node for the esc
+  // Note: We create just a 3-input Node, as that is all we need here
+  val escnode: EscSinkNode = EscSinkNode(EscSinkPortSimple(ports = nmi_gen_reg_pkg.N_ESC_SEV, sinks = 1))
+  lazy val sources: Seq[EscSourcePortParameters] = escnode.edges.in.map(_.source)
+  lazy val flatSources: Seq[EscSourceParameters] = sources.flatMap(_.sources)
+
+  // Negotiated sizes (Note: nEscNodes and nEsc are not the same)
+  def nEsc: Int = escnode.edges.in.map(_.source.sources.size).sum
 
   val peripheralParam = TLSlavePortParameters.v1(
     managers = Seq(TLManagerParameters(
@@ -145,10 +136,20 @@ class AESOT(blockBytes: Int, beatBytes: Int, params: AESOTParams)(implicit p: Pa
   lazy val module = new LazyModuleImp(this) {
 
     val io = port
-    val (alerts, _) = alertnode.out(0) // Expose the alert signals
+    val (interrupts, _) = intnode.out(0) // Expose the interrupt signals
 
-    // Instance the AES black box
-    val blackbox = Module(new aes_wrapper)
+    // Actual escs here
+    val (escs, _) = escnode.in.unzip
+
+    println(s"Escalation map (${nEsc} escs):")
+    flatSources.zipWithIndex.foreach { case (s, i) =>
+      // +1 because 0 is reserved, +1-1 because the range is half-open
+      println(s"  [${i}] => ${s.name}")
+    }
+    println("")
+
+    // Instance the Esc black box
+    val blackbox = Module(new nmi_gen_wrapper)
 
     // Obtain the TL bundle
     val (tl_in, tl_edge) = peripheralNode.in(0) // Extract the port from the node
@@ -157,20 +158,26 @@ class AESOT(blockBytes: Int, beatBytes: Int, params: AESOTParams)(implicit p: Pa
     blackbox.io.clk_i := clock
     blackbox.io.rst_ni := !reset.asBool
 
-    // Connect the external ports
-    (alerts zip blackbox.io.alert_rx_i).foreach{ case(j, i) =>
-      i.ack_n := j.alert_rx.ack_n
-      i.ack_p := j.alert_rx.ack_p
-      i.ping_n := j.alert_rx.ping_n
-      i.ping_p := j.alert_rx.ping_p
+    // Connect the escs
+    require(nEsc == 3, "lowRISC nmi_gen only supports 3 esc")
+    for(i <- 0 until nmi_gen_reg_pkg.N_ESC_SEV) {
+      if(i < nEsc) {
+        blackbox.io.esc_tx_i(i).esc_n := escs(i).esc_tx.esc_n
+        blackbox.io.esc_tx_i(i).esc_p := escs(i).esc_tx.esc_p
+        escs(i).esc_rx.resp_n := blackbox.io.esc_rx_o(i).resp_n
+        escs(i).esc_rx.resp_p := blackbox.io.esc_rx_o(i).resp_p
+      }
+      else {
+        blackbox.io.esc_tx_i(i).esc_n := true.B
+        blackbox.io.esc_tx_i(i).esc_p := false.B
+      }
     }
-    (alerts zip blackbox.io.alert_tx_o).foreach{ case(j, i) =>
-      j.alert_tx.alert_n := i.alert_n
-      j.alert_tx.alert_p := i.alert_p
-    }
-    // TODO: idle_o not used, for the clock manager
 
     // Connect the interrupts
+    interrupts(0) := blackbox.io.intr_esc0_o
+    interrupts(1) := blackbox.io.intr_esc1_o
+    interrupts(2) := blackbox.io.intr_esc2_o
+    // TODO: blackbox.io.nmi_rst_req_o is not used in this context
 
     // Connect the TL bundle
     blackbox.io.tl.a <> tl_in.a
@@ -188,10 +195,10 @@ class AESOT(blockBytes: Int, beatBytes: Int, params: AESOTParams)(implicit p: Pa
       val memRegions = DiplomaticObjectModelAddressing.getOMMemoryRegions(name, resourceBindings, None)
       val interrupts = DiplomaticObjectModelAddressing.describeInterrupts(name, resourceBindings)
       Seq(
-        OMAESOTDevice(
+        OMNmiGenDevice(
           memoryRegions = memRegions.map(_.copy(
-            name = "aesot",
-            description = "OpenTitan AES HWIP"
+            name = "Esc",
+            description = "OpenTitan Esc-SHA256 HWIP"
           )),
           interrupts = interrupts
         )
@@ -200,21 +207,23 @@ class AESOT(blockBytes: Int, beatBytes: Int, params: AESOTParams)(implicit p: Pa
   }
 }
 
-case class AESOTAttachParams
+case class NmiGenAttachParams
 (
-  par: AESOTParams,
-  alertNode: AlertInwardNode,
+  par: NmiGenParams,
+  escNode: EscOutwardNode,
   controlWhere: TLBusWrapperLocation = PBUS,
   blockerAddr: Option[BigInt] = None,
   controlXType: ClockCrossingType = NoCrossing,
   intXType: ClockCrossingType = NoCrossing)
 (implicit val p: Parameters) {
 
-  def attachTo(where: Attachable)(implicit p: Parameters): AESOT = {
-    val name = s"aesot_${AESOT.nextId()}"
+  def attachTo(where: Attachable)(implicit p: Parameters): NmiGen = {
+    val name = s"NmiGen_${NmiGen.nextId()}"
     val cbus = where.locateTLBusWrapper(controlWhere)
     val clockDomainWrapper = LazyModule(new ClockSinkDomain(take = None))
-    val per = clockDomainWrapper { LazyModule(new AESOT(cbus.blockBytes, cbus.beatBytes, par)) }
+
+    // The Esc lazymodule.
+    val per = clockDomainWrapper { LazyModule(new NmiGen(cbus.blockBytes, cbus.beatBytes, par)) }
     per.suggestName(name)
 
     cbus.coupleTo(s"device_named_$name") { bus =>
@@ -241,7 +250,14 @@ case class AESOTAttachParams
         := blockerOpt.map { _.node := bus } .getOrElse { bus })
     }
 
-    alertNode := per.alertnode
+    (intXType match {
+      case _: SynchronousCrossing => where.ibus.fromSync
+      case _: RationalCrossing => where.ibus.fromRational
+      case _: AsynchronousCrossing => where.ibus.fromAsync
+    }) := per.intnode
+
+    for(_ <- 0 until nmi_gen_reg_pkg.N_ESC_SEV)
+      per.escnode := escNode
 
     LogicalModuleTree.add(where.logicalTreeNode, per.logicalTreeNode)
 
@@ -249,7 +265,7 @@ case class AESOTAttachParams
   }
 }
 
-object AESOT {
+object NmiGen {
   val nextId = {
     var i = -1; () => {
       i += 1; i

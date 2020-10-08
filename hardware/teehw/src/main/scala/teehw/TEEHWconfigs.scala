@@ -243,17 +243,17 @@ class ChipPeripherals extends Config((site, here, up) => {
     ed25519Params(address = BigInt(0x64004000L)))
   case PeripheryI2CKey => List(
     I2CParams(address = 0x64006000))
-  case PeripheryAESKey => List(
-    AESParams(address = BigInt(0x64007000L)))
+  //case PeripheryAESKey => List(
+  //  AESParams(address = BigInt(0x64007000L)))
   case PeripheryUSB11HSKey => List(
     USB11HSParams(address = BigInt(0x64008000L)))
   case PeripheryRandomKey => List(
     RandomParams(address = BigInt(0x64009000L)))
     // OpenTitan devices
   case PeripheryAESOTKey => List(
-    AESOTParams(address = BigInt(0x64010000L)))
+    AESOTParams(address = BigInt(0x6400A000L)))
   case PeripheryHMACKey => List(
-    HMACParams(address = BigInt(0x64011000L)))
+    HMACParams(address = BigInt(0x6400B000L)))
   case PeripheryAlertKey =>
     AlertParams(address = BigInt(0x64100000L))
 })

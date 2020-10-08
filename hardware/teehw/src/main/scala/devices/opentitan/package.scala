@@ -86,3 +86,12 @@ class alert_t extends Bundle{
 object alert_t {
   def apply : alert_t = new alert_t()
 }
+
+class esc_t extends Bundle {
+  val esc_rx = Input(new esc_rx_t())
+  val esc_tx = Output(new esc_tx_t())
+}
+
+object esc_t {
+  def apply : esc_t = new esc_t()
+}

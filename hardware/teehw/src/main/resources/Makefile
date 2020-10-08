@@ -17,4 +17,8 @@ include usb11.mk
 include aesot.mk
 include hmac.mk
 include alert.mk
+include nmi_gen.mk
+include prim.mk
+include tlul.mk
+include pkgs.mk
 

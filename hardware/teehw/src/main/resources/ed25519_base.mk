@@ -6,7 +6,7 @@ ED25519_DIR ?= $(optvsrc_dir)/Ed25519/Ed25519_mul
 # name of output pre-processed verilog file
 ED25519_BASE_PREPROC_VERILOG = ed25519_base.preprocessed.v
 
-.PHONY: default $(ED25519_BASE_PREPROC_VERILOG)
+.PHONY: ed25519_base $(ED25519_BASE_PREPROC_VERILOG)
 ed25519_base:  $(ED25519_BASE_PREPROC_VERILOG)
 
 #########################################################################################
@@ -61,7 +61,4 @@ $(ED25519_BASE_PREPROC_VERILOG): $(ED25519_BASE_ALL_VSRCS)
 	sed -i '/define.tmp.h/d' combined.v
 	$(PREPROC_SCRIPT) combined.v $@ $(ED25519_BASE_INC_DIRS)
 	rm -rf combined.v def.v undef.v
-
-clean:
-	rm -rf $(ED25519_BASE_PREPROC_VERILOG)
 

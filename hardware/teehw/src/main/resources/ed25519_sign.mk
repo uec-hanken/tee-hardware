@@ -6,7 +6,7 @@ ED25519_SIGN_DIR ?= $(optvsrc_dir)/Ed25519/Ed25519_sign
 # name of output pre-processed verilog file
 ED25519_SIGN_PREPROC_VERILOG = ed25519_sign.preprocessed.v
 
-.PHONY: default $(ED25519_SIGN_PREPROC_VERILOG)
+.PHONY: ed25519_sign $(ED25519_SIGN_PREPROC_VERILOG)
 ed25519_sign:  $(ED25519_SIGN_PREPROC_VERILOG)
 
 #########################################################################################
@@ -51,7 +51,4 @@ $(ED25519_SIGN_PREPROC_VERILOG): $(ED25519_SIGN_ALL_VSRCS)
 	sed -i '/define.tmp.h/d' combined.v
 	$(PREPROC_SCRIPT) combined.v $@ $(ED25519_SIGN_INC_DIRS)
 	rm -rf combined.v def.v undef.v
-
-clean:
-	rm -rf $(ED25519_SIGN_PREPROC_VERILOG)
 
