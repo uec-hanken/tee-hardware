@@ -82,7 +82,7 @@ class nmi_gen_wrapper
 class NmiGen(blockBytes: Int, beatBytes: Int, params: NmiGenParams)(implicit p: Parameters) extends LazyModule {
 
   // Create a simple device for this peripheral
-  val device = new SimpleDevice("Esc", Seq("lowRISC,esc-0.5")) {
+  val device = new SimpleDevice("Esc", Seq("lowRISC,nmi-gen-0.5")) {
     override def describe(resources: ResourceBindings): Description = {
       val Description(name, mapping) = super.describe(resources)
       Description(name, mapping ++ extraResources(resources))

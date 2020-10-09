@@ -21,4 +21,5 @@ include nmi_gen.mk
 include prim.mk
 include tlul.mk
 include pkgs.mk
+include otp_ctrl.mk
 

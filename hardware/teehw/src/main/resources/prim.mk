@@ -15,6 +15,8 @@ prim: $(PRIM_PREPROC_SVERILOG)
 PRIM_OPENTITAN_PKGS = 
 
 PRIM_OPENTITAN_VSRCS = \
+	$(vsrc_dir)/prim/prim_flash.sv \
+	$(vsrc_dir)/prim/prim_otp.sv \
 	$(opentitan_dir)/hw/ip/prim/rtl/prim_alert_receiver.sv \
 	$(opentitan_dir)/hw/ip/prim/rtl/prim_alert_sender.sv
 

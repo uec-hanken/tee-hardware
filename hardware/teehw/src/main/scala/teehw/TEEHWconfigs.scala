@@ -252,10 +252,12 @@ class ChipPeripherals extends Config((site, here, up) => {
     // OpenTitan devices
   case PeripheryAESOTKey => List(
     AESOTParams(address = BigInt(0x6400A000L)))
-  case PeripheryHMACKey => List(
-    HMACParams(address = BigInt(0x6400B000L)))
+  //case PeripheryHMACKey => List(
+  //  HMACParams(address = BigInt(0x6400B000L)))
   case PeripheryAlertKey =>
     AlertParams(address = BigInt(0x64100000L))
+  case PeripheryOTPCtrlKey => List(
+    OTPCtrlParams(address = BigInt(0x6400C000L)))
 })
 
 class NoSecurityPeripherals extends Config((site, here, up) => {

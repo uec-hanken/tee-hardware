@@ -61,6 +61,7 @@ class TEEHWSystem(implicit p: Parameters) extends TEEHWSubsystem
     // The opentitan components
     with HasPeripheryAESOT
     with HasPeripheryHMAC
+    with HasPeripheryOTPCtrl
     // The components that are directly instantiated here. Needed to be re-factored from the original
     //    with HasPeripheryI2C
     //    with HasPeripheryUART // NOTE: Already included
@@ -197,6 +198,7 @@ class TEEHWSystemModule[+L <: TEEHWSystem](_outer: L)
     // The opentitan components
     with HasPeripheryAESOTModuleImp
     with HasPeripheryHMACModuleImp
+    with HasPeripheryOTPCtrlModuleImp
     // The components that are directly instantiated here. Needed to be re-factored from the original
     //    with HasPeripheryI2CModuleImp
     //    with HasPeripheryUARTModuleImp // NOTE: Already included

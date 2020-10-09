@@ -28,6 +28,10 @@ PKGS_OPENTITAN_PKGS = \
 	$(opentitan_dir)/hw/ip/aes/rtl/aes_pkg.sv \
 	$(opentitan_dir)/hw/ip/alert_handler/rtl/alert_handler_reg_pkg.sv \
 	$(opentitan_dir)/hw/ip/alert_handler/rtl/alert_pkg.sv \
+	$(opentitan_dir)/hw/ip/flash_ctrl/rtl/flash_ctrl_reg_pkg.sv \
+	$(opentitan_dir)/hw/ip/flash_ctrl/rtl/flash_ctrl_pkg.sv \
+	$(opentitan_dir)/hw/ip/otp_ctrl/rtl/otp_ctrl_reg_pkg.sv \
+	$(opentitan_dir)/hw/ip/otp_ctrl/rtl/otp_ctrl_pkg.sv \
 	$(opentitan_dir)/hw/vendor/lowrisc_ibex/rtl/ibex_pkg.sv \
 	$(opentitan_dir)/hw/ip/nmi_gen/rtl/nmi_gen_reg_pkg.sv
 
