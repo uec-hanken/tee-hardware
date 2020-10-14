@@ -9,44 +9,90 @@ module prim_otp #(
   parameter  int CmdWidth    = otp_ctrl_pkg::OtpCmdWidth,
   // This determines the maximum number of native words that
   // can be transferred accross the interface in one cycle.
-  parameter  int SizeWidth   = 2,
+  parameter  int SizeWidth   = otp_ctrl_pkg::OtpSizeWidth,
   parameter  int ErrWidth    = otp_ctrl_pkg::OtpErrWidth,
+  // Width of the power sequencing signal.
+  parameter  int PwrSeqWidth = otp_ctrl_pkg::OtpPwrSeqWidth,
+  // Derived parameters
   localparam int AddrWidth   = prim_util_pkg::vbits(Depth),
   localparam int IfWidth     = 2**SizeWidth*Width,
   // VMEM file to initialize the memory with
   parameter      MemInitFile = ""
 ) (
-  input                        clk_i,
-  input                        rst_ni,
-  // TODO: power sequencing signals from/to AST
+  input                          clk_i,
+  input                          rst_ni,
+  // Macro-specific power sequencing signals to/from AST
+  output logic [PwrSeqWidth-1:0] pwr_seq_o,
+  input        [PwrSeqWidth-1:0] pwr_seq_h_i,
   // Test interface
-  input  tlul_pkg::tl_h2d_t    test_tl_i,
-  output tlul_pkg::tl_d2h_t    test_tl_o,
+  input  tlul_pkg::tl_h2d_t      test_tl_i,
+  output tlul_pkg::tl_d2h_t      test_tl_o,
   // Ready valid handshake for read/write command
-  output logic                 ready_o,
-  input                        valid_i,
-  input [SizeWidth-1:0]        size_i, // #(Native words)-1, e.g. size == 0 for 1 native word.
-  input [CmdWidth-1:0]         cmd_i,  // 00: read command, 01: write command, 11: init command
-  input [AddrWidth-1:0]        addr_i,
-  input [IfWidth-1:0]          wdata_i,
+  output logic                   ready_o,
+  input                          valid_i,
+  input [SizeWidth-1:0]          size_i, // #(Native words)-1, e.g. size == 0 for 1 native word.
+  input [CmdWidth-1:0]           cmd_i,  // 00: read command, 01: write command, 11: init command
+  input [AddrWidth-1:0]          addr_i,
+  input [IfWidth-1:0]            wdata_i,
   // Response channel
-  output logic                 valid_o,
-  output logic [IfWidth-1:0]   rdata_o,
-  output logic [ErrWidth-1:0]  err_o
+  output logic                   valid_o,
+  output logic [IfWidth-1:0]     rdata_o,
+  output logic [ErrWidth-1:0]    err_o
 );
 
-  // TODO: need a randomized LFSR timer to add some reasonable, non-deterministic response delays.
-
   // Not supported in open-source emulation model.
-  tlul_pkg::tl_h2d_t unused_test_tl;
-  assign unused_test_tl = test_tl_i;
-  assign test_tl_o   = '0;
+  logic [PwrSeqWidth-1:0] unused_pwr_seq_h;
+  assign unused_pwr_seq_h = pwr_seq_h_i;
+  assign pwr_seq_o = '0;
+
+  ////////////////////////////////////
+  // TL-UL Test Interface Emulation //
+  ////////////////////////////////////
+
+  // Put down a register that can be used to test the TL interface.
+  // TODO: this emulation may need to be adjusted, once closed source wrapper is
+  // implemented.
+  logic tlul_req, tlul_rvalid_q, tlul_wren;
+  logic [31:0] tlul_testreg_d, tlul_testreg_q;
+  tlul_adapter_sram #(
+    .SramAw      ( 9             ),
+    .SramDw      ( 32            ),
+    .Outstanding ( 1             ),
+    .ByteAccess  ( 0             ),
+    .ErrOnWrite  ( 0             )
+  ) u_tlul_adapter_sram (
+    .clk_i,
+    .rst_ni,
+    .tl_i     ( test_tl_i         ),
+    .tl_o     ( test_tl_o         ),
+    .req_o    ( tlul_req          ),
+    .gnt_i    ( tlul_req          ),
+    .we_o     ( tlul_wren         ),
+    .addr_o   (                   ),
+    .wdata_o  ( tlul_testreg_d    ),
+    .wmask_o  (                   ),
+    .rdata_i  ( tlul_testreg_q    ),
+    .rvalid_i ( tlul_rvalid_q     ),
+    .rerror_i ( '0                )
+  );
+
+  always_ff @(posedge clk_i or negedge rst_ni) begin : p_tlul_testreg
+    if (!rst_ni) begin
+      tlul_rvalid_q  <= 1'b0;
+      tlul_testreg_q <= '0;
+    end else begin
+      tlul_rvalid_q <= tlul_req & ~tlul_wren;
+      if (tlul_req && tlul_wren) begin
+        tlul_testreg_q <= tlul_testreg_d;
+      end
+    end
+  end
 
   ///////////////////
   // Control logic //
   ///////////////////
 
-  // Encoding generated with ./sparse-fsm-encode -d 5 -m 8 -n 10
+  // Encoding generated with ./sparse-fsm-encode.py -d 5 -m 8 -n 10
   // Hamming distance histogram:
   //
   // 0: --
@@ -64,7 +110,8 @@ module prim_otp #(
   // Minimum Hamming distance: 5
   // Maximum Hamming distance: 8
   //
-  typedef enum logic [9:0] {
+  localparam int StateWidth = 10;
+  typedef enum logic [StateWidth-1:0] {
     ResetSt      = 10'b1100000011,
     InitSt       = 10'b1100110100,
     IdleSt       = 10'b1010111010,
@@ -121,7 +168,6 @@ module prim_otp #(
       end
       // Wait for some time until the OTP macro is ready.
       InitSt: begin
-        // TODO: add some pseudo random init time here.
         state_d = IdleSt;
         valid_d = 1'b1;
       end
@@ -249,9 +295,20 @@ module prim_otp #(
   // Regs //
   //////////
 
+  // This primitive is used to place a size-only constraint on the
+  // flops in order to prevent FSM state encoding optimizations.
+  prim_flop #(
+    .Width(StateWidth),
+    .ResetValue(StateWidth'(ResetSt))
+  ) u_state_regs (
+    .clk_i,
+    .rst_ni,
+    .d_i ( state_d ),
+    .q_o ( state_q )
+  );
+
   always_ff @(posedge clk_i or negedge rst_ni) begin : p_regs
     if (!rst_ni) begin
-      state_q <= ResetSt;
       valid_q <= '0;
       err_q   <= '0;
       addr_q  <= '0;
@@ -260,7 +317,6 @@ module prim_otp #(
       cnt_q   <= '0;
       size_q  <= '0;
     end else begin
-      state_q <= state_d;
       valid_q <= valid_d;
       err_q   <= err_d;
       cnt_q   <= cnt_d;

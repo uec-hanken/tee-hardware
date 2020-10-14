@@ -23,3 +23,6 @@ include tlul.mk
 include pkgs.mk
 include otp_ctrl.mk
 
+clean:
+	rm -rfv *.preprocessed.sv *.preprocessed.v
+

@@ -27,6 +27,8 @@ import testchipip.DromajoHelper
 import uec.teehardware.devices.opentitan.alert._
 import uec.teehardware.devices.opentitan.nmi_gen._
 
+case object WithAlertAndNMI extends Field[Boolean](false)
+
 trait HasTEEHWTiles extends HasTiles
   with CanHavePeripheryPLIC
   with CanHavePeripheryCLINT
@@ -86,7 +88,7 @@ trait HasTEEHWTiles extends HasTiles
 
   // If the Ibex is not present, esc be connected to nothing
   val IbexExists = allTilesInfo.map(_._1).exists { case _: IbexTileParams => true; case _ => false }
-  if(!IbexExists) EscEmpty.apply := escnode
+  if(!IbexExists) EscEmpty.applySink := escnode
 
 
   def coreMonitorBundles = tiles.map {

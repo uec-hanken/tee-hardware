@@ -9,9 +9,12 @@ import uec.teehardware.devices.opentitan.top_pkg._
 
 import sys.process._
 
-class edn_otp_up_t extends Bundle {
-  val en = Bool()
-  val data = UInt(32.W)
+class otp_ast_req_t extends Bundle {
+  val pwr_seq = UInt(otp_ctrl_reg_pkg.OtpPwrSeqWidth.W)
+}
+
+class otp_ast_rsp_t extends Bundle {
+  val pwr_seq_h = UInt(otp_ctrl_reg_pkg.OtpPwrSeqWidth.W)
 }
 
 class otp_edn_req_t extends Bundle {
@@ -20,7 +23,7 @@ class otp_edn_req_t extends Bundle {
 
 class otp_edn_rsp_t extends Bundle {
   val ack = Bool()
-  val data = UInt(32.W)
+  val data = UInt(otp_ctrl_reg_pkg.EdnDataWidth.W)
 }
 
 class pwr_otp_init_req_t extends Bundle {
@@ -31,14 +34,24 @@ class pwr_otp_init_rsp_t extends Bundle {
   val done = Bool()
 }
 
+// TODO: Those should be in pwrmg
+class pwr_otp_req_t extends Bundle {
+  val otp_init = Bool()
+}
+
+class pwr_otp_rsp_t extends Bundle {
+  val otp_done = Bool()
+  val otp_idle = Bool()
+}
+
 class otp_pwr_state_t extends Bundle {
   val idle = Bool()
 }
 
 class lc_otp_program_req_t extends Bundle {
   val req = Bool()
-  val state_diff = UInt(otp_ctrl_reg_pkg.LcStateWidth.W)
-  val count_diff = Vec(otp_ctrl_reg_pkg.NumLcCountValues, UInt(otp_ctrl_reg_pkg.LcValueWidth.W))
+  val state_delta = UInt(otp_ctrl_reg_pkg.LcStateWidth.W)
+  val count_delta = Vec(otp_ctrl_reg_pkg.NumLcCountValues, UInt(otp_ctrl_reg_pkg.LcValueWidth.W))
 }
 
 class lc_otp_program_rsp_t extends Bundle {
@@ -56,15 +69,13 @@ class lc_otp_token_rsp_t extends Bundle {
   val hashed_token = UInt(otp_ctrl_reg_pkg.LcTokenWidth.W)
 }
 
+// TODO: should be in lc_ctrl_pkg
 class lc_tx_t extends Bundle {
   val state = UInt(3.W)
 }
 
 class otp_lc_data_t extends Bundle {
-  val state_valid = Bool()
-  val test_token_valid = Bool()
-  val rma_token_valid = Bool()
-  val id_state_valid = Bool()
+  val valid = Bool()
   val state = UInt(otp_ctrl_reg_pkg.LcStateWidth.W)
   val count = Vec(otp_ctrl_reg_pkg.NumLcCountValues, UInt(otp_ctrl_reg_pkg.LcValueWidth.W))
   val test_unlock_token = UInt(otp_ctrl_reg_pkg.LcTokenWidth.W)
@@ -80,13 +91,15 @@ class otp_keymgr_key_t extends Bundle {
 }
 
 class flash_otp_key_req_t extends Bundle {
-  val req = Bool()
+  val data_req = Bool()
+  val addr_req = Bool()
 }
 
 class flash_otp_key_rsp_t extends Bundle {
-  val ack = Bool()
-  val addr_key = UInt(otp_ctrl_reg_pkg.FlashKeyWidth.W)
-  val data_key = UInt(otp_ctrl_reg_pkg.FlashKeyWidth.W)
+  val data_ack = Bool()
+  val addr_ack = Bool()
+  val key = UInt(otp_ctrl_reg_pkg.FlashKeyWidth.W)
+  val seed_valid = Bool()
 }
 
 class sram_otp_key_req_t extends Bundle {
@@ -97,6 +110,7 @@ class sram_otp_key_rsp_t extends Bundle {
   val ack = Bool()
   val key = UInt(otp_ctrl_reg_pkg.SramKeyWidth.W)
   val nonce = UInt(otp_ctrl_reg_pkg.SramNonceWidth.W)
+  val seed_valid = Bool()
 }
 
 class otbn_otp_key_req_t extends Bundle {
@@ -107,13 +121,13 @@ class otbn_otp_key_rsp_t extends Bundle {
   val ack = Bool()
   val key = UInt(otp_ctrl_reg_pkg.OtbnKeyWidth.W)
   val nonce = UInt(otp_ctrl_reg_pkg.OtbnNonceWidth.W)
+  val seed_valid = Bool()
 }
 
 class otp_ctrl_wrapper
 (
-  NumSramKeyReqSlots: Int = 2,
   AlertAsyncOn: Seq[Boolean] = Seq.fill(otp_ctrl_reg_pkg.NumAlerts)(true),
-  LfsrSeed: Int = 1,
+  TimerLfsrSeed: Int = 1,
   LfsrPerm: Seq[Int] = Seq(
     13, 17, 29, 11, 28, 12,  33, 27,
     5, 39, 31, 21, 15,  1, 24, 37,
@@ -123,8 +137,7 @@ class otp_ctrl_wrapper
 )
   extends BlackBox(
     Map(
-      "NumSramKeyReqSlots" -> IntParam(NumSramKeyReqSlots),
-      "LfsrSeed" -> IntParam(LfsrSeed), // TODO: Maybe this is okay?
+      "TimerLfsrSeed" -> IntParam(TimerLfsrSeed), // TODO: Maybe this is okay?
       "AlertAsyncOn" -> IntParam( // Default: all ones
         AlertAsyncOn.map(if(_) 1 else 0).fold(0)((a,b) => a<<1+b)
       ),
@@ -137,8 +150,6 @@ class otp_ctrl_wrapper
     )
   )
     with HasBlackBoxResource with HasBlackBoxInline {
-
-  require(NumSramKeyReqSlots >= 0, "NumSramKeyReqSlots needs to be positive")
 
   val io = IO(new Bundle {
     // Clock and Reset
@@ -156,42 +167,42 @@ class otp_ctrl_wrapper
     val alert_rx_i = Input(Vec(otp_ctrl_reg_pkg.NumAlerts, new alert_rx_t()))
     val alert_tx_o = Output(Vec(otp_ctrl_reg_pkg.NumAlerts, new alert_tx_t()))
 
-    // TODO: EDN interface for entropy updates
-    val edn_otp_up_i = Input(new edn_otp_up_t())
+    // AST Interface
+    val otp_ast_pwr_seq_o = Output(new otp_ast_req_t())
+    val otp_ast_pwr_seq_h_i = Input(new otp_ast_rsp_t())
 
     // TODO: EDN interface for requesting entropy
-    val otp_edn_req_o = Output(new otp_edn_req_t())
-    val otp_edn_rsp_i = Input(new otp_edn_rsp_t())
+    val otp_edn_o = Output(new otp_edn_req_t())
+    val otp_edn_i = Input(new otp_edn_rsp_t())
 
     // Power manager interface
-    val pwr_otp_init_req_i = Input(new pwr_otp_init_req_t())
-    val pwr_otp_init_rsp_o = Output(new pwr_otp_init_rsp_t())
-    val otp_pwr_state_o = Output(new otp_pwr_state_t())
+    val pwr_otp_i = Input(new pwr_otp_req_t())
+    val pwr_otp_o = Output(new pwr_otp_rsp_t())
 
     // Lifecycle transition command interface
-    val lc_otp_program_req_i = Input(new lc_otp_program_req_t())
-    val lc_otp_program_rsp_o = Output(new lc_otp_program_rsp_t())
+    val lc_otp_program_i = Input(new lc_otp_program_req_t())
+    val lc_otp_program_o = Output(new lc_otp_program_rsp_t())
 
     // Lifecycle hashing interface for raw unlock
-    val lc_otp_token_req_i = Input(new lc_otp_token_req_t())
-    val lc_otp_token_rsp_o = Output(new lc_otp_token_rsp_t())
+    val lc_otp_token_i = Input(new lc_otp_token_req_t())
+    val lc_otp_token_o = Output(new lc_otp_token_rsp_t())
 
     // Lifecycle broadcast inputs
     val lc_escalate_en_i = Input(new lc_tx_t())
     val lc_provision_en_i = Input(new lc_tx_t())
-    val lc_test_en_i = Input(new lc_tx_t())
+    val lc_dft_en_i = Input(new lc_tx_t())
 
     // OTP broadcast outputs
     val otp_lc_data_o = Output(new otp_lc_data_t())
     val otp_keymgr_key_o = Output(new otp_keymgr_key_t())
 
     // Scrambling key requests
-    val flash_otp_key_req_i = Input(new flash_otp_key_req_t())
-    val flash_otp_key_rsp_o = Output(new flash_otp_key_rsp_t())
-    val sram_otp_key_req_i = Input(Vec(NumSramKeyReqSlots, new sram_otp_key_req_t()))
-    val sram_otp_key_rsp_o = Output(Vec(NumSramKeyReqSlots, new sram_otp_key_rsp_t()))
-    val otbn_otp_key_req_i = Input(new otbn_otp_key_req_t())
-    val otbn_otp_key_rsp_o = Output(new otbn_otp_key_rsp_t())
+    val flash_otp_key_i = Input(new flash_otp_key_req_t())
+    val flash_otp_key_o = Output(new flash_otp_key_rsp_t())
+    val sram_otp_key_i = Input(Vec(otp_ctrl_reg_pkg.NumSramKeyReqSlots, new sram_otp_key_req_t()))
+    val sram_otp_key_o = Output(Vec(otp_ctrl_reg_pkg.NumSramKeyReqSlots, new sram_otp_key_rsp_t()))
+    val otbn_otp_key_i = Input(new otbn_otp_key_req_t())
+    val otbn_otp_key_o = Output(new otbn_otp_key_rsp_t())
 
     // Hardware configuration bits
     val hw_cfg_o = Output(UInt(otp_ctrl_reg_pkg.NumHwCfgBits.W))
@@ -241,31 +252,28 @@ class otp_ctrl_wrapper
            |  assign alert_tx_o_${i}_alert_p = alert_tx_o[${i}].alert_p;
            |  assign alert_tx_o_${i}_alert_n = alert_tx_o[${i}].alert_n;
            |""".stripMargin ).reduce(_+_)
-  val lc_otp_program_req_i_port =
+  val lc_otp_program_i_port =
     s"""
-       |  input logic lc_otp_program_req_i_req,
-       |  input logic [${otp_ctrl_reg_pkg.LcStateWidth - 1}:0] lc_otp_program_req_i_state_diff,
+       |  input logic lc_otp_program_i_req,
+       |  input logic [${otp_ctrl_reg_pkg.LcStateWidth - 1}:0] lc_otp_program_i_state_delta,
        |""".stripMargin +
       ( for(i <- 0 until otp_ctrl_reg_pkg.NumLcCountValues) yield
         s"""
-           |  output logic [${otp_ctrl_reg_pkg.LcValueWidth - 1}:0] lc_otp_program_req_i_count_diff_${i},
+           |  output logic [${otp_ctrl_reg_pkg.LcValueWidth - 1}:0] lc_otp_program_i_count_delta_${i},
            |""".stripMargin ).reduce(_+_)
-  val lc_otp_program_req_i_connections =
+  val lc_otp_program_i_connections =
     s"""
-       |  wire otp_ctrl_pkg::lc_otp_program_req_t lc_otp_program_req_i;
-       |  assign lc_otp_program_req_i.req = lc_otp_program_req_i_req;
-       |  assign lc_otp_program_req_i.state_diff = lc_otp_program_req_i_state_diff;
+       |  wire otp_ctrl_pkg::lc_otp_program_req_t lc_otp_program_i;
+       |  assign lc_otp_program_i.req = lc_otp_program_i_req;
+       |  assign lc_otp_program_i.state_delta = lc_otp_program_i_state_delta;
        |""".stripMargin +
       ( for(i <- 0 until otp_ctrl_reg_pkg.NumLcCountValues) yield
         s"""
-           |  assign lc_otp_program_req_i.count_diff[${i}] = lc_otp_program_req_i_count_diff_${i};
+           |  assign lc_otp_program_i.count_delta[${i}] = lc_otp_program_i_count_delta_${i};
            |""".stripMargin ).reduce(_+_)
   val otp_lc_data_o_port =
     s"""
-       |  output logic otp_lc_data_o_state_valid,
-       |  output logic otp_lc_data_o_test_token_valid,
-       |  output logic otp_lc_data_o_rma_token_valid,
-       |  output logic otp_lc_data_o_id_state_valid,
+       |  output logic otp_lc_data_o_valid,
        |  output logic [${otp_ctrl_reg_pkg.LcStateWidth - 1}:0] otp_lc_data_o_state,
        |  output logic [${otp_ctrl_reg_pkg.LcTokenWidth - 1}:0] otp_lc_data_o_test_unlock_token,
        |  output logic [${otp_ctrl_reg_pkg.LcTokenWidth - 1}:0] otp_lc_data_o_test_exit_token,
@@ -279,10 +287,7 @@ class otp_ctrl_wrapper
   val otp_lc_data_o_connections =
     s"""
        |  wire otp_ctrl_pkg::otp_lc_data_t otp_lc_data_o;
-       |  assign otp_lc_data_o_state_valid = otp_lc_data_o.state_valid;
-       |  assign otp_lc_data_o_test_token_valid = otp_lc_data_o.test_token_valid;
-       |  assign otp_lc_data_o_rma_token_valid = otp_lc_data_o.rma_token_valid;
-       |  assign otp_lc_data_o_id_state_valid = otp_lc_data_o.id_state_valid;
+       |  assign otp_lc_data_o_valid = otp_lc_data_o.valid;
        |  assign otp_lc_data_o_state = otp_lc_data_o.state;
        |  assign otp_lc_data_o_test_unlock_token = otp_lc_data_o.test_unlock_token;
        |  assign otp_lc_data_o_test_exit_token = otp_lc_data_o.test_exit_token;
@@ -294,24 +299,26 @@ class otp_ctrl_wrapper
            |  assign otp_lc_data_o.count[${i}] = otp_lc_data_o_count_${i};
            |""".stripMargin ).reduce(_+_)
   val sram_otp_key_port =
-    ( for(i <- 0 until NumSramKeyReqSlots) yield
+    ( for(i <- 0 until otp_ctrl_reg_pkg.NumSramKeyReqSlots) yield
       s"""
-         |  input logic sram_otp_key_req_i_${i}_req,
-         |  output logic sram_otp_key_rsp_o_${i}_ack,
-         |  output logic [${otp_ctrl_reg_pkg.SramKeyWidth - 1}:0] sram_otp_key_rsp_o_${i}_key,
-         |  output logic [${otp_ctrl_reg_pkg.SramKeyWidth - 1}:0] sram_otp_key_rsp_o_${i}_nonce,
+         |  input logic sram_otp_key_i_${i}_req,
+         |  output logic sram_otp_key_o_${i}_ack,
+         |  output logic [${otp_ctrl_reg_pkg.SramKeyWidth - 1}:0] sram_otp_key_o_${i}_key,
+         |  output logic [${otp_ctrl_reg_pkg.SramKeyWidth - 1}:0] sram_otp_key_o_${i}_nonce,
+         |  output logic sram_otp_key_o_${i}_seed_valid,
          |""".stripMargin ).reduce(_+_)
   val sram_otp_key_connections =
     s"""
-       |  wire otp_ctrl_pkg::sram_otp_key_req_t [${NumSramKeyReqSlots - 1}:0] sram_otp_key_req_i;
-       |  wire otp_ctrl_pkg::sram_otp_key_rsp_t [${NumSramKeyReqSlots - 1}:0] sram_otp_key_rsp_o;
+       |  wire otp_ctrl_pkg::sram_otp_key_req_t [${otp_ctrl_reg_pkg.NumSramKeyReqSlots - 1}:0] sram_otp_key_i;
+       |  wire otp_ctrl_pkg::sram_otp_key_rsp_t [${otp_ctrl_reg_pkg.NumSramKeyReqSlots - 1}:0] sram_otp_key_o;
        |""".stripMargin +
-      ( for(i <- 0 until NumSramKeyReqSlots) yield
+      ( for(i <- 0 until otp_ctrl_reg_pkg.NumSramKeyReqSlots) yield
         s"""
-           |  assign sram_otp_key_req_i[${i}].req = sram_otp_key_req_i_${i}_req;
-           |  assign sram_otp_key_rsp_o_${i}_ack = sram_otp_key_rsp_o[${i}].ack;
-           |  assign sram_otp_key_rsp_o_${i}_key = sram_otp_key_rsp_o[${i}].key;
-           |  assign sram_otp_key_rsp_o_${i}_nonce = sram_otp_key_rsp_o[${i}].nonce;
+           |  assign sram_otp_key_i[${i}].req = sram_otp_key_i_${i}_req;
+           |  assign sram_otp_key_o_${i}_ack = sram_otp_key_o[${i}].ack;
+           |  assign sram_otp_key_o_${i}_key = sram_otp_key_o[${i}].key;
+           |  assign sram_otp_key_o_${i}_nonce = sram_otp_key_o[${i}].nonce;
+           |  assign sram_otp_key_o_${i}_seed_valid = sram_otp_key_o[${i}].seed_valid;
            |""".stripMargin ).reduce(_+_)
 
   setInline("otp_ctrl_wrapper.sv",
@@ -331,7 +338,7 @@ class otp_ctrl_wrapper
        |  // Enable asynchronous transitions on alerts.
        |  parameter logic [otp_ctrl_reg_pkg::NumAlerts-1:0]        AlertAsyncOn = {otp_ctrl_reg_pkg::NumAlerts{1'b1}},
        |  // TODO: These constants have to be replaced by the silicon creator before taping out.
-       |  parameter logic [otp_ctrl_pkg::TimerWidth-1:0]       LfsrSeed     = otp_ctrl_pkg::TimerWidth'(1'b1),
+       |  parameter logic [otp_ctrl_pkg::TimerWidth-1:0]       TimerLfsrSeed     = otp_ctrl_pkg::TimerWidth'(1'b1),
        |  parameter logic [otp_ctrl_pkg::TimerWidth-1:0][31:0] LfsrPerm     = {
        |    32'd13, 32'd17, 32'd29, 32'd11, 32'd28, 32'd12, 32'd33, 32'd27,
        |    32'd05, 32'd39, 32'd31, 32'd21, 32'd15, 32'd01, 32'd24, 32'd37,
@@ -377,45 +384,47 @@ class otp_ctrl_wrapper
        |
        |  // Alerts
        |""".stripMargin +
-      alert_port + lc_otp_program_req_i_port + otp_lc_data_o_port + sram_otp_key_port +
+      alert_port + lc_otp_program_i_port + otp_lc_data_o_port + sram_otp_key_port +
       s"""
-         |  // Interrupts
-         |  input  logic                         edn_otp_up_i_en,
-         |  input  logic                 [31:0]  edn_otp_up_i_data,
+         |  output logic                 [${otp_ctrl_reg_pkg.OtpPwrSeqWidth - 1}:0]  otp_ast_pwr_seq_o_pwr_seq,
+         |  input  logic                 [${otp_ctrl_reg_pkg.OtpPwrSeqWidth - 1}:0]  otp_ast_pwr_seq_h_i_pwr_seq_h,
          |
-         |  output logic                         otp_edn_req_o_req,
-         |  input  logic                         otp_edn_rsp_i_ack,
-         |  input  logic                 [31:0]  otp_edn_rsp_i_data,
+         |  output logic                         otp_edn_o_req,
+         |  input  logic                         otp_edn_i_ack,
+         |  input  logic                 [${otp_ctrl_reg_pkg.EdnDataWidth - 1}:0]  otp_edn_i_data,
          |
-         |  input  logic                         pwr_otp_init_req_i_init,
-         |  output logic                         pwr_otp_init_rsp_o_done,
-         |  output logic                         otp_pwr_state_o_idle,
+         |  input  logic                         pwr_otp_i_otp_init,
+         |  output logic                         pwr_otp_o_otp_done,
+         |  output logic                         pwr_otp_o_otp_idle,
          |
-         |  output logic                         lc_otp_program_rsp_o_err,
-         |  output logic                         lc_otp_program_rsp_o_ack,
+         |  output logic                         lc_otp_program_o_err,
+         |  output logic                         lc_otp_program_o_ack,
          |
-         |  input  logic                         lc_otp_token_req_i_req,
-         |  input  logic                 [${otp_ctrl_reg_pkg.LcTokenWidth - 1}:0]  lc_otp_token_req_i_token_input,
-         |  output logic                         lc_otp_token_rsp_o_ack,
-         |  output logic                 [${otp_ctrl_reg_pkg.LcTokenWidth - 1}:0]  lc_otp_token_rsp_o_hashed_token,
+         |  input  logic                         lc_otp_token_i_req,
+         |  input  logic                 [${otp_ctrl_reg_pkg.LcTokenWidth - 1}:0]  lc_otp_token_i_token_input,
+         |  output logic                         lc_otp_token_o_ack,
+         |  output logic                 [${otp_ctrl_reg_pkg.LcTokenWidth - 1}:0]  lc_otp_token_o_hashed_token,
          |
          |  input  logic                  [2:0]  lc_escalate_en_i_state,
          |  input  logic                  [2:0]  lc_provision_en_i_state,
-         |  input  logic                  [2:0]  lc_test_en_i_state,
+         |  input  logic                  [2:0]  lc_dft_en_i_state,
          |
          |  output logic                         otp_keymgr_key_o_valid,
          |  output logic                  [${otp_ctrl_reg_pkg.KeyMgrKeyWidth - 1}:0]  otp_keymgr_key_o_key_share0,
          |  output logic                  [${otp_ctrl_reg_pkg.KeyMgrKeyWidth - 1}:0]  otp_keymgr_key_o_key_share1,
          |
-         |  input  logic                         flash_otp_key_req_i_req,
-         |  output logic                         flash_otp_key_rsp_o_ack,
-         |  output logic                  [${otp_ctrl_reg_pkg.FlashKeyWidth - 1}:0]  flash_otp_key_rsp_o_addr_key,
-         |  output logic                  [${otp_ctrl_reg_pkg.FlashKeyWidth - 1}:0]  flash_otp_key_rsp_o_data_key,
+         |  input  logic                         flash_otp_key_i_data_req,
+         |  input  logic                         flash_otp_key_i_addr_req,
+         |  output logic                         flash_otp_key_o_data_ack,
+         |  output logic                         flash_otp_key_o_addr_ack,
+         |  output logic                  [${otp_ctrl_reg_pkg.FlashKeyWidth - 1}:0]  flash_otp_key_o_key,
+         |  output logic                         flash_otp_key_o_seed_valid,
          |
-         |  input  logic                         otbn_otp_key_req_i_req,
-         |  output logic                         otbn_otp_key_rsp_o_ack,
-         |  output logic                  [${otp_ctrl_reg_pkg.OtbnKeyWidth - 1}:0]  otbn_otp_key_rsp_o_key,
-         |  output logic                  [${otp_ctrl_reg_pkg.OtbnNonceWidth - 1}:0]  otbn_otp_key_rsp_o_nonce,
+         |  input  logic                         otbn_otp_key_i_req,
+         |  output logic                         otbn_otp_key_o_ack,
+         |  output logic                  [${otp_ctrl_reg_pkg.OtbnKeyWidth - 1}:0]  otbn_otp_key_o_key,
+         |  output logic                  [${otp_ctrl_reg_pkg.OtbnNonceWidth - 1}:0]  otbn_otp_key_o_nonce,
+         |  output logic                         otbn_otp_key_o_seed_valid,
          |
          |  output logic                  [${otp_ctrl_reg_pkg.NumHwCfgBits - 1}:0]  hw_cfg_o
          |);
@@ -455,66 +464,68 @@ class otp_ctrl_wrapper
          |  assign tl_a_ready = tl_o.a_ready;
 
          |""".stripMargin +
-      alert_connections + lc_otp_program_req_i_connections + otp_lc_data_o_connections + sram_otp_key_connections +
+      alert_connections + lc_otp_program_i_connections + otp_lc_data_o_connections + sram_otp_key_connections +
       """
-        |  wire otp_ctrl_pkg::edn_otp_up_t edn_otp_up_i;
-        |  assign edn_otp_up_i.en = edn_otp_up_i_en;
-        |  assign edn_otp_up_i.data = edn_otp_up_i_data;
+        |  wire otp_ctrl_pkg::otp_ast_req_t otp_ast_pwr_seq_o;
+        |  wire otp_ctrl_pkg::otp_ast_rsp_t otp_ast_pwr_seq_h_i;
+        |  assign otp_ast_pwr_seq_o_pwr_seq = otp_ast_pwr_seq_o.pwr_seq;
+        |  assign otp_ast_pwr_seq_h_i.pwr_seq_h = otp_ast_pwr_seq_h_i_pwr_seq_h;
         |
-        |  wire otp_ctrl_pkg::otp_edn_req_t otp_edn_req_o;
-        |  wire otp_ctrl_pkg::otp_edn_rsp_t otp_edn_rsp_i;
-        |  assign otp_edn_req_o_req = otp_edn_req_o.req;
-        |  assign otp_edn_rsp_i.ack = otp_edn_rsp_i_ack;
-        |  assign otp_edn_rsp_i.data = otp_edn_rsp_i_data;
+        |  wire otp_ctrl_pkg::otp_edn_req_t otp_edn_o;
+        |  wire otp_ctrl_pkg::otp_edn_rsp_t otp_edn_i;
+        |  assign otp_edn_o_req = otp_edn_o.req;
+        |  assign otp_edn_i.ack = otp_edn_i_ack;
+        |  assign otp_edn_i.data = otp_edn_i_data;
         |
-        |  wire otp_ctrl_pkg::pwr_otp_init_req_t pwr_otp_init_req_i;
-        |  wire otp_ctrl_pkg::pwr_otp_init_rsp_t pwr_otp_init_rsp_o;
-        |  wire otp_ctrl_pkg::otp_pwr_state_t otp_pwr_state_o;
-        |  assign pwr_otp_init_req_i.init = pwr_otp_init_req_i_init;
-        |  assign pwr_otp_init_rsp_o_done = pwr_otp_init_rsp_o.done;
-        |  assign otp_pwr_state_o_idle = otp_pwr_state_o.idle;
+        |  wire pwrmgr_pkg::pwr_otp_req_t pwr_otp_i;
+        |  wire pwrmgr_pkg::pwr_otp_rsp_t pwr_otp_o;
+        |  assign pwr_otp_i.otp_init = pwr_otp_i_otp_init;
+        |  assign pwr_otp_o_otp_done = pwr_otp_o.otp_done;
+        |  assign pwr_otp_o_otp_idle = pwr_otp_o.otp_idle;
         |
-        |  wire otp_ctrl_pkg::lc_otp_program_rsp_t lc_otp_program_rsp_o;
-        |  assign lc_otp_program_rsp_o_err = lc_otp_program_rsp_o.err;
-        |  assign lc_otp_program_rsp_o_ack = lc_otp_program_rsp_o.ack;
+        |  wire otp_ctrl_pkg::lc_otp_program_rsp_t lc_otp_program_o;
+        |  assign lc_otp_program_o_err = lc_otp_program_o.err;
+        |  assign lc_otp_program_o_ack = lc_otp_program_o.ack;
         |
-        |  wire otp_ctrl_pkg::lc_otp_token_req_t lc_otp_token_req_i;
-        |  wire otp_ctrl_pkg::lc_otp_token_rsp_t lc_otp_token_rsp_o;
-        |  assign lc_otp_token_req_i.req = lc_otp_token_req_i_req;
-        |  assign lc_otp_token_req_i.token_input = lc_otp_token_req_i_token_input;
-        |  assign lc_otp_token_rsp_o_ack = lc_otp_token_rsp_o.ack;
-        |  assign lc_otp_token_rsp_o_hashed_token = lc_otp_token_rsp_o.hashed_token;
+        |  wire otp_ctrl_pkg::lc_otp_token_req_t lc_otp_token_i;
+        |  wire otp_ctrl_pkg::lc_otp_token_rsp_t lc_otp_token_o;
+        |  assign lc_otp_token_i.req = lc_otp_token_i_req;
+        |  assign lc_otp_token_i.token_input = lc_otp_token_i_token_input;
+        |  assign lc_otp_token_o_ack = lc_otp_token_o.ack;
+        |  assign lc_otp_token_o_hashed_token = lc_otp_token_o.hashed_token;
         |
-        |  wire otp_ctrl_pkg::lc_tx_t lc_escalate_en_i;
-        |  wire otp_ctrl_pkg::lc_tx_t lc_provision_en_i;
-        |  wire otp_ctrl_pkg::lc_tx_t lc_test_en_i;
+        |  wire lc_ctrl_pkg::lc_tx_t lc_escalate_en_i;
+        |  wire lc_ctrl_pkg::lc_tx_t lc_provision_en_i;
+        |  wire lc_ctrl_pkg::lc_tx_t lc_dft_en_i;
         |  assign lc_escalate_en_i.state = lc_escalate_en_i_state;
         |  assign lc_provision_en_i.state = lc_provision_en_i_state;
-        |  assign lc_test_en_i.state = lc_test_en_i_state;
+        |  assign lc_dft_en_i.state = lc_dft_en_i_state;
         |
         |  wire otp_ctrl_pkg::otp_keymgr_key_t otp_keymgr_key_o;
         |  assign otp_keymgr_key_o_valid = otp_keymgr_key_o.valid;
         |  assign otp_keymgr_key_o_key_share0 = otp_keymgr_key_o.key_share0;
         |  assign otp_keymgr_key_o_key_share1 = otp_keymgr_key_o.key_share1;
         |
-        |  wire otp_ctrl_pkg::flash_otp_key_req_t flash_otp_key_req_i;
-        |  wire otp_ctrl_pkg::flash_otp_key_rsp_t flash_otp_key_rsp_o;
-        |  assign flash_otp_key_req_i.req = flash_otp_key_req_i_req;
-        |  assign flash_otp_key_rsp_o_ack = flash_otp_key_rsp_o.ack;
-        |  assign flash_otp_key_rsp_o_addr_key = flash_otp_key_rsp_o.addr_key;
-        |  assign flash_otp_key_rsp_o_data_key = flash_otp_key_rsp_o.data_key;
+        |  wire otp_ctrl_pkg::flash_otp_key_req_t flash_otp_key_i;
+        |  wire otp_ctrl_pkg::flash_otp_key_rsp_t flash_otp_key_o;
+        |  assign flash_otp_key_i.data_req = flash_otp_key_i_data_req;
+        |  assign flash_otp_key_i.addr_req = flash_otp_key_i_addr_req;
+        |  assign flash_otp_key_o_data_ack = flash_otp_key_o.data_ack;
+        |  assign flash_otp_key_o_addr_ack = flash_otp_key_o.addr_ack;
+        |  assign flash_otp_key_o_key = flash_otp_key_o.key;
+        |  assign flash_otp_key_o_seed_valid = flash_otp_key_o.seed_valid;
         |
-        |  wire otp_ctrl_pkg::otbn_otp_key_req_t otbn_otp_key_req_i;
-        |  wire otp_ctrl_pkg::otbn_otp_key_rsp_t otbn_otp_key_rsp_o;
-        |  assign otbn_otp_key_req_i.req = otbn_otp_key_req_i_req;
-        |  assign otbn_otp_key_rsp_o_ack = otbn_otp_key_rsp_o.ack;
-        |  assign otbn_otp_key_rsp_o_key = otbn_otp_key_rsp_o.key;
-        |  assign otbn_otp_key_rsp_o_nonce = otbn_otp_key_rsp_o.nonce;
+        |  wire otp_ctrl_pkg::otbn_otp_key_req_t otbn_otp_key_i;
+        |  wire otp_ctrl_pkg::otbn_otp_key_rsp_t otbn_otp_key_o;
+        |  assign otbn_otp_key_i.req = otbn_otp_key_i_req;
+        |  assign otbn_otp_key_o_ack = otbn_otp_key_o.ack;
+        |  assign otbn_otp_key_o_key = otbn_otp_key_o.key;
+        |  assign otbn_otp_key_o_nonce = otbn_otp_key_o.nonce;
+        |  assign otbn_otp_key_o_seed_valid = otbn_otp_key_o.seed_valid;
         |
         |  otp_ctrl #(
-        |    .NumSramKeyReqSlots        ( NumSramKeyReqSlots ),
         |    .AlertAsyncOn              ( AlertAsyncOn       ),
-        |    .LfsrSeed                  ( LfsrSeed           )
+        |    .TimerLfsrSeed                  ( TimerLfsrSeed           )
         |  ) u_otp_ctrl (
         |    // clock and reset
         |    .clk_i                     (clk_i),
@@ -528,35 +539,35 @@ class otp_ctrl_wrapper
         |    // Alerts
         |    .alert_rx_i                (alert_rx_i),
         |    .alert_tx_o                (alert_tx_o),
-        |    // TODO: EDN interface for entropy updates
-        |    .edn_otp_up_i              (edn_otp_up_i),
+        |    // AST Interface
+        |    .otp_ast_pwr_seq_o         (otp_ast_pwr_seq_o),
+        |    .otp_ast_pwr_seq_h_i       (otp_ast_pwr_seq_h_i),
         |    // TODO: EDN interface for requesting entropy
-        |    .otp_edn_req_o             (otp_edn_req_o),
-        |    .otp_edn_rsp_i             (otp_edn_rsp_i),
+        |    .otp_edn_o                 (otp_edn_o),
+        |    .otp_edn_i                 (otp_edn_i),
         |    // Power manager interface
-        |    .pwr_otp_init_req_i        (pwr_otp_init_req_i),
-        |    .pwr_otp_init_rsp_o        (pwr_otp_init_rsp_o),
-        |    .otp_pwr_state_o           (otp_pwr_state_o),
+        |    .pwr_otp_i                 (pwr_otp_i),
+        |    .pwr_otp_o                 (pwr_otp_o),
         |    // Lifecycle transition command interface
-        |    .lc_otp_program_req_i      (lc_otp_program_req_i),
-        |    .lc_otp_program_rsp_o      (lc_otp_program_rsp_o),
+        |    .lc_otp_program_i      (lc_otp_program_i),
+        |    .lc_otp_program_o      (lc_otp_program_o),
         |    // Lifecycle hashing interface for raw unlock
-        |    .lc_otp_token_req_i        (lc_otp_token_req_i),
-        |    .lc_otp_token_rsp_o        (lc_otp_token_rsp_o),
+        |    .lc_otp_token_i        (lc_otp_token_i),
+        |    .lc_otp_token_o        (lc_otp_token_o),
         |    // Lifecycle broadcast inputs
         |    .lc_escalate_en_i          (lc_escalate_en_i),
         |    .lc_provision_en_i         (lc_provision_en_i),
-        |    .lc_test_en_i              (lc_test_en_i),
+        |    .lc_dft_en_i              (lc_dft_en_i),
         |    // OTP broadcast outputs
         |    .otp_lc_data_o             (otp_lc_data_o),
         |    .otp_keymgr_key_o          (otp_keymgr_key_o),
         |    // Scrambling key requests
-        |    .flash_otp_key_req_i       (flash_otp_key_req_i),
-        |    .flash_otp_key_rsp_o       (flash_otp_key_rsp_o),
-        |    .sram_otp_key_req_i        (sram_otp_key_req_i),
-        |    .sram_otp_key_rsp_o        (sram_otp_key_rsp_o),
-        |    .otbn_otp_key_req_i        (otbn_otp_key_req_i),
-        |    .otbn_otp_key_rsp_o        (otbn_otp_key_rsp_o),
+        |    .flash_otp_key_i       (flash_otp_key_i),
+        |    .flash_otp_key_o       (flash_otp_key_o),
+        |    .sram_otp_key_i        (sram_otp_key_i),
+        |    .sram_otp_key_o        (sram_otp_key_o),
+        |    .otbn_otp_key_i        (otbn_otp_key_i),
+        |    .otbn_otp_key_o        (otbn_otp_key_o),
         |    // Hardware config bits
         |    .hw_cfg_o                  (hw_cfg_o)
         |  );

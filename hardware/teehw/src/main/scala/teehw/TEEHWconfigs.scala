@@ -30,6 +30,7 @@ import boom.common._
 import boom.ifu._
 import boom.exu._
 import boom.lsu._
+import uec.teehardware.devices.opentitan.nmi_gen._
 import uec.teehardware.ibex._
 
 // The number of gpios that we want as input
@@ -228,7 +229,7 @@ class QSPI extends Config((site, here, up) => {
 })
 
 // Chip Peripherals
-class ChipPeripherals extends Config((site, here, up) => {
+class TEEHWPeripherals extends Config((site, here, up) => {
   case PeripheryUARTKey => List(
     UARTParams(address = BigInt(0x64000000L)))
   case PeripherySPIKey => List(
@@ -249,15 +250,42 @@ class ChipPeripherals extends Config((site, here, up) => {
     USB11HSParams(address = BigInt(0x64008000L)))
   case PeripheryRandomKey => List(
     RandomParams(address = BigInt(0x64009000L)))
-    // OpenTitan devices
-  case PeripheryAESOTKey => List(
-    AESOTParams(address = BigInt(0x6400A000L)))
-  //case PeripheryHMACKey => List(
-  //  HMACParams(address = BigInt(0x6400B000L)))
+  // OpenTitan devices
+  case PeripheryAESOTKey => List()
+  case PeripheryHMACKey => List()
+  case PeripheryOTPCtrlKey => List()
   case PeripheryAlertKey =>
     AlertParams(address = BigInt(0x64100000L))
+  case PeripheryNmiGenKey =>
+    NmiGenParams(address = BigInt(0x64200000L))
+})
+
+class OnlyOpenTitanPeripherals extends Config((site, here, up) => {
+  case PeripheryUARTKey => List(
+    UARTParams(address = BigInt(0x64000000L)))
+  case PeripherySPIKey => List(
+    SPIParams(rAddress = BigInt(0x64001000L)))
+  case PeripheryGPIOKey => List(
+    GPIOParams(address = BigInt(0x64002000L), width = 16))
+  case GPIOInKey => 8
+  // TEEHW devices
+  case PeripherySHA3Key => List()
+  case Peripheryed25519Key => List()
+  case PeripheryI2CKey => List()
+  case PeripheryAESKey => List()
+  case PeripheryUSB11HSKey => List()
+  case PeripheryRandomKey => List()
+  // OpenTitan devices
+  case PeripheryAESOTKey => List(
+    AESOTParams(address = BigInt(0x6400A000L)))
+  case PeripheryHMACKey => List(
+    HMACParams(address = BigInt(0x6400B000L)))
   case PeripheryOTPCtrlKey => List(
     OTPCtrlParams(address = BigInt(0x6400C000L)))
+  case PeripheryAlertKey =>
+    AlertParams(address = BigInt(0x64100000L))
+  case PeripheryNmiGenKey =>
+    NmiGenParams(address = BigInt(0x64200000L))
 })
 
 class NoSecurityPeripherals extends Config((site, here, up) => {
@@ -320,7 +348,7 @@ class WoSepaDDRClk extends Config((site, here, up) => {
 class ChipConfig extends Config(
   new WithNExtTopInterrupts(0) ++
   new WithNBreakpoints(4) ++
-  new ChipPeripherals ++
+  new TEEHWPeripherals ++
   new WithJtagDTM ++
   new freechips.rocketchip.subsystem.WithInclusiveCache ++        // use Sifive L2 cache
   new WithCoherentBusTopology ++                                  // This adds a L2 cache
@@ -349,7 +377,7 @@ class ChipConfig extends Config(
 class MicroConfig extends Config(
   new WithNExtTopInterrupts(0) ++
   new WithNBreakpoints(1) ++
-  new ChipPeripherals ++
+  new TEEHWPeripherals ++
   new WithJtagDTM ++
   new WithNMemoryChannels(0) ++
   new WithNBanks(0) ++

@@ -23,6 +23,7 @@ import sys.process._
 
 object otp_ctrl_reg_pkg {
   // From reg_pkg
+  def NumSramKeyReqSlots = 2
   def OtpByteAddrWidth = 11;
   def NumErrorEntries = 9;
   def NumDaiWords = 2;
@@ -41,6 +42,7 @@ object otp_ctrl_reg_pkg {
   def OtpErrWidth = 4
   def OtpIfWidth = 1 << OtpSizeWidth*OtpWidth
   def OtpAddrShift = OtpByteAddrWidth - OtpAddrWidth
+  def OtpPwrSeqWidth = 2
   
   def LcValueWidth = OtpWidth
   def LcTokenWidth = 128
@@ -63,6 +65,8 @@ object otp_ctrl_reg_pkg {
 
   // Configuration
   def NumHwCfgBits = 176*8 // PartInfo[HwCfgIdx].size
+
+  def EdnDataWidth = 64
 }
 
 case class OTPCtrlParams(address: BigInt)
@@ -75,42 +79,43 @@ case class OMOTPCtrlDevice
 ) extends OMDevice
 
 class OTPCtrlPortIO(val NumSramKeyReqSlots:Int = 2) extends Bundle {
-  // TODO: EDN interface for entropy updates
-  val edn_otp_up_i = Input(new edn_otp_up_t())
+  // AST Interface
+  val otp_ast_pwr_seq_o = Output(new otp_ast_req_t())
+  val otp_ast_pwr_seq_h_i = Input(new otp_ast_rsp_t())
 
   // TODO: EDN interface for requesting entropy
-  val otp_edn_req_o = Output(new otp_edn_req_t())
-  val otp_edn_rsp_i = Input(new otp_edn_rsp_t())
+  val otp_edn_o = Output(new otp_edn_req_t())
+  val otp_edn_i = Input(new otp_edn_rsp_t())
 
   // Power manager interface
-  val pwr_otp_init_req_i = Input(new pwr_otp_init_req_t())
-  val pwr_otp_init_rsp_o = Output(new pwr_otp_init_rsp_t())
+  val pwr_otp_i = Input(new pwr_otp_req_t())
+  val pwr_otp_o = Output(new pwr_otp_rsp_t())
   val otp_pwr_state_o = Output(new otp_pwr_state_t())
 
   // Lifecycle transition command interface
-  val lc_otp_program_req_i = Input(new lc_otp_program_req_t())
-  val lc_otp_program_rsp_o = Output(new lc_otp_program_rsp_t())
+  val lc_otp_program_i = Input(new lc_otp_program_req_t())
+  val lc_otp_program_o = Output(new lc_otp_program_rsp_t())
 
   // Lifecycle hashing interface for raw unlock
-  val lc_otp_token_req_i = Input(new lc_otp_token_req_t())
-  val lc_otp_token_rsp_o = Output(new lc_otp_token_rsp_t())
+  val lc_otp_token_i = Input(new lc_otp_token_req_t())
+  val lc_otp_token_o = Output(new lc_otp_token_rsp_t())
 
   // Lifecycle broadcast inputs
   val lc_escalate_en_i = Input(new lc_tx_t())
   val lc_provision_en_i = Input(new lc_tx_t())
-  val lc_test_en_i = Input(new lc_tx_t())
+  val lc_dft_en_i = Input(new lc_tx_t())
 
   // OTP broadcast outputs
   val otp_lc_data_o = Output(new otp_lc_data_t())
   val otp_keymgr_key_o = Output(new otp_keymgr_key_t())
 
   // Scrambling key requests
-  val flash_otp_key_req_i = Input(new flash_otp_key_req_t())
-  val flash_otp_key_rsp_o = Output(new flash_otp_key_rsp_t())
-  val sram_otp_key_req_i = Input(Vec(NumSramKeyReqSlots, new sram_otp_key_req_t()))
-  val sram_otp_key_rsp_o = Output(Vec(NumSramKeyReqSlots, new sram_otp_key_rsp_t()))
-  val otbn_otp_key_req_i = Input(new otbn_otp_key_req_t())
-  val otbn_otp_key_rsp_o = Output(new otbn_otp_key_rsp_t())
+  val flash_otp_key_i = Input(new flash_otp_key_req_t())
+  val flash_otp_key_o = Output(new flash_otp_key_rsp_t())
+  val sram_otp_key_i = Input(Vec(NumSramKeyReqSlots, new sram_otp_key_req_t()))
+  val sram_otp_key_o = Output(Vec(NumSramKeyReqSlots, new sram_otp_key_rsp_t()))
+  val otbn_otp_key_i = Input(new otbn_otp_key_req_t())
+  val otbn_otp_key_o = Output(new otbn_otp_key_rsp_t())
 
   // Hardware configuration bits
   val hw_cfg_o = Output(UInt(otp_ctrl_reg_pkg.NumHwCfgBits.W))
@@ -206,34 +211,34 @@ class OTPCtrl(blockBytes: Int, beatBytes: Int, params: OTPCtrlParams)(implicit p
     tl_in.e.ready := true.B
 
     // Connect the ports to the outside
-    blackbox.io.edn_otp_up_i := io.edn_otp_up_i
+    blackbox.io.otp_ast_pwr_seq_h_i := io.otp_ast_pwr_seq_h_i
+    io.otp_ast_pwr_seq_o := blackbox.io.otp_ast_pwr_seq_o
 
-    io.otp_edn_req_o := blackbox.io.otp_edn_req_o
-    blackbox.io.otp_edn_rsp_i := io.otp_edn_rsp_i
+    io.otp_edn_o := blackbox.io.otp_edn_o
+    blackbox.io.otp_edn_i := io.otp_edn_i
 
-    blackbox.io.pwr_otp_init_req_i := io.pwr_otp_init_req_i
-    io.pwr_otp_init_rsp_o := blackbox.io.pwr_otp_init_rsp_o
-    io.pwr_otp_init_rsp_o := blackbox.io.pwr_otp_init_rsp_o
+    blackbox.io.pwr_otp_i := io.pwr_otp_i
+    io.pwr_otp_o := blackbox.io.pwr_otp_o
 
-    blackbox.io.lc_otp_program_req_i := io.lc_otp_program_req_i
-    io.lc_otp_program_rsp_o := blackbox.io.lc_otp_program_rsp_o
+    blackbox.io.lc_otp_program_i := io.lc_otp_program_i
+    io.lc_otp_program_o := blackbox.io.lc_otp_program_o
 
-    blackbox.io.lc_otp_token_req_i := io.lc_otp_token_req_i
-    io.lc_otp_token_rsp_o := blackbox.io.lc_otp_token_rsp_o
+    blackbox.io.lc_otp_token_i := io.lc_otp_token_i
+    io.lc_otp_token_o := blackbox.io.lc_otp_token_o
 
     blackbox.io.lc_escalate_en_i := io.lc_escalate_en_i
     blackbox.io.lc_provision_en_i := io.lc_provision_en_i
-    blackbox.io.lc_test_en_i := io.lc_test_en_i
+    blackbox.io.lc_dft_en_i := io.lc_dft_en_i
 
     io.otp_lc_data_o := blackbox.io.otp_lc_data_o
     io.otp_keymgr_key_o := blackbox.io.otp_keymgr_key_o
 
-    blackbox.io.flash_otp_key_req_i := io.flash_otp_key_req_i
-    io.flash_otp_key_rsp_o := blackbox.io.flash_otp_key_rsp_o
-    blackbox.io.sram_otp_key_req_i := io.sram_otp_key_req_i
-    io.sram_otp_key_rsp_o := blackbox.io.sram_otp_key_rsp_o
-    blackbox.io.otbn_otp_key_req_i := io.otbn_otp_key_req_i
-    io.otbn_otp_key_rsp_o := blackbox.io.otbn_otp_key_rsp_o
+    blackbox.io.flash_otp_key_i := io.flash_otp_key_i
+    io.flash_otp_key_o := blackbox.io.flash_otp_key_o
+    blackbox.io.sram_otp_key_i := io.sram_otp_key_i
+    io.sram_otp_key_o := blackbox.io.sram_otp_key_o
+    blackbox.io.otbn_otp_key_i := io.otbn_otp_key_i
+    io.otbn_otp_key_o := blackbox.io.otbn_otp_key_o
 
     io.hw_cfg_o := blackbox.io.hw_cfg_o
   }

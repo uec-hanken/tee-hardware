@@ -24,7 +24,7 @@ AESOT_OPENTITAN_VSRCS = \
 	$(opentitan_dir)/hw/ip/aes/rtl/aes_key_expand.sv \
 	$(opentitan_dir)/hw/ip/aes/rtl/aes_mix_columns.sv \
 	$(opentitan_dir)/hw/ip/aes/rtl/aes_mix_single_column.sv \
-	$(opentitan_dir)/hw/ip/aes/rtl/aes_prng.sv \
+	$(opentitan_dir)/hw/ip/aes/rtl/aes_prng_clearing.sv \
 	$(opentitan_dir)/hw/ip/aes/rtl/aes_reg_status.sv \
 	$(opentitan_dir)/hw/ip/aes/rtl/aes_reg_top.sv \
 	$(opentitan_dir)/hw/ip/aes/rtl/aes_sbox_canright.sv \

@@ -354,6 +354,7 @@ class Alert(blockBytes: Int, beatBytes: Int, params: AlertParams)(implicit p: Pa
 
   // Negotiated sizes (Note: nAlertNodes and nAlert are not the same)
   def nAlert: Int = alertnode.edges.in.map(_.source.num).sum
+  def isAlert: Boolean = nAlert != 0
 
   val peripheralParam = TLSlavePortParameters.v1(
     managers = Seq(TLManagerParameters(
@@ -390,67 +391,85 @@ class Alert(blockBytes: Int, beatBytes: Int, params: AlertParams)(implicit p: Pa
     // Actual alerts here
     val alerts = alertnode.in.flatMap { case (i, e) => i.take(e.source.num) }
 
-    println(s"Alert map (${nAlert} alerts):")
-    flatSources.foreach { s =>
-      // +1 because 0 is reserved, +1-1 because the range is half-open
-      println(s"  [${s.range.start+1}, ${s.range.end}] => ${s.name}")
-    }
-    println("")
-
-    // Instance the Alert black box
-    val blackbox = Module(new alert_wrapper(nAlert))
-
-    // Obtain the TL bundle
-    val (tl_in, tl_edge) = peripheralNode.in(0) // Extract the port from the node
-
-    // Clocks and resets
-    blackbox.io.clk_i := clock
-    blackbox.io.rst_ni := !reset.asBool
-
-    // Connect the alerts
-    // TODO: Because lowRISC do not like to use parameters (unless is convenient),
-    // TODO: we need to only support up to 4 alerts, because that is the way
-    // TODO: we can do it without modifying the original OT code
-    require(nAlert <= alert_reg_pkg.NAlerts, "Tell lowRISC to support more alerts")
-    for(i <- 0 until alert_reg_pkg.NAlerts) {
-      if(i < nAlert) {
-        blackbox.io.alert_tx_i(i).alert_n := alerts(i).alert_tx.alert_n
-        blackbox.io.alert_tx_i(i).alert_p := alerts(i).alert_tx.alert_p
-        alerts(i).alert_rx.ping_n := blackbox.io.alert_rx_o(i).ping_n
-        alerts(i).alert_rx.ping_p := blackbox.io.alert_rx_o(i).ping_p
-        alerts(i).alert_rx.ack_n := blackbox.io.alert_rx_o(i).ack_n
-        alerts(i).alert_rx.ack_p := blackbox.io.alert_rx_o(i).ack_p
+    // If alerts are not created, there is no point to create the alert manager
+    if(!isAlert) {
+      println(s"Alert handler is not instanced (No alerts generated)")
+      interrupts.foreach(_ := false.B)
+      escs.foreach{ case esc =>
+        esc.esc_tx.esc_n := true.B
+        esc.esc_tx.esc_p := false.B
       }
-      else {
-        blackbox.io.alert_tx_i(i).alert_n := true.B
-        blackbox.io.alert_tx_i(i).alert_p := false.B
+      alerts.foreach{ case alert =>
+        alert.alert_rx.ping_n := true.B
+        alert.alert_rx.ping_p := false.B
+        alert.alert_rx.ack_n := true.B
+        alert.alert_rx.ack_p := false.B
       }
+    } else {
+      println(s"Alert map (${nAlert} alerts):")
+      flatSources.foreach { s =>
+        // +1 because 0 is reserved, +1-1 because the range is half-open
+        println(s"  [${s.range.start+1}, ${s.range.end}] => ${s.name}")
+      }
+      println("")
+
+      // Instance the Alert black box
+      val blackbox = Module(new alert_wrapper(nAlert))
+
+      // Obtain the TL bundle
+      val (tl_in, tl_edge) = peripheralNode.in(0) // Extract the port from the node
+
+      // Clocks and resets
+      blackbox.io.clk_i := clock
+      blackbox.io.rst_ni := !reset.asBool
+
+      // Connect the alerts
+      // TODO: Because lowRISC do not like to use parameters (unless is convenient),
+      // TODO: we need to only support up to 4 alerts, because that is the way
+      // TODO: we can do it without modifying the original OT code
+      require(nAlert <= alert_reg_pkg.NAlerts, "Tell lowRISC to support more alerts")
+      for(i <- 0 until alert_reg_pkg.NAlerts) {
+        if(i < nAlert) {
+          blackbox.io.alert_tx_i(i).alert_n := alerts(i).alert_tx.alert_n
+          blackbox.io.alert_tx_i(i).alert_p := alerts(i).alert_tx.alert_p
+          alerts(i).alert_rx.ping_n := blackbox.io.alert_rx_o(i).ping_n
+          alerts(i).alert_rx.ping_p := blackbox.io.alert_rx_o(i).ping_p
+          alerts(i).alert_rx.ack_n := blackbox.io.alert_rx_o(i).ack_n
+          alerts(i).alert_rx.ack_p := blackbox.io.alert_rx_o(i).ack_p
+        }
+        else {
+          blackbox.io.alert_tx_i(i).alert_n := true.B
+          blackbox.io.alert_tx_i(i).alert_p := false.B
+        }
+      }
+
+      // Connect the escalates to the node
+      (escs zip blackbox.io.esc_rx_i).foreach { case (a: esc_t, b: esc_rx_t) => b := a.esc_rx }
+      (escs zip blackbox.io.esc_tx_o).foreach { case (a: esc_t, b: esc_tx_t) => a.esc_tx := b }
+
+      // Connect the interrupts
+      interrupts(0) := blackbox.io.intr_classa_o
+      interrupts(1) := blackbox.io.intr_classb_o
+      interrupts(2) := blackbox.io.intr_classc_o
+      interrupts(3) := blackbox.io.intr_classd_o
+
+      // Connect the TL bundle
+      blackbox.io.tl.a <> tl_in.a
+      tl_in.d <> blackbox.io.tl.d
+
+      // Tie off unused channels
+      tl_in.b.valid := false.B
+      tl_in.c.ready := true.B
+      tl_in.e.ready := true.B
+
+      // Crashdump
+      // TODO: blackbox.io.crashdump_o is not used
+
+      // Entrophy (TODO)
+      blackbox.io.entropy_i := false.B
     }
 
-    // Connect the escalates to the node
-    (escs zip blackbox.io.esc_rx_i).foreach { case (a: esc_t, b: esc_rx_t) => b := a.esc_rx }
-    (escs zip blackbox.io.esc_tx_o).foreach { case (a: esc_t, b: esc_tx_t) => a.esc_tx := b }
 
-    // Connect the interrupts
-    interrupts(0) := blackbox.io.intr_classa_o
-    interrupts(1) := blackbox.io.intr_classb_o
-    interrupts(2) := blackbox.io.intr_classc_o
-    interrupts(3) := blackbox.io.intr_classd_o
-
-    // Connect the TL bundle
-    blackbox.io.tl.a <> tl_in.a
-    tl_in.d <> blackbox.io.tl.d
-
-    // Tie off unused channels
-    tl_in.b.valid := false.B
-    tl_in.c.ready := true.B
-    tl_in.e.ready := true.B
-
-    // Crashdump
-    // TODO: blackbox.io.crashdump_o is not used
-
-    // Entrophy (TODO)
-    blackbox.io.entropy_i := false.B
   }
 
   val logicalTreeNode = new LogicalTreeNode(() => Some(device)) {

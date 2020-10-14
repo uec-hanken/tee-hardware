@@ -79,7 +79,7 @@ class nmi_gen_wrapper
   addResource("/nmi_gen.preprocessed.v")
 }
 
-class NmiGen(blockBytes: Int, beatBytes: Int, params: NmiGenParams)(implicit p: Parameters) extends LazyModule {
+class NmiGen(blockBytes: Int, beatBytes: Int, params: NmiGenParams, isAlert: () => Boolean)(implicit p: Parameters) extends LazyModule {
 
   // Create a simple device for this peripheral
   val device = new SimpleDevice("Esc", Seq("lowRISC,nmi-gen-0.5")) {
@@ -141,52 +141,61 @@ class NmiGen(blockBytes: Int, beatBytes: Int, params: NmiGenParams)(implicit p: 
     // Actual escs here
     val (escs, _) = escnode.in.unzip
 
-    println(s"Escalation map (${nEsc} escs):")
-    flatSources.zipWithIndex.foreach { case (s, i) =>
-      // +1 because 0 is reserved, +1-1 because the range is half-open
-      println(s"  [${i}] => ${s.name}")
-    }
-    println("")
-
-    // Instance the Esc black box
-    val blackbox = Module(new nmi_gen_wrapper)
-
-    // Obtain the TL bundle
-    val (tl_in, tl_edge) = peripheralNode.in(0) // Extract the port from the node
-
-    // Clocks and resets
-    blackbox.io.clk_i := clock
-    blackbox.io.rst_ni := !reset.asBool
-
-    // Connect the escs
-    require(nEsc == 3, "lowRISC nmi_gen only supports 3 esc")
-    for(i <- 0 until nmi_gen_reg_pkg.N_ESC_SEV) {
-      if(i < nEsc) {
-        blackbox.io.esc_tx_i(i).esc_n := escs(i).esc_tx.esc_n
-        blackbox.io.esc_tx_i(i).esc_p := escs(i).esc_tx.esc_p
-        escs(i).esc_rx.resp_n := blackbox.io.esc_rx_o(i).resp_n
-        escs(i).esc_rx.resp_p := blackbox.io.esc_rx_o(i).resp_p
+    if(!isAlert()) {
+      println("Escalation not created")
+      interrupts.foreach(_ := false.B)
+      escs.foreach{ case esc =>
+        esc.esc_rx.resp_n := true.B
+        esc.esc_rx.resp_p := false.B
       }
-      else {
-        blackbox.io.esc_tx_i(i).esc_n := true.B
-        blackbox.io.esc_tx_i(i).esc_p := false.B
+    } else {
+      println(s"Escalation map (${nEsc} escs):")
+      flatSources.zipWithIndex.foreach { case (s, i) =>
+        // +1 because 0 is reserved, +1-1 because the range is half-open
+        println(s"  [${i}] => ${s.name}")
       }
+      println("")
+
+      // Instance the Esc black box
+      val blackbox = Module(new nmi_gen_wrapper)
+
+      // Obtain the TL bundle
+      val (tl_in, tl_edge) = peripheralNode.in(0) // Extract the port from the node
+
+      // Clocks and resets
+      blackbox.io.clk_i := clock
+      blackbox.io.rst_ni := !reset.asBool
+
+      // Connect the escs
+      require(nEsc == 3, "lowRISC nmi_gen only supports 3 esc")
+      for(i <- 0 until nmi_gen_reg_pkg.N_ESC_SEV) {
+        if(i < nEsc) {
+          blackbox.io.esc_tx_i(i).esc_n := escs(i).esc_tx.esc_n
+          blackbox.io.esc_tx_i(i).esc_p := escs(i).esc_tx.esc_p
+          escs(i).esc_rx.resp_n := blackbox.io.esc_rx_o(i).resp_n
+          escs(i).esc_rx.resp_p := blackbox.io.esc_rx_o(i).resp_p
+        }
+        else {
+          blackbox.io.esc_tx_i(i).esc_n := true.B
+          blackbox.io.esc_tx_i(i).esc_p := false.B
+        }
+      }
+
+      // Connect the interrupts
+      interrupts(0) := blackbox.io.intr_esc0_o
+      interrupts(1) := blackbox.io.intr_esc1_o
+      interrupts(2) := blackbox.io.intr_esc2_o
+      // TODO: blackbox.io.nmi_rst_req_o is not used in this context
+
+      // Connect the TL bundle
+      blackbox.io.tl.a <> tl_in.a
+      tl_in.d <> blackbox.io.tl.d
+
+      // Tie off unused channels
+      tl_in.b.valid := false.B
+      tl_in.c.ready := true.B
+      tl_in.e.ready := true.B
     }
-
-    // Connect the interrupts
-    interrupts(0) := blackbox.io.intr_esc0_o
-    interrupts(1) := blackbox.io.intr_esc1_o
-    interrupts(2) := blackbox.io.intr_esc2_o
-    // TODO: blackbox.io.nmi_rst_req_o is not used in this context
-
-    // Connect the TL bundle
-    blackbox.io.tl.a <> tl_in.a
-    tl_in.d <> blackbox.io.tl.d
-
-    // Tie off unused channels
-    tl_in.b.valid := false.B
-    tl_in.c.ready := true.B
-    tl_in.e.ready := true.B
   }
 
   val logicalTreeNode = new LogicalTreeNode(() => Some(device)) {
@@ -211,6 +220,7 @@ case class NmiGenAttachParams
 (
   par: NmiGenParams,
   escNode: EscOutwardNode,
+  isAlert: () => Boolean,
   controlWhere: TLBusWrapperLocation = PBUS,
   blockerAddr: Option[BigInt] = None,
   controlXType: ClockCrossingType = NoCrossing,
@@ -223,7 +233,7 @@ case class NmiGenAttachParams
     val clockDomainWrapper = LazyModule(new ClockSinkDomain(take = None))
 
     // The Esc lazymodule.
-    val per = clockDomainWrapper { LazyModule(new NmiGen(cbus.blockBytes, cbus.beatBytes, par)) }
+    val per = clockDomainWrapper { LazyModule(new NmiGen(cbus.blockBytes, cbus.beatBytes, par, isAlert)) }
     per.suggestName(name)
 
     cbus.coupleTo(s"device_named_$name") { bus =>

@@ -371,4 +371,4 @@ module prim_flash #(
   assign prog_type_avail_o[flash_ctrl_pkg::FlashProgNormal] = 1'b1;
   assign prog_type_avail_o[flash_ctrl_pkg::FlashProgRepair] = 1'b1;
 
-endmodule // prim_flash
+endmodule // prim_generic_flash
