@@ -114,21 +114,47 @@ abstract class Random(busWidthBytes: Int, val c: RandomParams)
     val rst_bits_counter = WireInit(false.B)
     val rng_bist_cntr = RegInit(VecInit(Seq.fill(3)(0.U(22.W)))) // TODO: Not used
 
-    // TRNG sampling logic
-    val rnd_gen = LFSR(16, rnd_src_en) // This is the generator, for now
+    // Parameters for the TRNG
+    val nbits = 16
+    val nref = 3
+    val nsrc = 9
+    val impl = 0
+
+    // Inputs for the TRNG
+    val rnd_en = WireInit(false.B)
+    val rnd_reset = WireInit(false.B)
+
+    // Implementations
+    val (rnd_gen: UInt, rnd_ready: Bool) = if(impl == 1) {
+      // Loop-based generator
+      val rnd = Module(new TRNG(nbits, nref, nsrc))
+      rnd.io.reset := rnd_reset
+      rnd.io.enable := rnd_en
+      (rnd.io.out, rnd.io.d)
+    } else {
+      // TRNG sampling logic.
+      // We ignore the reset.
+      (LFSR(nbits, rnd_en), true.B)
+    }
 
     val trng_bit_counter = RegInit(0.U(8.W))
     val trng_sample_counter = RegInit(0.U(32.W))
 
+    // Sampling counter, until all the 192 bits ready
     when(rnd_src_en && trng_bit_counter < 192.U) {
-      trng_busy := true.B
-      trng_sample_counter := trng_sample_counter + 1.U
+      trng_busy := true.B // Make the TRNG busy
       when(trng_sample_counter >= sample_cnt1) {
-        // Here is the sample enable. As long the sampler is enabled
-        // and also the LFSR, we count 16 bits up, and shift them
-        trng_sample_counter := 0.U
-        ehr_data := Cat(ehr_data, rnd_gen)
-        trng_bit_counter := trng_bit_counter + 16.U
+        rnd_en := true.B // Trigger the enable, until the ready is done
+        when(rnd_ready) {
+          // Here is the sample enable. As long the sampler is enabled
+          // and also the LFSR, we count 'nbits' bits up, and shift them
+          trng_sample_counter := 0.U
+          ehr_data := Cat(ehr_data, rnd_gen)
+          trng_bit_counter := trng_bit_counter + nbits.U
+        }
+      }. otherwise {
+        rnd_reset := true.B // Trigger the reset along the trng_sample_counter
+        trng_sample_counter := trng_sample_counter + 1.U
       }
     }
 
