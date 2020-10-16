@@ -1,8 +1,4 @@
 *
 !.gitignore
 !Makefile
-!VC707.xpr
-!mig.prj
-!VC707.xdc
-!VC707.srcs/*
-!VC707.srcs/**/*
+

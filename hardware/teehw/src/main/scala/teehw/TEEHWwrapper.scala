@@ -328,6 +328,8 @@ class FPGAVC707(implicit val p :Parameters) extends RawModule {
 
   val pciePorts = p(IncludePCIe).option(IO(new XilinxVC707PCIeX1Pads))
 
+  var ddr: Option[VC707MIGIODDR] = None
+
   withClockAndReset(clock, reset) {
     // Instance our converter, and connect everything
     val chip = Module(new TEEHWSoC)
@@ -347,12 +349,12 @@ class FPGAVC707(implicit val p :Parameters) extends RawModule {
     pll.io.reset := reset_0
 
     // The DDR port
-    val ddr = chip.tlport.map{ case chiptl =>
+    val init_calib_complete = chip.tlport.map{ case chiptl =>
       val mod = Module(LazyModule(new TLULtoMIG(chip.cacheBlockBytes, chip.tlportw.get.params)).module)
 
       // DDR port only
-      val ddr = IO(new VC707MIGIODDR(mod.depth))
-      ddr <> mod.io.ddrport
+      ddr = Some(IO(new VC707MIGIODDR(mod.depth)))
+      ddr.get <> mod.io.ddrport
       // MIG connections, like resets and stuff
       mod.io.ddrport.sys_clk_i := sys_clk_i.asUInt()
       mod.io.ddrport.aresetn := !reset_0
@@ -373,7 +375,7 @@ class FPGAVC707(implicit val p :Parameters) extends RawModule {
         mod.clock := pll.io.clk_out3.getOrElse(false.B)
       }
 
-      (ddr, mod.io.ddrport.init_calib_complete)
+      mod.io.ddrport.init_calib_complete
     }
 
     // Main clock and reset assignments
@@ -383,7 +385,7 @@ class FPGAVC707(implicit val p :Parameters) extends RawModule {
     chip.rst_n := !reset_2
 
     // The rest of the platform connections
-    gpio_out := Cat(reset_0, reset_1, reset_2, reset_3, ddr.map(_._2).getOrElse(false.B))
+    gpio_out := Cat(reset_0, reset_1, reset_2, reset_3, init_calib_complete.getOrElse(false.B))
     chip.gpio_in := gpio_in
     jtag <> chip.jtag
     chip.jtag.jtag_TCK := IBUFG(jtag.jtag_TCK.asClock).asUInt
