@@ -1,29 +1,26 @@
+// Same as Sifive's SR latch, but with Qbar
+// See LICENSE for license details.
 module trng_primitive_latch(
 	input R,
 	input S,
 	output Q,
 	output Qbar
 );
-  assign
-`ifndef SYNTHESIS
-    #2
-`endif
-    Q_i = Q;
-  assign 
-`ifndef SYNTHESIS
-    #2
-`endif
-    Qbar_i = Qbar;
-  assign 
-`ifndef SYNTHESIS
-    #2
-`endif
-    Q = ~ (R | Qbar);
-  assign 
-`ifndef SYNTHESIS
-   #2
-`endif 
-   Qbar = ~ (S | Q);
+
+  reg latch;
+
+  // synopsys async_set_reset "set"
+  // synopsys one_hot "set, reset"
+  always @(S or R)
+  begin
+    if (S)
+      latch = 1'b1;
+    else if (R)
+      latch = 1'b0;
+  end
+
+  assign Q = latch;
+  assign Qbar = ~latch;
 endmodule
 
 

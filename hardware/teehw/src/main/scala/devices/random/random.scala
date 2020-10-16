@@ -118,7 +118,7 @@ abstract class Random(busWidthBytes: Int, val c: RandomParams)
     val nbits = 16
     val nref = 3
     val nsrc = 9
-    val impl = 0
+    val impl = 1
 
     // Inputs for the TRNG
     val rnd_en = WireInit(false.B)
