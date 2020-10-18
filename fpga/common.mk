@@ -31,19 +31,24 @@ MACROCOMPILER_MODE ?= --mode synflops
 ALL_TOPS := $(TOP) $(MODEL) $(shell echo $(SEPARE) | sed "s/,/ /g")
 MACROCOMPILER_COMMANDS = $(foreach T, $(ALL_TOPS),"runMain $(MODEL_PACKAGE).uecutils.MacroCompiler -n $(build_dir)/$T.mems.conf -v $(build_dir)/$T.mems.v -f $(build_dir)/$T.mems.fir $(MACROCOMPILER_MODE)") 
 
+# This is for compiling all into the VRCS
+TOP_VERILOGS = $(addprefix $(build_dir)/,$(ALL_TOPS:=.v))
+TOP_VERILOG_MEMS = $(addprefix $(build_dir)/,$(ALL_TOPS:=.mems.v))
+TOP_F = $(addprefix $(build_dir)/,$(ALL_TOPS:=.f))
 
-.PHONY: default
+VSRCS := \
+	$(build_dir)/EICG_wrapper.v \
+	$(TOP_VERILOGS) \
+	$(TOP_VERILOG_MEMS) \
+	$(ROM_FILE)
+
 # NOTE: We are going to add the true tapeout stuff here
-default: my_verilog
-	cp -rf $(TEEHW_DIR)/optvsrc/* $(build_dir)
+default: $(FIRRTL_FILE) $(ROM_FILE)
 	# We are going to separate the different tops here
 	cd $(base_dir) && $(SBT) "project $(SBT_PROJECT)" "runMain $(MODEL_PACKAGE).uecutils.MultiTopAndHarness -o $(build_dir)/SHOULDNT.v -i $(FIRRTL_FILE) --syn-tops $(SEPARE) --chip-top $(TOP) --harness-top $(MODEL) -faf $(ANNO_FILE) --infer-rw --repl-seq-mem -c:$(TOP):-o:$(build_dir)/SHOULDNT.mems.conf -td $(build_dir)"
-	#cd $(base_dir) && $(SBT) "project tapeout" "runMain barstools.tapeout.transforms.GenerateTopAndHarness -o $(build_dir)/$(TOP).v -tho $(build_dir)/$(MODEL).v -i $(FIRRTL_FILE) --syn-top $(TOP) --harness-top $(MODEL) -faf $(ANNO_FILE) -tsaof $(build_dir)/$(TOP).anno.json -tdf $(build_dir)/$(TOP).f -tsf $(build_dir)/$(TOP).fir -thaof $(build_dir)/$(MODEL).anno.json -hdf $(build_dir)/$(MODEL).f -thf $(build_dir)/$(MODEL).fir --infer-rw --repl-seq-mem -c:$(MODEL):-o:$(build_dir)/$(TOP).mems.conf -thconf $(build_dir)/$(MODEL).mems.conf -td $(build_dir)"
-	- rename.ul $(MODEL_PACKAGE).$(MODEL).$(CONFIG) $(MODEL) $(build_dir)/*
+	# - rename.ul $(MODEL_PACKAGE).$(MODEL).$(CONFIG) $(MODEL) $(build_dir)/*
 	# We also want to generate our memories
 	cd $(base_dir) && $(SBT) "project $(SBT_PROJECT)" $(MACROCOMPILER_COMMANDS)
-
-my_verilog: $(FIRRTL_FILE) $(ROM_FILE)
 
 #########################################################################################
 # import other necessary rules and variables
@@ -59,7 +64,7 @@ else #QSPI
 HEXFILE=$(xip_dir)/xip.hex $(bootrom_dir)/FPGAzsbl.hex
 endif
 
-$(ROM_FILE): $(ROM_CONF_FILE) $(ROMGEN)
+$(ROM_FILE): $(ROMGEN)
 	make -C $(bootrom_dir) BUILD_DIR=$(build_dir) long_name=$(long_name) BOARD=$(BOARD) TEEHW=1 ISACONF=$(ISACONF) clean
 	make -C $(bootrom_dir) BUILD_DIR=$(build_dir) long_name=$(long_name) BOARD=$(BOARD) TEEHW=1 ISACONF=$(ISACONF) FPGAzsbl.hex FPGAfsbl.bin
 	make -C $(xip_dir) BUILD_DIR=$(build_dir) long_name=$(long_name) ISACONF=$(ISACONF) XIP_TARGET_ADDR=0x20000000 ADD_OPTS=-DSKIP_HANG clean

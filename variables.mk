@@ -100,7 +100,7 @@ else ifeq ($(SUB_PROJECT),teehardware)
 else
 	SBT_PROJECT       ?= teehardware
 	MODEL             ?= $(SUB_PROJECT)
-	VLOG_MODEL        ?= TestHarness
+	VLOG_MODEL        ?= $(SUB_PROJECT)
 	MODEL_PACKAGE     ?= uec.teehardware
 	CONFIG            ?= $(ISACONF)_$(MBUS)_$(BOARD)Config_$(DDRCLK)_$(PCIE)_$(BOOTSRC)_$(HYBRID)
 	CONFIG_PACKAGE    ?= uec.teehardware

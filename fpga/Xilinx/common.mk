@@ -15,16 +15,11 @@ export BUILD_DIR
 EXTRA_FPGA_VSRCS ?=
 PATCHVERILOG ?= ""
 
-VSRCS := \
-	$(EXTRA_FPGA_VSRCS) \
-	$(TOP_FILE) \
-	$(HARNESS_FILE) \
-	$(ROM_FILE)
-
 f := $(BUILD_DIR)/$(long_name).vsrcs.F
-$(f): $(VSRCS) $(sim_top_blackboxes) $(sim_harness_blackboxes)
-	echo $(VSRCS) > $@
-	awk '{print $1;}' $(sim_top_blackboxes) $(sim_harness_blackboxes) | sort -u | grep -v '.*\.\(svh\|h\)$$' > $@
+$(f):
+	make -C $(sim_dir) default
+	echo -n $(VSRCS) " " > $@
+	awk '{print $1;}' $(TOP_F) | sort -u | grep -v '.*\.\(svh\|h\)$$' | awk 'BEGIN { ORS=" " }; { print $1 }' >> $@
 
 # This simply copies XDC
 xdc_file := $(BUILD_DIR)/$(long_name).xdc
@@ -32,7 +27,7 @@ $(xdc_file): $(XDC)
 	cp -v $(XDC) $(xdc_file)
 
 bit := $(BUILD_DIR)/obj/$(MODEL).bit
-$(bit): $(romgen) $(f) $(xdc_file)
+$(bit): $(f) $(xdc_file)
 	cd $(BUILD_DIR); vivado \
 		-nojournal -mode batch \
 		-source $(fpga_common_script_dir)/vivado.tcl \
@@ -41,6 +36,7 @@ $(bit): $(romgen) $(f) $(xdc_file)
 		-F "$(f)" \
 		-ip-vivado-tcls "$(shell find '$(BUILD_DIR)' -name '*.vivado.tcl')" \
 		-board "$(FPGA_BOARD)"
+bit: $(bit)
 
 # Build .mcs
 mcs := $(BUILD_DIR)/obj/$(MODEL).mcs

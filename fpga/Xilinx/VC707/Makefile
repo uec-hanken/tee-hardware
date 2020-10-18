@@ -7,7 +7,7 @@
 #########################################################################################
 base_dir=$(abspath ../../..)
 sim_dir=$(abspath .)
-build_dir=$(sim_dir)/generated_src/
+build_dir=$(sim_dir)/generated_src
 
 bootrom_dir=$(base_dir)/software/freedom-u540-c000-bootloader
 xip_dir=$(base_dir)/software/xip
@@ -33,7 +33,7 @@ include $(base_dir)/fpga/common.mk
 # Common rules for the Vivado
 #########################################################################################
 BUILD_DIR=$(build_dir)
-FPGA_DIR=$(base_dir)/fpga-shells/xilinx
+FPGA_DIR=$(base_dir)/hardware/fpga-shells/xilinx
 export FPGA_BOARD=vc707
 XDC=$(sim_dir)/VC707.xdc
 include $(base_dir)/fpga/Xilinx/common.mk
