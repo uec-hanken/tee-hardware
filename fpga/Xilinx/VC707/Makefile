@@ -35,6 +35,7 @@ include $(base_dir)/fpga/common.mk
 BUILD_DIR=$(build_dir)
 FPGA_DIR=$(base_dir)/hardware/fpga-shells/xilinx
 export FPGA_BOARD=vc707
-XDC=$(sim_dir)/VC707.xdc
+XDC_SHELL=$(sim_dir)/VC707.shell.xdc
+TCL_SHELL=$(sim_dir)/VC707.shell.vivado.tcl
 include $(base_dir)/fpga/Xilinx/common.mk
 

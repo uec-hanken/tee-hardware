@@ -21,13 +21,16 @@ $(f):
 	echo -n $(VSRCS) " " > $@
 	awk '{print $1;}' $(TOP_F) | sort -u | grep -v '.*\.\(svh\|h\)$$' | awk 'BEGIN { ORS=" " }; { print $1 }' >> $@
 
-# This simply copies XDC
-xdc_file := $(BUILD_DIR)/$(long_name).xdc
-$(xdc_file): $(XDC)
-	cp -v $(XDC) $(xdc_file)
+# This simply copies the shell XDC and TCL to the generated folder
+xdc_shell_file := $(BUILD_DIR)/$(long_name).shell.xdc
+tcl_shell_file := $(BUILD_DIR)/$(long_name).shell.vivado.tcl
+$(xdc_shell_file): $(XDC_SHELL)
+	cp -v $(XDC_SHELL) $(xdc_shell_file)
+$(tcl_shell_file): $(TCL_SHELL)
+	cp -v $(TCL_SHELL) $(tcl_shell_file)
 
 bit := $(BUILD_DIR)/obj/$(MODEL).bit
-$(bit): $(f) $(xdc_file)
+$(bit): $(f) $(xdc_shell_file) $(tcl_shell_file)
 	cd $(BUILD_DIR); vivado \
 		-nojournal -mode batch \
 		-source $(fpga_common_script_dir)/vivado.tcl \

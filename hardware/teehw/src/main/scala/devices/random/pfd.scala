@@ -83,7 +83,7 @@ class PFD_capture extends Module {
 
 }
 
-class trng_primitive_async_reg extends BlackBox with HasBlackBoxResource {
+class trng_primitive_async_reg(val impl: String = "Simulation") extends BlackBox with HasBlackBoxInline {
   val io = IO(new Bundle() {
     val d 	= Input(Bool())
     val reset   = Input(Bool())
@@ -91,17 +91,65 @@ class trng_primitive_async_reg extends BlackBox with HasBlackBoxResource {
     val q 	= Output(Bool())
     val q_n 	= Output(Bool())
   })
-  setResource("/trng/trng_primitive_async_reg.v")
+  // TODO: Depending of "impl", should change the inline
+  setInline("trng_primitive_async_reg.v",
+    s"""
+       |module trng_primitive_async_reg( clock, reset, d, q, q_n);
+       |  input clock, reset, d;
+       |  output q,q_n;
+       |
+       |  reg q;
+       |  wire clock, reset, d, q_n;
+       |
+       |  assign q_n = ~q;
+       |
+       |  always @ (posedge clock or posedge reset)
+       |  if (reset) begin
+       |    q <= 1'b0;
+       |  end else begin
+       |    q <= d;
+       |  end
+       |
+       |endmodule
+       |""".stripMargin)
 }
 
-class trng_primitive_latch extends BlackBox with HasBlackBoxResource {
+class trng_primitive_latch(val impl: String = "Simulation") extends BlackBox with HasBlackBoxInline {
   val io = IO(new Bundle(){
     val S      = Input(Bool())
     val R      = Input(Bool())
     val Q      = Output(Bool())
     val Qbar  = Output(Bool())
   })
-  setResource("/trng/trng_primitive_latch.v")
+  setInline("trng_primitive_latch.v",
+    s"""
+       |// Same as Sifive's SR latch, but with Qbar
+       |// See LICENSE for license details.
+       |module trng_primitive_latch(
+       |	input R,
+       |	input S,
+       |	output Q,
+       |	output Qbar
+       |);
+       |
+       |  reg latch;
+       |
+       |  // synopsys async_set_reset "set"
+       |  // synopsys one_hot "set, reset"
+       |  always @(S or R)
+       |  begin
+       |    if (S)
+       |      latch = 1'b1;
+       |    else if (R)
+       |      latch = 1'b0;
+       |  end
+       |
+       |  assign Q = latch;
+       |  assign Qbar = ~latch;
+       |endmodule
+       |
+       |
+       |""".stripMargin)
 }
 
 object PFDMain extends App {

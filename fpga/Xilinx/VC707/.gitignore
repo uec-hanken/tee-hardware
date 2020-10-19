@@ -1,4 +1,5 @@
 *
 !.gitignore
 !Makefile
+!VC707.shell*
 

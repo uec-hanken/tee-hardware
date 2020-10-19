@@ -115,8 +115,8 @@ abstract class Random(busWidthBytes: Int, val c: RandomParams)
     val rng_bist_cntr = RegInit(VecInit(Seq.fill(3)(0.U(22.W)))) // TODO: Not used
 
     // Parameters for the TRNG
-    val nbits = 16
-    val nref = 3
+    val nbits = 8
+    val nref = 27
     val nsrc = 9
     val impl = 1
 
@@ -130,7 +130,8 @@ abstract class Random(busWidthBytes: Int, val c: RandomParams)
       val rnd = Module(new TRNG(nbits, nref, nsrc))
       rnd.io.reset := rnd_reset
       rnd.io.enable := rnd_en
-      (rnd.io.out, rnd.io.d)
+      rnd.dontTouchPorts()
+      (rnd.io.out_post, rnd.io.d)
     } else {
       // TRNG sampling logic.
       // We ignore the reset.
