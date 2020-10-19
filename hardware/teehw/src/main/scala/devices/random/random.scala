@@ -119,6 +119,7 @@ abstract class Random(busWidthBytes: Int, val c: RandomParams)
     val nref = 27
     val nsrc = 9
     val impl = 1
+    val trng_impl = "Xilinx"
 
     // Inputs for the TRNG
     val rnd_en = WireInit(false.B)
@@ -127,7 +128,7 @@ abstract class Random(busWidthBytes: Int, val c: RandomParams)
     // Implementations
     val (rnd_gen: UInt, rnd_ready: Bool) = if(impl == 1) {
       // Loop-based generator
-      val rnd = Module(new TRNG(nbits, nref, nsrc))
+      val rnd = Module(new TRNG(nbits, nref, nsrc, trng_impl))
       rnd.io.reset := rnd_reset
       rnd.io.enable := rnd_en
       rnd.dontTouchPorts()

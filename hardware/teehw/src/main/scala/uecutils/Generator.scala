@@ -103,6 +103,13 @@ sealed trait MultiTopApp extends LazyLogging { this: App =>
     }
   }
 
+  private def error(name: String) = {
+    println("Failed to extract " + name + ", continuing...")
+    (new File(targetDir + name + ".v")).createNewFile()
+    (new File(targetDir + name + ".f")).createNewFile()
+    (new File(targetDir + name + ".mems.v")).createNewFile()
+  }
+
   // TopGeneration
   protected def executeTop(name: String, topExtModules: Seq[ExtModule]): Seq[ExtModule] = {
     println("Attempting to extract " + name + "...")
@@ -114,15 +121,13 @@ sealed trait MultiTopApp extends LazyLogging { this: App =>
           dump(x, Some(targetDir + name + ".fir"), Some(targetDir + name + ".anno.json"))
           x.circuitState.circuit.modules.collect { case e: ExtModule => e }
         case _ =>
-          println("Failed to extract " + name + ", continuing...")
-          //throw new Exception("executeTop failed on illegal FIRRTL Chip Top!")
+          error(name)
           Seq()
       }
     }
     catch {
       case a : Throwable =>
-        println("Failed to extract " + name + ", continuing...")
-        //throw a
+        error(name)
         Seq()
     }
   }

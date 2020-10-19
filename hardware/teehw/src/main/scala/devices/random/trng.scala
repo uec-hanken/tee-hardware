@@ -41,8 +41,8 @@ class Source_And_Reference(val nref: Int = 27, val nsrc: Int = 9, val impl: Stri
   })
 
   // TODO: The location of the hints are fixed
-  val RO_ref = Module(new RingOscillator_top(nref, impl, ROLocHints(45, 45)))
-  val RO_rng = Module(new RingOscillator_top(nsrc, impl, ROLocHints(45, 48)))
+  val RO_ref = Module(new RingOscillator_top(nref, "RO_ref", impl, ROLocHints(15, 158)))
+  val RO_rng = Module(new RingOscillator_top(nsrc, "RO_rng", impl, ROLocHints(15, 161)))
 
   RO_ref.io.enable := io.enable
   RO_rng.io.enable := io.enable
@@ -50,7 +50,7 @@ class Source_And_Reference(val nref: Int = 27, val nsrc: Int = 9, val impl: Stri
   io.pulse_rng     := RO_rng.io.pulse
 }
 
-class TRNG(val nbits: Int = 8, val nref: Int = 27, val nsrc: Int = 9) extends Module with DontTouch {
+class TRNG(val nbits: Int = 8, val nref: Int = 27, val nsrc: Int = 9, val impl: String = "Simulation") extends Module with DontTouch {
   val io = IO(new Bundle {
     //Inputs
     val enable   = Input(Bool())
@@ -63,7 +63,7 @@ class TRNG(val nbits: Int = 8, val nref: Int = 27, val nsrc: Int = 9) extends Mo
     val d     = Output(Bool())
   })
 
-  val RO = Module(new Source_And_Reference(nref, nsrc))
+  val RO = Module(new Source_And_Reference(nref, nsrc, impl))
   RO.io.enable := io.enable
   val capture_top = Module(new PFD_top())
   capture_top.io.clock_A := RO.io.pulse_rng.asClock

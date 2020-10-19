@@ -18,9 +18,13 @@ class RO_single(val impl: String = "Simulation") extends Module{
   val w2 = Wire(Bool())
   val w3 = Wire(Bool())
 
-  val nand_1 = Module(new trng_primitive_nand(impl)).io
-  val not_1  = Module(new trng_primitive_not(impl)).io
-  val not_2  = Module(new trng_primitive_not(impl)).io
+  val nand = Module(new trng_primitive_nand(impl))
+  val not1  = Module(new trng_primitive_not(impl))
+  val not2  = Module(new trng_primitive_not(impl))
+
+  val nand_1 = nand.io
+  val not_1  = not1.io
+  val not_2  = not2.io
 
   nand_1.input_1 := io.input_1
   nand_1.input_2 := io.input_2
@@ -67,11 +71,35 @@ class RingOscillator_top(val edges: Int, val name_ro: String = "ro", val impl: S
     // NOTE: Name of the modules from here on are:
     // 0: RO_single_0
     // 1: RO_single_1
-    ElaborationArtefacts.add(
-      name_ro+"vivado.xdc",
-      s"""
-         |
+
+    // We need to add something like:
+    // set_property BEL D6LUT [get_cells RNG/TRNG/ROS_2/NAN1]
+    // set_property LOC SLICE_X79Y76 [get_cells RNG/TRNG/ROS_2/NAN1]
+    // set_property PROHIBIT true [get_sites SLICE_X78Y76]
+
+    // We are going to take the hints, and increase the X only for each LOC
+    val constraints = (for(i <- 0 until edges) yield {
+      s"""set_property BEL B6LUT [get_cells ${master}RO_single_${i}/nand/LUT4]
+         |set_property BEL C6LUT [get_cells ${master}RO_single_${i}/not1/LUT4]
+         |set_property BEL D6LUT [get_cells ${master}RO_single_${i}/not2/LUT4]
+         |set_property LOC SLICE_X${hints.slice_x + i}Y${hints.slice_y} [get_cells ${master}RO_single_${i}/nand/LUT4]
+         |set_property LOC SLICE_X${hints.slice_x + i}Y${hints.slice_y} [get_cells ${master}RO_single_${i}/not1/LUT4]
+         |set_property LOC SLICE_X${hints.slice_x + i}Y${hints.slice_y} [get_cells ${master}RO_single_${i}/not2/LUT4]
+         |set_property ALLOW_COMBINATORIAL_LOOPS TRUE [net_nets ${master}RO_single_${i}]
          |""".stripMargin
+    }).reduce(_+_)
+    val prohibits = (for(i <- -1 to edges) yield {
+      s"""set_property PROHIBIT true [get_sites SLICE_X${hints.slice_x + i}Y${hints.slice_y - 1}]
+         |set_property PROHIBIT true [get_sites SLICE_X${hints.slice_x + i}Y${hints.slice_y + 1}]
+         |""".stripMargin
+    }).reduce(_+_) + (for(i <- -1 to 1) yield {
+      s"""set_property PROHIBIT true [get_sites SLICE_X${hints.slice_x}Y${hints.slice_y + i}]
+         |set_property PROHIBIT true [get_sites SLICE_X${hints.slice_x + edges}Y${hints.slice_y + i}]
+         |""".stripMargin
+    }).reduce(_+_)
+    ElaborationArtefacts.add(
+      name_ro + ".vivado.xdc",
+      constraints + prohibits
     )
   }
 }
@@ -96,8 +124,7 @@ class trng_primitive_nand(val impl: String = "Simulation") extends BlackBox with
     The config for INIT is 0007
     */
     setInline("trng_primitive_nand.v",
-      s"""
-         |module trng_primitive_nand(
+      s"""module trng_primitive_nand(
          |  input input_1,
          |  input input_2,
          |  output output_1
@@ -117,8 +144,7 @@ class trng_primitive_nand(val impl: String = "Simulation") extends BlackBox with
          |""".stripMargin)
   } else {
     setInline("trng_primitive_nand.v",
-      s"""
-         |module trng_primitive_nand(
+      s"""module trng_primitive_nand(
          |  input input_1,
          |  input input_2,
          |  output output_1
@@ -150,8 +176,7 @@ class trng_primitive_not(val impl: String = "Simulation") extends BlackBox with 
     The config for INIT is 00FF, and use input 3
     */
     setInline("trng_primitive_not.v",
-      s"""
-         |module trng_primitive_not(
+      s"""module trng_primitive_not(
          |  input input_1,
          |  output output_1
          |  );
@@ -165,11 +190,11 @@ class trng_primitive_not(val impl: String = "Simulation") extends BlackBox with 
          |      .I2(0), // LUT input
          |      .I3(input_1)  // LUT input
          |   );
+         |endmodule
          |""".stripMargin)
   } else {
     setInline("trng_primitive_not.v",
-      s"""
-         |module trng_primitive_not(
+      s"""module trng_primitive_not(
          |  input input_1,
          |  output output_1
          |  );
