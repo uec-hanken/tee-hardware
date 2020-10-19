@@ -18,11 +18,11 @@ class RO_single(val impl: String = "Simulation") extends Module{
   val w2 = Wire(Bool())
   val w3 = Wire(Bool())
 
-  val nand = Module(new trng_primitive_nand(impl))
+  val nand1 = Module(new trng_primitive_nand(impl))
   val not1  = Module(new trng_primitive_not(impl))
   val not2  = Module(new trng_primitive_not(impl))
 
-  val nand_1 = nand.io
+  val nand_1 = nand1.io
   val not_1  = not1.io
   val not_2  = not2.io
 
@@ -67,7 +67,8 @@ class RingOscillator_top(val edges: Int, val name_ro: String = "ro", val impl: S
 
   if(impl == "Xilinx") {
     // TODO: The name of the master path for now is fixed
-    val master = "TEEHWSoC/TEEHWPlatform/sys/randomClockDomainWrapper/random_0/TRNG/RO/"+name_ro+"/"
+    val trng_master = "TEEHWSoC/TEEHWPlatform/sys/randomClockDomainWrapper/random_0/TRNG/"
+    val master = s"${trng_master}RO/"+name_ro+"/"
     // NOTE: Name of the modules from here on are:
     // 0: RO_single_0
     // 1: RO_single_1
@@ -79,10 +80,10 @@ class RingOscillator_top(val edges: Int, val name_ro: String = "ro", val impl: S
 
     // We are going to take the hints, and increase the X only for each LOC
     val constraints = (for(i <- 0 until edges) yield {
-      s"""set_property BEL B6LUT [get_cells ${master}RO_single_${i}/nand/LUT4]
+      s"""set_property BEL B6LUT [get_cells ${master}RO_single_${i}/nand1/LUT4]
          |set_property BEL C6LUT [get_cells ${master}RO_single_${i}/not1/LUT4]
          |set_property BEL D6LUT [get_cells ${master}RO_single_${i}/not2/LUT4]
-         |set_property LOC SLICE_X${hints.slice_x + i}Y${hints.slice_y} [get_cells ${master}RO_single_${i}/nand/LUT4]
+         |set_property LOC SLICE_X${hints.slice_x + i}Y${hints.slice_y} [get_cells ${master}RO_single_${i}/nand1/LUT4]
          |set_property LOC SLICE_X${hints.slice_x + i}Y${hints.slice_y} [get_cells ${master}RO_single_${i}/not1/LUT4]
          |set_property LOC SLICE_X${hints.slice_x + i}Y${hints.slice_y} [get_cells ${master}RO_single_${i}/not2/LUT4]
          |set_property ALLOW_COMBINATORIAL_LOOPS TRUE [net_nets ${master}RO_single_${i}]
@@ -97,9 +98,12 @@ class RingOscillator_top(val edges: Int, val name_ro: String = "ro", val impl: S
          |set_property PROHIBIT true [get_sites SLICE_X${hints.slice_x + edges}Y${hints.slice_y + i}]
          |""".stripMargin
     }).reduce(_+_)
+    val extra =
+      s"""create_generated_clock -name clk_${name_ro} -source [get_pins ${trng_master}clock] -divide_by 2 [get_pins ${master}pulse]
+         |""".stripMargin
     ElaborationArtefacts.add(
       name_ro + ".vivado.xdc",
-      constraints + prohibits
+      constraints + prohibits + extra
     )
   }
 }
@@ -183,7 +187,7 @@ class trng_primitive_not(val impl: String = "Simulation") extends BlackBox with 
          |
          |  LUT4 #(
          |      .INIT(16'h00FF)  // Specify LUT Contents
-         |   ) LUT4_L_inst (
+         |   ) LUT4 (
          |      .O(output_1), // LUT local output
          |      .I0(0), // LUT input
          |      .I1(0), // LUT input
