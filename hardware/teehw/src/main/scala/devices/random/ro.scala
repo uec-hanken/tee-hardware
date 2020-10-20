@@ -80,26 +80,26 @@ class RingOscillator_top(val edges: Int, val name_ro: String = "ro", val impl: S
 
     // We are going to take the hints, and increase the X only for each LOC
     val constraints = (for(i <- 0 until edges) yield {
-      s"""set_property BEL B6LUT [get_cells ${master}RO_single_${i}/nand1/LUT4]
-         |set_property BEL C6LUT [get_cells ${master}RO_single_${i}/not1/LUT4]
-         |set_property BEL D6LUT [get_cells ${master}RO_single_${i}/not2/LUT4]
-         |set_property LOC SLICE_X${hints.slice_x + i}Y${hints.slice_y} [get_cells ${master}RO_single_${i}/nand1/LUT4]
+      s"""set_property LOC SLICE_X${hints.slice_x + i}Y${hints.slice_y} [get_cells ${master}RO_single_${i}/nand1/LUT4]
          |set_property LOC SLICE_X${hints.slice_x + i}Y${hints.slice_y} [get_cells ${master}RO_single_${i}/not1/LUT4]
          |set_property LOC SLICE_X${hints.slice_x + i}Y${hints.slice_y} [get_cells ${master}RO_single_${i}/not2/LUT4]
-         |set_property ALLOW_COMBINATORIAL_LOOPS TRUE [net_nets ${master}RO_single_${i}]
+         |set_property BEL B6LUT [get_cells ${master}RO_single_${i}/nand1/LUT4]
+         |set_property BEL C6LUT [get_cells ${master}RO_single_${i}/not1/LUT4]
+         |set_property BEL D6LUT [get_cells ${master}RO_single_${i}/not2/LUT4]
+         |set_property ALLOW_COMBINATORIAL_LOOPS TRUE [net_nets ${master}RO_single_${i}/nand1/LUT4]
+         |set_property ALLOW_COMBINATORIAL_LOOPS TRUE [net_nets ${master}RO_single_${i}/not1/LUT4]
+         |set_property ALLOW_COMBINATORIAL_LOOPS TRUE [net_nets ${master}RO_single_${i}/not2/LUT4]
          |""".stripMargin
     }).reduce(_+_)
     val prohibits = (for(i <- -1 to edges) yield {
       s"""set_property PROHIBIT true [get_sites SLICE_X${hints.slice_x + i}Y${hints.slice_y - 1}]
+         |set_property PROHIBIT true [get_sites SLICE_X${hints.slice_x + i}Y${hints.slice_y}]
          |set_property PROHIBIT true [get_sites SLICE_X${hints.slice_x + i}Y${hints.slice_y + 1}]
-         |""".stripMargin
-    }).reduce(_+_) + (for(i <- -1 to 1) yield {
-      s"""set_property PROHIBIT true [get_sites SLICE_X${hints.slice_x}Y${hints.slice_y + i}]
-         |set_property PROHIBIT true [get_sites SLICE_X${hints.slice_x + edges}Y${hints.slice_y + i}]
          |""".stripMargin
     }).reduce(_+_)
     val extra =
-      s"""create_generated_clock -name clk_${name_ro} -source [get_pins ${trng_master}clock] -divide_by 2 [get_pins ${master}pulse]
+      s"""create_clock -name clk_${name_ro} -period 10 [get_pins ${master}RO_single_${n-1}/not2/LUT4/O]
+         |set_property SEVERITY {Warning} [get_drc_checks LUTLP-1]
          |""".stripMargin
     ElaborationArtefacts.add(
       name_ro + ".vivado.xdc",
