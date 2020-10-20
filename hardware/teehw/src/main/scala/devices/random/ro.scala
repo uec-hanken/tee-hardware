@@ -93,10 +93,12 @@ class RingOscillator_top(val edges: Int, val name_ro: String = "ro", val impl: S
     }).reduce(_+_)
     val prohibits = (for(i <- -1 to edges) yield {
       s"""set_property PROHIBIT true [get_sites SLICE_X${hints.slice_x + i}Y${hints.slice_y - 1}]
-         |set_property PROHIBIT true [get_sites SLICE_X${hints.slice_x + i}Y${hints.slice_y}]
          |set_property PROHIBIT true [get_sites SLICE_X${hints.slice_x + i}Y${hints.slice_y + 1}]
          |""".stripMargin
-    }).reduce(_+_)
+    }).reduce(_+_) +
+      s"""set_property PROHIBIT true [get_sites SLICE_X${hints.slice_x - 1}Y${hints.slice_y}]
+         |set_property PROHIBIT true [get_sites SLICE_X${hints.slice_x + edges}Y${hints.slice_y}]
+         |""".stripMargin
     val extra =
       s"""create_clock -name clk_${name_ro} -period 10 [get_pins ${master}RO_single_${n-1}/not2/LUT4/O]
          |set_property SEVERITY {Warning} [get_drc_checks LUTLP-1]
