@@ -32,15 +32,28 @@ class PFD_top extends Module {
   io.down    := latch_sr.Qbar
 }
 
-class Glitch_removal () extends Module {
+class Glitch_removal () extends BlackBox with HasBlackBoxInline {
   val io = IO(new Bundle{
     val in = Input(Bool())
     val out = Output(Bool())
   })
-  val w1 = Wire(Bool())
-  dontTouch(w1)
-  w1 := io.in | io.in
-  io.out := io.in & w1
+  setInline("Glitch_removal.v",
+    s"""module Glitch_removal(
+       |  input in,
+       |  output out
+       |  );
+       |
+       |  (* KEEP = "true", DONT_TOUCH = "yes" *) wire w1 /* synthesis keep */;
+       |  assign w1 = in | in;
+       |  assign out = in & w1;
+       |   );
+       |endmodule
+       |
+       |""".stripMargin)
+  //val w1 = Wire(Bool())
+  //dontTouch(w1)
+  //w1 := io.in | io.in
+  //io.out := io.in & w1
 
 }
 
