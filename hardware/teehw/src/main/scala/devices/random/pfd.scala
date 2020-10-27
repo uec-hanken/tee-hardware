@@ -46,7 +46,6 @@ class Glitch_removal () extends BlackBox with HasBlackBoxInline {
        |  (* KEEP = "true", DONT_TOUCH = "yes" *) wire w1 /* synthesis keep */;
        |  assign w1 = in | in;
        |  assign out = in & w1;
-       |   );
        |endmodule
        |
        |""".stripMargin)
