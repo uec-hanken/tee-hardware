@@ -48,6 +48,26 @@ case object DDRPortOther extends Field[Boolean](false)
 // Our own reset vector
 case object TEEHWResetVector extends Field[Int](0x10040)
 
+/**
+  * Class to renumber BOOM + Rocket harts so that there are no overlapped harts
+  * This fragment assumes Rocket tiles are numbered before BOOM tiles
+  * Also makes support for multiple harts depend on Rocket + BOOM
+  * Note: Must come after all harts are assigned for it to apply
+  * NOTE2: The Ibex always goes last
+  */
+class WithRenumberHartsWithIbex(rocketFirst: Boolean = false) extends Config((site, here, up) => {
+  case RocketTilesKey => up(RocketTilesKey, site).zipWithIndex map { case (r, i) =>
+    r.copy(hartId = i + (if(rocketFirst) 0 else up(BoomTilesKey, site).length))
+  }
+  case BoomTilesKey => up(BoomTilesKey, site).zipWithIndex map { case (b, i) =>
+    b.copy(hartId = i + (if(rocketFirst) up(RocketTilesKey, site).length else 0))
+  }
+  case IbexTilesKey => up(IbexTilesKey, site).zipWithIndex map { case (b, i) =>
+    b.copy(hartId = i + (up(BoomTilesKey, site).size + up(RocketTilesKey, site).size))
+  }
+  case MaxHartIdBits => log2Up(up(BoomTilesKey, site).size + up(RocketTilesKey, site).size + up(IbexTilesKey, site).size)
+})
+
 class RV64GC extends Config((site, here, up) => {
   case XLen => 64
 })
@@ -170,27 +190,27 @@ class Rocket extends Config( new WithNBigCores(2) ++ new chipyard.config.WithL2T
 class RocketReduced extends Config( new WithSmallCacheBigCore(2) )
 
 class BoomRocket extends Config(
-  new WithRenumberHarts(rocketFirst = false) ++ //Boom first, Rocket second
+  new WithRenumberHartsWithIbex(rocketFirst = false) ++ //Boom first, Rocket second
   new WithNBoomCores(1) ++
   new WithNBigCores(1) ++
   new chipyard.config.WithL2TLBs(entries = 1024) ) // use L2 TLBs
 class BoomRocketReduced extends Config(
-  new WithRenumberHarts(rocketFirst = false) ++ //Boom first, Rocket second
+  new WithRenumberHartsWithIbex(rocketFirst = false) ++ //Boom first, Rocket second
   new WithMiniBoom(1) ++
   new WithSmallCacheBigCore(1) )
 
 class RocketBoom extends Config(
-  new WithRenumberHarts(rocketFirst = true) ++ //Rocket first, Boom second
+  new WithRenumberHartsWithIbex(rocketFirst = true) ++ //Rocket first, Boom second
   new WithNBoomCores(1) ++
   new WithNBigCores(1) ++
   new chipyard.config.WithL2TLBs(entries = 1024) ) // use L2 TLBs
 class RocketBoomReduced extends Config(
-  new WithRenumberHarts(rocketFirst = true) ++ //Rocket first, Boom second
+  new WithRenumberHartsWithIbex(rocketFirst = true) ++ //Rocket first, Boom second
   new WithMiniBoom(1) ++
   new WithSmallCacheBigCore(1) )
 
 class Ibex extends Config(new WithNIbexCores(1))
-class Rocket1 extends Config(
+class RocketMicro extends Config(
   (new WithNSmallCores(1)).alter((site, here, up) => {
     case RocketTilesKey => up(RocketTilesKey, site) map { r =>
       r.copy(
@@ -212,6 +232,34 @@ class Rocket1 extends Config(
       )
     }
   }))
+
+class IbexBoomRocket extends Config(
+  new WithRenumberHartsWithIbex(rocketFirst = false) ++ //Boom first, Rocket second, Ibex last
+    new WithNBoomCores(1) ++
+    new WithNBigCores(1) ++
+    new WithNIbexSecureCores(1) ++
+    new chipyard.config.WithL2TLBs(entries = 1024) ) // use L2 TLBs
+class IbexRocketBoom extends Config(
+  new WithRenumberHartsWithIbex(rocketFirst = true) ++ //Boom first, Rocket second, Ibex last
+    new WithNBoomCores(1) ++
+    new WithNBigCores(1) ++
+    new WithNIbexSecureCores(1) ++
+    new chipyard.config.WithL2TLBs(entries = 1024) ) // use L2 TLBs
+class Ibex2Rocket extends Config(
+  new WithRenumberHartsWithIbex(rocketFirst = true) ++ //Boom first, Rocket second, Ibex last
+    new WithNBigCores(2) ++
+    new WithNIbexSecureCores(1) ++
+    new chipyard.config.WithL2TLBs(entries = 1024) ) // use L2 TLBs
+class Ibex2Boom extends Config(
+  new WithRenumberHartsWithIbex(rocketFirst = false) ++ //Boom first, Rocket second, Ibex last
+    new WithNBoomCores(2) ++
+    new WithNIbexSecureCores(1) ++
+    new chipyard.config.WithL2TLBs(entries = 1024) ) // use L2 TLBs
+class Ibex2RocketNonSecure extends Config(
+  new WithRenumberHartsWithIbex(rocketFirst = true) ++ //Boom first, Rocket second, Ibex last
+    new WithNBigCores(2) ++
+    new WithNIbexCores(1) ++
+    new chipyard.config.WithL2TLBs(entries = 1024) ) // use L2 TLBs
 
 class BOOTROM extends Config((site, here, up) => {
   case PeripheryMaskROMKey => List(
@@ -249,7 +297,8 @@ class TEEHWPeripherals extends Config((site, here, up) => {
   case PeripheryUSB11HSKey => List(
     USB11HSParams(address = BigInt(0x64008000L)))
   case PeripheryRandomKey => List(
-    RandomParams(address = BigInt(0x64009000L)))
+    RandomParams(address = BigInt(0x64009000L), impl = 1),
+    RandomParams(address = BigInt(0x6400A000L), impl = 0))
   // OpenTitan devices
   case PeripheryAESOTKey => List()
   case PeripheryHMACKey => List()
@@ -346,6 +395,7 @@ class WoSepaDDRClk extends Config((site, here, up) => {
 
 // Chip Configs
 class ChipConfig extends Config(
+  // The rest of the configurations, which are not-movable
   new WithNExtTopInterrupts(0) ++
   new WithNBreakpoints(4) ++
   new TEEHWPeripherals ++
@@ -371,6 +421,7 @@ class ChipConfig extends Config(
       idcodeManufId = 0x489,  // As Assigned by JEDEC to SiFive. Only used in wrappers / test harnesses.
       debugIdleCycles = 5)    // Reasonable guess for synchronization
     case FreqKeyMHz => 100.0
+    case MaxHartIdBits => log2Up(site(BoomTilesKey).size + site(RocketTilesKey).size + site(IbexTilesKey).size)
   })
 )
 

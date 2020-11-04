@@ -6,7 +6,8 @@ chipyard_dir=$(base_dir)/hardware/chipyard
 vsrc_dir=$(base_dir)/hardware/teehw/vsrc/
 optvsrc_dir=$(base_dir)/hardware/teehw/optvsrc/
 
-PREPROC_SCRIPT = $(chipyard_dir)/scripts/insert-includes.py
+#PREPROC_SCRIPT = $(chipyard_dir)/scripts/insert-includes.py
+PREPROC_SCRIPT = $(base_dir)/hardware/insert-includes.py
 
 include ibex.mk
 include sha3.mk

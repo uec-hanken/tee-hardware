@@ -17,10 +17,17 @@ PRIM_OPENTITAN_PKGS =
 PRIM_OPENTITAN_VSRCS = \
 	$(vsrc_dir)/prim/prim_flop.sv \
 	$(vsrc_dir)/prim/prim_flop_2sync.sv \
-	$(vsrc_dir)/prim/prim_flash.sv \
-	$(vsrc_dir)/prim/prim_otp.sv \
 	$(opentitan_dir)/hw/ip/prim/rtl/prim_alert_receiver.sv \
+	$(vsrc_dir)/prim/prim_ram_1p.sv \
+	$(opentitan_dir)/hw/ip/prim/rtl/prim_esc_receiver.sv \
+	$(opentitan_dir)/hw/ip/prim/rtl/prim_diff_decode.sv \
+	$(opentitan_dir)/hw/ip/prim/rtl/prim_fifo_sync.sv \
+	$(opentitan_dir)/hw/ip/prim/rtl/prim_fifo_async.sv \
 	$(opentitan_dir)/hw/ip/prim/rtl/prim_alert_sender.sv
+
+# TODO: Include them when the time comes
+#	$(vsrc_dir)/prim/prim_flash.sv \
+#	$(vsrc_dir)/prim/prim_otp.sv \
 
 PRIM_OPENTITAN_WRAPPER = 
 
@@ -40,7 +47,6 @@ PRIM_PREPROC_DEFINES ?= \
 	WT_DCACHE \
 	DISABLE_TRACER \
 	SRAM_NO_INIT \
-	VERILATOR \
 	$(PRIM_EXTRA_PREPROC_DEFINES)
 
 $(PRIM_PREPROC_SVERILOG): $(PRIM_ALL_VSRCS)

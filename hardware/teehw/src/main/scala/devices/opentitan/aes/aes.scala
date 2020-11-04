@@ -44,7 +44,7 @@ class aes_wrapper
 (
   AES192Enable: Boolean = true,
   Masking: Boolean = false, // If true, needs a masked sbox
-  SBoxImpl: String = "aes_pkg::SBoxImplLut",
+  SBoxImpl: Int = 0, // "aes_pkg::SBoxImplLut",
   SecStartTriggerDelay: Int = 0, // Has to be unsigned no?
   AlertAsyncOn: Seq[Boolean] = Seq.fill(aes_reg_pkg.NumAlerts)(true)
 )
@@ -52,7 +52,7 @@ class aes_wrapper
     Map(
       "AES192Enable" -> IntParam(if(AES192Enable) 1 else 0),
       "Masking" -> IntParam(if(Masking) 1 else 0),
-      "SBoxImpl" -> RawParam(SBoxImpl),
+      "SBoxImpl" -> IntParam(SBoxImpl),
       "SecStartTriggerDelay" -> IntParam(SecStartTriggerDelay),
       "AlertAsyncOn" -> IntParam( // Default: all ones
         AlertAsyncOn.map(if(_) 1 else 0).fold(0)((a,b) => a<<1+b)

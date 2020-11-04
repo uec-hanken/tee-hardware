@@ -3,12 +3,11 @@
 package uec.teehardware.ibex
 
 import chisel3._
-import chisel3.util.{log2Up}
-
-import freechips.rocketchip.config.{Parameters, Config, Field}
-import freechips.rocketchip.subsystem.{SystemBusKey, RocketTilesKey, RocketCrossingParams}
-import freechips.rocketchip.devices.tilelink.{BootROMParams}
-import freechips.rocketchip.diplomacy.{SynchronousCrossing, AsynchronousCrossing, RationalCrossing}
+import chisel3.util.log2Up
+import freechips.rocketchip.config.{Config, Field, Parameters}
+import freechips.rocketchip.subsystem.{CacheBlockBytes, RocketCrossingParams, RocketTilesKey, SystemBusKey}
+import freechips.rocketchip.devices.tilelink.BootROMParams
+import freechips.rocketchip.diplomacy.{AsynchronousCrossing, RationalCrossing, SynchronousCrossing}
 import freechips.rocketchip.rocket._
 import freechips.rocketchip.tile._
 
@@ -32,6 +31,26 @@ class WithNIbexCores(n: Int) extends Config(
     new Config((site, here, up) => {
       case IbexTilesKey => {
         List.tabulate(n)(i => IbexTileParams(hartId = i))
+      }
+    })
+)
+
+class WithNIbexSecureCores(n: Int) extends Config(
+  new WithNormalIbexSys ++
+    new Config((site, here, up) => {
+      case IbexTilesKey => {
+        List.tabulate(n)(i => IbexTileParams(
+          hartId = i,
+          dcache = Some(DCacheParams(
+            rowBits = site(SystemBusKey).beatBits,
+            nSets = 256, // 16Kb scratchpad
+            nWays = 1,
+            nTLBEntries = 4,
+            nMSHRs = 0,
+            blockBytes = 4,
+            scratch = Some(0x64300000L))),
+          core = IbexCoreParams(SecureIbex = true)
+        ))
       }
     })
 )

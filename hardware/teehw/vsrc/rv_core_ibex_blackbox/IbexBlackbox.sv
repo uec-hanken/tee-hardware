@@ -15,9 +15,9 @@ module IbexBlackbox #(
   parameter int unsigned        MHPMCounterNum    = 10,
   parameter int unsigned        MHPMCounterWidth  = 32,
   parameter bit                 RV32E             = 0,
-  parameter ibex_pkg::rv32m_e   RV32M             = ibex_pkg::RV32MSingleCycle,
-  parameter ibex_pkg::rv32b_e   RV32B             = ibex_pkg::RV32BNone,
-  parameter ibex_pkg::regfile_e RegFile           = ibex_pkg::RegFileFF,
+  parameter integer             RV32M             = 3,
+  parameter integer             RV32B             = 0,
+  parameter integer             RegFile           = 0,
   parameter bit                 BranchTargetALU   = 1'b1,
   parameter bit                 WritebackStage    = 1'b1,
   parameter bit                 ICache            = 1'b0,
@@ -133,7 +133,7 @@ module IbexBlackbox #(
   assign tl_i_a_bits_corrupt = 1'b0; // I mean, never corrupted from here, right?
   
   assign tl_i_i.d_valid = tl_i_d_valid;
-  assign tl_i_i.d_opcode = tl_i_d_bits_opcode;
+  assign tl_i_i.d_opcode = tlul_pkg::tl_d_op_e'(tl_i_d_bits_opcode);
   assign tl_i_i.d_param = tl_i_d_bits_param;
   assign tl_i_i.d_size = tl_i_d_bits_size;
   assign tl_i_i.d_source = tl_i_d_bits_source;
@@ -166,7 +166,7 @@ module IbexBlackbox #(
   assign tl_d_a_bits_corrupt = 1'b0; // I mean, never corrupted from here, right?
   
   assign tl_d_i.d_valid = tl_d_d_valid;
-  assign tl_d_i.d_opcode = tl_d_d_bits_opcode;
+  assign tl_d_i.d_opcode = tlul_pkg::tl_d_op_e'(tl_d_d_bits_opcode);
   assign tl_d_i.d_param = tl_d_d_bits_param;
   assign tl_d_i.d_size = tl_d_d_bits_size;
   assign tl_d_i.d_source = tl_d_d_bits_source;
@@ -195,9 +195,9 @@ module IbexBlackbox #(
     .MHPMCounterNum           ( MHPMCounterNum           ),
     .MHPMCounterWidth         ( MHPMCounterWidth         ),
     .RV32E                    ( RV32E                    ),
-    .RV32M                    ( RV32M                    ),
-    .RV32B                    ( RV32B                    ),
-    .RegFile                  ( RegFile                  ),
+    .RV32M                    ( ibex_pkg::rv32m_e'(RV32M)),
+    .RV32B                    ( ibex_pkg::rv32b_e'(RV32B)),
+    .RegFile                  ( ibex_pkg::regfile_e'(RegFile)),
     .BranchTargetALU          ( BranchTargetALU          ),
     .WritebackStage           ( WritebackStage           ),
     .ICache                   ( ICache                   ),

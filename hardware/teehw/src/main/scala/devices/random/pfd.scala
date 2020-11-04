@@ -4,7 +4,7 @@ import scala.math._
 import chisel3._
 import chisel3.util._
 
-class PFD_top extends Module {
+class PFD_top(val impl: String = "Simulation") extends Module {
   val io = IO(new Bundle{
     val clock_A = Input(Clock())
     val clock_B = Input(Clock())
@@ -12,57 +12,104 @@ class PFD_top extends Module {
     val down    = Output(Bool())
   })
 
-  val PFD_capture = Module(new PFD_capture())
+  val PFD_capture = Module(new PFD_capture(impl))
   PFD_capture.io.clock_A := io.clock_A
   PFD_capture.io.clock_B := io.clock_B
-  val GR = VecInit(Seq.fill(2)(Module(new Glitch_removal()).io))
+  val GR = VecInit(Seq.fill(2)(Module(new Glitch_removal(impl)).io))
   GR(0).in 	    := PFD_capture.io.UP
   GR(1).in 	    := PFD_capture.io.DOWN
-  val SR = VecInit(Seq.fill(2)(Module(new Shift_register()).io))
+  val SR = VecInit(Seq.fill(2)(Module(new Shift_register(impl)).io))
   SR(0).clock := GR(0).out.asClock
   SR(0).reset := GR(1).out
   SR(1).clock := GR(1).out.asClock
   SR(1).reset := GR(0).out
   //io.up 		    := SR(0).out
   //io.down  	    := SR(1).out
-  val latch_sr = Module(new trng_primitive_latch()).io
+  val latch_sr = Module(new trng_primitive_latch(impl)).io
   latch_sr.S := SR(0).out
   latch_sr.R := SR(1).out
   io.up      := latch_sr.Q
   io.down    := latch_sr.Qbar
 }
 
-class Glitch_removal () extends BlackBox with HasBlackBoxInline {
+class Glitch_removal (val impl: String = "Simulation") extends BlackBox with HasBlackBoxInline {
   val io = IO(new Bundle{
     val in = Input(Bool())
     val out = Output(Bool())
   })
-  setInline("Glitch_removal.v",
-    s"""module Glitch_removal(
-       |  input in,
-       |  output out
-       |  );
-       |
-       |  (* KEEP = "true", DONT_TOUCH = "yes" *) wire w1 /* synthesis keep */;
-       |  assign w1 = in | in;
-       |  assign out = in & w1;
-       |endmodule
-       |
-       |""".stripMargin)
-  //val w1 = Wire(Bool())
-  //dontTouch(w1)
-  //w1 := io.in | io.in
-  //io.out := io.in & w1
 
+  if(impl == "Xilinx") {
+    /*
+    OR truth table
+    out - in0 in1
+    0     0   0
+    1     0   1
+    1     1   0
+    1     1   1
+    For all other cases, is 0
+    The config for INIT is 000E
+    AND truth table
+    out - in0 in1
+    0     0   0
+    0     0   1
+    0     1   0
+    1     1   1
+    For all other cases, is 0
+    The config for INIT is 0008
+    */
+    setInline("Glitch_removal.v",
+      s"""module Glitch_removal(
+         |  input in,
+         |  output out
+         |  );
+         |
+         |  (* KEEP = "true", DONT_TOUCH = "yes" *) wire w1 /* synthesis keep */;
+         |
+         |  LUT4 #(
+         |      .INIT(16'h000E)  // Specify LUT Contents
+         |   ) DEL (
+         |      .O(w1), // LUT local output
+         |      .I0(in), // LUT input
+         |      .I1(in), // LUT input
+         |      .I2(0), // LUT input
+         |      .I3(0)  // LUT input
+         |   );
+         |
+         |   LUT4 #(
+         |      .INIT(16'h0008)  // Specify LUT Contents
+         |   ) ANTI (
+         |      .O(out), // LUT local output
+         |      .I0(in), // LUT input
+         |      .I1(w1), // LUT input
+         |      .I2(0), // LUT input
+         |      .I3(0)  // LUT input
+         |   );
+         |endmodule
+         |
+         |""".stripMargin)
+  } else {
+    setInline("Glitch_removal.v",
+      s"""module Glitch_removal(
+         |  input in,
+         |  output out
+         |  );
+         |
+         |  (* KEEP = "true", DONT_TOUCH = "yes" *) wire w1 /* synthesis keep */;
+         |  assign w1 = in | in;
+         |  assign out = in & w1;
+         |endmodule
+         |
+         |""".stripMargin)
+  }
 }
 
-class Shift_register() extends Module {
+class Shift_register(val impl: String = "Simulation") extends Module {
   val io = IO(new Bundle{
     val reset   = Input(Bool())
     val clock   = Input(Clock())
     val out     = Output(Bool())
   })
-  val flops = VecInit(Seq.fill(2)(Module(new trng_primitive_async_reg()).io))
+  val flops = VecInit(Seq.fill(2)(Module(new trng_primitive_async_reg(impl)).io))
   var n = flops.length
   (0 until n).map(i => flops(i).reset := io.reset)
   (0 until n).map(i => flops(i).clock := io.clock)
@@ -72,7 +119,7 @@ class Shift_register() extends Module {
 
 }
 
-class PFD_capture extends Module {
+class PFD_capture(val impl: String = "Simulation") extends Module {
   val io = IO(new Bundle{
     val clock_A = Input(Clock())
     val clock_B = Input(Clock())
@@ -82,7 +129,7 @@ class PFD_capture extends Module {
   } )
 
   val reset_t = Wire(Bool())
-  val flops = VecInit(Seq.fill(2)(Module(new trng_primitive_async_reg()).io))
+  val flops = VecInit(Seq.fill(2)(Module(new trng_primitive_async_reg(impl)).io))
   var n = flops.length
   (0 until n).map(i => flops(i).d := true.B)
   flops(0).clock := io.clock_A

@@ -40,9 +40,9 @@ case class IbexCoreParams
   useDebug: Boolean = true,
   nLocalInterrupts: Int = 0,
   nPerfCounters: Int = 1,
-  RV32M: String = "ibex_pkg::RV32MSingleCycle",
-  RV32B: String = "ibex_pkg::RV32BNone",
-  RegFile: String = "ibex_pkg::RegFileFF",
+  RV32M: Int = 3, // "ibex_pkg::RV32MSingleCycle",
+  RV32B: Int = 0, // "ibex_pkg::RV32BNone",
+  RegFile: Int = 0, // "ibex_pkg::RegFileFF",
   BranchTargetALU: Boolean = false,
   BranchPredictor: Boolean = false,
   WritebackStage: Boolean = false,
@@ -60,10 +60,10 @@ case class IbexCoreParams
   override val useVector: Boolean = false // Checked
   val useSCIE: Boolean = false // TODO: What?
   val mulDiv: Option[MulDivParams] =
-    if(RV32M == "ibex_pkg::RV32MNone") None
-    else if (RV32M == "ibex_pkg::RV32MSingleCycle") Some(MulDivParams(1, 1, false, false, 1))
-    else if (RV32M == "ibex_pkg::RV32MFast") Some(MulDivParams(3, 3, false, false, 4))
-    else if (RV32M == "ibex_pkg::RV32MSlow") Some(MulDivParams(8, 8, false, false, 8)) // TODO: Check
+    if(RV32M == 0) None
+    else if (RV32M == 3) Some(MulDivParams(1, 1, false, false, 1))
+    else if (RV32M == 2) Some(MulDivParams(3, 3, false, false, 4))
+    else if (RV32M == 1) Some(MulDivParams(8, 8, false, false, 8)) // TODO: Check
     else {
       throw new IllegalArgumentException(s"The following statement is not valid in RV32M parameters in Ibex (Did you forgot to append ibex_pkg::): ${RV32M}")
       None
@@ -91,6 +91,7 @@ case class IbexTileParams
   hartId: Int = 0,
   core: IbexCoreParams = IbexCoreParams(),
   icache: Option[ICacheParams] = Some(ICacheParams()), // TODO: The existence alone is checked only. No visible way to configure sizes
+  dcache: Option[DCacheParams] = None, // TODO: No actual dcache. We always check for the scratchpad
   ICacheECC: Boolean = false,
   boundaryBuffers: Boolean = false
 ) extends TileParams {
@@ -98,7 +99,6 @@ case class IbexTileParams
   val btb: Option[BTBParams] = None // TODO: What?
   val beuAddr: Option[BigInt] = None // TODO: What?
   val blockerCtrlAddr: Option[BigInt] = None // TODO: What?
-  val dcache: Option[DCacheParams] = None // No Dcache
 }
 
 class IbexTile
@@ -128,14 +128,24 @@ class IbexTile
   masterNode :=* tlOtherMastersNode
   DisableMonitors { implicit p => tlSlaveXbar.node :*= slaveNode }
 
+  // If the Ibex is secure, we cannot let this device gets in the dtc (not usable by linux)
+  def ghostDevice = new Device {
+    def describe(resources: ResourceBindings): Description = {
+      Description("ghost", Map())
+    }
+  }
+
   val cpuDevice: SimpleDevice = new SimpleDevice("cpu", Seq("lowRISC,ibex", "riscv")) {
-    override def parent = Some(ResourceAnchors.cpus)
+    override def parent = Some(if(ibexParams.core.SecureIbex) ghostDevice else ResourceAnchors.cpus )
     override def describe(resources: ResourceBindings): Description = {
       val Description(name, mapping) = super.describe(resources)
       Description(name, mapping ++
         cpuProperties ++
         nextLevelCacheProperty ++
-        tileProperties)
+        tileProperties ++
+        Map(
+          "riscv,isa"            -> "rv32imc".asProperty
+        ))
     }
   }
 
@@ -214,6 +224,19 @@ class IbexTile
     := dmemNode
     )
 
+  // Creation of the scratchpad
+  ibexParams.dcache.foreach{
+    case i =>
+      require(i.scratch.nonEmpty, "The only dcache possible in Ibex is a scratchpad")
+      val size = i.nSets * i.nWays * cacheBlockBytes
+      val tlram = TLRAM(
+        address = AddressSet(i.scratch.get, size-1),
+        beatBytes = p(XLen)/8,
+        cacheable = false,
+        devName = Some(s"HiddenRAM_Ibex${ibexParams.hartId}"))
+      tlram := tlMasterXbar.node
+  }
+
   def connectIbexInterrupts(debug: Bool, msip: Bool, mtip: Bool, meip: Bool) {
     val (interrupts, _) = intSinkNode.in(0)
     debug := interrupts(0)
@@ -230,8 +253,7 @@ class IbexTileModuleImp(outer: IbexTile) extends BaseTileModuleImp(outer){
   require(p(SubsystemResetSchemeKey)  == ResetSynchronous,
     "Ibex only supports synchronous reset at this time")
 
-  require(p(XLen) == 32,
-    "Ibex only suports RV32")
+  //require(p(XLen) == 32, "Ibex only suports RV32")
 
   val debugBaseAddr = BigInt(0x0) // CONSTANT: based on default debug module
   val debugSz = BigInt(0x1000) // CONSTANT: based on default debug module

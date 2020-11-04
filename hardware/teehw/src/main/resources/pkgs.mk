@@ -32,12 +32,14 @@ PKGS_OPENTITAN_PKGS = \
 	$(opentitan_dir)/hw/ip/pwrmgr/rtl/pwrmgr_pkg.sv \
 	$(opentitan_dir)/hw/ip/lc_ctrl/rtl/lc_ctrl_reg_pkg.sv \
 	$(opentitan_dir)/hw/ip/lc_ctrl/rtl/lc_ctrl_pkg.sv \
-	$(opentitan_dir)/hw/ip/flash_ctrl/rtl/flash_ctrl_reg_pkg.sv \
-	$(opentitan_dir)/hw/ip/flash_ctrl/rtl/flash_ctrl_pkg.sv \
-	$(opentitan_dir)/hw/ip/otp_ctrl/rtl/otp_ctrl_reg_pkg.sv \
-	$(opentitan_dir)/hw/ip/otp_ctrl/rtl/otp_ctrl_pkg.sv \
-	$(opentitan_dir)/hw/vendor/lowrisc_ibex/rtl/ibex_pkg.sv \
-	$(opentitan_dir)/hw/ip/nmi_gen/rtl/nmi_gen_reg_pkg.sv
+	$(opentitan_dir)/hw/vendor/lowrisc_ibex/rtl/ibex_pkg.sv
+
+# TODO: Include afterwards, when flash and otp are completed
+#	$(opentitan_dir)/hw/ip/flash_ctrl/rtl/flash_ctrl_reg_pkg.sv \
+#	$(opentitan_dir)/hw/ip/flash_ctrl/rtl/flash_ctrl_pkg.sv \
+#	$(opentitan_dir)/hw/ip/otp_ctrl/rtl/otp_ctrl_reg_pkg.sv \
+#	$(opentitan_dir)/hw/ip/otp_ctrl/rtl/otp_ctrl_pkg.sv \
+#	$(opentitan_dir)/hw/ip/nmi_gen/rtl/nmi_gen_reg_pkg.sv
 
 PKGS_OPENTITAN_VSRCS = 
 

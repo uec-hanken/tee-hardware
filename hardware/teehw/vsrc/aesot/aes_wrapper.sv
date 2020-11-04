@@ -12,7 +12,7 @@ module aes_wrapper #(
                                                     // masked S-Box, see SBoxImpl parameter.
                                                     // Note: currently, constant masks are
                                                     // used, this is of course not secure.
-  parameter aes_pkg::sbox_impl_e  SBoxImpl              = aes_pkg::SBoxImplLut, // See aes_pkg.sv
+  parameter integer      SBoxImpl              = 0, // See aes_pkg.sv
   parameter int unsigned SecStartTriggerDelay  = 0, // Manual start trigger delay, useful for
                                                     // SCA measurements. A value of e.g. 40
                                                     // allows the processor to go into sleep
@@ -127,7 +127,7 @@ module aes_wrapper #(
   aes #(
     .AES192Enable             ( AES192Enable             ),
     .Masking                  ( Masking                  ),
-    .SBoxImpl                 ( SBoxImpl                 ),
+    .SBoxImpl                 ( aes_pkg::sbox_impl_e'(SBoxImpl)),
     .SecStartTriggerDelay     ( SecStartTriggerDelay     ),
     .AlertAsyncOn             ( AlertAsyncOn             )
   ) u_aes (

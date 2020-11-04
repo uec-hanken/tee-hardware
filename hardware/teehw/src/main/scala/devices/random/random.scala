@@ -16,7 +16,13 @@ import freechips.rocketchip.subsystem.{Attachable, PBUS, TLBusWrapperLocation}
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.util._
 
-case class RandomParams(address: BigInt)
+case class RandomParams
+(
+  address: BigInt,
+  impl: Int = 0,
+  nbits: Int = 8,
+  board: String = "Xilinx"
+)
 
 
 case class OMRANDOMDevice(
@@ -115,28 +121,25 @@ abstract class Random(busWidthBytes: Int, val c: RandomParams)
     val rng_bist_cntr = RegInit(VecInit(Seq.fill(3)(0.U(22.W)))) // TODO: Not used
 
     // Parameters for the TRNG
-    val nbits = 8
-    val nref = 27
-    val nsrc = 9
-    val impl = 1
-    val trng_impl = "Xilinx"
 
     // Inputs for the TRNG
     val rnd_en = WireInit(false.B)
     val rnd_reset = WireInit(false.B)
 
     // Implementations
-    val (rnd_gen: UInt, rnd_ready: Bool) = if(impl == 1) {
+    val (rnd_gen: UInt, rnd_ready: Bool) = if(c.impl == 1) {
       // Loop-based generator
-      val rnd = Module(new TRNG(nbits, nref, nsrc, trng_impl))
+      val nref = 27
+      val nsrc = 9
+      val rnd = Module(new TRNG(c.nbits, nref, nsrc, c.board))
       rnd.io.reset := rnd_reset
       rnd.io.enable := rnd_en
       rnd.dontTouchPorts()
-      (rnd.io.out_post, rnd.io.d)
+      (rnd.io.out_trng, rnd.io.d)
     } else {
       // TRNG sampling logic.
       // We ignore the reset.
-      (LFSR(nbits, rnd_en), true.B)
+      (LFSR(c.nbits, rnd_en), true.B)
     }
 
     val trng_bit_counter = RegInit(0.U(8.W))
@@ -152,10 +155,12 @@ abstract class Random(busWidthBytes: Int, val c: RandomParams)
           // and also the LFSR, we count 'nbits' bits up, and shift them
           trng_sample_counter := 0.U
           ehr_data := Cat(ehr_data, rnd_gen)
-          trng_bit_counter := trng_bit_counter + nbits.U
+          trng_bit_counter := trng_bit_counter + c.nbits.U
         }
       }. otherwise {
-        rnd_reset := true.B // Trigger the reset along the trng_sample_counter
+        when(trng_sample_counter <= (sample_cnt1 >> 1.U)) {
+          rnd_reset := true.B // Trigger the reset along the trng_sample_counter, but only half of the programmed
+        }
         trng_sample_counter := trng_sample_counter + 1.U
       }
     }

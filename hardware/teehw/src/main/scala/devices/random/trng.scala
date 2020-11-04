@@ -65,7 +65,7 @@ class TRNG(val nbits: Int = 8, val nref: Int = 27, val nsrc: Int = 9, val impl: 
 
   val RO = Module(new Source_And_Reference(nref, nsrc, impl))
   RO.io.enable := io.enable
-  val capture_top = Module(new PFD_top())
+  val capture_top = Module(new PFD_top(impl))
   capture_top.io.clock_A := RO.io.pulse_rng.asClock
   capture_top.io.clock_B := RO.io.pulse_ref.asClock
   val counter_all = Module(new counter_ring(10)) // TODO: This is fixed

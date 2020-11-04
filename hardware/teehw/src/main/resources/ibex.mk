@@ -16,7 +16,6 @@ ibex: $(IBEX_PREPROC_SVERILOG) $(IBEX_PREPROC_VERILOG)
 IBEX_OPENTITAN_PKGS = 
 
 IBEX_OPENTITAN_VSRCS = \
-	$(vsrc_dir)/rv_core_ibex_blackbox/prim_ram_1p.sv \
 	$(opentitan_dir)/hw/vendor/lowrisc_ibex/rtl/ibex_alu.sv \
 	$(opentitan_dir)/hw/vendor/lowrisc_ibex/rtl/ibex_compressed_decoder.sv \
 	$(opentitan_dir)/hw/vendor/lowrisc_ibex/rtl/ibex_controller.sv \
@@ -61,7 +60,6 @@ IBEX_PREPROC_DEFINES ?= \
 	WT_DCACHE \
 	DISABLE_TRACER \
 	SRAM_NO_INIT \
-	VERILATOR \
 	$(IBEX_EXTRA_PREPROC_DEFINES)
 
 $(IBEX_PREPROC_SVERILOG): $(IBEX_ALL_VSRCS)
