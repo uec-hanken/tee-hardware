@@ -508,4 +508,8 @@ class WithSimulation extends Config((site, here, up) => {
   case DDRPortOther => false
   // USB11HS has problems compiling on verilator.
   case PeripheryUSB11HSKey => List()
+  // Random only should include the TRNG version
+  case PeripheryRandomKey => List(
+    RandomParams(address = BigInt(0x64009000L), impl = 0),
+    RandomParams(address = BigInt(0x6400A000L), impl = 0))
 })

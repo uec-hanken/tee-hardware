@@ -102,7 +102,7 @@ else
 	MODEL             ?= $(SUB_PROJECT)
 	VLOG_MODEL        ?= $(SUB_PROJECT)
 	MODEL_PACKAGE     ?= uec.teehardware
-	CONFIG            ?= $(BOARD)Config_$(HYBRID)_$(ISACONF)_$(MBUS)_$(DDRCLK)_$(PCIE)_$(BOOTSRC)
+	CONFIG            ?= $(ISACONF)_$(MBUS)_$(BOARD)Config_$(DDRCLK)_$(PCIE)_$(BOOTSRC)_$(HYBRID)
 	CONFIG_PACKAGE    ?= uec.teehardware
 	GENERATOR_PACKAGE ?= uec.teehardware.exampletop
 	TB                ?= TestDriver

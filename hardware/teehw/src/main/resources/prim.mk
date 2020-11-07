@@ -23,6 +23,14 @@ PRIM_OPENTITAN_VSRCS = \
 	$(opentitan_dir)/hw/ip/prim/rtl/prim_diff_decode.sv \
 	$(opentitan_dir)/hw/ip/prim/rtl/prim_fifo_sync.sv \
 	$(opentitan_dir)/hw/ip/prim/rtl/prim_fifo_async.sv \
+	$(opentitan_dir)/hw/ip/prim/rtl/prim_secded_22_16_dec.sv \
+	$(opentitan_dir)/hw/ip/prim/rtl/prim_secded_22_16_enc.sv \
+	$(opentitan_dir)/hw/ip/prim/rtl/prim_secded_28_22_dec.sv \
+	$(opentitan_dir)/hw/ip/prim/rtl/prim_secded_28_22_enc.sv \
+	$(opentitan_dir)/hw/ip/prim/rtl/prim_secded_39_32_dec.sv \
+	$(opentitan_dir)/hw/ip/prim/rtl/prim_secded_39_32_enc.sv \
+	$(opentitan_dir)/hw/ip/prim/rtl/prim_secded_72_64_dec.sv \
+	$(opentitan_dir)/hw/ip/prim/rtl/prim_secded_72_64_enc.sv \
 	$(opentitan_dir)/hw/ip/prim/rtl/prim_alert_sender.sv
 
 # TODO: Include them when the time comes
