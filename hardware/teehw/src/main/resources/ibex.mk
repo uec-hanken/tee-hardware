@@ -22,6 +22,7 @@ IBEX_OPENTITAN_VSRCS = \
 	$(opentitan_dir)/hw/vendor/lowrisc_ibex/rtl/ibex_counter.sv \
 	$(opentitan_dir)/hw/vendor/lowrisc_ibex/rtl/ibex_cs_registers.sv \
 	$(opentitan_dir)/hw/vendor/lowrisc_ibex/rtl/ibex_decoder.sv \
+	$(opentitan_dir)/hw/vendor/lowrisc_ibex/rtl/ibex_dummy_instr.sv \
 	$(opentitan_dir)/hw/vendor/lowrisc_ibex/rtl/ibex_ex_block.sv \
 	$(opentitan_dir)/hw/vendor/lowrisc_ibex/rtl/ibex_icache.sv \
 	$(opentitan_dir)/hw/vendor/lowrisc_ibex/rtl/ibex_id_stage.sv \
