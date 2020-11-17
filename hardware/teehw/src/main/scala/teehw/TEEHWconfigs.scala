@@ -455,6 +455,7 @@ class DE4Config extends Config(
     case FreqKeyMHz => 100.0
     /* DE4 is not support PCIe (yet) */
     case IncludePCIe => false
+
   })
 )
 
@@ -463,6 +464,8 @@ class TR4Config extends Config(
     case FreqKeyMHz => 100.0
     /* TR4 is not support PCIe (yet) */
     case IncludePCIe => false
+    case PeripheryRandomKey => List(
+      RandomParams(address = BigInt(0x6400A000L), impl = 0))
   })
 )
 

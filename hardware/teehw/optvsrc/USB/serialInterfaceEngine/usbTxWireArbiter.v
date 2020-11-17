@@ -92,3 +92,4 @@ module USBTxWireArbiter (
 	end
 
 endmodule
+
