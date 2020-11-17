@@ -1,7 +1,5 @@
 *
 !.gitignore
 !Makefile
-!main.qsys
-!TR4.qpf
-!TR4.qsf
-!constraints.sdc
+!TR4.shell.quartus.tcl
+!TR4.qsys.main.tcl

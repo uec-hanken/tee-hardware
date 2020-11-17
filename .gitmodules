@@ -6,7 +6,7 @@
 	url = https://github.com/thuchoang90/freedom-u540-c000-bootloader.git
 [submodule "hardware/fpga-shells"]
 	path = hardware/fpga-shells
-	url = https://github.com/sifive/fpga-shells.git
+	url = https://github.com/uec-hanken/fpga-shells.git
 [submodule "hardware/teehw/vsrc/ed25519_sign"]
 	path = hardware/teehw/vsrc/ed25519_sign
 	url = https://github.com/ckdur/ed25519_fpga.git

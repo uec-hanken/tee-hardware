@@ -274,9 +274,9 @@ class TEEHWPlatformIO(val params: Option[TLBundleParameters] = None)
     val uart = new UARTPins(() => PinGen())
     //val i2c = new I2CPins(() => PinGen())
     val spi = new SPIPins(() => PinGen(), p(PeripherySPIKey)(0))
-    val qspi = p(PeripherySPIFlashKey).map{A => new SPIPins(() => PinGen(), A)}
+    val qspi = MixedVec( p(PeripherySPIFlashKey).map{A => new SPIPins(() => PinGen(), A)} )
   }
-  val usb11hs = p(PeripheryUSB11HSKey).map{_ => new USB11HSPortIO}
+  val usb11hs = Vec( p(PeripheryUSB11HSKey).size,  new USB11HSPortIO )
   val jtag_reset = Input(Bool())
   val ndreset = Output(Bool())
   val tlport = params.map{par => new TLUL(par)}

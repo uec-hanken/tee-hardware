@@ -1,7 +1,7 @@
 #########################################################################################
 # pre-process usb11hs into a single blackbox file
 #########################################################################################
-USB11HS_DIR ?= $(optvsrc_dir)/USB11HS
+USB11HS_DIR ?= $(optvsrc_dir)/USB
 
 # name of output pre-processed verilog file
 USB11HS_PREPROC_VERILOG = usb11hs.preprocessed.v
@@ -61,8 +61,7 @@ USB11HS_OPENTITAN_VSRCS = \
 	$(USB11HS_DIR)/buffers/dpMem_dc.v \
 	$(USB11HS_DIR)/wrapper/usbHostSlave.v
 
-USB11HS_OPENTITAN_WRAPPER = \
-	$(USB11HS_DIR)/aes_core_TOP_wrapper.v
+USB11HS_OPENTITAN_WRAPPER = 
 
 USB11HS_ALL_VSRCS = $(USB11HS_OPENTITAN_PKGS) $(USB11HS_OPENTITAN_VSRCS) $(USB11HS_OPENTITAN_WRAPPER)
 
