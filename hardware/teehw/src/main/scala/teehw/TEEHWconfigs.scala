@@ -270,6 +270,16 @@ class IbexRocketBoomReduced extends Config(
     new WithSmallCacheBigCore(1) ++
     new WithNIbexSmallCacheSecureCores(1) ++
     new chipyard.config.WithL2TLBs(entries = 1024) ) // use L2 TLBs
+class Ibex2RocketReduced extends Config(
+  new WithRenumberHartsWithIbex(rocketFirst = true) ++ //Rocket first, Boom second, Ibex last
+    new WithSmallCacheBigCore(2) ++
+    new WithNIbexSmallCacheSecureCores(1) ++
+    new chipyard.config.WithL2TLBs(entries = 1024) ) // use L2 TLBs
+class Ibex2BoomReduced extends Config(
+  new WithRenumberHartsWithIbex(rocketFirst = false) ++ //Boom first, Rocket second, Ibex last
+    new WithMiniBoom(2) ++
+    new WithNIbexSmallCacheSecureCores(1) ++
+    new chipyard.config.WithL2TLBs(entries = 1024) ) // use L2 TLBs
 
 // Non-secure Ibex (Without Isolation)
 class Ibex2RocketNonSecure extends Config(
