@@ -233,6 +233,7 @@ class RocketMicro extends Config(
     }
   }))
 
+// Secure Ibex (With Isolation)
 class IbexBoomRocket extends Config(
   new WithRenumberHartsWithIbex(rocketFirst = false) ++ //Boom first, Rocket second, Ibex last
     new WithNBoomCores(1) ++
@@ -240,13 +241,13 @@ class IbexBoomRocket extends Config(
     new WithNIbexSecureCores(1) ++
     new chipyard.config.WithL2TLBs(entries = 1024) ) // use L2 TLBs
 class IbexRocketBoom extends Config(
-  new WithRenumberHartsWithIbex(rocketFirst = true) ++ //Boom first, Rocket second, Ibex last
+  new WithRenumberHartsWithIbex(rocketFirst = true) ++ //Rocket first, Boom second, Ibex last
     new WithNBoomCores(1) ++
     new WithNBigCores(1) ++
     new WithNIbexSecureCores(1) ++
     new chipyard.config.WithL2TLBs(entries = 1024) ) // use L2 TLBs
 class Ibex2Rocket extends Config(
-  new WithRenumberHartsWithIbex(rocketFirst = true) ++ //Boom first, Rocket second, Ibex last
+  new WithRenumberHartsWithIbex(rocketFirst = true) ++ //Rocket first, Boom second, Ibex last
     new WithNBigCores(2) ++
     new WithNIbexSecureCores(1) ++
     new chipyard.config.WithL2TLBs(entries = 1024) ) // use L2 TLBs
@@ -255,9 +256,45 @@ class Ibex2Boom extends Config(
     new WithNBoomCores(2) ++
     new WithNIbexSecureCores(1) ++
     new chipyard.config.WithL2TLBs(entries = 1024) ) // use L2 TLBs
+
+// Secure Ibex (With Isolation) but reduced
+class IbexBoomRocketReduced extends Config(
+  new WithRenumberHartsWithIbex(rocketFirst = false) ++ //Boom first, Rocket second, Ibex last
+    new WithMiniBoom(1) ++
+    new WithSmallCacheBigCore(1) ++
+    new WithNIbexSmallCacheSecureCores(1) ++
+    new chipyard.config.WithL2TLBs(entries = 1024) ) // use L2 TLBs
+class IbexRocketBoomReduced extends Config(
+  new WithRenumberHartsWithIbex(rocketFirst = true) ++ //Rocket first, Boom second, Ibex last
+    new WithMiniBoom(1) ++
+    new WithSmallCacheBigCore(1) ++
+    new WithNIbexSmallCacheSecureCores(1) ++
+    new chipyard.config.WithL2TLBs(entries = 1024) ) // use L2 TLBs
+
+// Non-secure Ibex (Without Isolation)
 class Ibex2RocketNonSecure extends Config(
-  new WithRenumberHartsWithIbex(rocketFirst = true) ++ //Boom first, Rocket second, Ibex last
+  new WithRenumberHartsWithIbex(rocketFirst = true) ++ //Rocket first, Boom second, Ibex last
     new WithNBigCores(2) ++
+    new WithNIbexCores(1) ++
+    new chipyard.config.WithL2TLBs(entries = 1024) ) // use L2 TLBs
+class IbexRocketBoomNonSecure extends Config(
+  new WithRenumberHartsWithIbex(rocketFirst = true) ++ //Rocket first, Boom second, Ibex last
+    new WithNBoomCores(1) ++
+    new WithNBigCores(1) ++
+    new WithNIbexCores(1) ++
+    new chipyard.config.WithL2TLBs(entries = 1024) ) // use L2 TLBs
+
+// Non-secure Ibex (Without Isolation) but reduced
+class IbexBoomRocketNonSecureReduced extends Config(
+  new WithRenumberHartsWithIbex(rocketFirst = true) ++ //Rocket first, Boom second, Ibex last
+    new WithMiniBoom(1) ++
+    new WithSmallCacheBigCore(1) ++
+    new WithNIbexCores(1) ++
+    new chipyard.config.WithL2TLBs(entries = 1024) ) // use L2 TLBs
+class IbexRocketBoomNonSecureReduced extends Config(
+  new WithRenumberHartsWithIbex(rocketFirst = true) ++ //Rocket first, Boom second, Ibex last
+    new WithMiniBoom(1) ++
+    new WithSmallCacheBigCore(1) ++
     new WithNIbexCores(1) ++
     new chipyard.config.WithL2TLBs(entries = 1024) ) // use L2 TLBs
 
@@ -355,6 +392,8 @@ class NoSecurityPeripherals extends Config((site, here, up) => {
   case PeripheryHMACKey => List()
   case PeripheryAlertKey =>
     AlertParams(address = BigInt(0x64100000L))
+  case PeripheryNmiGenKey =>
+    NmiGenParams(address = BigInt(0x64200000L))
 })
 
 class MBus32 extends Config((site, here, up) => {
@@ -436,7 +475,12 @@ class MicroConfig extends Config(
   new WithIncoherentBusTopology ++
   new BaseConfig().alter((site,here,up) => {
     case SystemBusKey => up(SystemBusKey).copy(
-      errorDevice = None)
+      beatBytes = 8,
+      errorDevice = Some(DevNullParams(
+        Seq(AddressSet(0x4000, 0xfff)),
+        maxAtomic=site(XLen)/8,
+        maxTransfer=128,
+        region = RegionType.TRACKED)))
     case PeripheryBusKey => up(PeripheryBusKey, site).copy(dtsFrequency =
       Some(BigDecimal(site(FreqKeyMHz)*1000000).setScale(0, BigDecimal.RoundingMode.HALF_UP).toBigInt),
       errorDevice = None)
@@ -447,6 +491,7 @@ class MicroConfig extends Config(
       idcodeManufId = 0x489,  // As Assigned by JEDEC to SiFive. Only used in wrappers / test harnesses.
       debugIdleCycles = 5)    // Reasonable guess for synchronization
     case FreqKeyMHz => 100.0
+    case MaxHartIdBits => log2Up(site(BoomTilesKey).size + site(RocketTilesKey).size + site(IbexTilesKey).size)
   })
 )
 
@@ -455,7 +500,6 @@ class DE4Config extends Config(
     case FreqKeyMHz => 100.0
     /* DE4 is not support PCIe (yet) */
     case IncludePCIe => false
-
   })
 )
 
@@ -465,7 +509,19 @@ class TR4Config extends Config(
     /* TR4 is not support PCIe (yet) */
     case IncludePCIe => false
     case PeripheryRandomKey => List(
-      RandomParams(address = BigInt(0x6400A000L), impl = 0))
+      RandomParams(address = BigInt(0x64009000L), impl = 0))
+  })
+)
+
+class Chip2020ROHM18R3Config extends Config(
+  new MicroConfig().alter((site,here,up) => {
+    case FreqKeyMHz => 100.0
+    /* VLSI is not support PCIe (yet) */
+    case IncludePCIe => false
+    case PeripheryRandomKey => List(
+      RandomParams(address = BigInt(0x64009000L), impl = 1, board = "Simulation"))
+    case PeripheryI2CKey => List()
+    case PeripheryUSB11HSKey => List()
   })
 )
 

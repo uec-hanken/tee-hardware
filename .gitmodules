@@ -3,7 +3,7 @@
 	url = https://github.com/ucb-bar/chipyard.git
 [submodule "software/freedom-u540-c000-bootloader"]
 	path = software/freedom-u540-c000-bootloader
-	url = https://github.com/thuchoang90/freedom-u540-c000-bootloader.git
+	url = https://github.com/uec-hanken/freedom-u540-c000-bootloader.git
 [submodule "hardware/fpga-shells"]
 	path = hardware/fpga-shells
 	url = https://github.com/uec-hanken/fpga-shells.git

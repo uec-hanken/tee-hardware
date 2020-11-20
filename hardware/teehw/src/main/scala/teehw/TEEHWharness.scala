@@ -114,7 +114,7 @@ class TEEHWHarness()(implicit p: Parameters) extends Module {
 
   // Simulated memory.
   dut.memPorts.foreach{
-    case (ioh, other) =>
+    case (ioh, cclk, crst) =>
       ioh.foreach { case ioi: TLBundle =>
         // Step 1: Our conversion
         val simdram = LazyModule(new TLULtoSimDRAM(ldut.p(CacheBlockBytes), ioi.params))
@@ -140,10 +140,10 @@ class TEEHWHarness()(implicit p: Parameters) extends Module {
         // If the other-clock-memory is activated, we need to associate the clock and the reset
         // NOTE: Please consider that supporting other-clock is not on the boundaries of this
         // simulation. Please refrain of activating DDRPortOther
-        other.foreach {
-          case slowmemck =>
-            slowmemck.ChildClock := clock
-            slowmemck.ChildReset := reset
+        (cclk zip crst).foreach {
+          case (ck,rst) =>
+            ck := clock
+            rst := reset
         }
       }
   }

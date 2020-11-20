@@ -55,6 +55,26 @@ class WithNIbexSecureCores(n: Int) extends Config(
     })
 )
 
+class WithNIbexSmallCacheSecureCores(n: Int) extends Config(
+  new WithNormalIbexSys ++
+    new Config((site, here, up) => {
+      case IbexTilesKey => {
+        List.tabulate(n)(i => IbexTileParams(
+          hartId = i,
+          dcache = Some(DCacheParams(
+            rowBits = site(SystemBusKey).beatBits,
+            nSets = 32, // 2Kb scratchpad
+            nWays = 1,
+            nTLBEntries = 4,
+            nMSHRs = 0,
+            blockBytes = 4,
+            scratch = Some(0x64300000L))),
+          core = IbexCoreParams(SecureIbex = true)
+        ))
+      }
+    })
+)
+
 /**
   * Setup default Ibex parameters.
   */

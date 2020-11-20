@@ -135,7 +135,7 @@ class IbexTile
     }
   }
 
-  val cpuDevice: SimpleDevice = new SimpleDevice("cpu", Seq("lowRISC,ibex", "riscv")) {
+  val cpuDevice: SimpleDevice = new SimpleDevice(if(ibexParams.core.SecureIbex) "ghost" else "cpu", Seq("lowRISC,ibex", "riscv")) {
     override def parent = Some(if(ibexParams.core.SecureIbex) ghostDevice else ResourceAnchors.cpus )
     override def describe(resources: ResourceBindings): Description = {
       val Description(name, mapping) = super.describe(resources)

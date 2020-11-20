@@ -213,20 +213,20 @@ class TEEHWSystemModule[+L <: TEEHWSystem](_outer: L)
   // Main memory controller
   val memPorts = outer.memctl.map { A =>
     val (memTLnode: TLManagerNode, island: Option[SlowMemIsland]) = A
-    val slowmemck = island.map { island =>
-      val slowmemck = IO(new Bundle {
-        val ChildClock = Input(Clock())
-        val ChildReset = Input(Bool())
-      })
-      island.module.io.ChildClock := slowmemck.ChildClock
-      island.module.io.ChildReset := slowmemck.ChildReset
-      slowmemck
-    }
+    val (cclk, crst) = island.map { island =>
+      val ChildClock = IO(Input(Clock()))
+      val ChildReset = IO(Input(Bool()))
+      island.module.io.ChildClock := ChildClock
+      island.module.io.ChildReset := ChildReset
+      (ChildClock, ChildReset)
+    }.unzip
     val mem_tl = IO(HeterogeneousBag.fromNode(memTLnode.in))
     (mem_tl zip memTLnode.in).foreach { case (io, (bundle, _)) => io <> bundle }
-    (mem_tl, slowmemck)
+    (mem_tl, cclk, crst)
   }
   val mem_tl = memPorts.map(_._1) // For making work HeterogeneousBag
+  val mem_ChildClock = memPorts.map(_._2) // For making work HeterogeneousBag
+  val mem_ChildReset = memPorts.map(_._3) // For making work HeterogeneousBag
 
   // SPI to MMC conversion
   val spi  = outer.spiNodes.zipWithIndex.map  { case(n,i) => n.makeIO()(ValName(s"spi_$i")) }
@@ -309,7 +309,10 @@ class TEEHWPlatform(implicit val p: Parameters) extends Module {
   // only one memory (unless you configure multiple memories).
 
   (sys.memPorts zip io.tlport).foreach{
-    case ((ioh, other), tlport: TLUL) =>
+    case (iohf, tlport: TLUL) =>
+      val ioh = iohf._1
+      val ChildClock = iohf._2
+      val ChildReset = iohf._3
       ioh.foreach{ case ioi: TLBundle =>
         // Connect outside the ones that can be untied
         tlport.a.valid := ioi.a.valid
@@ -330,9 +333,9 @@ class TEEHWPlatform(implicit val p: Parameters) extends Module {
         // and there is no usage of channels B, C and E (except for some TL Monitors)
       }
 
-      ((other zip io.ChildClock) zip io.ChildReset).map{ case ((k, ck), rst) =>
-        k.ChildClock := ck
-        k.ChildReset := rst
+      (((ChildClock zip ChildReset) zip io.ChildClock) zip io.ChildReset).map{ case (((cck, crst), ck), rst) =>
+        cck := ck
+        crst := rst
       }
   }
 

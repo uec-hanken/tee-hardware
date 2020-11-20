@@ -91,7 +91,7 @@ else ifeq ($(SUB_PROJECT),teehardware)
 	MODEL             ?= TEEHWHarness
 	VLOG_MODEL        ?= TEEHWHarness
 	MODEL_PACKAGE     ?= uec.teehardware
-	CONFIG            ?= WithSimulation_$(ISACONF)_$(MBUS)_$(BOARD)Config_$(DDRCLK)_$(PCIE)_$(BOOTSRC)_$(HYBRID)
+	CONFIG            ?= WithSimulation_$(BOARD)Config_$(MBUS)_$(DDRCLK)_$(PCIE)_$(BOOTSRC)_$(HYBRID)_$(ISACONF)
 	CONFIG_PACKAGE    ?= uec.teehardware
 	GENERATOR_PACKAGE ?= uec.teehardware.exampletop
 	TB                ?= TestDriver
@@ -102,7 +102,7 @@ else
 	MODEL             ?= $(SUB_PROJECT)
 	VLOG_MODEL        ?= $(SUB_PROJECT)
 	MODEL_PACKAGE     ?= uec.teehardware
-	CONFIG            ?= $(ISACONF)_$(MBUS)_$(BOARD)Config_$(DDRCLK)_$(PCIE)_$(BOOTSRC)_$(HYBRID)
+	CONFIG            ?= $(BOARD)Config_$(MBUS)_$(DDRCLK)_$(PCIE)_$(BOOTSRC)_$(HYBRID)_$(ISACONF)
 	CONFIG_PACKAGE    ?= uec.teehardware
 	GENERATOR_PACKAGE ?= uec.teehardware.exampletop
 	TB                ?= TestDriver
