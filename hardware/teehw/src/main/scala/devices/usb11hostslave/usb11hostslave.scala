@@ -65,11 +65,6 @@ class usbHostSlave extends BlackBox with HasBlackBoxResource {
     val slaveVBusDetIntOut = Output(Bool())
   })
 
-  // pre-process the verilog to remove "includes" and combine into one file
-  val make = "make -C hardware/teehw/src/main/resources usb11hs"
-  val proc = make
-  require (proc.! == 0, "Failed to run preprocessing step")
-
   // add wrapper/blackbox after it is pre-processed
   addResource("/usb11hs.preprocessed.v")
 }

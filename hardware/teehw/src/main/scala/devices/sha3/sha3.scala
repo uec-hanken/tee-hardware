@@ -41,11 +41,6 @@ class keccak extends BlackBox with HasBlackBoxResource {
     val out_ready = Output(Bool())
   })
 
-  // pre-process the verilog to remove "includes" and combine into one file
-  val make = "make -C hardware/teehw/src/main/resources sha3"
-  val proc = make
-  require (proc.! == 0, "Failed to run preprocessing step")
-
   // add wrapper/blackbox after it is pre-processed
   addResource("/SHA3.preprocessed.v")
 }

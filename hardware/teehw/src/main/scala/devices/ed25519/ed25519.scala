@@ -46,11 +46,6 @@ class ed25519_base_point_multiplier extends BlackBox with HasBlackBoxResource {
     val qy_dout = Output(UInt(32.W))
   })
 
-  // pre-process the verilog to remove "includes" and combine into one file
-  val make = "make -C hardware/teehw/src/main/resources ed25519_base"
-  val proc = make
-  require (proc.! == 0, "Failed to run preprocessing step")
-
   // add wrapper/blackbox after it is pre-processed
   addResource("/ed25519_base.preprocessed.v")
 }
@@ -85,11 +80,6 @@ class ed25519_sign_S_core extends BlackBox with HasBlackBoxResource {
     val hashd_sm = Input(UInt(512.W))
     val core_S = Output(UInt(256.W))
   })
-
-  // pre-process the verilog to remove "includes" and combine into one file
-  val make = "make -C hardware/teehw/src/main/resources ed25519_sign"
-  val proc = make
-  require (proc.! == 0, "Failed to run preprocessing step")
 
   // add wrapper/blackbox after it is pre-processed
   addResource("/ed25519_sign.preprocessed.v")

@@ -69,16 +69,6 @@ class hmac_wrapper
     val alert_tx_o = Output(Vec(hmac_reg_pkg.NumAlerts, new alert_tx_t()))
   })
 
-  // pre-process the verilog to remove "includes" and combine into one file
-  val make = "make -C hardware/teehw/src/main/resources hmac"
-  val make_pkgs = "make -C hardware/teehw/src/main/resources pkgs"
-  val make_tlul = "make -C hardware/teehw/src/main/resources tlul"
-  val make_prim = "make -C hardware/teehw/src/main/resources prim"
-  require (make.! == 0, "Failed to run preprocessing step")
-  require (make_pkgs.! == 0, "Failed to run preprocessing step")
-  require (make_tlul.! == 0, "Failed to run preprocessing step")
-  require (make_prim.! == 0, "Failed to run preprocessing step")
-
   // add wrapper/blackbox after it is pre-processed
   addResource("/aaaa_pkgs.preprocessed.sv")
   addResource("/tlul.preprocessed.sv")

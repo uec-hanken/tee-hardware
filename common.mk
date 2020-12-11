@@ -12,10 +12,10 @@ SHELL=/bin/bash
 # EXTRA_SIM_SOURCES - simulation sources needed for simulator
 # EXTRA_SIM_REQS - requirements to build the simulator
 #########################################################################################
-include $(base_dir)/hardware/chipyard/generators/ariane/ariane.mk
-include $(base_dir)/hardware/chipyard/generators/tracegen/tracegen.mk
-include $(base_dir)/hardware/chipyard/generators/nvdla/nvdla.mk
-include $(base_dir)/hardware/chipyard/tools/dromajo/dromajo.mk
+include $(teehw_dir)/hardware/chipyard/generators/ariane/ariane.mk
+include $(teehw_dir)/hardware/chipyard/generators/tracegen/tracegen.mk
+include $(teehw_dir)/hardware/chipyard/generators/nvdla/nvdla.mk
+include $(teehw_dir)/hardware/chipyard/tools/dromajo/dromajo.mk
 
 #########################################################################################
 # Prerequisite lists
@@ -23,7 +23,7 @@ include $(base_dir)/hardware/chipyard/tools/dromajo/dromajo.mk
 # Returns a list of files in directory $1 with file extension $2.
 lookup_srcs = $(shell find -L $(1)/ -name target -prune -o -iname "*.$(2)" -print 2> /dev/null)
 
-SOURCE_DIRS = $(addprefix $(base_dir)/,generators sims/firesim/sim tools/barstools/iocell)
+SOURCE_DIRS = $(addprefix $(teehw_dir)/,generators sims/firesim/sim tools/barstools/iocell)
 SCALA_SOURCES = $(call lookup_srcs,$(SOURCE_DIRS),scala)
 VLOG_SOURCES = $(call lookup_srcs,$(SOURCE_DIRS),sv) $(call lookup_srcs,$(SOURCE_DIRS),v)
 
@@ -53,10 +53,18 @@ $(FIRRTL_TEST_JAR): $(call lookup_srcs,$(CHIPYARD_FIRRTL_DIR),scala)
 	touch $@
 
 #########################################################################################
+# Create the resources with the makefiles included
+#########################################################################################
+resources: $(teehw_dir)/hardware/teehw/src/main/resources/Makefile
+	cd $(teehw_dir)/hardware/teehw/src/main/resources/ && make all
+
+.PHONY: resources
+
+#########################################################################################
 # create list of simulation file inputs
 #########################################################################################
-$(sim_files): $(call lookup_srcs,$(base_dir)/generators/utilities/src/main/scala,scala) $(FIRRTL_JAR)
-	cd $(base_dir) && $(SBT) "project utilities" "runMain utilities.GenerateSimFiles -td $(build_dir) -sim $(sim_name)"
+$(sim_files): $(call lookup_srcs,$(teehw_dir)/hardware/teehw/src/main/scala,scala) $(FIRRTL_JAR) resources
+	cd $(base_dir) && $(SBT) "project teehardware" "runMain uec.teehardware.uecutils.GenerateSimFiles -td $(build_dir) -sim $(sim_name)"
 
 #########################################################################################
 # create firrtl file rule and variables
@@ -184,7 +192,7 @@ endif
 # Rules for building DRAMSim2 library #
 #######################################
 
-dramsim_dir = $(base_dir)/hardware/chipyard/tools/DRAMSim2
+dramsim_dir = $(teehw_dir)/hardware/chipyard/tools/DRAMSim2
 dramsim_lib = $(dramsim_dir)/libdramsim.a
 
 $(dramsim_lib):

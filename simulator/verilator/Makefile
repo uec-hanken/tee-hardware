@@ -8,7 +8,8 @@ endif
 #########################################################################################
 # general path and config variables
 #########################################################################################
-base_dir=$(abspath ../..)
+teehw_dir=$(abspath ../..)
+base_dir=$(teehw_dir)
 sim_dir=$(abspath .)
 build_dir=$(sim_dir)/generated-src/$(long_name)
 bootrom_dir=$(base_dir)/software/freedom-u540-c000-bootloader

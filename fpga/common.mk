@@ -17,7 +17,7 @@ sim_debug = $(sim_dir)/$(sim_prefix)-$(MODEL_PACKAGE)-$(CONFIG)-debug
 ROM_FILE = $(build_dir)/$(long_name).rom.v
 ROM_CONF_FILE = $(build_dir)/$(long_name).rom.conf
 DTS_FILE = $(build_dir)/$(long_name).dts
-xip_dir=$(base_dir)/software/xip
+xip_dir=$(teehw_dir)/software/xip
 
 PERMISSIVE_ON=
 PERMISSIVE_OFF=
@@ -53,7 +53,7 @@ default: $(FIRRTL_FILE) $(ROM_FILE)
 #########################################################################################
 # import other necessary rules and variables
 #########################################################################################
-include $(base_dir)/common.mk
+include $(teehw_dir)/common.mk
 
 #########################################################################################
 # ROM generation

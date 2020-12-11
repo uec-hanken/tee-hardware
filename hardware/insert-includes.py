@@ -23,7 +23,7 @@ if inVlog == outVlog:
 
 # add directories to search list
 incDirs = sys.argv[3:]
-print("[INFO] Searching following dirs for includes: " + str(incDirs))
+#print("[INFO] Searching following dirs for includes: " + str(incDirs))
 
 # open file
 lineList = []
@@ -46,11 +46,11 @@ while includes_found != 0:
             if match.group(1) in included:
                 index_included = included.index(match.group(1) )
                 if num < where_included[index_included]:
-                    print("[INFO] Re-including included \"" + str(match.group(1)) + "\"  found on line " + str(num))
+                    #print("[INFO] Re-including included \"" + str(match.group(1)) + "\"  found on line " + str(num))
                     where_included[index_included] = num
                     # Then continue...
                 else:
-                    print("[INFO] Skipped already included \"" + str(match.group(1)) + "\" found on line " + str(num))
+                    #print("[INFO] Skipped already included \"" + str(match.group(1)) + "\" found on line " + str(num))
                     continue
             # search for include and replace
             found = False
@@ -68,7 +68,7 @@ while includes_found != 0:
                 print("[ERROR] Couldn't replace include \"" + str(match.group(1)) + "\" found on line " + str(num))
                 lineListO.append(line)
             else:
-                print("[INFO] Replaced include \"" + str(match.group(1)) + "\" found on line " + str(num))
+                #print("[INFO] Replaced include \"" + str(match.group(1)) + "\" found on line " + str(num))
                 includes_found = includes_found + 1
                 if not match.group(1) in included:
                     included.append(match.group(1))
@@ -77,7 +77,7 @@ while includes_found != 0:
             lineListO.append(line)
     lineList = lineListO[:]
     lineListO = []
-    print("The file is %d lines long, includes: %d" % (len(lineList), includes_found))
+    #print("The file is %d lines long, includes: %d" % (len(lineList), includes_found))
 
 print("[INFO] Success. Writing output to: " + str(outVlog))
 with open(outVlog, 'w') as outFile:

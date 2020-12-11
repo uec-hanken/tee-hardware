@@ -32,61 +32,11 @@
 #########################################################################################
 SUB_PROJECT ?= teehardware
 
-TEEHW_DIR ?= $(base_dir)/hardware/teehw
-OPENTITAN_DIR ?= $(base_dir)/hardware/opentitan
-
 ADD_VSRC ?= 
 
 TB ?= TestDriver
 
-ifeq ($(SUB_PROJECT),chipyard)
-	SBT_PROJECT       ?= chipyard
-	MODEL             ?= TestHarness
-	VLOG_MODEL        ?= TestHarness
-	MODEL_PACKAGE     ?= $(SBT_PROJECT)
-	CONFIG            ?= RocketConfig
-	CONFIG_PACKAGE    ?= $(SBT_PROJECT)
-	GENERATOR_PACKAGE ?= $(SBT_PROJECT)
-	TB                ?= TestDriver
-	TOP               ?= ChipTop
-endif
-# for Hwacha developers
-ifeq ($(SUB_PROJECT),hwacha)
-	SBT_PROJECT       ?= chipyard
-	MODEL             ?= TestHarness
-	VLOG_MODEL        ?= TestHarness
-	MODEL_PACKAGE     ?= freechips.rocketchip.system
-	CONFIG            ?= HwachaConfig
-	CONFIG_PACKAGE    ?= hwacha
-	GENERATOR_PACKAGE ?= chipyard
-	TB                ?= TestDriver
-	TOP               ?= ExampleRocketSystem
-endif
-# For TestChipIP developers
-ifeq ($(SUB_PROJECT),testchipip)
-	SBT_PROJECT       ?= chipyard
-	MODEL             ?= TestHarness
-	VLOG_MODEL        ?= TestHarness
-	MODEL_PACKAGE     ?= chipyard.unittest
-	CONFIG            ?= TestChipUnitTestConfig
-	CONFIG_PACKAGE    ?= testchipip
-	GENERATOR_PACKAGE ?= chipyard
-	TB                ?= TestDriver
-	TOP               ?= UnitTestSuite
-endif
-# For IceNet developers
-ifeq ($(SUB_PROJECT),icenet)
-	SBT_PROJECT       ?= chipyard
-	MODEL             ?= TestHarness
-	VLOG_MODEL        ?= TestHarness
-	MODEL_PACKAGE     ?= chipyard.unittest
-	CONFIG            ?= IceNetUnitTestConfig
-	CONFIG_PACKAGE    ?= icenet
-	GENERATOR_PACKAGE ?= chipyard
-	TB                ?= TestDriver
-	TOP               ?= UnitTestSuite
-# Simulation-wise default config for TEE
-else ifeq ($(SUB_PROJECT),teehardware)
+ifeq ($(SUB_PROJECT),teehardware)
 	SBT_PROJECT       ?= teehardware
 	MODEL             ?= TEEHWHarness
 	VLOG_MODEL        ?= TEEHWHarness
@@ -109,25 +59,13 @@ else
 	TOP               ?= TEEHWSoC
 endif
 VLOG_MODEL ?= $(MODEL)
-# Stand-in firechip variables:
-# TODO: need a seperate generator and test harnesses for each target
-#ifeq ($(SUB_PROJECT),firechip)
-#	SBT_PROJECT       ?= $(SUB_PROJECT)
-#	MODEL             ?= TestHarness
-#	VLOG_MODEL        ?= TestHarness
-#	MODEL_PACKAGE     ?= freechips.rocketchip.system
-#	CONFIG            ?= FireSimRocketChipConfig
-#	CONFIG_PACKAGE    ?= firesim.firesim
-#	GENERATOR_PACKAGE ?= firesim.firesim
-#	TOP               ?= FireSimNoNIC
-#endif
 
 #########################################################################################
 # path to rocket-chip and testchipip
 #########################################################################################
-ROCKETCHIP_DIR      = $(base_dir)/hardware/chipyard/generators/rocket-chip
-TESTCHIP_DIR        = $(base_dir)/hardware/chipyard/generators/testchipip
-CHIPYARD_FIRRTL_DIR = $(base_dir)/hardware/chipyard/tools/firrtl
+ROCKETCHIP_DIR      = $(teehw_dir)/hardware/chipyard/generators/rocket-chip
+TESTCHIP_DIR        = $(teehw_dir)/hardware/chipyard/generators/testchipip
+CHIPYARD_FIRRTL_DIR = $(teehw_dir)/hardware/chipyard/tools/firrtl
 
 #########################################################################################
 # names of various files needed to compile and run things

@@ -24,6 +24,8 @@ include tlul.mk
 include pkgs.mk
 include otp_ctrl.mk
 
+all: ibex sha3 ed25519_base ed25519_sign aes usb11hs aesot hmac alert nmi_gen prim tlul pkgs otp_ctrl
+
 clean:
 	rm -rfv *.preprocessed.sv *.preprocessed.v
 

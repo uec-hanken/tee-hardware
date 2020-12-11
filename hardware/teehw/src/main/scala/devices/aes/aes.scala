@@ -46,11 +46,6 @@ class aes_core extends BlackBox with HasBlackBoxResource {
     val result_valid = Output(Bool())
   })
 
-  // pre-process the verilog to remove "includes" and combine into one file
-  val make = "make -C hardware/teehw/src/main/resources aes"
-  val proc = make
-  require (proc.! == 0, "Failed to run preprocessing step")
-
   // add wrapper/blackbox after it is pre-processed
   addResource("/aes.preprocessed.v")
 }
