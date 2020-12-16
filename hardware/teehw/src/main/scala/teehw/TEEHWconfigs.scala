@@ -4,11 +4,9 @@ import chisel3._
 import chisel3.util.log2Up
 import freechips.rocketchip.config._
 import freechips.rocketchip.subsystem._
-import freechips.rocketchip.devices.debug._
 import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.rocket._
-import freechips.rocketchip.system._
 import freechips.rocketchip.tile._
 import sifive.blocks.devices.gpio._
 import sifive.blocks.devices.spi._
@@ -21,53 +19,13 @@ import uec.teehardware.devices.usb11hs._
 import uec.teehardware.devices.random._
 import uec.teehardware.devices.opentitan.aes._
 import uec.teehardware.devices.opentitan.alert._
-import uec.teehardware.devices.opentitan.flash_ctrl._
 import uec.teehardware.devices.opentitan.hmac._
-import uec.teehardware.devices.opentitan.keymgr._
-import uec.teehardware.devices.opentitan.kmac._
 import uec.teehardware.devices.opentitan.otp_ctrl._
 import boom.common._
-import boom.ifu._
-import boom.exu._
-import boom.lsu._
 import uec.teehardware.devices.opentitan.nmi_gen._
 import uec.teehardware.ibex._
 
-// The number of gpios that we want as input
-case object GPIOInKey extends Field[Int](8)
-
-// Frequency
-case object FreqKeyMHz extends Field[Double](100.0)
-
-// Include the PCIe
-case object IncludePCIe extends Field[Boolean](false)
-
-// When external the DDR port, has to run at another freq
-case object DDRPortOther extends Field[Boolean](false)
-
-// Our own reset vector
-case object TEEHWResetVector extends Field[Int](0x10040)
-
-/**
-  * Class to renumber BOOM + Rocket harts so that there are no overlapped harts
-  * This fragment assumes Rocket tiles are numbered before BOOM tiles
-  * Also makes support for multiple harts depend on Rocket + BOOM
-  * Note: Must come after all harts are assigned for it to apply
-  * NOTE2: The Ibex always goes last
-  */
-class WithRenumberHartsWithIbex(rocketFirst: Boolean = false) extends Config((site, here, up) => {
-  case RocketTilesKey => up(RocketTilesKey, site).zipWithIndex map { case (r, i) =>
-    r.copy(hartId = i + (if(rocketFirst) 0 else up(BoomTilesKey, site).length))
-  }
-  case BoomTilesKey => up(BoomTilesKey, site).zipWithIndex map { case (b, i) =>
-    b.copy(hartId = i + (if(rocketFirst) up(RocketTilesKey, site).length else 0))
-  }
-  case IbexTilesKey => up(IbexTilesKey, site).zipWithIndex map { case (b, i) =>
-    b.copy(hartId = i + (up(BoomTilesKey, site).size + up(RocketTilesKey, site).size))
-  }
-  case MaxHartIdBits => log2Up(up(BoomTilesKey, site).size + up(RocketTilesKey, site).size + up(IbexTilesKey, site).size)
-})
-
+// ***************** ISA Configs (ISACONF) ********************
 class RV64GC extends Config((site, here, up) => {
   case XLen => 64
 })
@@ -98,118 +56,16 @@ class RV32IMAC extends Config((site, here, up) => {
   }
 })
 
-/* NOTE ABOUT CACHE SIZES
- Cache size = nSets * nWays * CacheBlockBytes
- nSets = (default) 64;
- nWays = (default) 4;
- CacheBlockBytes = (default) 64;
- => default cache size = 64 * 4 * 64 = 16KBytes
-*/
-class WithMiniBoom(n: Int) extends Config((site, here, up) => {
-  case BoomTilesKey => {
-    val mini = BoomTileParams(
-      core = BoomCoreParams(
-        // Defaults (or unbinded), just to have full control
-        decodeWidth = 1,
-        // WithSmallBooms
-        fetchWidth = 4, useCompressed = true, numRobEntries = 16,
-        mulDiv = Some(MulDivParams(mulUnroll = 8, mulEarlyOut = true, divEarlyOut = true)),
-        issueParams = Seq(
-          IssueParams(issueWidth = 1, numEntries = 2, iqType = IQT_MEM.litValue, dispatchWidth = 1),
-          IssueParams(issueWidth = 1, numEntries = 2, iqType = IQT_INT.litValue, dispatchWidth = 1),
-          IssueParams(issueWidth = 1, numEntries = 2, iqType = IQT_FP.litValue, dispatchWidth = 1)),
-        numIntPhysRegisters = 52, numFpPhysRegisters = 48, numLdqEntries = 4, numStqEntries = 4,
-        maxBrCount = 2, numFetchBufferEntries = 8, ftq = FtqParameters(nEntries = 4),
-        nPerfCounters = 1,
-        fpu = Some(freechips.rocketchip.tile.FPUParams(sfmaLatency = 4, dfmaLatency = 4, divSqrt = true)),
-        nL2TLBEntries = 256,
-        // WithTAGELBPD
-        bpdMaxMetaLength = 120,
-        globalHistoryLength = 64,
-        localHistoryLength = 1,
-        localHistoryNSets = 0,
-        branchPredictor = ((resp_in: BranchPredictionBankResponse, p: Parameters) => {
-          val loop = Module(new LoopBranchPredictorBank()(p))
-          val tage = Module(new TageBranchPredictorBank()(p))
-          val btb = Module(new BTBBranchPredictorBank()(p))
-          val bim = Module(new BIMBranchPredictorBank()(p))
-          val ubtb = Module(new FAMicroBTBBranchPredictorBank()(p))
-          val preds = Seq(loop, tage, btb, ubtb, bim)
-          preds.map(_.io := DontCare)
-
-          ubtb.io.resp_in(0)  := resp_in
-          bim.io.resp_in(0)   := ubtb.io.resp
-          btb.io.resp_in(0)   := bim.io.resp
-          tage.io.resp_in(0)  := btb.io.resp
-          loop.io.resp_in(0)  := tage.io.resp
-
-          (preds, loop.io.resp)
-        })
-      ),
-      dcache = Some(DCacheParams(
-        rowBits = site(SystemBusKey).beatBits,
-        nSets = 16, nWays = 1, nTLBEntries = 8,
-        nMSHRs = 2, // was 2, NOTE: Cannot be strictly 0 (restriction), and cannot be 1 (width error) in boom
-        blockBytes = site(CacheBlockBytes))),
-      icache = Some(ICacheParams(
-        rowBits = site(SystemBusKey).beatBits,
-        nSets = 16, nWays = 1,
-        blockBytes = site(CacheBlockBytes),
-        fetchBytes = 2*4)) // 2 = instrWidth (bytes), 4 = fetchWidth, has to be instrWidth*fetchWidth
-    ) /* NOTES: Cannot set fetchBytes in the icache to 2*2 in fetchWidth = 2 because
-                it requires that the cache width only difers 1 bank. Either we disable Compressed, or fetch 4.
-                Why compressed? In compressed, the instruction width is 2 */
-    List.tabulate(n)(i => mini.copy(hartId = i))
-  }
-})
-
-class WithSmallCacheBigCore(n: Int) extends Config((site, here, up) => {
-  case RocketTilesKey => {
-    val big = RocketTileParams(
-      core = RocketCoreParams(mulDiv = Some(MulDivParams(
-        mulUnroll = 8, mulEarlyOut = true, divEarlyOut = true)),
-        nL2TLBEntries = 256),
-      dcache = Some(DCacheParams(
-        rowBits = site(SystemBusKey).beatBits,
-        nSets = 16, nWays = 1, nMSHRs = 0,
-        blockBytes = site(CacheBlockBytes))),
-      icache = Some(ICacheParams(
-        rowBits = site(SystemBusKey).beatBits,
-        nSets = 16, nWays = 1,
-        blockBytes = site(CacheBlockBytes))))
-    List.tabulate(n)(i => big.copy(hartId = i))
-  }
-})
-
-//Only Boom: 2 cores
-class Boom extends Config( new WithNBoomCores(2) ++ new chipyard.config.WithL2TLBs(entries = 1024))
-class BoomReduced extends Config( new WithMiniBoom(2) )
+// ************ Hybrid core configurations (HYBRID) **************
 
 //Only Rocket: 2 cores
 class Rocket extends Config( new WithNBigCores(2) ++ new chipyard.config.WithL2TLBs(entries = 1024) )
 class RocketReduced extends Config( new WithSmallCacheBigCore(2) )
 
-class BoomRocket extends Config(
-  new WithRenumberHartsWithIbex(rocketFirst = false) ++ //Boom first, Rocket second
-  new WithNBoomCores(1) ++
-  new WithNBigCores(1) ++
-  new chipyard.config.WithL2TLBs(entries = 1024) ) // use L2 TLBs
-class BoomRocketReduced extends Config(
-  new WithRenumberHartsWithIbex(rocketFirst = false) ++ //Boom first, Rocket second
-  new WithMiniBoom(1) ++
-  new WithSmallCacheBigCore(1) )
-
-class RocketBoom extends Config(
-  new WithRenumberHartsWithIbex(rocketFirst = true) ++ //Rocket first, Boom second
-  new WithNBoomCores(1) ++
-  new WithNBigCores(1) ++
-  new chipyard.config.WithL2TLBs(entries = 1024) ) // use L2 TLBs
-class RocketBoomReduced extends Config(
-  new WithRenumberHartsWithIbex(rocketFirst = true) ++ //Rocket first, Boom second
-  new WithMiniBoom(1) ++
-  new WithSmallCacheBigCore(1) )
-
+// Ibex only (For microcontrollers)
 class Ibex extends Config(new WithNIbexCores(1))
+
+// Rocket Micro (For microcontrollers)
 class RocketMicro extends Config(
   (new WithNSmallCores(1)).alter((site, here, up) => {
     case RocketTilesKey => up(RocketTilesKey, site) map { r =>
@@ -233,81 +89,21 @@ class RocketMicro extends Config(
     }
   }))
 
-// Secure Ibex (With Isolation)
-class IbexBoomRocket extends Config(
-  new WithRenumberHartsWithIbex(rocketFirst = false) ++ //Boom first, Rocket second, Ibex last
-    new WithNBoomCores(1) ++
-    new WithNBigCores(1) ++
-    new WithNIbexSecureCores(1) ++
-    new chipyard.config.WithL2TLBs(entries = 1024) ) // use L2 TLBs
-class IbexRocketBoom extends Config(
-  new WithRenumberHartsWithIbex(rocketFirst = true) ++ //Rocket first, Boom second, Ibex last
-    new WithNBoomCores(1) ++
-    new WithNBigCores(1) ++
-    new WithNIbexSecureCores(1) ++
-    new chipyard.config.WithL2TLBs(entries = 1024) ) // use L2 TLBs
-class Ibex2Rocket extends Config(
-  new WithRenumberHartsWithIbex(rocketFirst = true) ++ //Rocket first, Boom second, Ibex last
-    new WithNBigCores(2) ++
-    new WithNIbexSecureCores(1) ++
-    new chipyard.config.WithL2TLBs(entries = 1024) ) // use L2 TLBs
-class Ibex2Boom extends Config(
-  new WithRenumberHartsWithIbex(rocketFirst = false) ++ //Boom first, Rocket second, Ibex last
-    new WithNBoomCores(2) ++
-    new WithNIbexSecureCores(1) ++
-    new chipyard.config.WithL2TLBs(entries = 1024) ) // use L2 TLBs
-
-// Secure Ibex (With Isolation) but reduced
-class IbexBoomRocketReduced extends Config(
-  new WithRenumberHartsWithIbex(rocketFirst = false) ++ //Boom first, Rocket second, Ibex last
-    new WithMiniBoom(1) ++
-    new WithSmallCacheBigCore(1) ++
-    new WithNIbexSmallCacheSecureCores(1) ++
-    new chipyard.config.WithL2TLBs(entries = 1024) ) // use L2 TLBs
-class IbexRocketBoomReduced extends Config(
-  new WithRenumberHartsWithIbex(rocketFirst = true) ++ //Rocket first, Boom second, Ibex last
-    new WithMiniBoom(1) ++
-    new WithSmallCacheBigCore(1) ++
-    new WithNIbexSmallCacheSecureCores(1) ++
-    new chipyard.config.WithL2TLBs(entries = 1024) ) // use L2 TLBs
-class Ibex2RocketReduced extends Config(
-  new WithRenumberHartsWithIbex(rocketFirst = true) ++ //Rocket first, Boom second, Ibex last
-    new WithSmallCacheBigCore(2) ++
-    new WithNIbexSmallCacheSecureCores(1) ++
-    new chipyard.config.WithL2TLBs(entries = 1024) ) // use L2 TLBs
-class Ibex2BoomReduced extends Config(
-  new WithRenumberHartsWithIbex(rocketFirst = false) ++ //Boom first, Rocket second, Ibex last
-    new WithMiniBoom(2) ++
-    new WithNIbexSmallCacheSecureCores(1) ++
-    new chipyard.config.WithL2TLBs(entries = 1024) ) // use L2 TLBs
-
 // Non-secure Ibex (Without Isolation)
 class Ibex2RocketNonSecure extends Config(
-  new WithRenumberHartsWithIbex(rocketFirst = true) ++ //Rocket first, Boom second, Ibex last
+  new WithRenumberHartsWithIbex(rocketFirst = true) ++ //Rocket first, Ibex last
     new WithNBigCores(2) ++
-    new WithNIbexCores(1) ++
-    new chipyard.config.WithL2TLBs(entries = 1024) ) // use L2 TLBs
-class IbexRocketBoomNonSecure extends Config(
-  new WithRenumberHartsWithIbex(rocketFirst = true) ++ //Rocket first, Boom second, Ibex last
-    new WithNBoomCores(1) ++
-    new WithNBigCores(1) ++
     new WithNIbexCores(1) ++
     new chipyard.config.WithL2TLBs(entries = 1024) ) // use L2 TLBs
 
 // Non-secure Ibex (Without Isolation) but reduced
-class IbexBoomRocketNonSecureReduced extends Config(
-  new WithRenumberHartsWithIbex(rocketFirst = true) ++ //Rocket first, Boom second, Ibex last
-    new WithMiniBoom(1) ++
-    new WithSmallCacheBigCore(1) ++
-    new WithNIbexCores(1) ++
-    new chipyard.config.WithL2TLBs(entries = 1024) ) // use L2 TLBs
-class IbexRocketBoomNonSecureReduced extends Config(
-  new WithRenumberHartsWithIbex(rocketFirst = true) ++ //Rocket first, Boom second, Ibex last
-    new WithMiniBoom(1) ++
-    new WithSmallCacheBigCore(1) ++
+class Ibex2RocketNonSecureReduced extends Config(
+  new WithRenumberHartsWithIbex(rocketFirst = true) ++ //Rocket first, Ibex last
+    new WithSmallCacheBigCore(2) ++
     new WithNIbexCores(1) ++
     new chipyard.config.WithL2TLBs(entries = 1024) ) // use L2 TLBs
 
+// ************ BootROM configuration (BOOTSRC) **************
 class BOOTROM extends Config((site, here, up) => {
   case PeripheryMaskROMKey => List(
     MaskROMParams(address = BigInt(0x20000000), depth = 4096, name = "BootROM"))
@@ -323,7 +119,7 @@ class QSPI extends Config((site, here, up) => {
     SPIFlashParams(fAddress = 0x20000000, rAddress = 0x64005000, defaultSampleDel = 3))
 })
 
-// Chip Peripherals
+// ************ Chip Peripherals (PERIPHERALS) ************
 class TEEHWPeripherals extends Config((site, here, up) => {
   case PeripheryUARTKey => List(
     UARTParams(address = BigInt(0x64000000L)))
@@ -332,7 +128,7 @@ class TEEHWPeripherals extends Config((site, here, up) => {
   case PeripheryGPIOKey => List(
     GPIOParams(address = BigInt(0x64002000L), width = 16))
   case GPIOInKey => 8
-    // TEEHW devices
+  // TEEHW devices
   case PeripherySHA3Key => List(
     SHA3Params(address = BigInt(0x64003000L)))
   case Peripheryed25519Key => List(
@@ -356,7 +152,7 @@ class TEEHWPeripherals extends Config((site, here, up) => {
     NmiGenParams(address = BigInt(0x64200000L))
 })
 
-class OnlyOpenTitanPeripherals extends Config((site, here, up) => {
+class OpenTitanPeripherals extends Config((site, here, up) => {
   case PeripheryUARTKey => List(
     UARTParams(address = BigInt(0x64000000L)))
   case PeripherySPIKey => List(
@@ -371,6 +167,41 @@ class OnlyOpenTitanPeripherals extends Config((site, here, up) => {
   case PeripheryAESKey => List()
   case PeripheryUSB11HSKey => List()
   case PeripheryRandomKey => List()
+  // OpenTitan devices
+  case PeripheryAESOTKey => List(
+    AESOTParams(address = BigInt(0x6400A000L)))
+  case PeripheryHMACKey => List(
+    HMACParams(address = BigInt(0x6400B000L)))
+  case PeripheryOTPCtrlKey => List(
+    OTPCtrlParams(address = BigInt(0x6400C000L)))
+  case PeripheryAlertKey =>
+    AlertParams(address = BigInt(0x64100000L))
+  case PeripheryNmiGenKey =>
+    NmiGenParams(address = BigInt(0x64200000L))
+})
+
+class TEEHWAndOpenTitanPeripherals extends Config((site, here, up) => {
+  case PeripheryUARTKey => List(
+    UARTParams(address = BigInt(0x64000000L)))
+  case PeripherySPIKey => List(
+    SPIParams(rAddress = BigInt(0x64001000L)))
+  case PeripheryGPIOKey => List(
+    GPIOParams(address = BigInt(0x64002000L), width = 16))
+  case GPIOInKey => 8
+  // TEEHW devices
+  case PeripherySHA3Key => List(
+    SHA3Params(address = BigInt(0x64003000L)))
+  case Peripheryed25519Key => List(
+    ed25519Params(address = BigInt(0x64004000L)))
+  case PeripheryI2CKey => List(
+    I2CParams(address = 0x64006000))
+  case PeripheryAESKey => List(
+    AESParams(address = BigInt(0x64007000L)))
+  case PeripheryUSB11HSKey => List(
+    USB11HSParams(address = BigInt(0x64008000L)))
+  case PeripheryRandomKey => List(
+    RandomParams(address = BigInt(0x64009000L), impl = 1),
+    RandomParams(address = BigInt(0x6400A000L), impl = 0))
   // OpenTitan devices
   case PeripheryAESOTKey => List(
     AESOTParams(address = BigInt(0x6400A000L)))
@@ -406,6 +237,8 @@ class NoSecurityPeripherals extends Config((site, here, up) => {
     NmiGenParams(address = BigInt(0x64200000L))
 })
 
+// *************** Bus configuration (MBUS) ******************
+
 class MBus32 extends Config((site, here, up) => {
   case ExtMem => Some(MemoryPortParams(MasterPortParams(
     base = x"0_8000_0000",
@@ -426,6 +259,7 @@ class MBusNone extends Config((site, here, up) => {
   case ExtMem => None
 })
 
+// *************** PCI Configuration (PCIE) ******************
 class WPCIe extends Config((site, here, up) => {
   case IncludePCIe => true
 })
@@ -434,6 +268,7 @@ class WoPCIe extends Config((site, here, up) => {
   case IncludePCIe => false
 })
 
+// *************** DDR Clock configurations (DDRCLK) ******************
 class WSepaDDRClk extends Config((site, here, up) => {
   case DDRPortOther => true
 })
@@ -442,69 +277,7 @@ class WoSepaDDRClk extends Config((site, here, up) => {
   case DDRPortOther => false
 })
 
-// Chip Configs
-class ChipConfig extends Config(
-  // The rest of the configurations, which are not-movable
-  new WithNExtTopInterrupts(0) ++
-  new WithNBreakpoints(4) ++
-  new TEEHWPeripherals ++
-  new WithJtagDTM ++
-  new freechips.rocketchip.subsystem.WithInclusiveCache ++        // use Sifive L2 cache
-  new WithCoherentBusTopology ++                                  // This adds a L2 cache
-  //new WithIncoherentBusTopology ++ // This was the previous one
-  new BaseConfig().alter((site,here,up) => {
-    case SystemBusKey => up(SystemBusKey).copy(
-      beatBytes = 8,
-      errorDevice = Some(DevNullParams(
-        Seq(AddressSet(0x4000, 0xfff)),
-        maxAtomic=site(XLen)/8,
-        maxTransfer=128,
-        region = RegionType.TRACKED)))
-    case PeripheryBusKey => up(PeripheryBusKey, site).copy(dtsFrequency =
-      Some(BigDecimal(site(FreqKeyMHz)*1000000).setScale(0, BigDecimal.RoundingMode.HALF_UP).toBigInt),
-      errorDevice = None)
-    case DTSTimebase => BigInt(1000000)
-    case JtagDTMKey => new JtagDTMConfig (
-      idcodeVersion = 2,      // 1 was legacy (FE310-G000, Acai).
-      idcodePartNum = 0x000,  // Decided to simplify.
-      idcodeManufId = 0x489,  // As Assigned by JEDEC to SiFive. Only used in wrappers / test harnesses.
-      debugIdleCycles = 5)    // Reasonable guess for synchronization
-    case FreqKeyMHz => 100.0
-    case MaxHartIdBits => log2Up(site(BoomTilesKey).size + site(RocketTilesKey).size + site(IbexTilesKey).size)
-  })
-)
-
-class MicroConfig extends Config(
-  new WithNExtTopInterrupts(0) ++
-  new WithNBreakpoints(1) ++
-  new TEEHWPeripherals ++
-  new WithJtagDTM ++
-  new WithNMemoryChannels(0) ++
-  new WithNBanks(0) ++
-  //new WithJustOneBus ++
-  new WithIncoherentBusTopology ++
-  new BaseConfig().alter((site,here,up) => {
-    case SystemBusKey => up(SystemBusKey).copy(
-      beatBytes = 8,
-      errorDevice = Some(DevNullParams(
-        Seq(AddressSet(0x4000, 0xfff)),
-        maxAtomic=site(XLen)/8,
-        maxTransfer=128,
-        region = RegionType.TRACKED)))
-    case PeripheryBusKey => up(PeripheryBusKey, site).copy(dtsFrequency =
-      Some(BigDecimal(site(FreqKeyMHz)*1000000).setScale(0, BigDecimal.RoundingMode.HALF_UP).toBigInt),
-      errorDevice = None)
-    case DTSTimebase => BigInt(1000000)
-    case JtagDTMKey => new JtagDTMConfig (
-      idcodeVersion = 2,      // 1 was legacy (FE310-G000, Acai).
-      idcodePartNum = 0x000,  // Decided to simplify.
-      idcodeManufId = 0x489,  // As Assigned by JEDEC to SiFive. Only used in wrappers / test harnesses.
-      debugIdleCycles = 5)    // Reasonable guess for synchronization
-    case FreqKeyMHz => 100.0
-    case MaxHartIdBits => log2Up(site(BoomTilesKey).size + site(RocketTilesKey).size + site(IbexTilesKey).size)
-  })
-)
-
+// *************** Board Config (BOARD) ***************
 class DE4Config extends Config(
   new ChipConfig().alter((site,here,up) => {
     case FreqKeyMHz => 100.0
@@ -520,18 +293,6 @@ class TR4Config extends Config(
     case IncludePCIe => false
     case PeripheryRandomKey => List(
       RandomParams(address = BigInt(0x64009000L), impl = 0))
-  })
-)
-
-class Chip2020ROHM18R3Config extends Config(
-  new MicroConfig().alter((site,here,up) => {
-    case FreqKeyMHz => 100.0
-    /* VLSI is not support PCIe (yet) */
-    case IncludePCIe => false
-    case PeripheryRandomKey => List(
-      RandomParams(address = BigInt(0x64009000L), impl = 1, board = "Simulation"))
-    case PeripheryI2CKey => List()
-    case PeripheryUSB11HSKey => List()
   })
 )
 
@@ -561,6 +322,7 @@ class VC707MiniConfig extends Config(
   })
 )
 
+// ***************** The simulation flag *****************
 class WithSimulation extends Config((site, here, up) => {
   // Frequency is always 100.0 MHz in simulation mode, independent of the board
   case FreqKeyMHz => 100.0
@@ -578,7 +340,5 @@ class WithSimulation extends Config((site, here, up) => {
   // USB11HS has problems compiling on verilator.
   case PeripheryUSB11HSKey => List()
   // Random only should include the TRNG version
-  case PeripheryRandomKey => List(
-    RandomParams(address = BigInt(0x64009000L), impl = 0),
-    RandomParams(address = BigInt(0x6400A000L), impl = 0))
+  case PeripheryRandomKey => up(PeripheryRandomKey, site) map {case r => r.copy(impl = 0) }
 })

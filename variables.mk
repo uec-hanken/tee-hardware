@@ -36,12 +36,21 @@ ADD_VSRC ?=
 
 TB ?= TestDriver
 
+BOARD?=DE4
+ISACONF?=RV64GC
+MBUS?=MBus64
+BOOTSRC?=BOOTROM
+PCIE?=WoPCIe
+DDRCLK?=WoSepaDDRClk
+HYBRID?=Rocket
+PERIPHERALS?=TEEHWPeripherals
+
 ifeq ($(SUB_PROJECT),teehardware)
 	SBT_PROJECT       ?= teehardware
 	MODEL             ?= TEEHWHarness
 	VLOG_MODEL        ?= TEEHWHarness
 	MODEL_PACKAGE     ?= uec.teehardware
-	CONFIG            ?= WithSimulation_$(BOARD)Config_$(MBUS)_$(DDRCLK)_$(PCIE)_$(BOOTSRC)_$(HYBRID)_$(ISACONF)
+	CONFIG            ?= WithSimulation_$(BOARD)Config_$(MBUS)_$(DDRCLK)_$(PCIE)_$(BOOTSRC)_$(HYBRID)_$(PERIPHERALS)_$(ISACONF)
 	CONFIG_PACKAGE    ?= uec.teehardware
 	GENERATOR_PACKAGE ?= uec.teehardware.exampletop
 	TB                ?= TestDriver
@@ -52,7 +61,7 @@ else
 	MODEL             ?= $(SUB_PROJECT)
 	VLOG_MODEL        ?= $(SUB_PROJECT)
 	MODEL_PACKAGE     ?= uec.teehardware
-	CONFIG            ?= $(BOARD)Config_$(MBUS)_$(DDRCLK)_$(PCIE)_$(BOOTSRC)_$(HYBRID)_$(ISACONF)
+	CONFIG            ?= $(BOARD)Config_$(MBUS)_$(DDRCLK)_$(PCIE)_$(BOOTSRC)_$(HYBRID)_$(PERIPHERALS)_$(ISACONF)
 	CONFIG_PACKAGE    ?= uec.teehardware
 	GENERATOR_PACKAGE ?= uec.teehardware.exampletop
 	TB                ?= TestDriver

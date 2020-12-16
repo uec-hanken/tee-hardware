@@ -22,7 +22,7 @@ MBUS?=MBus64
 BOOTSRC?=BOOTROM
 PCIE?=WoPCIe
 DDRCLK?=WoSepaDDRClk
-HYBRID?=BoomRocket
+HYBRID?=Rocket
 ROMHEX ?= $(xip_dir)/xip.hex $(bootrom_dir)/FPGAzsbl.hex
 
 #########################################################################################

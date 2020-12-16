@@ -21,7 +21,7 @@ MBUS?=MBus64
 BOOTSRC?=BOOTROM
 PCIE?=WoPCIe
 DDRCLK?=WoSepaDDRClk
-HYBRID?=Ibex2Rocket
+HYBRID?=Rocket
 SEPARE?=BoomTile,RocketTile,USB11HS,TLAES,TLed25519,TLSHA3
 
 #########################################################################################
