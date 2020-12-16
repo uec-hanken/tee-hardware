@@ -50,29 +50,29 @@ class SlowMemIsland(blockBytes: Int, val crossing: ClockCrossingType = Asynchron
   }
 }
 
-class TEEHWSystem(implicit p: Parameters) extends TEEHWSubsystem
-    with HasPeripheryDebug
-    with HasPeripheryGPIO
-    with HasPeripherySHA3
-    with HasPeripheryed25519
-    with HasPeripheryAES
-    with HasPeripheryUSB11HS
-    with HasPeripheryRandom
-    // The opentitan components
-    with HasPeripheryAESOT
-    with HasPeripheryHMAC
-    with HasPeripheryOTPCtrl
-    // The components that are directly instantiated here. Needed to be re-factored from the original
-    //    with HasPeripheryI2C
-    //    with HasPeripheryUART // NOTE: Already included
-    //    with HasPeripherySPIFlash // NOTE: Already included
-    //    with HasPeripherySPI // NOTE: Already included
-    //    with HasPeripheryMaskROMSlave // NOTE: This is already included inside the RocketSubsystem
-    //    with CanHaveMasterAXI4MemPort // NOTE: A TL->Axi4 is already done outside the system
-    //    with CanHaveMasterTLMemPort // NOTE: Manually created the TL port
-    // This is intended only for simulations, but does not affect the fpga/chip versions
-    with CanHavePeripherySerial // ONLY for simulations
-{
+trait HasTEEHWSystem extends HasTEEHWTiles
+  with HasPeripheryDebug
+  with HasPeripheryGPIO
+  with HasPeripherySHA3
+  with HasPeripheryed25519
+  with HasPeripheryAES
+  with HasPeripheryUSB11HS
+  with HasPeripheryRandom
+  // The opentitan components
+  with HasPeripheryAESOT
+  with HasPeripheryHMAC
+  with HasPeripheryOTPCtrl
+  // The components that are directly instantiated here. Needed to be re-factored from the original
+  //    with HasPeripheryI2C
+  //    with HasPeripheryUART // NOTE: Already included
+  //    with HasPeripherySPIFlash // NOTE: Already included
+  //    with HasPeripherySPI // NOTE: Already included
+  //    with HasPeripheryMaskROMSlave // NOTE: This is already included inside the RocketSubsystem
+  //    with CanHaveMasterAXI4MemPort // NOTE: A TL->Axi4 is already done outside the system
+  //    with CanHaveMasterTLMemPort // NOTE: Manually created the TL port
+  // This is intended only for simulations, but does not affect the fpga/chip versions
+  with CanHavePeripherySerial // ONLY for simulations
+{ this: TEEHWSubsystem =>
   // The clock resource. This is just for put in the DTS the tlclock
   // TODO: Now the clock is derived from the bus that is connected
   // TODO: We need a way now to extract that one in the makefiles
@@ -80,25 +80,25 @@ class TEEHWSystem(implicit p: Parameters) extends TEEHWSubsystem
   val tlclock = new FixedClockResource("tlclk", p(FreqKeyMHz))
 
   // Main memory controller (TL memory controller)
-  val memctl: Option[(TLManagerNode, Option[SlowMemIsland])] = p(ExtMem).map{ A =>
+  val memctl: Option[(TLManagerNode, Option[SlowMemIsland])] = p(ExtMem).map { A =>
     val memdevice = new MemoryDevice
     val mainMemParam = TLSlavePortParameters.v1(
       managers = Seq(TLManagerParameters(
-        address = AddressSet.misaligned(A.master.base,  A.master.size),
+        address = AddressSet.misaligned(A.master.base, A.master.size),
         resources = memdevice.reg,
         regionType = RegionType.UNCACHED, // cacheable
         executable = true,
         supportsGet = TransferSizes(1, mbus.blockBytes),
         supportsPutFull = TransferSizes(1, mbus.blockBytes),
         supportsPutPartial = TransferSizes(1, mbus.blockBytes),
-        fifoId             = Some(0),
-        mayDenyPut         = true,
-        mayDenyGet         = true
+        fifoId = Some(0),
+        mayDenyPut = true,
+        mayDenyGet = true
       )),
       beatBytes = A.master.beatBytes
     )
     val memTLNode = TLManagerNode(Seq(mainMemParam))
-    val island = if(p(DDRPortOther)) {
+    val island = if (p(DDRPortOther)) {
       //val source = LazyModule(new TLAsyncCrossingSource())
       //val sink = LazyModule(new TLAsyncCrossingSink(AsyncQueueParams(depth = 1, sync = 3, safe = true, narrow = false)))
       //val buffer  = LazyModule(new TLBuffer) // We removed a buffer in the TOP
@@ -108,7 +108,7 @@ class TEEHWSystem(implicit p: Parameters) extends TEEHWSubsystem
       memTLNode := island.node
       Some(island)
     } else {
-      val buffer  = LazyModule(new TLBuffer)
+      val buffer = LazyModule(new TLBuffer)
       memTLNode := buffer.node := mbus.toDRAMController(Some("tl"))()
       None
     }
@@ -118,7 +118,7 @@ class TEEHWSystem(implicit p: Parameters) extends TEEHWSubsystem
   // SPI to MMC conversion.
   // TODO: There is an intention from Sifive to do MMC, but has to be manual
   // TODO: Also the tlclock binding is manual
-  val spiDevs = p(PeripherySPIKey).map { ps => SPIAttachParams(ps).attachTo(this)}
+  val spiDevs = p(PeripherySPIKey).map { ps => SPIAttachParams(ps).attachTo(this) }
   val spiNodes = spiDevs.map { ps => ps.ioNode.makeSink() }
   val mmc = new MMCDevice(spiDevs.head.device) // Only the first one is mmc
   ResourceBinding {
@@ -130,12 +130,12 @@ class TEEHWSystem(implicit p: Parameters) extends TEEHWSubsystem
 
   // UART implementation. This is the same as HasPeripheryUART
   // TODO: This is done this way instead of "HasPeripheryUART" because we need to do a bind to tlclock
-  val uartDevs = p(PeripheryUARTKey).map{
+  val uartDevs = p(PeripheryUARTKey).map {
     val divinit = (p(PeripheryBusKey).dtsFrequency.get / 115200).toInt
     ps => UARTAttachParams(ps).attachTo(this)
   }
   val uartNodes = uartDevs.map { ps => ps.ioNode.makeSink }
-  uartDevs.foreach{ case ps =>
+  uartDevs.foreach { case ps =>
     //tlclock.bind(ps.device)
   }
 
@@ -146,7 +146,7 @@ class TEEHWSystem(implicit p: Parameters) extends TEEHWSubsystem
   }
   val qspiNodes = qspiDevs.map { ps => ps.ioNode.makeSink() }
   ResourceBinding {
-    qspiDevs.foreach{ case ps =>
+    qspiDevs.foreach { case ps =>
       val flash = new FlashDevice(ps.device)
       Resource(flash, "reg").bind(ResourceAddress(0)) // NOTE: This is new. Maybe is not intended in this way.
     }
@@ -156,7 +156,7 @@ class TEEHWSystem(implicit p: Parameters) extends TEEHWSubsystem
   }
 
   // PCIe port export
-  val pcie = if(p(IncludePCIe)) {
+  val pcie = if (p(IncludePCIe)) {
     val pcie = LazyModule(new XilinxVC707PCIeX1)
     val nodeSlave = TLIdentityNode()
     val nodeMaster = TLIdentityNode()
@@ -168,8 +168,12 @@ class TEEHWSystem(implicit p: Parameters) extends TEEHWSubsystem
     nodeMaster := pcie.crossTLOut(pcie.master)
 
     val pciename = Some(s"pcie_0")
-    sbus.fromMaster(pciename) { nodeMaster }
-    sbus.toFixedWidthSlave(pciename) { nodeSlave }
+    sbus.fromMaster(pciename) {
+      nodeMaster
+    }
+    sbus.toFixedWidthSlave(pciename) {
+      nodeSlave
+    }
     ibus.fromSync := pcie.intnode
 
     Some(pcie)
@@ -177,39 +181,44 @@ class TEEHWSystem(implicit p: Parameters) extends TEEHWSubsystem
   else None
 
   // add Mask ROM devices
-  val maskROMs = p(PeripheryMaskROMKey).map { MaskROM.attach(_, cbus) }
+  val maskROMs = p(PeripheryMaskROMKey).map {
+    MaskROM.attach(_, cbus)
+  }
+}
 
+class TEEHWSystem(implicit p: Parameters) extends TEEHWSubsystem
+  with HasTEEHWSystem {
   // System module creation
   override lazy val module = new TEEHWSystemModule(this)
 }
 
-
-class TEEHWSystemModule[+L <: TEEHWSystem](_outer: L)
-  extends TEEHWSubsystemModuleImp(_outer)
-    with HasRTCModuleImp
-    with HasPeripheryDebugModuleImp
-    with HasPeripheryGPIOModuleImp
-    with HasPeripherySHA3ModuleImp
-    with HasPeripheryed25519ModuleImp
-    with HasPeripheryAESModuleImp
-    with HasPeripheryUSB11HSModuleImp
-    with HasPeripheryRandomModuleImp
-    with HasResetVectorWire
-    // The opentitan components
-    with HasPeripheryAESOTModuleImp
-    with HasPeripheryHMACModuleImp
-    with HasPeripheryOTPCtrlModuleImp
-    // The components that are directly instantiated here. Needed to be re-factored from the original
-    //    with HasPeripheryI2CModuleImp
-    //    with HasPeripheryUARTModuleImp // NOTE: Already included
-    //    with HasPeripherySPIFlashModuleImp // NOTE: Already included
-    //    with HasPeripherySPIModuleImp // NOTE: Already included
-    //    with CanHaveMasterAXI4MemPortModuleImp // NOTE: A TL->Axi4 is already done outside the system
-    //    with CanHaveMasterTLMemPortModuleImp // NOTE: Manually created the TL port
-    // This is intended only for simulations, but does not affect the fpga/chip versions
-    with CanHavePeripherySerialModuleImp
-    with DontTouch
+trait HasTEEHWSystemModule extends HasTEEHWTilesModuleImp
+  with HasPeripheryDebugModuleImp
+  with HasRTCModuleImp
+  with HasPeripheryGPIOModuleImp
+  with HasPeripherySHA3ModuleImp
+  with HasPeripheryed25519ModuleImp
+  with HasPeripheryAESModuleImp
+  with HasPeripheryUSB11HSModuleImp
+  with HasPeripheryRandomModuleImp
+  with HasResetVectorWire
+  // The opentitan components
+  with HasPeripheryAESOTModuleImp
+  with HasPeripheryHMACModuleImp
+  with HasPeripheryOTPCtrlModuleImp
+  // The components that are directly instantiated here. Needed to be re-factored from the original
+  //    with HasPeripheryI2CModuleImp
+  //    with HasPeripheryUARTModuleImp // NOTE: Already included
+  //    with HasPeripherySPIFlashModuleImp // NOTE: Already included
+  //    with HasPeripherySPIModuleImp // NOTE: Already included
+  //    with CanHaveMasterAXI4MemPortModuleImp // NOTE: A TL->Axi4 is already done outside the system
+  //    with CanHaveMasterTLMemPortModuleImp // NOTE: Manually created the TL port
+  // This is intended only for simulations, but does not affect the fpga/chip versions
+  with CanHavePeripherySerialModuleImp
+  with DontTouch
 {
+  val outer: TEEHWSubsystem with HasTEEHWSystem with CanHavePeripheryCLINT
+
   // Main memory controller
   val memPorts = outer.memctl.map { A =>
     val (memTLnode: TLManagerNode, island: Option[SlowMemIsland]) = A
@@ -248,6 +257,10 @@ class TEEHWSystemModule[+L <: TEEHWSystem](_outer: L)
   // In QSPI & sim scenarios: 0x10040
   global_reset_vector := p(TEEHWResetVector).U
 }
+
+class TEEHWSystemModule[+L <: TEEHWSystem](_outer: L)
+  extends TEEHWSubsystemModuleImp(_outer)
+    with HasTEEHWSystemModule
 
 object PinGen {
   def apply(): BasePin =  {

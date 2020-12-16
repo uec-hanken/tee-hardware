@@ -128,15 +128,8 @@ class IbexTile
   masterNode :=* tlOtherMastersNode
   DisableMonitors { implicit p => tlSlaveXbar.node :*= slaveNode }
 
-  // If the Ibex is secure, we cannot let this device gets in the dtc (not usable by linux)
-  def ghostDevice = new Device {
-    def describe(resources: ResourceBindings): Description = {
-      Description("ghost", Map())
-    }
-  }
-
-  val cpuDevice: SimpleDevice = new SimpleDevice(if(ibexParams.core.SecureIbex) "ghost" else "cpu", Seq("lowRISC,ibex", "riscv")) {
-    override def parent = Some(if(ibexParams.core.SecureIbex) ghostDevice else ResourceAnchors.cpus )
+  val cpuDevice: SimpleDevice = new SimpleDevice("cpu", Seq("lowRISC,ibex", "riscv")) {
+    override def parent = Some( ResourceAnchors.cpus )
     override def describe(resources: ResourceBindings): Description = {
       val Description(name, mapping) = super.describe(resources)
       Description(name, mapping ++
@@ -223,19 +216,6 @@ class IbexTile
     := TLFragmenter(cacheBlockBytes, beatBytes)
     := dmemNode
     )
-
-  // Creation of the scratchpad
-  ibexParams.dcache.foreach{
-    case i =>
-      require(i.scratch.nonEmpty, "The only dcache possible in Ibex is a scratchpad")
-      val size = i.nSets * i.nWays * cacheBlockBytes
-      val tlram = TLRAM(
-        address = AddressSet(i.scratch.get, size-1),
-        beatBytes = p(XLen)/8,
-        cacheable = false,
-        devName = Some(s"HiddenRAM_Ibex${ibexParams.hartId}"))
-      tlram := tlMasterXbar.node
-  }
 
   def connectIbexInterrupts(debug: Bool, msip: Bool, mtip: Bool, meip: Bool) {
     val (interrupts, _) = intSinkNode.in(0)
