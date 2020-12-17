@@ -59,7 +59,7 @@ trait HasTEEHWTiles extends HasTiles
   // This MUST be performed in order of hartid
   // There is something weird with registering tile-local interrupt controllers to the CLINT.
   // TODO: investigate why
-  val tiles = allTilesInfo.sortWith(_._1.hartId < _._1.hartId).map {
+  def doTiles(implicit valName: ValName) = allTilesInfo.sortWith(_._1.hartId < _._1.hartId).map {
     case (param, crossing) => {
 
       val tile = param match {
@@ -85,6 +85,8 @@ trait HasTEEHWTiles extends HasTiles
       tile
     }
   }
+
+  val tiles = doTiles
 
   // If the Ibex is not present, esc be connected to nothing
   val IbexExists = allTilesInfo.map(_._1).exists { case _: IbexTileParams => true; case _ => false }

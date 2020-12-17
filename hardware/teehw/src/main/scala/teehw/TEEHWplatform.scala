@@ -298,103 +298,114 @@ class TEEHWPlatformIO(val params: Option[TLBundleParameters] = None)
   val pciePorts = p(IncludePCIe).option(new XilinxVC707PCIeX1IO)
 }
 
+object TEEHWPlatform {
+  def connect
+  (
+    sys: HasTEEHWSystemModule,
+    io: TEEHWPlatformIO,
+    clock: Clock,
+    reset: Reset)(implicit p: Parameters): Unit = {
+
+    // Add in debug-controlled reset.
+    sys.reset := ResetCatchAndSync(clock, reset.toBool, 20)
+
+    // NEW: Reset system nows connects each core's reset independently
+    sys.resetctrl.map { rcio => rcio.hartIsInReset.map { _ := sys.reset.asBool() }}
+
+    // NEW: The debug system now manually connects the clock and reset
+    // Actually this helper only connects the clock, and the reset is from the DMI
+    // NOTE: This also connects the new sys.debug.get.dmactiveAck
+    Debug.connectDebugClockAndReset(sys.debug, clock)
+
+    // The TL memory port. This is a configurable one for the address space
+    // and the ports are exposed inside the "foreach". Do not worry, there is
+    // only one memory (unless you configure multiple memories).
+
+    (sys.memPorts zip io.tlport).foreach{
+      case (iohf, tlport: TLUL) =>
+        val ioh = iohf._1
+        val ChildClock = iohf._2
+        val ChildReset = iohf._3
+        ioh.foreach{ case ioi: TLBundle =>
+          // Connect outside the ones that can be untied
+          tlport.a.valid := ioi.a.valid
+          ioi.a.ready := tlport.a.ready
+          tlport.a.bits := ioi.a.bits
+
+          ioi.d.valid := tlport.d.valid
+          tlport.d.ready := ioi.d.ready
+          ioi.d.bits := tlport.d.bits
+
+          // Tie off the channels we dont need...
+          // ... I mean, we did tell the TLNodeParams that we only want Get and Put
+          ioi.b.bits := 0.U.asTypeOf(new TLBundleB(ioi.params))
+          ioi.b.valid := false.B
+          ioi.c.ready := false.B
+          ioi.e.ready := false.B
+          // Important NOTE: We did check connections until the mbus in verilog
+          // and there is no usage of channels B, C and E (except for some TL Monitors)
+        }
+
+        (((ChildClock zip ChildReset) zip io.ChildClock) zip io.ChildReset).map{ case (((cck, crst), ck), rst) =>
+          cck := ck
+          crst := rst
+        }
+    }
+
+    // Connect the USB to the outside (only the first one)
+    (sys.usb11hs zip io.usb11hs).foreach{ case (sysusb, usbport) => sysusb <> usbport }
+
+    //-----------------------------------------------------------------------
+    // Check for unsupported rocket-chip connections
+    //-----------------------------------------------------------------------
+
+    require (p(NExtTopInterrupts) == 0, "No Top-level interrupts supported")
+
+    // I2C
+    //I2CPinsFromPort(io.pins.i2c, sys.i2c(0), clock = sys.clock, reset = sys.reset.toBool, syncStages = 0)
+
+    // UART0
+    UARTPinsFromPort(io.pins.uart, sys.uart(0), clock = sys.clock, reset = sys.reset.toBool, syncStages = 0)
+
+    //-----------------------------------------------------------------------
+    // Drive actual Pads
+    //-----------------------------------------------------------------------
+
+    // Result of Pin Mux
+    GPIOPinsFromPort(io.pins.gpio, sys.gpio(0))
+
+    // Dedicated SPI Pads
+    (io.pins.qspi zip sys.qspi).foreach { case (pins_qspi, sys_qspi) =>
+      SPIPinsFromPort(pins_qspi, sys_qspi, clock = sys.clock, reset = sys.reset.toBool, syncStages = 3)
+    }
+    SPIPinsFromPort(io.pins.spi, sys.spi(0), clock = sys.clock, reset = sys.reset.toBool, syncStages = 3)
+
+    // JTAG Debug Interface
+    // TODO: Now the debug is optional? The get will fail if the debug is disabled
+    val sjtag = sys.debug.get.systemjtag.get
+    JTAGPinsFromPort(io.pins.jtag, sjtag.jtag)
+    sjtag.reset := io.jtag_reset
+    sjtag.mfr_id := p(JtagDTMKey).idcodeManufId.U(11.W)
+    sjtag.part_number := p(JtagDTMKey).idcodePartNum.U(16.W)
+    sjtag.version := p(JtagDTMKey).idcodeVersion.U(4.W)
+
+    sys.debug.foreach { case debug =>
+      io.ndreset := debug.ndreset
+    }
+
+    // PCIe port connection
+    if(p(IncludePCIe)) {
+      io.pciePorts.get <> sys.pciePorts.get
+    }
+  }
+}
 
 class TEEHWPlatform(implicit val p: Parameters) extends Module {
-  val sys = Module(LazyModule(new TEEHWSystem).module)
+  val sys: TEEHWSystemModule[TEEHWSystem] = Module(LazyModule(new TEEHWSystem).module)
 
   // Not actually sure if "node.head.in.head._1.params" (where node is A._1) is the
   // correct way to get the params... TODO: Get the correct way
   val io = IO(new TEEHWPlatformIO(sys.outer.memctl.map{A => A._1.in.head._1.params} ) )
 
-  // Add in debug-controlled reset.
-  sys.reset := ResetCatchAndSync(clock, reset.toBool, 20)
-
-  // NEW: Reset system nows connects each core's reset independently
-  sys.resetctrl.map { rcio => rcio.hartIsInReset.map { _ := sys.reset.asBool() }}
-
-  // NEW: The debug system now manually connects the clock and reset
-  // Actually this helper only connects the clock, and the reset is from the DMI
-  // NOTE: This also connects the new sys.debug.get.dmactiveAck
-  Debug.connectDebugClockAndReset(sys.debug, clock)
-
-  // The TL memory port. This is a configurable one for the address space
-  // and the ports are exposed inside the "foreach". Do not worry, there is
-  // only one memory (unless you configure multiple memories).
-
-  (sys.memPorts zip io.tlport).foreach{
-    case (iohf, tlport: TLUL) =>
-      val ioh = iohf._1
-      val ChildClock = iohf._2
-      val ChildReset = iohf._3
-      ioh.foreach{ case ioi: TLBundle =>
-        // Connect outside the ones that can be untied
-        tlport.a.valid := ioi.a.valid
-        ioi.a.ready := tlport.a.ready
-        tlport.a.bits := ioi.a.bits
-
-        ioi.d.valid := tlport.d.valid
-        tlport.d.ready := ioi.d.ready
-        ioi.d.bits := tlport.d.bits
-
-        // Tie off the channels we dont need...
-        // ... I mean, we did tell the TLNodeParams that we only want Get and Put
-        ioi.b.bits := 0.U.asTypeOf(new TLBundleB(ioi.params))
-        ioi.b.valid := false.B
-        ioi.c.ready := false.B
-        ioi.e.ready := false.B
-        // Important NOTE: We did check connections until the mbus in verilog
-        // and there is no usage of channels B, C and E (except for some TL Monitors)
-      }
-
-      (((ChildClock zip ChildReset) zip io.ChildClock) zip io.ChildReset).map{ case (((cck, crst), ck), rst) =>
-        cck := ck
-        crst := rst
-      }
-  }
-
-  // Connect the USB to the outside (only the first one)
-  (sys.usb11hs zip io.usb11hs).foreach{ case (sysusb, usbport) => sysusb <> usbport }
-
-  //-----------------------------------------------------------------------
-  // Check for unsupported rocket-chip connections
-  //-----------------------------------------------------------------------
-
-  require (p(NExtTopInterrupts) == 0, "No Top-level interrupts supported")
-
-  // I2C
-  //I2CPinsFromPort(io.pins.i2c, sys.i2c(0), clock = sys.clock, reset = sys.reset.toBool, syncStages = 0)
-
-  // UART0
-  UARTPinsFromPort(io.pins.uart, sys.uart(0), clock = sys.clock, reset = sys.reset.toBool, syncStages = 0)
-
-  //-----------------------------------------------------------------------
-  // Drive actual Pads
-  //-----------------------------------------------------------------------
-
-  // Result of Pin Mux
-  GPIOPinsFromPort(io.pins.gpio, sys.gpio(0))
-
-  // Dedicated SPI Pads
-  (io.pins.qspi zip sys.qspi).foreach { case (pins_qspi, sys_qspi) =>
-    SPIPinsFromPort(pins_qspi, sys_qspi, clock = sys.clock, reset = sys.reset.toBool, syncStages = 3)
-  }
-  SPIPinsFromPort(io.pins.spi, sys.spi(0), clock = sys.clock, reset = sys.reset.toBool, syncStages = 3)
-
-  // JTAG Debug Interface
-  // TODO: Now the debug is optional? The get will fail if the debug is disabled
-  val sjtag = sys.debug.get.systemjtag.get
-  JTAGPinsFromPort(io.pins.jtag, sjtag.jtag)
-  sjtag.reset := io.jtag_reset
-  sjtag.mfr_id := p(JtagDTMKey).idcodeManufId.U(11.W)
-  sjtag.part_number := p(JtagDTMKey).idcodePartNum.U(16.W)
-  sjtag.version := p(JtagDTMKey).idcodeVersion.U(4.W)
-
-  sys.debug.foreach { case debug =>
-    io.ndreset := debug.ndreset
-  }
-
-  // PCIe port connection
-  if(p(IncludePCIe)) {
-    io.pciePorts.get <> sys.pciePorts.get
-  }
+  TEEHWPlatform.connect(sys, io, clock, reset)
 }

@@ -29,7 +29,7 @@ MACROCOMPILER_MODE ?= --mode synflops
 
 # The macro-compiler command creator. Just attach a buch of them, to avoid multiple-execution of sbt
 ALL_TOPS := $(TOP) $(MODEL) $(shell echo $(SEPARE) | sed "s/,/ /g")
-MACROCOMPILER_COMMANDS = $(foreach T, $(ALL_TOPS),"runMain $(MODEL_PACKAGE).uecutils.MacroCompiler -n $(build_dir)/$T.mems.conf -v $(build_dir)/$T.mems.v -f $(build_dir)/$T.mems.fir $(MACROCOMPILER_MODE)") 
+MACROCOMPILER_COMMANDS = $(foreach T, $(ALL_TOPS),"runMain uec.teehardware.uecutils.MacroCompiler -n $(build_dir)/$T.mems.conf -v $(build_dir)/$T.mems.v -f $(build_dir)/$T.mems.fir $(MACROCOMPILER_MODE)") 
 
 # This is for compiling all into the VRCS
 TOP_VERILOGS = $(addprefix $(build_dir)/,$(ALL_TOPS:=.v))
@@ -45,7 +45,7 @@ VSRCS := \
 # NOTE: We are going to add the true tapeout stuff here
 default: $(FIRRTL_FILE) $(ROM_FILE)
 	# We are going to separate the different tops here
-	cd $(base_dir) && $(SBT) "project $(SBT_PROJECT)" "runMain $(MODEL_PACKAGE).uecutils.MultiTopAndHarness -o $(build_dir)/SHOULDNT.v -i $(FIRRTL_FILE) --syn-tops $(SEPARE) --chip-top $(TOP) --harness-top $(MODEL) -faf $(ANNO_FILE) --infer-rw --repl-seq-mem -c:$(TOP):-o:$(build_dir)/SHOULDNT.mems.conf -td $(build_dir)"
+	cd $(base_dir) && $(SBT) "project $(SBT_PROJECT)" "runMain uec.teehardware.uecutils.MultiTopAndHarness -o $(build_dir)/SHOULDNT.v -i $(FIRRTL_FILE) --syn-tops $(SEPARE) --chip-top $(TOP) --harness-top $(MODEL) -faf $(ANNO_FILE) --infer-rw --repl-seq-mem -c:$(TOP):-o:$(build_dir)/SHOULDNT.mems.conf -td $(build_dir)"
 	# - rename.ul $(MODEL_PACKAGE).$(MODEL).$(CONFIG) $(MODEL) $(build_dir)/*
 	# We also want to generate our memories
 	cd $(base_dir) && $(SBT) "project $(SBT_PROJECT)" $(MACROCOMPILER_COMMANDS)
