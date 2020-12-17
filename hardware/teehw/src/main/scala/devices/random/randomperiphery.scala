@@ -7,8 +7,8 @@ import freechips.rocketchip.subsystem.BaseSubsystem
 case object PeripheryRandomKey extends Field[List[RandomParams]](List())
 
 trait HasPeripheryRandom { this: BaseSubsystem =>
-  val rndNodes = p(PeripheryRandomKey).map{ case key =>
-    RandomAttachParams(key).attachTo(this).ioNode.makeSink
+  val rndNodes = p(PeripheryRandomKey).zipWithIndex.map{ case (key, i) =>
+    RandomAttachParams(key.copy(path = key.path + s"random_${i}/")).attachTo(this).ioNode.makeSink
   }
 }
 

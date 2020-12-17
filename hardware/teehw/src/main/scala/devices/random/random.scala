@@ -16,14 +16,22 @@ import freechips.rocketchip.subsystem.{Attachable, PBUS, TLBusWrapperLocation}
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.util._
 
+case class ROLocHints
+(
+  slice_x: Int = 45,
+  slice_y: Int = 45
+)
+
 case class RandomParams
 (
   address: BigInt,
   impl: Int = 0,
   nbits: Int = 8,
-  board: String = "Xilinx"
+  board: String = "Xilinx",
+  path: String = "TEEHWSoC/TEEHWPlatform/sys/randomClockDomainWrapper/",
+  refLoc : ROLocHints = ROLocHints(15, 158),
+  rngLoc : ROLocHints = ROLocHints(15, 161)
 )
-
 
 case class OMRANDOMDevice(
   memoryRegions: Seq[OMMemoryRegion],
@@ -50,6 +58,11 @@ abstract class Random(busWidthBytes: Int, val c: RandomParams)
   // The device in the dts is created here
   ResourceBinding {
     Resource(ResourceAnchors.aliases, "random").bind(ResourceAlias(device.label))
+  }
+
+  // The function for generating the RandomNumberGenerator
+  def genRNG(c: RandomParams, rnd_reset: Bool, rnd_en: Bool) : (UInt, Bool) = {
+    (LFSR(c.nbits, rnd_en), true.B)
   }
 
   lazy val module = new LazyModuleImp(this) {
@@ -127,20 +140,7 @@ abstract class Random(busWidthBytes: Int, val c: RandomParams)
     val rnd_reset = WireInit(false.B)
 
     // Implementations
-    val (rnd_gen: UInt, rnd_ready: Bool) = if(c.impl == 1) {
-      // Loop-based generator
-      val nref = 27
-      val nsrc = 9
-      val rnd = Module(new TRNG(c.nbits, nref, nsrc, c.board))
-      rnd.io.reset := rnd_reset
-      rnd.io.enable := rnd_en
-      rnd.dontTouchPorts()
-      (rnd.io.out_trng, rnd.io.d)
-    } else {
-      // TRNG sampling logic.
-      // We ignore the reset.
-      (LFSR(c.nbits, rnd_en), true.B)
-    }
+    val (rnd_gen: UInt, rnd_ready: Bool) = genRNG(c, rnd_reset, rnd_en)
 
     val trng_bit_counter = RegInit(0.U(8.W))
     val trng_sample_counter = RegInit(0.U(32.W))
@@ -259,19 +259,23 @@ abstract class Random(busWidthBytes: Int, val c: RandomParams)
 class TLRANDOM(busWidthBytes: Int, params: RandomParams)(implicit p: Parameters)
   extends Random(busWidthBytes, params) with HasTLControlRegMap
 
-case class RandomAttachParams(
-   randompar: RandomParams,
-   controlWhere: TLBusWrapperLocation = PBUS,
-   blockerAddr: Option[BigInt] = None,
-   controlXType: ClockCrossingType = NoCrossing,
-   intXType: ClockCrossingType = NoCrossing)
- (implicit val p: Parameters) {
+case class RandomAttachParams
+(
+  randompar: RandomParams,
+  controlWhere: TLBusWrapperLocation = PBUS,
+  blockerAddr: Option[BigInt] = None,
+  controlXType: ClockCrossingType = NoCrossing,
+  intXType: ClockCrossingType = NoCrossing)(implicit val p: Parameters) {
 
-  def attachTo(where: Attachable)(implicit p: Parameters): TLRANDOM = {
+  def RandomGen(cbus: TLBusWrapper)(implicit valName: ValName): Random with HasTLControlRegMap = {
+    LazyModule(new TLRANDOM(cbus.beatBytes, randompar))
+  }
+
+  def attachTo(where: Attachable)(implicit p: Parameters): Random with HasTLControlRegMap = {
     val name = s"random_${RANDOM.nextId()}"
     val cbus = where.locateTLBusWrapper(controlWhere)
     val randomClockDomainWrapper = LazyModule(new ClockSinkDomain(take = None))
-    val random = randomClockDomainWrapper { LazyModule(new TLRANDOM(cbus.beatBytes, randompar)) }
+    val random = randomClockDomainWrapper { RandomGen(cbus) }
     random.suggestName(name)
 
     cbus.coupleTo(s"device_named_$name") { bus =>

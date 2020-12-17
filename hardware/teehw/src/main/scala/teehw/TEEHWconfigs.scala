@@ -41,21 +41,6 @@ class RV64IMAC extends Config((site, here, up) => {
   }
 })
 
-class RV32GC extends Config((site, here, up) => {
-  case XLen => 32
-})
-
-class RV32IMAC extends Config((site, here, up) => {
-  case XLen => 32
-  case RocketTilesKey => up(RocketTilesKey, site) map { r =>
-    r.copy(core = r.core.copy(fpu = None))
-  }
-  case BoomTilesKey => up(BoomTilesKey, site) map { r =>
-    r.copy(core = r.core.copy(fpu = None,
-      issueParams = r.core.issueParams.filter(_.iqType != IQT_FP.litValue)))
-  }
-})
-
 // ************ Hybrid core configurations (HYBRID) **************
 
 //Only Rocket: 2 cores

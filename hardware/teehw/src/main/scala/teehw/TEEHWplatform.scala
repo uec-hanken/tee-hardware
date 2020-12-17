@@ -53,15 +53,6 @@ class SlowMemIsland(blockBytes: Int, val crossing: ClockCrossingType = Asynchron
 trait HasTEEHWSystem extends HasTEEHWTiles
   with HasPeripheryDebug
   with HasPeripheryGPIO
-  with HasPeripherySHA3
-  with HasPeripheryed25519
-  with HasPeripheryAES
-  with HasPeripheryUSB11HS
-  with HasPeripheryRandom
-  // The opentitan components
-  with HasPeripheryAESOT
-  with HasPeripheryHMAC
-  with HasPeripheryOTPCtrl
   // The components that are directly instantiated here. Needed to be re-factored from the original
   //    with HasPeripheryI2C
   //    with HasPeripheryUART // NOTE: Already included
@@ -187,7 +178,18 @@ trait HasTEEHWSystem extends HasTEEHWTiles
 }
 
 class TEEHWSystem(implicit p: Parameters) extends TEEHWSubsystem
-  with HasTEEHWSystem {
+  with HasTEEHWSystem
+  // The TEEHW components
+  with HasPeripherySHA3
+  with HasPeripheryed25519
+  with HasPeripheryAES
+  with HasPeripheryUSB11HS
+  with HasPeripheryRandom
+  // The opentitan components
+  with HasPeripheryAESOT
+  with HasPeripheryHMAC
+  with HasPeripheryOTPCtrl
+{
   // System module creation
   override lazy val module = new TEEHWSystemModule(this)
 }
@@ -195,17 +197,8 @@ class TEEHWSystem(implicit p: Parameters) extends TEEHWSubsystem
 trait HasTEEHWSystemModule extends HasTEEHWTilesModuleImp
   with HasPeripheryDebugModuleImp
   with HasRTCModuleImp
-  with HasPeripheryGPIOModuleImp
-  with HasPeripherySHA3ModuleImp
-  with HasPeripheryed25519ModuleImp
-  with HasPeripheryAESModuleImp
-  with HasPeripheryUSB11HSModuleImp
-  with HasPeripheryRandomModuleImp
   with HasResetVectorWire
-  // The opentitan components
-  with HasPeripheryAESOTModuleImp
-  with HasPeripheryHMACModuleImp
-  with HasPeripheryOTPCtrlModuleImp
+  with HasPeripheryGPIOModuleImp
   // The components that are directly instantiated here. Needed to be re-factored from the original
   //    with HasPeripheryI2CModuleImp
   //    with HasPeripheryUARTModuleImp // NOTE: Already included
@@ -261,6 +254,16 @@ trait HasTEEHWSystemModule extends HasTEEHWTilesModuleImp
 class TEEHWSystemModule[+L <: TEEHWSystem](_outer: L)
   extends TEEHWSubsystemModuleImp(_outer)
     with HasTEEHWSystemModule
+    // The TEEHW components
+    with HasPeripherySHA3ModuleImp
+    with HasPeripheryed25519ModuleImp
+    with HasPeripheryAESModuleImp
+    with HasPeripheryUSB11HSModuleImp
+    with HasPeripheryRandomModuleImp
+    // The opentitan components
+    with HasPeripheryAESOTModuleImp
+    with HasPeripheryHMACModuleImp
+    with HasPeripheryOTPCtrlModuleImp
 
 object PinGen {
   def apply(): BasePin =  {
@@ -301,7 +304,7 @@ class TEEHWPlatformIO(val params: Option[TLBundleParameters] = None)
 object TEEHWPlatform {
   def connect
   (
-    sys: HasTEEHWSystemModule,
+    sys: HasTEEHWSystemModule with HasPeripheryUSB11HSModuleImp,
     io: TEEHWPlatformIO,
     clock: Clock,
     reset: Reset)(implicit p: Parameters): Unit = {
