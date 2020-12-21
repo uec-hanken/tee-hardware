@@ -55,8 +55,10 @@ $(FIRRTL_TEST_JAR): $(call lookup_srcs,$(CHIPYARD_FIRRTL_DIR),scala)
 #########################################################################################
 # Create the resources with the makefiles included
 #########################################################################################
-resources: $(teehw_dir)/hardware/teehw/src/main/resources/Makefile
-	cd $(teehw_dir)/hardware/teehw/src/main/resources/ && make all
+$(teehw_dir)/hardware/teehw/src/main/resources/resources.checkpoint: $(teehw_dir)/hardware/teehw/src/main/resources/Makefile
+	make -C $(teehw_dir)/hardware/teehw/src/main/resources/ all
+
+resources: $(teehw_dir)/hardware/teehw/src/main/resources/resources.checkpoint
 
 .PHONY: resources
 

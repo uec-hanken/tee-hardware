@@ -58,15 +58,17 @@ include $(teehw_dir)/common.mk
 #########################################################################################
 # ROM generation
 #########################################################################################
+ROMGEN=$(teehw_dir)/hardware/vlsi_rom_gen_real
+bootrom_dir=$(teehw_dir)/software/sdboot
 ifeq ($(BOOTSRC),BOOTROM)
-HEXFILE=$(bootrom_dir)/FPGAzsbl.hex
+HEXFILE=$(build_dir)/sdboot.hex
 else #QSPI
-HEXFILE=$(xip_dir)/xip.hex $(bootrom_dir)/FPGAzsbl.hex
+HEXFILE=$(build_dir)/xip.hex $(build_dir)/sdboot.hex
 endif
 
 $(ROM_FILE): $(ROMGEN)
-	make -C $(bootrom_dir) BUILD_DIR=$(build_dir) long_name=$(long_name) BOARD=$(BOARD) TEEHW=1 ISACONF=$(ISACONF) clean
-	make -C $(bootrom_dir) BUILD_DIR=$(build_dir) long_name=$(long_name) BOARD=$(BOARD) TEEHW=1 ISACONF=$(ISACONF) FPGAzsbl.hex FPGAfsbl.bin
+	make -C $(bootrom_dir) BUILD_DIR=$(build_dir) long_name=$(long_name) ISACONF=$(ISACONF) SDBOOT_TARGET_ADDR=0x90000000 clean
+	make -C $(bootrom_dir) BUILD_DIR=$(build_dir) long_name=$(long_name) ISACONF=$(ISACONF) SDBOOT_TARGET_ADDR=0x90000000 hex
 	make -C $(xip_dir) BUILD_DIR=$(build_dir) long_name=$(long_name) ISACONF=$(ISACONF) XIP_TARGET_ADDR=0x20000000 ADD_OPTS=-DSKIP_HANG clean
 	make -C $(xip_dir) BUILD_DIR=$(build_dir) long_name=$(long_name) ISACONF=$(ISACONF) XIP_TARGET_ADDR=0x20000000 ADD_OPTS=-DSKIP_HANG hex
 	$(ROMGEN) $(ROM_CONF_FILE) $(HEXFILE) > $(ROM_FILE)

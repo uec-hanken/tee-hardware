@@ -1,4 +1,4 @@
-# RISCV environment variable must be set
+BOOTROM_DIR?=$(abspath .)
 
 CROSSCOMPILE?=riscv64-unknown-elf
 CC=$(CROSSCOMPILE)-gcc
@@ -13,9 +13,11 @@ CFLAGS_ARCH=-march=rv32imafdc -mabi=ilp32d
 else #RV32IMAC
 CFLAGS_ARCH=-march=rv32imac -mabi=ilp32
 endif
-CFLAGS=$(CFLAGS_ARCH) -O2 -std=gnu11 -Wall -I. -nostartfiles -fno-common -g $(ADD_OPTS)
-LFLAGS=-static -nostdlib
-XIP_TARGET_ADDR?=0x20000000
+CFLAGS=$(CFLAGS_ARCH) -mcmodel=medany -O2 -std=gnu11 -Wall -nostartfiles 
+CFLAGS+= -fno-common -g -DENTROPY=0 -mabi=lp64 -DNONSMP_HART=0 
+CFLAGS+= -I $(BOOTROM_DIR)/include -I. $(ADD_OPTS) 
+LFLAGS=-static -nostdlib -L $(BOOTROM_DIR)/linker -T sdboot.elf.lds
+SDBOOT_TARGET_ADDR?=0x90000000
 
 dts := $(BUILD_DIR)/$(long_name).dts
 dtb := $(BUILD_DIR)/$(long_name).dtb
@@ -32,14 +34,14 @@ $(dtb): $(dts)
 .PHONY: dtb
 dtb: $(dtb)
 
-elf := $(BUILD_DIR)/xip.elf
-$(elf): xip.S linker.ld
-	$(CC) $(CFLAGS) -include $(clk) -DDEVICE_TREE='"$(dtb)"' -DXIP_TARGET_ADDR=$(XIP_TARGET_ADDR) $(LFLAGS) -Tlinker.ld -o $@ $<
+elf := $(BUILD_DIR)/sdboot.elf
+$(elf): $(dtb) head.S kprintf.c sd.c $(clk)
+	$(CC) $(CFLAGS) -include $(clk) -DDEVICE_TREE='"$(dtb)"' -DSDBOOT_TARGET_ADDR=$(SDBOOT_TARGET_ADDR) $(LFLAGS) -o $@ head.S sd.c kprintf.c
 
 .PHONY: elf
 elf: $(elf)
 
-bin := $(BUILD_DIR)/xip.bin
+bin := $(BUILD_DIR)/sdboot.bin
 $(bin): $(elf)
 	$(OBJCOPY) -O binary $< $@
 	$(OBJDUMP) -d $^ > $@.dump
@@ -48,7 +50,7 @@ $(bin): $(elf)
 .PHONY: bin
 bin: $(bin)
 
-hex := $(BUILD_DIR)/xip.hex
+hex := $(BUILD_DIR)/sdboot.hex
 $(hex): $(bin)
 	od -t x4 -An -w4 -v $< > $@
 
@@ -56,5 +58,5 @@ $(hex): $(bin)
 hex: $(hex)
 
 .PHONY: clean
-clean:
-	rm -rf $(hex) $(elf) $(bin) $(romgen)
+clean::
+	rm -rf $(hex) $(elf)

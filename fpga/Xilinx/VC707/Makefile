@@ -10,11 +10,7 @@ base_dir=$(teehw_dir)
 sim_dir=$(abspath .)
 build_dir=$(sim_dir)/generated_src
 
-bootrom_dir=$(base_dir)/software/freedom-u540-c000-bootloader
-xip_dir=$(base_dir)/software/xip
 SUB_PROJECT ?= FPGAVC707
-ROMGEN ?= $(base_dir)/hardware/vlsi_rom_gen_real
-
 BOARD?=VC707
 ISACONF?=RV64GC
 #VC707 can only use MBus64 #TODO

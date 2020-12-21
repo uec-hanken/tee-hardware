@@ -52,7 +52,6 @@ class SlowMemIsland(blockBytes: Int, val crossing: ClockCrossingType = Asynchron
 
 trait HasTEEHWSystem extends HasTEEHWTiles
   with HasPeripheryDebug
-  with HasPeripheryGPIO
   // The components that are directly instantiated here. Needed to be re-factored from the original
   //    with HasPeripheryI2C
   //    with HasPeripheryUART // NOTE: Already included
@@ -106,6 +105,17 @@ trait HasTEEHWSystem extends HasTEEHWTiles
     (memTLNode, island)
   }
 
+  // UART implementation. This is the same as HasPeripheryUART
+  // TODO: This is done this way instead of "HasPeripheryUART" because we need to do a bind to tlclock
+  val uartDevs = p(PeripheryUARTKey).map {
+    val divinit = (p(PeripheryBusKey).dtsFrequency.get / 115200).toInt
+    ps => UARTAttachParams(ps).attachTo(this)
+  }
+  val uartNodes = uartDevs.map { ps => ps.ioNode.makeSink }
+  uartDevs.foreach { case ps =>
+    //tlclock.bind(ps.device)
+  }
+
   // SPI to MMC conversion.
   // TODO: There is an intention from Sifive to do MMC, but has to be manual
   // TODO: Also the tlclock binding is manual
@@ -119,15 +129,9 @@ trait HasTEEHWSystem extends HasTEEHWTiles
     //tlclock.bind(ps.device)
   }
 
-  // UART implementation. This is the same as HasPeripheryUART
-  // TODO: This is done this way instead of "HasPeripheryUART" because we need to do a bind to tlclock
-  val uartDevs = p(PeripheryUARTKey).map {
-    val divinit = (p(PeripheryBusKey).dtsFrequency.get / 115200).toInt
-    ps => UARTAttachParams(ps).attachTo(this)
-  }
-  val uartNodes = uartDevs.map { ps => ps.ioNode.makeSink }
-  uartDevs.foreach { case ps =>
-    //tlclock.bind(ps.device)
+  // GPIO implementation
+  val gpioNodes = p(PeripheryGPIOKey).map { ps =>
+    GPIOAttachParams(ps).attachTo(this).ioNode.makeSink()
   }
 
   // QSPI flash implementation. This is the same as HasPeripherySPIFlash
@@ -198,7 +202,6 @@ trait HasTEEHWSystemModule extends HasTEEHWTilesModuleImp
   with HasPeripheryDebugModuleImp
   with HasRTCModuleImp
   with HasResetVectorWire
-  with HasPeripheryGPIOModuleImp
   // The components that are directly instantiated here. Needed to be re-factored from the original
   //    with HasPeripheryI2CModuleImp
   //    with HasPeripheryUARTModuleImp // NOTE: Already included
@@ -230,11 +233,14 @@ trait HasTEEHWSystemModule extends HasTEEHWTilesModuleImp
   val mem_ChildClock = memPorts.map(_._2) // For making work HeterogeneousBag
   val mem_ChildReset = memPorts.map(_._3) // For making work HeterogeneousBag
 
+  // UART implementation
+  val uart = outer.uartNodes.zipWithIndex.map { case(n,i) => n.makeIO()(ValName(s"uart_$i")) }
+
   // SPI to MMC conversion
   val spi  = outer.spiNodes.zipWithIndex.map  { case(n,i) => n.makeIO()(ValName(s"spi_$i")) }
 
-  // UART implementation
-  val uart = outer.uartNodes.zipWithIndex.map { case(n,i) => n.makeIO()(ValName(s"uart_$i")) }
+  // GPIO implementation
+  val gpio = outer.gpioNodes.zipWithIndex.map { case(n,i) => n.makeIO()(ValName(s"gpio_$i")) }
 
   // QSPI flash implementation.
   val qspi = outer.qspiNodes.zipWithIndex.map { case(n,i) => n.makeIO()(ValName(s"qspi_$i")) }

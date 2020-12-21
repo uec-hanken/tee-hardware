@@ -14,37 +14,34 @@ _start:
 // boot all cores (only hart 0) and jump to main program execution
   li a1, 0x2000000 // base address of clint
   csrr a0, mhartid
-  bnez a0, boot_core
-  addi a2, a1, 4
+  bnez a0, boot_core // If mhartid is not 0, directly go to boot_core
+  addi a2, a1, 1 << 2 // Starts with interrupting hart #1
+  addi a4, a1, NUM_CORES << 2 // Ends with hart #NUM_CORES
   li a3, 1
 interrupt_loop: // trigger MSIP interrupts for other harts so that they also boot
   sw a3, 0(a2)
   addi a2, a2, 4
-  lw a3, -4(a2)
-  bnez a3, interrupt_loop
+  blt a2, a4, interrupt_loop // If current hart interrupt is less that total ones, do the next one
   j boot_core_hart0
 
 // this boot ROM doesn't know about any boot devices, so it just spins,
 // waiting for the serial interface to load the program and interrupt it
-#if XIP_IMPL==0
-.section .text.hang, "ax", @progbits
-#else
 .section .text.hang, "ax", @progbits
 .globl _hang_jmp
 _hang_jmp: // Other-system reset vector
   j _hang
+
 .section .text.ibexboot, "ax", @progbits
-#endif
 .globl _hang
 _hang: // reset vector
+  csrr a0, mhartid
+  li a1, NUM_CORES
+1:bge a0, a1, 1b     // If the hart ID is greater or equals the NUMCORES, that means is a ghost
   la a0, _start      // on MSIP interrupt, go to _start
   csrw mtvec, a0
-  csrwi 0x7c1, 0x8   // Disables the Out-of-Order execution of boom
+  //csrwi 0x7c1, 0x8   // Disables the Out-of-Order execution of boom
   li a0, 8           // MIE or MSIP bit
   csrw mie, a0       // set only MSIP in MIE CSR
-#if XIP_IMPL==0
-  csrw mideleg, zero // no delegation
-#endif
   csrs mstatus, a0   // set MIE in mstatus CSR
 #ifdef SKIP_HANG
   csrr a0, mhartid
