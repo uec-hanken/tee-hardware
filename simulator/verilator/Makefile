@@ -12,18 +12,17 @@ teehw_dir=$(abspath ../..)
 base_dir=$(teehw_dir)
 sim_dir=$(abspath .)
 build_dir=$(sim_dir)/generated-src/$(long_name)
-bootrom_dir=$(base_dir)/software/freedom-u540-c000-bootloader
 xip_dir=$(base_dir)/software/xip
 ROMGEN ?= $(base_dir)/hardware/vlsi_rom_gen_real
 
-BOARD?=DE4
+BOARD?=VC707Mini
 ISACONF?=RV64GC
-MBUS?=MBus64
+MBUS?=MBusNone
 BOOTSRC?=BOOTROM
 PCIE?=WoPCIe
 DDRCLK?=WoSepaDDRClk
-HYBRID?=Rocket
-ROMHEX ?= $(xip_dir)/xip.hex $(bootrom_dir)/FPGAzsbl.hex
+HYBRID?=RocketMicro
+ROMHEX ?= $(xip_dir)/xip.hex
 
 #########################################################################################
 # include shared variables
@@ -71,8 +70,6 @@ $(ROM_FILE): $(ROMHEX) $(ROMGEN)
 	$(ROMGEN) $(ROM_CONF_FILE) $(ROMHEX) > $(ROM_FILE)
 
 $(ROMHEX):
-	make -C $(bootrom_dir) BUILD_DIR=$(build_dir) long_name=$(long_name) BOARD=$(BOARD) TEEHW=1 ISACONF=$(ISACONF) clean
-	make -C $(bootrom_dir) BUILD_DIR=$(build_dir) long_name=$(long_name) BOARD=$(BOARD) TEEHW=1 ISACONF=$(ISACONF) FPGAzsbl.hex
 	make -C $(xip_dir) BUILD_DIR=$(build_dir) long_name=$(long_name) ISACONF=$(ISACONF) XIP_TARGET_ADDR=0x80000000 clean
 	make -C $(xip_dir) BUILD_DIR=$(build_dir) long_name=$(long_name) ISACONF=$(ISACONF) XIP_TARGET_ADDR=0x80000000 hex
 

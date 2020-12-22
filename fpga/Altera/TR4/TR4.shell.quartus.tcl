@@ -694,47 +694,47 @@ set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to qspi_0_qspi_mosi
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to UART_TXD
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to UART_RXD
 
-#set_location_assignment PIN_AF34 -to USBFullSpeed
-#set_location_assignment PIN_AG34 -to USBWireDataIn[0]
-#set_location_assignment PIN_AE35 -to USBWireDataIn[1]
-#set_location_assignment PIN_AG35 -to USBWireCtrlOut
-#set_location_assignment PIN_AC31 -to USBWireDataOut[1]
-#set_location_assignment PIN_AH32 -to USBWireDataOut[0]
-#set_location_assignment PIN_AV32 -to sdio_sdio_clk
-#set_location_assignment PIN_AW32 -to sdio_sdio_cmd
-#set_location_assignment PIN_AV28 -to sdio_sdio_dat_0
-#set_location_assignment PIN_AW29 -to sdio_sdio_dat_3
-#set_location_assignment PIN_AP27 -to jtag_jtag_TDI
-#set_location_assignment PIN_AN27 -to jtag_jtag_TMS
-#set_location_assignment PIN_AL25 -to jtag_jtag_TCK
-#set_location_assignment PIN_AP26 -to jtag_jtag_TDO
-#set_location_assignment PIN_AH26 -to qspi_0_qspi_cs
-#set_location_assignment PIN_AK27 -to qspi_0_qspi_sck
-#set_location_assignment PIN_AE24 -to qspi_0_qspi_miso
-#set_location_assignment PIN_AB30 -to qspi_0_qspi_mosi
-#set_location_assignment PIN_AG30 -to UART_TXD
-#set_location_assignment PIN_AD29 -to UART_RXD
+set_location_assignment PIN_AF34 -to USB_0_FullSpeed
+set_location_assignment PIN_AG34 -to USB_0_WireDataIn[0]
+set_location_assignment PIN_AE35 -to USB_0_WireDataIn[1]
+set_location_assignment PIN_AG35 -to USB_0_WireCtrlOut
+set_location_assignment PIN_AC31 -to USB_0_WireDataOut[1]
+set_location_assignment PIN_AH32 -to USB_0_WireDataOut[0]
+set_location_assignment PIN_AV32 -to sdio_sdio_clk
+set_location_assignment PIN_AW32 -to sdio_sdio_cmd
+set_location_assignment PIN_AV28 -to sdio_sdio_dat_0
+set_location_assignment PIN_AW29 -to sdio_sdio_dat_3
+set_location_assignment PIN_AP27 -to jtag_jtag_TDI
+set_location_assignment PIN_AN27 -to jtag_jtag_TMS
+set_location_assignment PIN_AL25 -to jtag_jtag_TCK
+set_location_assignment PIN_AP26 -to jtag_jtag_TDO
+set_location_assignment PIN_AH26 -to qspi_0_qspi_cs
+set_location_assignment PIN_AK27 -to qspi_0_qspi_sck
+set_location_assignment PIN_AE24 -to qspi_0_qspi_miso
+set_location_assignment PIN_AB30 -to qspi_0_qspi_mosi
+set_location_assignment PIN_AG30 -to UART_TXD
+set_location_assignment PIN_AD29 -to UART_RXD
 
-set_location_assignment PIN_AC28 -to USB_0_FullSpeed
-set_location_assignment PIN_AK25 -to USB_0_WireDataIn[0]
-set_location_assignment PIN_AB27 -to USB_0_WireDataIn[1]
-set_location_assignment PIN_AJ25 -to USB_0_WireCtrlOut
-set_location_assignment PIN_AB28 -to USB_0_WireDataOut[1]
-set_location_assignment PIN_AM26 -to USB_0_WireDataOut[0]
-set_location_assignment PIN_AJ26 -to sdio_sdio_clk
-set_location_assignment PIN_AF25 -to sdio_sdio_cmd
-set_location_assignment PIN_AK26 -to sdio_sdio_dat_0
-set_location_assignment PIN_AG25 -to sdio_sdio_dat_3
-set_location_assignment PIN_AG35 -to jtag_jtag_TDI
-set_location_assignment PIN_AG34 -to jtag_jtag_TMS
-set_location_assignment PIN_AB31 -to jtag_jtag_TCK
-set_location_assignment PIN_AB30 -to jtag_jtag_TDO
-set_location_assignment PIN_AT28 -to qspi_0_qspi_cs
-set_location_assignment PIN_AN26 -to qspi_0_qspi_sck
-set_location_assignment PIN_AP28 -to qspi_0_qspi_miso
-set_location_assignment PIN_AR28 -to qspi_0_qspi_mosi
-set_location_assignment PIN_AE35 -to UART_TXD
-set_location_assignment PIN_AF34 -to UART_RXD
+#set_location_assignment PIN_AC28 -to USB_0_FullSpeed
+#set_location_assignment PIN_AK25 -to USB_0_WireDataIn[0]
+#set_location_assignment PIN_AB27 -to USB_0_WireDataIn[1]
+#set_location_assignment PIN_AJ25 -to USB_0_WireCtrlOut
+#set_location_assignment PIN_AB28 -to USB_0_WireDataOut[1]
+#set_location_assignment PIN_AM26 -to USB_0_WireDataOut[0]
+#set_location_assignment PIN_AJ26 -to sdio_sdio_clk
+#set_location_assignment PIN_AF25 -to sdio_sdio_cmd
+#set_location_assignment PIN_AK26 -to sdio_sdio_dat_0
+#set_location_assignment PIN_AG25 -to sdio_sdio_dat_3
+#set_location_assignment PIN_AG35 -to jtag_jtag_TDI
+#set_location_assignment PIN_AG34 -to jtag_jtag_TMS
+#set_location_assignment PIN_AB31 -to jtag_jtag_TCK
+#set_location_assignment PIN_AB30 -to jtag_jtag_TDO
+#set_location_assignment PIN_AT28 -to qspi_0_qspi_cs
+#set_location_assignment PIN_AN26 -to qspi_0_qspi_sck
+#set_location_assignment PIN_AP28 -to qspi_0_qspi_miso
+#set_location_assignment PIN_AR28 -to qspi_0_qspi_mosi
+#set_location_assignment PIN_AE35 -to UART_TXD
+#set_location_assignment PIN_AF34 -to UART_RXD
 
 #============================================================
 # HSMD

@@ -80,7 +80,6 @@ class ChipConfig extends Config(
     new WithNBreakpoints(4) ++
     new TEEHWPeripherals ++
     new WithJtagDTM ++
-    new freechips.rocketchip.subsystem.WithInclusiveCache ++        // use Sifive L2 cache
     new WithCoherentBusTopology ++                                  // This adds a L2 cache
     //new WithIncoherentBusTopology ++ // This was the previous one
     new BaseConfig().alter((site,here,up) => {
@@ -106,11 +105,9 @@ class ChipConfig extends Config(
 
 class MicroConfig extends Config(
   new WithNExtTopInterrupts(0) ++
-    new WithNBreakpoints(1) ++
+    new WithNBreakpoints(4) ++
     new TEEHWPeripherals ++
     new WithJtagDTM ++
-    new WithNMemoryChannels(0) ++
-    new WithNBanks(0) ++
     //new WithJustOneBus ++
     new WithIncoherentBusTopology ++
     new BaseConfig().alter((site,here,up) => {

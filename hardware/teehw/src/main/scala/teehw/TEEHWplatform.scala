@@ -50,8 +50,7 @@ class SlowMemIsland(blockBytes: Int, val crossing: ClockCrossingType = Asynchron
   }
 }
 
-trait HasTEEHWSystem extends HasTEEHWTiles
-  with HasPeripheryDebug
+trait HasTEEHWSystem
   // The components that are directly instantiated here. Needed to be re-factored from the original
   //    with HasPeripheryI2C
   //    with HasPeripheryUART // NOTE: Already included
@@ -61,7 +60,7 @@ trait HasTEEHWSystem extends HasTEEHWTiles
   //    with CanHaveMasterAXI4MemPort // NOTE: A TL->Axi4 is already done outside the system
   //    with CanHaveMasterTLMemPort // NOTE: Manually created the TL port
   // This is intended only for simulations, but does not affect the fpga/chip versions
-  with CanHavePeripherySerial // ONLY for simulations
+  extends CanHavePeripherySerial // ONLY for simulations
 { this: TEEHWSubsystem =>
   // The clock resource. This is just for put in the DTS the tlclock
   // TODO: Now the clock is derived from the bus that is connected
@@ -198,9 +197,7 @@ class TEEHWSystem(implicit p: Parameters) extends TEEHWSubsystem
   override lazy val module = new TEEHWSystemModule(this)
 }
 
-trait HasTEEHWSystemModule extends HasTEEHWTilesModuleImp
-  with HasPeripheryDebugModuleImp
-  with HasRTCModuleImp
+trait HasTEEHWSystemModule extends HasRTCModuleImp
   with HasResetVectorWire
   // The components that are directly instantiated here. Needed to be re-factored from the original
   //    with HasPeripheryI2CModuleImp
@@ -213,7 +210,7 @@ trait HasTEEHWSystemModule extends HasTEEHWTilesModuleImp
   with CanHavePeripherySerialModuleImp
   with DontTouch
 {
-  val outer: TEEHWSubsystem with HasTEEHWSystem with CanHavePeripheryCLINT
+  val outer: TEEHWSubsystem with HasTEEHWSystem
 
   // Main memory controller
   val memPorts = outer.memctl.map { A =>
@@ -310,7 +307,7 @@ class TEEHWPlatformIO(val params: Option[TLBundleParameters] = None)
 object TEEHWPlatform {
   def connect
   (
-    sys: HasTEEHWSystemModule with HasPeripheryUSB11HSModuleImp,
+    sys: HasTEEHWSystemModule with HasTEEHWTilesModuleImp with HasPeripheryUSB11HSModuleImp,
     io: TEEHWPlatformIO,
     clock: Clock,
     reset: Reset)(implicit p: Parameters): Unit = {

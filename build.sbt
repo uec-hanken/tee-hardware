@@ -215,7 +215,7 @@ lazy val fpga_shells = (project in file("hardware/fpga-shells")).
 
 // Our tee-hardware project
 lazy val teehardware = (project in file("hardware/teehw")).
-  dependsOn(rocketchip, sifive_blocks, fpga_shells, utilities, tapeout, chipyard).
+  dependsOn(utilities, rocketchip, sifive_blocks, fpga_shells, tapeout, chipyard).
   settings(commonSettings)
 
 // Library components of FireSim

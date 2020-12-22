@@ -33,7 +33,7 @@ $(dtb): $(dts)
 dtb: $(dtb)
 
 elf := $(BUILD_DIR)/xip.elf
-$(elf): xip.S linker.ld
+$(elf): xip.S linker.ld $(clk) $(dtb)
 	$(CC) $(CFLAGS) -include $(clk) -DDEVICE_TREE='"$(dtb)"' -DXIP_TARGET_ADDR=$(XIP_TARGET_ADDR) $(LFLAGS) -Tlinker.ld -o $@ $<
 
 .PHONY: elf
@@ -43,7 +43,7 @@ bin := $(BUILD_DIR)/xip.bin
 $(bin): $(elf)
 	$(OBJCOPY) -O binary $< $@
 	$(OBJDUMP) -d $^ > $@.dump
-	- riscv32-unknown-elf-objdump -b binary -D $@ --adjust-vma=0x20000000 -m RISCV > $@.rv32.dump
+	- riscv32-unknown-elf-objdump -b binary -D $@ --adjust-vma=0x10000 -m RISCV > $@.rv32.dump
 
 .PHONY: bin
 bin: $(bin)

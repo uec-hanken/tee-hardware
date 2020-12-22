@@ -27,7 +27,7 @@ case class RandomParams
   address: BigInt,
   impl: Int = 0,
   nbits: Int = 8,
-  board: String = "Xilinx",
+  board: String = "Simulation",
   path: String = "TEEHWSoC/TEEHWPlatform/sys/randomClockDomainWrapper/",
   refLoc : ROLocHints = ROLocHints(15, 158),
   rngLoc : ROLocHints = ROLocHints(15, 161)

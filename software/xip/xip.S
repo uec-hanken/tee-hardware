@@ -11,6 +11,7 @@
 .section .text.start, "ax", @progbits
 .globl _start
 _start:
+  j _start
 // boot all cores (only hart 0) and jump to main program execution
   li a1, 0x2000000 // base address of clint
   csrr a0, mhartid
@@ -29,7 +30,7 @@ interrupt_loop: // trigger MSIP interrupts for other harts so that they also boo
 .section .text.hang, "ax", @progbits
 .globl _hang_jmp
 _hang_jmp: // Other-system reset vector
-  j _hang
+  j _hang_jmp
 
 .section .text.ibexboot, "ax", @progbits
 .globl _hang

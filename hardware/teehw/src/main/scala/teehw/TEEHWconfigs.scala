@@ -44,49 +44,64 @@ class RV64IMAC extends Config((site, here, up) => {
 // ************ Hybrid core configurations (HYBRID) **************
 
 //Only Rocket: 2 cores
-class Rocket extends Config( new WithNBigCores(2) ++ new chipyard.config.WithL2TLBs(entries = 1024) )
-class RocketReduced extends Config( new WithSmallCacheBigCore(2) )
+class Rocket extends Config(
+  new WithNBigCores(2) ++
+    new chipyard.config.WithL2TLBs(entries = 1024) ++
+    new freechips.rocketchip.subsystem.WithInclusiveCache(capacityKB = 512))
+class RocketReduced extends Config(
+  new WithSmallCacheBigCore(2) ++
+    new chipyard.config.WithL2TLBs(entries = 256) ++ // use L2 TLBs
+    new freechips.rocketchip.subsystem.WithInclusiveCache(capacityKB = 128) )
 
 // Ibex only (For microcontrollers)
-class Ibex extends Config(new WithNIbexCores(1))
+class Ibex extends Config(
+  new WithNIbexCores(1) ++
+    new freechips.rocketchip.subsystem.WithInclusiveCache(capacityKB = 1))
 
 // Rocket Micro (For microcontrollers)
 class RocketMicro extends Config(
-  (new WithNSmallCores(1)).alter((site, here, up) => {
+  new WithNSmallCores(1).alter((site, here, up) => {
     case RocketTilesKey => up(RocketTilesKey, site) map { r =>
       r.copy(
-      btb = None,
-      dcache = Some(DCacheParams(
-        rowBits = site(SystemBusKey).beatBits,
-        nSets = 256, // 16Kb scratchpad
-        nWays = 1,
-        nTLBEntries = 4,
-        nMSHRs = 0,
-        blockBytes = site(CacheBlockBytes),
-        scratch = Some(0x80000000L))),
-      icache = Some(ICacheParams(
-        rowBits = site(SystemBusKey).beatBits,
-        nSets = 64,
-        nWays = 1,
-        nTLBEntries = 4,
-        blockBytes = site(CacheBlockBytes)))
+        btb = None,
+        dcache = r.dcache map {d =>
+          d.copy(
+            nSets = 256, // 16Kb scratchpad
+            nWays = 1,
+            nTLBEntries = 4,
+            nMSHRs = 0
+            //scratch = Some(0x80000000L) // TODO: Not possible to put the scratchpad here
+          )
+        },
+        icache = r.icache map {i =>
+          i.copy(
+            nSets = 64,
+            nWays = 1,
+            nTLBEntries = 4
+          )
+        }
       )
     }
-  }))
+  }) ++
+    new chipyard.config.WithL2TLBs(entries = 4) ++ // use L2 TLBs
+    new freechips.rocketchip.subsystem.WithInclusiveCache(capacityKB = 1)
+)
 
 // Non-secure Ibex (Without Isolation)
 class Ibex2RocketNonSecure extends Config(
   new WithRenumberHartsWithIbex(rocketFirst = true) ++ //Rocket first, Ibex last
     new WithNBigCores(2) ++
     new WithNIbexCores(1) ++
-    new chipyard.config.WithL2TLBs(entries = 1024) ) // use L2 TLBs
+    new chipyard.config.WithL2TLBs(entries = 1024) ++  // use L2 TLBs
+    new freechips.rocketchip.subsystem.WithInclusiveCache(capacityKB = 512))
 
 // Non-secure Ibex (Without Isolation) but reduced
 class Ibex2RocketNonSecureReduced extends Config(
   new WithRenumberHartsWithIbex(rocketFirst = true) ++ //Rocket first, Ibex last
     new WithSmallCacheBigCore(2) ++
     new WithNIbexCores(1) ++
-    new chipyard.config.WithL2TLBs(entries = 1024) ) // use L2 TLBs
+    new chipyard.config.WithL2TLBs(entries = 256) ++ // use L2 TLBs
+    new freechips.rocketchip.subsystem.WithInclusiveCache(capacityKB = 128))
 
 // ************ BootROM configuration (BOOTSRC) **************
 class BOOTROM extends Config((site, here, up) => {
@@ -268,6 +283,9 @@ class DE4Config extends Config(
     case FreqKeyMHz => 100.0
     /* DE4 is not support PCIe (yet) */
     case IncludePCIe => false
+    case PeripheryRandomKey => up(PeripheryRandomKey, site) map {r =>
+      r.copy(board = "Altera")
+    }
   })
 )
 
@@ -276,8 +294,9 @@ class TR4Config extends Config(
     case FreqKeyMHz => 100.0
     /* TR4 is not support PCIe (yet) */
     case IncludePCIe => false
-    case PeripheryRandomKey => List(
-      RandomParams(address = BigInt(0x64009000L), impl = 0))
+    case PeripheryRandomKey => up(PeripheryRandomKey, site) map {r =>
+      r.copy(board = "Altera")
+    }
   })
 )
 
@@ -291,6 +310,9 @@ class VC707Config extends Config(
     case PeripherySPIFlashKey => List() // disable SPIFlash
     /* Force to disable USB1.1, because there are no pins */
     case PeripheryUSB11HSKey => List()
+    case PeripheryRandomKey => up(PeripheryRandomKey, site) map {r =>
+      r.copy(board = "Xilinx")
+    }
   })
 )
 
@@ -304,6 +326,9 @@ class VC707MiniConfig extends Config(
     case PeripherySPIFlashKey => List() // disable SPIFlash
     /* Force to disable USB1.1, because there are no pins */
     case PeripheryUSB11HSKey => List()
+    case PeripheryRandomKey => up(PeripheryRandomKey, site) map {r =>
+      r.copy(board = "Xilinx")
+    }
   })
 )
 
