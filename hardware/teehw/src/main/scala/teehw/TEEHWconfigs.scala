@@ -278,59 +278,47 @@ class WoSepaDDRClk extends Config((site, here, up) => {
 })
 
 // *************** Board Config (BOARD) ***************
-class DE4Config extends Config(
-  new ChipConfig().alter((site,here,up) => {
-    case FreqKeyMHz => 100.0
-    /* DE4 is not support PCIe (yet) */
-    case IncludePCIe => false
-    case PeripheryRandomKey => up(PeripheryRandomKey, site) map {r =>
-      r.copy(board = "Altera")
-    }
-  })
-)
+class DE4Config extends Config((site,here,up) => {
+  case FreqKeyMHz => 100.0
+  /* DE4 is not support PCIe (yet) */
+  case IncludePCIe => false
+  case PeripheryRandomKey => up(PeripheryRandomKey, site) map {r =>
+    r.copy(board = "Altera")
+  }})
 
-class TR4Config extends Config(
-  new ChipConfig().alter((site,here,up) => {
-    case FreqKeyMHz => 100.0
-    /* TR4 is not support PCIe (yet) */
-    case IncludePCIe => false
-    case PeripheryRandomKey => up(PeripheryRandomKey, site) map {r =>
-      r.copy(board = "Altera")
-    }
-  })
-)
+class TR4Config extends Config((site,here,up) => {
+  case FreqKeyMHz => 100.0
+  /* TR4 is not support PCIe (yet) */
+  case IncludePCIe => false
+  case PeripheryRandomKey => up(PeripheryRandomKey, site) map {r =>
+    r.copy(board = "Altera")
+  }})
 
-class VC707Config extends Config(
-  new ChipConfig().alter((site,here,up) => {
-    case FreqKeyMHz => 80.0
-    /* Force to use BootROM because VC707 doesn't have enough GPIOs for QSPI */
-    case PeripheryMaskROMKey => List(
-      MaskROMParams(address = BigInt(0x20000000), depth = 4096, name = "BootROM"))
-    case TEEHWResetVector => 0x20000000
-    case PeripherySPIFlashKey => List() // disable SPIFlash
-    /* Force to disable USB1.1, because there are no pins */
-    case PeripheryUSB11HSKey => List()
-    case PeripheryRandomKey => up(PeripheryRandomKey, site) map {r =>
-      r.copy(board = "Xilinx")
-    }
-  })
-)
+class VC707Config extends Config((site,here,up) => {
+  case FreqKeyMHz => 80.0
+  /* Force to use BootROM because VC707 doesn't have enough GPIOs for QSPI */
+  case PeripheryMaskROMKey => List(
+    MaskROMParams(address = BigInt(0x20000000), depth = 0x4000, name = "BootROM"))
+  case TEEHWResetVector => 0x20000000
+  case PeripherySPIFlashKey => List() // disable SPIFlash
+  /* Force to disable USB1.1, because there are no pins */
+  case PeripheryUSB11HSKey => List()
+  case PeripheryRandomKey => up(PeripheryRandomKey, site) map {r =>
+    r.copy(board = "Xilinx")
+  }})
 
-class VC707MiniConfig extends Config(
-  new MicroConfig().alter((site,here,up) => {
-    case FreqKeyMHz => 80.0
-    /* Force to use BootROM because VC707 doesn't have enough GPIOs for QSPI */
-    case PeripheryMaskROMKey => List(
-      MaskROMParams(address = BigInt(0x20000000), depth = 4096, name = "BootROM"))
-    case TEEHWResetVector => 0x20000000
-    case PeripherySPIFlashKey => List() // disable SPIFlash
-    /* Force to disable USB1.1, because there are no pins */
-    case PeripheryUSB11HSKey => List()
-    case PeripheryRandomKey => up(PeripheryRandomKey, site) map {r =>
-      r.copy(board = "Xilinx")
-    }
-  })
-)
+class VC707MiniConfig extends Config((site,here,up) => {
+  case FreqKeyMHz => 80.0
+  /* Force to use BootROM because VC707 doesn't have enough GPIOs for QSPI */
+  case PeripheryMaskROMKey => List(
+    MaskROMParams(address = BigInt(0x20000000), depth = 0x1000, name = "BootROM"))
+  case TEEHWResetVector => 0x20000000
+  case PeripherySPIFlashKey => List() // disable SPIFlash
+  /* Force to disable USB1.1, because there are no pins */
+  case PeripheryUSB11HSKey => List()
+  case PeripheryRandomKey => up(PeripheryRandomKey, site) map {r =>
+    r.copy(board = "Xilinx")
+  }})
 
 // ***************** The simulation flag *****************
 class WithSimulation extends Config((site, here, up) => {
@@ -352,3 +340,32 @@ class WithSimulation extends Config((site, here, up) => {
   // Random only should include the TRNG version
   case PeripheryRandomKey => up(PeripheryRandomKey, site) map {case r => r.copy(impl = 0) }
 })
+
+class Explanation extends Config(
+  // Now, here is an explanation of how it works
+  // 1. The f(_,_,_) will find the first case encountered from Up-to-Down (Config.scala:95)
+  //    if not found, will go to the tail. And the tail are the ones you put with the ++ operator
+  // 2. The f(site, here, up) function is named for PartialParameters (Config.scala:88)
+  //    this will get the configuration up to this point. Actually "up" is the tail I talk you before
+  //    so, is a little wrong calling that "up". If you access "up", will get the tail attached to
+  //    the current scope.
+  // 3. In lame terms, the first found will be always the top one, then start to search another in the
+  //    subsequent tails (or ups), meaning top -> bottom is the way it search
+  // 4. In lame terms, up() will always get the next tail, so will search anything that is ++'ed at that point
+  // 5. Finally, in the Rocket Chip options (GeneratorUtils.scala:21), the underscore stuff will do the
+  //    same exact thing as this class, if you feed it with:
+  //    VC707Config_MBus64_WoSepaDDRClk_WoPCIe_BOOTROM_Rocket_TEEHWPeripherals_RV64GC
+  // 6. In even lamer terms:
+  //    a) Anything that CREATES the case and defaults it, should be on last
+  //    b) Anything that MODIFIES the case by accessing up(), should be higher (or earlier)
+  //    c) Anything that wants to FORCE the case, should be even higher (Like WithSimulation, or the Boards)
+  new VC707Config ++
+    new RV64GC ++
+    new Rocket ++
+    new MBus64 ++
+    new WoSepaDDRClk ++
+    new WoPCIe ++
+    new BOOTROM ++
+    new TEEHWPeripherals ++
+    new ChipConfig
+)

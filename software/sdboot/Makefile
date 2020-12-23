@@ -15,9 +15,9 @@ CFLAGS_ARCH=-march=rv32imac -mabi=ilp32
 endif
 CFLAGS=$(CFLAGS_ARCH) -mcmodel=medany -O2 -std=gnu11 -Wall -nostartfiles 
 CFLAGS+= -fno-common -g -DENTROPY=0 -mabi=lp64 -DNONSMP_HART=0 
-CFLAGS+= -I $(BOOTROM_DIR)/include -I. $(ADD_OPTS) 
+CFLAGS+= -I $(BOOTROM_DIR)/include -I. -I./gpt $(ADD_OPTS) 
 LFLAGS=-static -nostdlib -L $(BOOTROM_DIR)/linker -T sdboot.elf.lds
-SDBOOT_TARGET_ADDR?=0x90000000
+SDBOOT_TARGET_ADDR?=0x90000000UL
 
 dts := $(BUILD_DIR)/$(long_name).dts
 dtb := $(BUILD_DIR)/$(long_name).dtb
@@ -35,8 +35,8 @@ $(dtb): $(dts)
 dtb: $(dtb)
 
 elf := $(BUILD_DIR)/sdboot.elf
-$(elf): $(dtb) head.S kprintf.c sd.c $(clk)
-	$(CC) $(CFLAGS) -include $(clk) -DDEVICE_TREE='"$(dtb)"' -DSDBOOT_TARGET_ADDR=$(SDBOOT_TARGET_ADDR) $(LFLAGS) -o $@ head.S sd.c kprintf.c
+$(elf): $(dtb) head.S kprintf.c sd.c fsblboot.c gpt/gpt.c main.c $(clk)
+	$(CC) $(CFLAGS) -include $(clk) -DDEVICE_TREE='"$(dtb)"' -DSDBOOT_TARGET_ADDR=$(SDBOOT_TARGET_ADDR) $(LFLAGS) -o $@ head.S sd.c fsblboot.c gpt/gpt.c main.c kprintf.c
 
 .PHONY: elf
 elf: $(elf)

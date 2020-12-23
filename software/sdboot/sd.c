@@ -4,23 +4,58 @@
 #include <platform.h>
 
 #include "common.h"
+#include "sd.h"
 
 #define DEBUG
 #include "kprintf.h"
 
-#define MAX_CORES 8
+#define SD_CMD_GO_IDLE_STATE 0
+#define SD_CMD_SEND_IF_COND 8
+#define SD_CMD_STOP_TRANSMISSION 12
+#define SD_CMD_SET_BLOCKLEN 16
+#define SD_CMD_READ_BLOCK_MULTIPLE 18
+#define SD_CMD_APP_SEND_OP_COND 41
+#define SD_CMD_APP_CMD 55
+#define SD_CMD_READ_OCR 58
+#define SD_RESPONSE_IDLE 0x1
+// Data token for commands 17, 18, 24
+#define SD_DATA_TOKEN 0xfe
 
-#define PAYLOAD_SIZE	(26 << 11)
+// SD card initialization must happen at 100-400kHz
+#define SD_POWER_ON_FREQ_KHZ 400L
+// SD cards normally support reading/writing at 20MHz
+#define SD_POST_INIT_CLK_KHZ 20000L
 
-#ifndef TL_CLK
-#error Must define TL_CLK
-#endif
+// Command frame starts by asserting low and then high for first two clock edges
+#define SD_CMD(cmd) (0x40 | (cmd))
 
-#ifndef SDBOOT_TARGET_ADDR
-#define SDBOOT_TARGET_ADDR 0x90000000
-#endif
+// Inlining header functions in C
+// https://stackoverflow.com/a/23699777/7433423
 
-#define F_CLK TL_CLK
+/**
+ * Get smallest clock divisor that divides input_khz to a quotient less than or
+ * equal to max_target_khz;
+ */
+inline unsigned int spi_min_clk_divisor(unsigned int input_khz, unsigned int max_target_khz)
+{
+  // f_sck = f_in / (2 * (div + 1)) => div = (f_in / (2*f_sck)) - 1
+  //
+  // The nearest integer solution for div requires rounding up as to not exceed
+  // max_target_khz.
+  //
+  // div = ceil(f_in / (2*f_sck)) - 1
+  //     = floor((f_in - 1 + 2*f_sck) / (2*f_sck)) - 1
+  //
+  // This should not overflow as long as (f_in - 1 + 2*f_sck) does not exceed
+  // 2^32 - 1, which is unlikely since we represent frequencies in kHz.
+  unsigned int quotient = (input_khz + 2 * max_target_khz - 1) / (2 * max_target_khz);
+  // Avoid underflow
+  if (quotient == 0) {
+    return 0;
+  } else {
+    return quotient - 1;
+  }
+}
 
 static volatile uint32_t * const spi = (void *)(SPI_CTRL_ADDR);
 
@@ -77,7 +112,7 @@ static inline void sd_cmd_end(void)
 static void sd_poweron(void)
 {
 	long i;
-	REG32(spi, SPI_REG_SCKDIV) = (F_CLK / 300000UL);
+	REG32(spi, SPI_REG_SCKDIV) = spi_min_clk_divisor(CORE_CLK_KHZ, SD_POWER_ON_FREQ_KHZ);
 	REG32(spi, SPI_REG_CSMODE) = SPI_CSMODE_OFF;
 	for (i = 10; i > 0; i--) {
 		sd_dummy();
@@ -146,7 +181,7 @@ static int sd_cmd16(void)
 	return rc;
 }
 
-static uint16_t crc16_round(uint16_t crc, uint8_t data) {
+static uint16_t crc16(uint16_t crc, uint8_t data) {
 	crc = (uint8_t)(crc >> 8) | (crc << 8);
 	crc ^= data;
 	crc ^= (uint8_t)(crc >> 4) & 0xf;
@@ -161,7 +196,83 @@ static uint16_t crc16_round(uint16_t crc, uint8_t data) {
 
 static const char spinner[] = { '-', '/', '|', '\\' };
 
-static int copy(void)
+static uint8_t crc7(uint8_t prev, uint8_t in)
+{
+  // CRC polynomial 0x89
+  uint8_t remainder = prev & in;
+  remainder ^= (remainder >> 4) ^ (remainder >> 7);
+  remainder ^= remainder << 4;
+  return remainder & 0x7f;
+}
+
+int sd_copy(void* dst, uint32_t src_lba, size_t size)
+{
+  volatile uint8_t *p = dst;
+  long i = size;
+  int rc = 0;
+
+  uint8_t crc = 0;
+  crc = crc7(crc, SD_CMD(SD_CMD_READ_BLOCK_MULTIPLE));
+  crc = crc7(crc, src_lba >> 24);
+  crc = crc7(crc, (src_lba >> 16) & 0xff);
+  crc = crc7(crc, (src_lba >> 8) & 0xff);
+  crc = crc7(crc, src_lba & 0xff);
+  crc = (crc << 1) | 1;
+  if (sd_cmd(SD_CMD(SD_CMD_READ_BLOCK_MULTIPLE), src_lba, crc) != 0x00) {
+    sd_cmd_end();
+    return SD_COPY_ERROR_CMD18;
+  }
+  do {
+    uint16_t crc, crc_exp;
+    long n;
+
+    crc = 0;
+    n = 512;
+    while (sd_dummy() != SD_DATA_TOKEN);
+    do {
+      uint8_t x = sd_dummy();
+      *p++ = x;
+      crc = crc16(crc, x);
+    } while (--n > 0);
+
+    crc_exp = ((uint16_t)sd_dummy() << 8);
+    crc_exp |= sd_dummy();
+
+    if (crc != crc_exp) {
+			kputs("\b- CRC mismatch ");
+			rc = SD_COPY_ERROR_CMD18_CRC;
+      break;
+    }
+    
+    if (SPIN_UPDATE(i)) {
+			kputc('\b');
+			kputc(spinner[SPIN_INDEX(i)]);
+		}
+  } while (--i > 0);
+
+  sd_cmd(SD_CMD(SD_CMD_STOP_TRANSMISSION), 0, 0x01);
+  sd_cmd_end();
+  return rc;
+}
+
+int sd_init(void)
+{
+  kputs("INIT");
+	sd_poweron();
+	if (sd_cmd0() ||
+	    sd_cmd8() ||
+	    sd_acmd41() ||
+	    sd_cmd58() ||
+	    sd_cmd16()) {
+		kputs("ERROR");
+		return 1;
+	}
+	REG32(spi, SPI_REG_SCKDIV) = spi_min_clk_divisor(CORE_CLK_KHZ, SD_POST_INIT_CLK_KHZ);
+	return 0;
+}
+
+// copy() -- The original copy. It just copies the first PAYLOAD_SIZE
+int copy(void)
 {
 	volatile uint8_t *p = (void *)(PAYLOAD_DEST);
 	long i = PAYLOAD_SIZE;
@@ -170,7 +281,6 @@ static int copy(void)
 	dputs("CMD18");
 	kprintf("LOADING  ");
 
-	REG32(spi, SPI_REG_SCKDIV) = (F_CLK / 16666666UL);
 	if (sd_cmd(0x52, 0, 0xE1) != 0x00) {
 		sd_cmd_end();
 		return 1;
@@ -185,7 +295,7 @@ static int copy(void)
 		do {
 			uint8_t x = sd_dummy();
 			*p++ = x;
-			crc = crc16_round(crc, x);
+			crc = crc16(crc, x);
 		} while (--n > 0);
 
 		crc_exp = ((uint16_t)sd_dummy() << 8);
@@ -210,24 +320,3 @@ static int copy(void)
 	return rc;
 }
 
-int main(void)
-{
-	REG32(uart, UART_REG_TXCTRL) = UART_TXEN;
-
-	kputs("INIT");
-	sd_poweron();
-	if (sd_cmd0() ||
-	    sd_cmd8() ||
-	    sd_acmd41() ||
-	    sd_cmd58() ||
-	    sd_cmd16() ||
-	    copy()) {
-		kputs("ERROR");
-		return 1;
-	}
-
-	kputs("BOOT");
-
-	__asm__ __volatile__ ("fence.i" : : : "memory");
-	return 0;
-}
