@@ -84,7 +84,6 @@ class ChipConfig extends Config(
     //new WithIncoherentBusTopology ++ // This was the previous one
     new BaseConfig().alter((site,here,up) => {
       case SystemBusKey => up(SystemBusKey).copy(
-        beatBytes = 8,
         errorDevice = Some(DevNullParams(
           Seq(AddressSet(0x4000, 0xfff)),
           maxAtomic=site(XLen)/8,
@@ -112,7 +111,6 @@ class MicroConfig extends Config(
     new WithIncoherentBusTopology ++
     new BaseConfig().alter((site,here,up) => {
       case SystemBusKey => up(SystemBusKey).copy(
-        beatBytes = 8,
         errorDevice = Some(DevNullParams(
           Seq(AddressSet(0x4000, 0xfff)),
           maxAtomic=site(XLen)/8,
