@@ -60,8 +60,6 @@ $(teehw_dir)/hardware/teehw/src/main/resources/resources.checkpoint: $(teehw_dir
 
 resources: $(teehw_dir)/hardware/teehw/src/main/resources/resources.checkpoint
 
-.PHONY: resources
-
 #########################################################################################
 # create list of simulation file inputs
 #########################################################################################
