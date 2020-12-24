@@ -57,7 +57,7 @@ inline unsigned int spi_min_clk_divisor(unsigned int input_khz, unsigned int max
   }
 }
 
-static volatile uint32_t * const spi = (void *)(SPI_CTRL_ADDR);
+uint32_t * spi = (void *)0;
 
 static inline uint8_t spi_xfer(uint8_t d)
 {
@@ -109,10 +109,10 @@ static inline void sd_cmd_end(void)
 }
 
 
-static void sd_poweron(void)
+static void sd_poweron(unsigned int input_clk_khz)
 {
 	long i;
-	REG32(spi, SPI_REG_SCKDIV) = spi_min_clk_divisor(CORE_CLK_KHZ, SD_POWER_ON_FREQ_KHZ);
+	REG32(spi, SPI_REG_SCKDIV) = spi_min_clk_divisor(input_clk_khz, SD_POWER_ON_FREQ_KHZ);
 	REG32(spi, SPI_REG_CSMODE) = SPI_CSMODE_OFF;
 	for (i = 10; i > 0; i--) {
 		sd_dummy();
@@ -255,10 +255,10 @@ int sd_copy(void* dst, uint32_t src_lba, size_t size)
   return rc;
 }
 
-int sd_init(void)
+int sd_init(unsigned int input_clk_khz)
 {
   kputs("INIT");
-	sd_poweron();
+	sd_poweron(input_clk_khz);
 	if (sd_cmd0() ||
 	    sd_cmd8() ||
 	    sd_acmd41() ||
@@ -267,7 +267,7 @@ int sd_init(void)
 		kputs("ERROR");
 		return 1;
 	}
-	REG32(spi, SPI_REG_SCKDIV) = spi_min_clk_divisor(CORE_CLK_KHZ, SD_POST_INIT_CLK_KHZ);
+	REG32(spi, SPI_REG_SCKDIV) = spi_min_clk_divisor(input_clk_khz, SD_POST_INIT_CLK_KHZ);
 	return 0;
 }
 

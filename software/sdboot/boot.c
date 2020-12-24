@@ -5,7 +5,7 @@
 
 #include "common.h"
 #include "sd.h"
-#include "fsblboot.h"
+#include "boot.h"
 #include <gpt/gpt.h>
 
 #define DEBUG
@@ -93,7 +93,7 @@ static int load_sd_gpt_partition(void* dst, const gpt_guid* partition_type_guid)
  * Read from mode select device to determine which bulk storage medium to read
  * GPT image from, and properly initialize the bulk storage based on type.
  */
-int fsblboot_load_gpt_partition(void* dst, const gpt_guid* partition_type_guid)
+int boot_load_gpt_partition(void* dst, const gpt_guid* partition_type_guid)
 {
   unsigned int error = 0;
 
@@ -101,13 +101,13 @@ int fsblboot_load_gpt_partition(void* dst, const gpt_guid* partition_type_guid)
   error = load_sd_gpt_partition(dst, partition_type_guid);
 
   if (error) {
-    fsblboot_fail(error, 0);
+    boot_fail(error, 0);
   }
   
   return error;
 }
 
-void fsblboot_fail(long code, int trap)
+void boot_fail(long code, int trap)
 {
   kputs("BOOT BY GPT FAILED\n");
 }
