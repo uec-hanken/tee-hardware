@@ -32,6 +32,6 @@ BUILD_DIR=$(build_dir)
 FPGA_DIR=$(base_dir)/hardware/fpga-shells/altera
 export FPGA_BOARD=DE4
 TCL_SHELL=$(sim_dir)/DE4.shell.quartus.tcl
-TCL_QSYS_MAIN=$(sim_dir)/DE4.qsys.main.tcl
+TCL_QSYS_MAIN=$(sim_dir)/main.qsys
 include $(base_dir)/fpga/Altera/common.mk
 

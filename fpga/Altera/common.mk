@@ -26,7 +26,7 @@ $(tcl_shell_file): $(TCL_SHELL)
 	cp -v $(TCL_SHELL) $(tcl_shell_file)
 
 # TODO: Copies the single main qsys tcl also. We need to create one for each qsys.
-tcl_qsys_main_file := $(BUILD_DIR)/$(long_name).main.qsys.tcl
+tcl_qsys_main_file := $(BUILD_DIR)/main.qsys
 $(tcl_qsys_main_file): $(TCL_QSYS_MAIN)
 	cp -v $(TCL_QSYS_MAIN) $(tcl_qsys_main_file)
 
@@ -37,7 +37,7 @@ $(sof): $(f) $(xdc_shell_file) $(tcl_shell_file) $(tcl_qsys_main_file)
 		-top-module "$(MODEL)" \
 		-F "$(f)" \
 		-ip-quartus-tcls "$(shell find '$(BUILD_DIR)' -name '*.quartus.tcl')" \
-		-ip-quartus-qsys "$(shell find '$(BUILD_DIR)' -name '*.qsys.tcl')" \
+		-ip-quartus-qsys "$(shell find '$(BUILD_DIR)' -name '*.qsys')" \
 		-board "$(FPGA_BOARD)"
 sof: $(sof)
 
