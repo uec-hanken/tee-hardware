@@ -16,7 +16,7 @@ CFLAGS_ARCH=-march=rv32imac -mabi=ilp32
 endif
 CFLAGS=$(CFLAGS_ARCH) -mcmodel=medany -O2 -std=gnu11 -Wall -nostartfiles 
 CFLAGS+= -fno-common -g -DENTROPY=0 -mabi=lp64 -DNONSMP_HART=0 
-CFLAGS+= -I $(BOOTROM_DIR)/include -I. -I./gpt $(ADD_OPTS) 
+CFLAGS+= -I $(BOOTROM_DIR)/include -I. -I./gpt -I./boot -I./sd -I./kprintf $(ADD_OPTS) 
 LFLAGS=-static -nostdlib -L $(BOOTROM_DIR)/linker -T sdboot.elf.lds
 SDBOOT_TARGET_ADDR?=0x90000000UL
 SDBOOT_SOURCE_ADDR?=0x20000000
@@ -37,9 +37,9 @@ $(dtb): $(dts)
 dtb: $(dtb)
 
 elf := $(BUILD_DIR)/sdboot.elf
-$(elf): $(dtb) head.S kprintf.c sd.c boot.c gpt/gpt.c main.c $(clk)
+$(elf): $(dtb) head.S kprintf/kprintf.c sd/sd.c boot/boot.c gpt/gpt.c main.c $(clk)
 	echo MASKROM=$(SDBOOT_SOURCE_ADDR) > maskrom_loc.ld
-	$(CC) $(CFLAGS) -include $(clk) -DDEVICE_TREE='"$(dtb)"' -DSDBOOT_TARGET_ADDR=$(SDBOOT_TARGET_ADDR) $(LFLAGS) -o $@ head.S sd.c boot.c gpt/gpt.c main.c kprintf.c
+	$(CC) $(CFLAGS) -include $(clk) -DDEVICE_TREE='"$(dtb)"' -DSDBOOT_TARGET_ADDR=$(SDBOOT_TARGET_ADDR) $(LFLAGS) -o $@ head.S sd/sd.c boot/boot.c gpt/gpt.c main.c kprintf/kprintf.c
 
 .PHONY: elf
 elf: $(elf)

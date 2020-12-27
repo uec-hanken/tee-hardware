@@ -24,6 +24,7 @@ import freechips.rocketchip.amba.axi4._
 import uec.teehardware.devices.opentitan._
 import uec.teehardware.devices.opentitan.nmi_gen._
 import uec.teehardware.devices.opentitan.top_pkg._
+import uec.teehardware.tile._
 
 case object IbexTilesKey extends Field[Seq[IbexTileParams]](Nil)
 
@@ -110,7 +111,7 @@ class IbexTile
   logicalTreeNode: LogicalTreeNode
 )
   extends BaseTile(ibexParams, crossing, lookup, q)
-    with SinksExternalInterrupts
+    with SinksExternalOptionalInterrupts
     with SourcesExternalNotifications
 {
   /**
@@ -142,6 +143,9 @@ class IbexTile
     }
   }
 
+  def intcDevice = optIntDevice
+
+  optIntResourceBinding(intcDevice)
   ResourceBinding {
     Resource(cpuDevice, "reg").bind(ResourceAddress(hartId))
   }
