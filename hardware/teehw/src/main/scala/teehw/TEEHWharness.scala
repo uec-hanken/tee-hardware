@@ -172,8 +172,11 @@ class TEEHWHarness()(implicit p: Parameters) extends Module {
 
   // Serial interface (if existent) will be connected here
   io.success := false.B
-  val ser_success = SerialAdapter.connectSimSerial(dut.serial, clock, reset)
-  when (ser_success) { io.success := true.B }
+  ldut.serial_tl.foreach{ port =>
+    val ram = SerialAdapter.connectHarnessRAM(ldut.serdesser.get, port, reset)
+    val ser_success = SerialAdapter.connectSimSerial(ram.module.io.tsi_ser, clock, reset)
+    when (ser_success) { io.success := true.B }
+  }
   when (debug_success) { io.success := true.B }
 
   // Tie down USB11HS
@@ -214,16 +217,6 @@ class TEEHWHarness()(implicit p: Parameters) extends Module {
   dut.gpio.foreach{case gpio:GPIOPortIO =>
     gpio.pins.foreach{ case pin =>
       pin.i.ival := false.B
-    }
-    gpio.iof_0.foreach{ case iof =>
-      iof.foreach{ case u =>
-        u.default()
-      }
-    }
-    gpio.iof_1.foreach{ case iof =>
-      iof.foreach{ case u =>
-        u.default()
-      }
     }
   }
 

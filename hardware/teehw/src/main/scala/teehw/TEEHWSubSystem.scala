@@ -20,8 +20,7 @@ import freechips.rocketchip.interrupts._
 import freechips.rocketchip.util._
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.amba.axi4._
-import boom.common.{BoomCrossingKey, BoomTile, BoomTileParams, BoomTilesKey}
-import ariane.{ArianeCrossingKey, ArianeTile, ArianeTileParams, ArianeTilesKey}
+import boom.common.{BoomTile}
 import uec.teehardware.ibex._
 import testchipip.DromajoHelper
 import uec.teehardware.devices.opentitan.alert._
@@ -29,118 +28,55 @@ import uec.teehardware.devices.opentitan.nmi_gen._
 
 case object WithAlertAndNMI extends Field[Boolean](false)
 
-trait HasTEEHWTiles extends HasTiles
-  with CanHavePeripheryPLIC
-  with CanHavePeripheryCLINT
-  with HasPeripheryDebug
+class TEEHWSubsystem(implicit p: Parameters) extends BaseSubsystem
+  with HasTiles
   with HasPeripheryAlert
   with HasPeripheryNmiGen
-{ this: TEEHWSubsystem =>
-
-  val module: HasTEEHWTilesModuleImp
-
-  protected val rocketTileParams = p(RocketTilesKey)
-  protected val boomTileParams = p(BoomTilesKey)
-  protected val arianeTileParams = p(ArianeTilesKey)
-  protected val ibexTileParams = p(IbexTilesKey)
-
-  // crossing can either be per tile or global (aka only 1 crossing specified)
-  private val rocketCrossings = perTileOrGlobalSetting(p(RocketCrossingKey), rocketTileParams.size)
-  private val boomCrossings = perTileOrGlobalSetting(p(BoomCrossingKey), boomTileParams.size)
-  private val arianeCrossings = perTileOrGlobalSetting(p(ArianeCrossingKey), arianeTileParams.size)
-  private val ibexCrossings = perTileOrGlobalSetting(p(IbexCrossingKey), ibexTileParams.size)
-
-  val allTilesInfo = (rocketTileParams ++ boomTileParams ++ arianeTileParams ++ ibexTileParams) zip (rocketCrossings ++ boomCrossings ++ arianeCrossings ++ ibexCrossings)
-
-  // Make a tile and wire its nodes into the system,
-  // according to the specified type of clock crossing.
-  // Note that we also inject new nodes into the tile itself,
-  // also based on the crossing type.
-  // This MUST be performed in order of hartid
-  // There is something weird with registering tile-local interrupt controllers to the CLINT.
-  // TODO: investigate why
-  def doTiles(implicit valName: ValName) = allTilesInfo.sortWith(_._1.hartId < _._1.hartId).map {
-    case (param, crossing) => {
-
-      val tile = param match {
-        case r: RocketTileParams => {
-          LazyModule(new RocketTile(r, crossing, PriorityMuxHartIdFromSeq(rocketTileParams), logicalTreeNode))
-        }
-        case b: BoomTileParams => {
-          LazyModule(new BoomTile(b, crossing, PriorityMuxHartIdFromSeq(boomTileParams), logicalTreeNode))
-        }
-        case a: ArianeTileParams => {
-          LazyModule(new ArianeTile(a, crossing, PriorityMuxHartIdFromSeq(arianeTileParams), logicalTreeNode))
-        }
-        case i: IbexTileParams => {
-          val t = LazyModule(new IbexTile(i, crossing, PriorityMuxHartIdFromSeq(ibexTileParams), logicalTreeNode))
-          t.escnode := escnode
-          t
-        }
-      }
-      connectMasterPortsToSBus(tile, crossing)
-      connectSlavePortsToCBus(tile, crossing)
-      connectInterrupts(tile, debugOpt, clintOpt, plicOpt)
-
-      tile
-    }
-  }
-
-  val tiles = doTiles
-
-  // If the Ibex is not present, esc be connected to nothing
-  val IbexExists = allTilesInfo.map(_._1).exists { case _: IbexTileParams => true; case _ => false }
-  if(!IbexExists) EscEmpty.applySink := escnode
-
+{
+  // The alert nexus
+  val alertnode = AlertXbar.apply
+  // The esc nexus
+  val escnode = EscXbar.apply
 
   def coreMonitorBundles = tiles.map {
     case r: RocketTile => r.module.core.rocketImpl.coreMonitorBundle
     case b: BoomTile => b.module.core.coreMonitorBundle
   }.toList
-}
 
-trait HasTEEHWTilesModuleImp extends HasTilesModuleImp
-  with HasPeripheryDebugModuleImp
-  with HasPeripheryAlertModuleImp
-  with HasPeripheryNmiGenModuleImp
-{
-  val outer: HasTEEHWTiles
-}
+  // If the Ibex is not present, esc be connected to nothing
+  val IbexExists = tileAttachParams.exists { case _: IbexTileParams => true; case _ => false }
+  if(!IbexExists) EscEmpty.applySink := escnode
 
-// The base subsystem for the TEE system. Just contains the alerts for now
-abstract class TEEHWBaseSubsystem(implicit p: Parameters) extends BaseSubsystem {
-  override val module: TEEHWBaseSubsystemModuleImp[TEEHWBaseSubsystem]
-
-  // The alert nexus
-  val alertnode = AlertXbar.apply
-  // The esc nexus
-  val escnode = EscXbar.apply
-}
-
-abstract class TEEHWBaseSubsystemModuleImp[+L <: TEEHWBaseSubsystem](_outer: L) extends BaseSubsystemModuleImp(_outer) {
-}
-
-class TEEHWSubsystem(implicit p: Parameters) extends TEEHWBaseSubsystem
-  with HasTEEHWTiles
-{
+  // Relying on [[TLBusWrapperConnection]].driveClockFromMaster for
+  // bus-couplings that are not asynchronous strips the bus name from the sink
+  // ClockGroup. This makes it impossible to determine which clocks are driven
+  // by which bus based on the member names, which is problematic when there is
+  // a rational crossing between two buses. Instead, provide all bus clocks
+  // directly from the asyncClockGroupsNode in the subsystem to ensure bus
+  // names are always preserved in the top-level clock names.
+  //
+  // For example, using a RationalCrossing between the Sbus and Cbus, and
+  // driveClockFromMaster = Some(true) results in all cbus-attached device and
+  // bus clocks to be given names of the form "subsystem_sbus_[0-9]*".
+  // Conversly, if an async crossing is used, they instead receive names of the
+  // form "subsystem_cbus_[0-9]*". The assignment below provides the latter names in all cases.
+  Seq(PBUS, FBUS, MBUS, CBUS).foreach { loc =>
+    tlBusWrapperLocationMap.lift(loc).foreach { _.clockGroupNode := asyncClockGroupsNode }
+  }
   override lazy val module = new TEEHWSubsystemModuleImp(this)
 
   def getOMInterruptDevice(resourceBindingsMap: ResourceBindingsMap): Seq[OMInterrupt] = Nil
 }
 
-class TEEHWSubsystemModuleImp[+L <: TEEHWSubsystem](_outer: L) extends TEEHWBaseSubsystemModuleImp(_outer)
-  with HasResetVectorWire
-  with HasTEEHWTilesModuleImp
+class TEEHWSubsystemModuleImp[+L <: TEEHWSubsystem](_outer: L) extends BaseSubsystemModuleImp(_outer)
+  with HasTilesModuleImp
+  with HasPeripheryAlertModuleImp
+  with HasPeripheryNmiGenModuleImp
 {
-  tile_inputs.zip(outer.hartIdList).foreach { case(wire, i) =>
-    wire.hartid := i.U
-    wire.reset_vector := global_reset_vector
-  }
-
-  // create file with boom params
+  // TODO: The reset_vector and tile_hartids are exported as IO.
+  // create file with core params
   ElaborationArtefacts.add("""core.config""", outer.tiles.map(x => x.module.toString).mkString("\n"))
-
   // Generate C header with relevant information for Dromajo
   // This is included in the `dromajo_params.h` header file
-  DromajoHelper.addArtefacts
+  DromajoHelper.addArtefacts(InSubsystem)
 }

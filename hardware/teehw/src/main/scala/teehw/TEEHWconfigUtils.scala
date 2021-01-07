@@ -34,8 +34,9 @@ case object TEEHWResetVector extends Field[Int](0x10040)
   * Also makes support for multiple harts depend on Rocket + BOOM
   * Note: Must come after all harts are assigned for it to apply
   * NOTE2: The Ibex always goes last
+  * NOTE3: Deprecated. Now the order of the invocation sets the hartId.
   */
-class WithRenumberHartsWithIbex(rocketFirst: Boolean = false) extends Config((site, here, up) => {
+/*class WithRenumberHartsWithIbex(rocketFirst: Boolean = false) extends Config((site, here, up) => {
   case RocketTilesKey => up(RocketTilesKey, site).zipWithIndex map { case (r, i) =>
     r.copy(hartId = i + (if(rocketFirst) 0 else up(BoomTilesKey, site).length))
   }
@@ -46,7 +47,7 @@ class WithRenumberHartsWithIbex(rocketFirst: Boolean = false) extends Config((si
     b.copy(hartId = i + (up(BoomTilesKey, site).size + up(RocketTilesKey, site).size))
   }
   case MaxHartIdBits => log2Up(up(BoomTilesKey, site).size + up(RocketTilesKey, site).size + up(IbexTilesKey, site).size)
-})
+})*/
 
 /* NOTE ABOUT CACHE SIZES
  Cache size = nSets * nWays * CacheBlockBytes
@@ -55,8 +56,10 @@ class WithRenumberHartsWithIbex(rocketFirst: Boolean = false) extends Config((si
  CacheBlockBytes = (default) 64;
  => default cache size = 64 * 4 * 64 = 16KBytes
 */
-class WithSmallCacheBigCore(n: Int) extends Config((site, here, up) => {
+class WithSmallCacheBigCore(n: Int, overrideIdOffset: Option[Int] = None) extends Config((site, here, up) => {
   case RocketTilesKey => {
+    val prev = up(RocketTilesKey, site)
+    val idOffset = overrideIdOffset.getOrElse(prev.size)
     val big = RocketTileParams(
       core = RocketCoreParams(mulDiv = Some(MulDivParams(
         mulUnroll = 8, mulEarlyOut = true, divEarlyOut = true)),
@@ -69,7 +72,7 @@ class WithSmallCacheBigCore(n: Int) extends Config((site, here, up) => {
         rowBits = site(SystemBusKey).beatBits,
         nSets = 16, nWays = 1,
         blockBytes = site(CacheBlockBytes))))
-    List.tabulate(n)(i => big.copy(hartId = i))
+    List.tabulate(n)(i => big.copy(hartId = i + idOffset)) ++ prev
   }
 })
 
@@ -84,11 +87,11 @@ class ChipConfig extends Config(
     //new WithIncoherentBusTopology ++ // This was the previous one
     new BaseConfig().alter((site,here,up) => {
       case SystemBusKey => up(SystemBusKey).copy(
-        errorDevice = Some(DevNullParams(
+        errorDevice = Some(BuiltInErrorDeviceParams(DevNullParams(
           Seq(AddressSet(0x4000, 0xfff)),
           maxAtomic=site(XLen)/8,
           maxTransfer=128,
-          region = RegionType.TRACKED)))
+          region = RegionType.TRACKED))))
       case PeripheryBusKey => up(PeripheryBusKey, site).copy(dtsFrequency =
         Some(BigDecimal(site(FreqKeyMHz)*1000000).setScale(0, BigDecimal.RoundingMode.HALF_UP).toBigInt),
         errorDevice = None)
@@ -99,7 +102,7 @@ class ChipConfig extends Config(
         idcodeManufId = 0x489,  // As Assigned by JEDEC to SiFive. Only used in wrappers / test harnesses.
         debugIdleCycles = 5)    // Reasonable guess for synchronization
       case FreqKeyMHz => 100.0
-      case MaxHartIdBits => log2Up(site(BoomTilesKey).size + site(RocketTilesKey).size + site(IbexTilesKey).size)
+      //case MaxHartIdBits => log2Up(site(BoomTilesKey).size + site(RocketTilesKey).size + site(IbexTilesKey).size)
     }))
 
 class MicroConfig extends Config(
@@ -111,11 +114,11 @@ class MicroConfig extends Config(
     new WithIncoherentBusTopology ++
     new BaseConfig().alter((site,here,up) => {
       case SystemBusKey => up(SystemBusKey).copy(
-        errorDevice = Some(DevNullParams(
+        errorDevice = Some(BuiltInErrorDeviceParams(DevNullParams(
           Seq(AddressSet(0x4000, 0xfff)),
           maxAtomic=site(XLen)/8,
           maxTransfer=128,
-          region = RegionType.TRACKED)))
+          region = RegionType.TRACKED))))
       case PeripheryBusKey => up(PeripheryBusKey, site).copy(dtsFrequency =
         Some(BigDecimal(site(FreqKeyMHz)*1000000).setScale(0, BigDecimal.RoundingMode.HALF_UP).toBigInt),
         errorDevice = None)
@@ -126,5 +129,5 @@ class MicroConfig extends Config(
         idcodeManufId = 0x489,  // As Assigned by JEDEC to SiFive. Only used in wrappers / test harnesses.
         debugIdleCycles = 5)    // Reasonable guess for synchronization
       case FreqKeyMHz => 100.0
-      case MaxHartIdBits => log2Up(site(BoomTilesKey).size + site(RocketTilesKey).size + site(IbexTilesKey).size)
+      //case MaxHartIdBits => log2Up(site(BoomTilesKey).size + site(RocketTilesKey).size + site(IbexTilesKey).size)
     }))

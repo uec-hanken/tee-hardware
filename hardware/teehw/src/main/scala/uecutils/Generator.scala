@@ -7,7 +7,6 @@ import firrtl.stage.FirrtlCircuitAnnotation
 import firrtl.passes.Pass
 import java.io.File
 
-import firrtl.annotations.AnnotationYamlProtocol._
 import firrtl.passes.memlib.{ReplSeqMem, ReplSeqMemAnnotation}
 import firrtl.transforms.BlackBoxResourceFileNameAnno
 import net.jcazevedo.moultingyaml._

@@ -21,17 +21,11 @@ import freechips.rocketchip.interrupts._
 import freechips.rocketchip.util._
 import freechips.rocketchip.tile._
 import freechips.rocketchip.amba.axi4._
+import freechips.rocketchip.prci.ClockSinkParameters
 import uec.teehardware.devices.opentitan._
 import uec.teehardware.devices.opentitan.nmi_gen._
 import uec.teehardware.devices.opentitan.top_pkg._
 import uec.teehardware.tile._
-
-case object IbexTilesKey extends Field[Seq[IbexTileParams]](Nil)
-
-class IbexPortIO extends Bundle {
-  //val esc_rx_i = Output(new esc_rx_t())
-  //val esc_tx_o = Input(new esc_tx_t())
-}
 
 case class IbexCoreParams
 (
@@ -70,13 +64,17 @@ case class IbexCoreParams
       None
     }
   val fpu: Option[FPUParams] = None // Checked
+  val useNMI: Boolean = false // TODO: Check
   val nBreakpoints: Int = 0 // TODO: Check
   val useBPWatch: Boolean = false // TODO: What?
+  val mcontextWidth: Int = 0 // TODO: Check
+  val scontextWidth: Int = 0 // TODO: Check
   val haveBasicCounters: Boolean = true // Checked
   val haveFSDirty: Boolean = false // TODO: What?
   val misaWritable: Boolean = false // Checked
   val haveCFlush: Boolean = false // Checked
   val nL2TLBEntries: Int = 512 // TODO: At this point, I am afraid to ask, but maybe is related to the L2 cache observation from the processor
+  val nL2TLBWays: Int = 1 // TODO: Same as above
   val mtvecInit: Option[BigInt] = Some(BigInt(1)) // Checked
   val mtvecWritable: Boolean = true // Checked
   val instBits: Int = if (useCompressed) 16 else 32
@@ -84,6 +82,22 @@ case class IbexCoreParams
   val decodeWidth: Int = 1 // TODO: Check
   val fetchWidth: Int = 1 // TODO: Check
   val retireWidth: Int = 2 // TODO: Check
+}
+
+case class IbexTileAttachParams
+(
+  tileParams: IbexTileParams,
+  crossingParams: RocketCrossingParams
+) extends CanAttachTile {
+  type TileType = IbexTile
+  val lookup = PriorityMuxHartIdFromSeq(Seq(tileParams))
+}
+
+// IMPORTANT NOTE: For the full-version of this, please keep the TypeIbex. This is capable of extend the IbexTile
+abstract class AnyIbexTileParams[TypeIbex <: IbexTile] extends InstantiableTileParams[TypeIbex] {
+  val ICacheECC: Boolean
+  val boundaryBuffers: Boolean
+  val core: IbexCoreParams
 }
 
 case class IbexTileParams
@@ -95,20 +109,23 @@ case class IbexTileParams
   dcache: Option[DCacheParams] = None, // TODO: No actual dcache. We always check for the scratchpad
   ICacheECC: Boolean = false,
   boundaryBuffers: Boolean = false
-) extends TileParams {
+) extends AnyIbexTileParams[IbexTile] {
   /* DO NOT CHANGE BELOW THIS */
   val btb: Option[BTBParams] = None // TODO: What?
   val beuAddr: Option[BigInt] = None // TODO: What?
   val blockerCtrlAddr: Option[BigInt] = None // TODO: What?
+  val clockSinkParams: ClockSinkParameters = ClockSinkParameters() // TODO: Who?
+  def instantiate(crossing: TileCrossingParamsLike, lookup: LookupByHartIdImpl)(implicit p: Parameters): IbexTile = {
+    new IbexTile(this, crossing, lookup)
+  }
 }
 
-class IbexTile
+class IbexTile private
 (
-  val ibexParams: IbexTileParams,
+  val ibexParams: AnyIbexTileParams[IbexTile],
   crossing: ClockCrossingType,
   lookup: LookupByHartIdImpl,
-  q: Parameters,
-  logicalTreeNode: LogicalTreeNode
+  q: Parameters
 )
   extends BaseTile(ibexParams, crossing, lookup, q)
     with SinksExternalOptionalInterrupts
@@ -118,8 +135,8 @@ class IbexTile
     * Setup parameters:
     * Private constructor ensures altered LazyModule.p is used implicitly
     */
-  def this(params: IbexTileParams, crossing: RocketCrossingParams, lookup: LookupByHartIdImpl, logicalTreeNode: LogicalTreeNode)(implicit p: Parameters) =
-    this(params, crossing.crossingType, lookup, p, logicalTreeNode)
+  def this(params: AnyIbexTileParams[IbexTile], crossing: TileCrossingParamsLike, lookup: LookupByHartIdImpl)(implicit p: Parameters) =
+    this(params, crossing.crossingType, lookup, p)
 
   val intOutwardNode = IntIdentityNode()
   val slaveNode = TLIdentityNode()
@@ -153,14 +170,18 @@ class IbexTile
   // Create the escalaments
   val escnode = EscSinkNode(EscSinkPortSimple())
 
-  override def makeMasterBoundaryBuffers(implicit p: Parameters) = {
-    if (!ibexParams.boundaryBuffers) super.makeMasterBoundaryBuffers
-    else TLBuffer(BufferParams.none, BufferParams.flow, BufferParams.none, BufferParams.flow, BufferParams(1))
+  override def makeMasterBoundaryBuffers(crossing: ClockCrossingType)(implicit p: Parameters) = crossing match {
+    case _: RationalCrossing =>
+      if (!ibexParams.boundaryBuffers) TLBuffer(BufferParams.none)
+      else TLBuffer(BufferParams.none, BufferParams.flow, BufferParams.none, BufferParams.flow, BufferParams(1))
+    case _ => TLBuffer(BufferParams.none)
   }
 
-  override def makeSlaveBoundaryBuffers(implicit p: Parameters) = {
-    if (!ibexParams.boundaryBuffers) super.makeSlaveBoundaryBuffers
-    else TLBuffer(BufferParams.flow, BufferParams.none, BufferParams.none, BufferParams.none, BufferParams.none)
+  override def makeSlaveBoundaryBuffers(crossing: ClockCrossingType)(implicit p: Parameters) = crossing match {
+    case _: RationalCrossing =>
+      if (!ibexParams.boundaryBuffers) TLBuffer(BufferParams.none)
+      else TLBuffer(BufferParams.flow, BufferParams.none, BufferParams.none, BufferParams.none, BufferParams.none)
+    case _ => TLBuffer(BufferParams.none)
   }
 
   override lazy val module = new IbexTileModuleImp(this)
@@ -232,7 +253,7 @@ class IbexTile
 
 class IbexTileModuleImp(outer: IbexTile) extends BaseTileModuleImp(outer){
   // annotate the parameters
-  Annotated.params(this, outer.ibexParams)
+  //Annotated.params(this, outer.ibexParams)
 
   require(p(SubsystemResetSchemeKey)  == ResetSynchronous,
     "Ibex only supports synchronous reset at this time")
@@ -270,8 +291,8 @@ class IbexTileModuleImp(outer: IbexTile) extends BaseTileModuleImp(outer){
 
   core.io.clk_i := clock
   core.io.rst_ni := ~reset.asBool
-  core.io.boot_addr_i := constants.reset_vector
-  core.io.hart_id_i := constants.hartid
+  core.io.boot_addr_i := outer.resetVectorSinkNode.bundle
+  core.io.hart_id_i := outer.hartIdSinkNode.bundle
 
   outer.connectIbexInterrupts(core.io.debug_req_i, core.io.irq_software_i, core.io.irq_timer_i, core.io.irq_external_i)
 

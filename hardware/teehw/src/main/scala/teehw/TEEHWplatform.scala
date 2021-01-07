@@ -31,7 +31,7 @@ import uec.teehardware.devices.opentitan.hmac._
 import uec.teehardware.devices.opentitan.keymgr._
 import uec.teehardware.devices.opentitan.kmac._
 import uec.teehardware.devices.opentitan.otp_ctrl._
-import testchipip.{CanHavePeripherySerial, CanHavePeripherySerialModuleImp}
+import testchipip.{CanHavePeripheryTLSerial}
 
 class SlowMemIsland(blockBytes: Int, val crossing: ClockCrossingType = AsynchronousCrossing(8))(implicit p: Parameters)
     extends LazyModule
@@ -60,7 +60,7 @@ trait HasTEEHWSystem
   //    with CanHaveMasterAXI4MemPort // NOTE: A TL->Axi4 is already done outside the system
   //    with CanHaveMasterTLMemPort // NOTE: Manually created the TL port
   // This is intended only for simulations, but does not affect the fpga/chip versions
-  extends CanHavePeripherySerial // ONLY for simulations
+  extends CanHavePeripheryTLSerial // ONLY for simulations
 { this: TEEHWSubsystem =>
   // The clock resource. This is just for put in the DTS the tlclock
   // TODO: Now the clock is derived from the bus that is connected
@@ -129,9 +129,10 @@ trait HasTEEHWSystem
   }
 
   // GPIO implementation
-  val gpioNodes = p(PeripheryGPIOKey).map { ps =>
-    GPIOAttachParams(ps).attachTo(this).ioNode.makeSink()
-  }
+  val (gpioNodes, gpioIofs) = p(PeripheryGPIOKey).map { ps =>
+    val gpio = GPIOAttachParams(ps).attachTo(this)
+    (gpio.ioNode.makeSink(), gpio.iofPort)
+  }.unzip
 
   // QSPI flash implementation. This is the same as HasPeripherySPIFlash
   // TODO: This is done this way instead of "HasPeripherySPIFlash" because we need to do a bind to tlclock
@@ -174,10 +175,18 @@ trait HasTEEHWSystem
   }
   else None
 
-  // add Mask ROM devices
-  val maskROMs = p(PeripheryMaskROMKey).map {
-    MaskROM.attach(_, cbus)
-  }
+  // add ROM devices
+  val bootROM  = p(BootROMLocated(location)).map { BootROM.attach(_, this, CBUS) }
+  val maskROMs = p(MaskROMLocated(location)).map { MaskROM.attach(_, this, CBUS) }
+
+  // Connect the global reset vector
+  // In BootROM scenario: 0x20000000
+  // In QSPI & sim scenarios: 0x10040
+  // NOTE: I do not get the people of RISCV. BootROM ONLY gets to assign this reset vector
+  // Then, to put it, needs to be buried deep in the resources.
+  // What if I want to modify it from configuration? Only the glorified Rocket BootROM can? This is BS
+  // This code is copied from BootROM.scala
+  val maskROMResetVectorSourceNode = BundleBridgeSource[UInt]()
 }
 
 class TEEHWSystem(implicit p: Parameters) extends TEEHWSubsystem
@@ -198,7 +207,6 @@ class TEEHWSystem(implicit p: Parameters) extends TEEHWSubsystem
 }
 
 trait HasTEEHWSystemModule extends HasRTCModuleImp
-  with HasResetVectorWire
   // The components that are directly instantiated here. Needed to be re-factored from the original
   //    with HasPeripheryI2CModuleImp
   //    with HasPeripheryUARTModuleImp // NOTE: Already included
@@ -207,7 +215,6 @@ trait HasTEEHWSystemModule extends HasRTCModuleImp
   //    with CanHaveMasterAXI4MemPortModuleImp // NOTE: A TL->Axi4 is already done outside the system
   //    with CanHaveMasterTLMemPortModuleImp // NOTE: Manually created the TL port
   // This is intended only for simulations, but does not affect the fpga/chip versions
-  with CanHavePeripherySerialModuleImp
   with DontTouch
 {
   val outer: TEEHWSubsystem with HasTEEHWSystem
@@ -231,16 +238,22 @@ trait HasTEEHWSystemModule extends HasRTCModuleImp
   val mem_ChildReset = memPorts.map(_._3) // For making work HeterogeneousBag
 
   // UART implementation
-  val uart = outer.uartNodes.zipWithIndex.map { case(n,i) => n.makeIO()(ValName(s"uart_$i")) }
+  val uart = outer.uartNodes.zipWithIndex.map { case(n,i) => n.makeIO()(ValName(s"uart_$i")).asInstanceOf[UARTPortIO] }
 
   // SPI to MMC conversion
-  val spi  = outer.spiNodes.zipWithIndex.map  { case(n,i) => n.makeIO()(ValName(s"spi_$i")) }
+  val spi  = outer.spiNodes.zipWithIndex.map  { case(n,i) => n.makeIO()(ValName(s"spi_$i")).asInstanceOf[SPIPortIO] }
 
   // GPIO implementation
-  val gpio = outer.gpioNodes.zipWithIndex.map { case(n,i) => n.makeIO()(ValName(s"gpio_$i")) }
+  val gpio = outer.gpioNodes.zipWithIndex.map { case(n,i) => n.makeIO()(ValName(s"gpio_$i")).asInstanceOf[GPIOPortIO] }
+  // The IOFs. Why Sifive? Why do you hurt me this way?
+  // TODO: We can... you know... assign here, or in the platform... or in the chip... for now is defaulted
+  outer.gpioIofs.foreach{iofOpt => iofOpt.foreach{iof =>
+    iof.getWrappedValue.iof_0.foreach(_.default())
+    iof.getWrappedValue.iof_1.foreach(_.default())
+  }}
 
   // QSPI flash implementation.
-  val qspi = outer.qspiNodes.zipWithIndex.map { case(n,i) => n.makeIO()(ValName(s"qspi_$i")) }
+  val qspi = outer.qspiNodes.zipWithIndex.map { case(n,i) => n.makeIO()(ValName(s"qspi_$i")).asInstanceOf[SPIPortIO] }
 
   val pciePorts = outer.pcie.map { pcie =>
     val port = IO(new XilinxVC707PCIeX1IO)
@@ -248,10 +261,8 @@ trait HasTEEHWSystemModule extends HasRTCModuleImp
     port
   }
 
-  // Connect the global reset vector
-  // In BootROM scenario: 0x20000000
-  // In QSPI & sim scenarios: 0x10040
-  global_reset_vector := p(TEEHWResetVector).U
+  // NOTE: Continuation of the maskROM reset vector
+  outer.maskROMResetVectorSourceNode.bundle := p(TEEHWResetVector).U
 }
 
 class TEEHWSystemModule[+L <: TEEHWSystem](_outer: L)
@@ -307,7 +318,7 @@ class TEEHWPlatformIO(val params: Option[TLBundleParameters] = None)
 object TEEHWPlatform {
   def connect
   (
-    sys: HasTEEHWSystemModule with HasTEEHWTilesModuleImp with HasPeripheryUSB11HSModuleImp,
+    sys: HasTEEHWSystemModule with HasTilesModuleImp with HasPeripheryUSB11HSModuleImp,
     io: TEEHWPlatformIO,
     clock: Clock,
     reset: Reset)(implicit p: Parameters): Unit = {

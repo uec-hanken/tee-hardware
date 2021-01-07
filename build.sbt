@@ -300,7 +300,7 @@ lazy val sifive_cache = (project in file("hardware/chipyard/generators/sifive-ca
   .settings(libraryDependencies ++= rocketLibDeps.value)
 
 // -- The FPGA shells, because in the TEE they are still needed --
-lazy val fpga_shells = (project in file("tee-hardware/hardware/fpga-shells")).
+lazy val fpga_shells = (project in file("hardware/fpga-shells")).
   dependsOn(rocketchip, sifive_blocks, utilities).
   settings(
       commonSettings,
@@ -309,7 +309,7 @@ lazy val fpga_shells = (project in file("tee-hardware/hardware/fpga-shells")).
 
 // -- Our tee-hardware project --
 lazy val teehardware = (project in file("hardware/teehw")).
-  dependsOn(utilities, rocketchip, sifive_blocks, fpga_shells, tapeout, chipyard).
+  dependsOn(utilities, rocketchip, sifive_blocks, fpga_shells, tapeout, chipyard, barstoolsMacros).
   settings(commonSettings)
 
 // Library components of FireSim

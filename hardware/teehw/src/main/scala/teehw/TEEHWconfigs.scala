@@ -22,6 +22,7 @@ import uec.teehardware.devices.opentitan.alert._
 import uec.teehardware.devices.opentitan.hmac._
 import uec.teehardware.devices.opentitan.otp_ctrl._
 import boom.common._
+import testchipip.{SerialTLKey, SerialTLParams}
 import uec.teehardware.devices.opentitan.nmi_gen._
 import uec.teehardware.ibex._
 
@@ -32,12 +33,18 @@ class RV64GC extends Config((site, here, up) => {
 
 class RV64IMAC extends Config((site, here, up) => {
   case XLen => 64
+  case TilesLocated(InSubsystem) => up(TilesLocated(InSubsystem), site) map {
+    case r: RocketTileAttachParams => r.copy(tileParams = r.tileParams.copy(core = r.tileParams.core.copy(fpu = None)))
+    case b: BoomTileAttachParams => b.copy(
+      tileParams = b.tileParams.copy(
+        core = b.tileParams.core.copy(
+          fpu = None,
+          issueParams = b.tileParams.core.issueParams.filter(_.iqType != IQT_FP.litValue))))
+    case other => other
+  }
+  // Do it also in this key.. just because
   case RocketTilesKey => up(RocketTilesKey, site) map { r =>
     r.copy(core = r.core.copy(fpu = None))
-  }
-  case BoomTilesKey => up(BoomTilesKey, site) map { r =>
-    r.copy(core = r.core.copy(fpu = None,
-      issueParams = r.core.issueParams.filter(_.iqType != IQT_FP.litValue)))
   }
 })
 
@@ -68,7 +75,8 @@ class RocketMicro extends Config(
           d.copy(
             nSets = 256, // 16Kb scratchpad
             nWays = 1,
-            nTLBEntries = 4,
+            nTLBSets = 1,
+            nTLBWays = 4,
             nMSHRs = 0
             //scratch = Some(0x80000000L) // TODO: Not possible to put the scratchpad here
           )
@@ -77,7 +85,8 @@ class RocketMicro extends Config(
           i.copy(
             nSets = 64,
             nWays = 1,
-            nTLBEntries = 4
+            nTLBSets = 1,
+            nTLBWays = 4,
           )
         }
       )
@@ -89,7 +98,6 @@ class RocketMicro extends Config(
 
 // Non-secure Ibex (Without Isolation)
 class Ibex2RocketNonSecure extends Config(
-  new WithRenumberHartsWithIbex(rocketFirst = true) ++ //Rocket first, Ibex last
     new WithNBigCores(2) ++
     new WithNIbexCores(1) ++
     new chipyard.config.WithL2TLBs(entries = 1024) ++  // use L2 TLBs
@@ -97,7 +105,6 @@ class Ibex2RocketNonSecure extends Config(
 
 // Non-secure Ibex (Without Isolation) but reduced
 class Ibex2RocketNonSecureReduced extends Config(
-  new WithRenumberHartsWithIbex(rocketFirst = true) ++ //Rocket first, Ibex last
     new WithSmallCacheBigCore(2) ++
     new WithNIbexCores(1) ++
     new chipyard.config.WithL2TLBs(entries = 256) ++ // use L2 TLBs
@@ -105,14 +112,14 @@ class Ibex2RocketNonSecureReduced extends Config(
 
 // ************ BootROM configuration (BOOTSRC) **************
 class BOOTROM extends Config((site, here, up) => {
-  case PeripheryMaskROMKey => List(
+  case MaskROMLocated(InSubsystem) => Seq(
     MaskROMParams(address = BigInt(0x20000000), depth = 4096, name = "BootROM"))
   case TEEHWResetVector => 0x20000000
   case PeripherySPIFlashKey => List() // disable SPIFlash
 })
 
 class QSPI extends Config((site, here, up) => {
-  case PeripheryMaskROMKey => List( //move BootROM back to 0x10000
+  case MaskROMLocated(InSubsystem) => Seq( //move BootROM back to 0x10000
     MaskROMParams(address = 0x10000, depth = 4096, name = "BootROM")) //smallest allowed depth is 16
   case TEEHWResetVector => 0x10040
   case PeripherySPIFlashKey => List(
@@ -295,9 +302,9 @@ class TR4Config extends Config((site,here,up) => {
   }})
 
 class VC707Config extends Config((site,here,up) => {
-  case FreqKeyMHz => 80.0
+  case FreqKeyMHz => 20.0
   /* Force to use BootROM because VC707 doesn't have enough GPIOs for QSPI */
-  case PeripheryMaskROMKey => List(
+  case MaskROMLocated(InSubsystem) => Seq(
     MaskROMParams(address = BigInt(0x20000000), depth = 0x4000, name = "BootROM"))
   case TEEHWResetVector => 0x20000000
   case PeripherySPIFlashKey => List() // disable SPIFlash
@@ -308,9 +315,9 @@ class VC707Config extends Config((site,here,up) => {
   }})
 
 class VC707MiniConfig extends Config((site,here,up) => {
-  case FreqKeyMHz => 80.0
+  case FreqKeyMHz => 20.0
   /* Force to use BootROM because VC707 doesn't have enough GPIOs for QSPI */
-  case PeripheryMaskROMKey => List(
+  case MaskROMLocated(InSubsystem) => Seq(
     MaskROMParams(address = BigInt(0x20000000), depth = 0x1000, name = "BootROM"))
   case TEEHWResetVector => 0x20000000
   case PeripherySPIFlashKey => List() // disable SPIFlash
@@ -327,10 +334,18 @@ class WithSimulation extends Config((site, here, up) => {
   // Force the DMI to NOT be JTAG
   //case ExportDebug => up(ExportDebug, site).copy(protocols = Set(DMI))
   // Force also the Serial interface
-  case testchipip.SerialKey => true
+  case SerialTLKey => Some(SerialTLParams(
+    memParams = MasterPortParams(
+      base = BigInt("80000000", 16),
+      size = BigInt("10000000", 16),
+      beatBytes = site(MemoryBusKey).beatBytes,
+      idBits = 4
+    ),
+    width = 4
+  ))
   /* Force to use QSPI-scenario because then the XIP will be put in the BootROM */
   /* Simulation needs the hang function in the XIP */
-  case PeripheryMaskROMKey => List(
+  case MaskROMLocated(InSubsystem) => Seq(
     MaskROMParams(address = BigInt(0x10000), depth = 4096, name = "BootROM"))
   case TEEHWResetVector => 0x10040 // The hang vector in this case, to support the Serial load
   // DDRPortOther is unsupported
