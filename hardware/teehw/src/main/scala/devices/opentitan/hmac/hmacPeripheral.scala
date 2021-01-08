@@ -9,7 +9,7 @@ import uec.teehardware._
 
 case object PeripheryHMACKey extends Field[List[HMACParams]](List())
 
-trait HasPeripheryHMAC { this: TEEHWSubsystem =>
+trait HasPeripheryHMAC { this: TEEHWBaseSubsystem =>
   val hmacDevs = p(PeripheryHMACKey).map { case key =>
     HMACAttachParams(key, alertnode).attachTo(this)
   }

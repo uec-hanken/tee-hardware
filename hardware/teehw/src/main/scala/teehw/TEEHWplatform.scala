@@ -12,6 +12,7 @@ import freechips.rocketchip.interrupts._
 import freechips.rocketchip.system._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.util._
+import freechips.rocketchip.prci._
 import sifive.blocks.devices.pinctrl.{BasePin, EnhancedPin, EnhancedPinCtrl, Pin, PinCtrl}
 import sifive.blocks.devices.gpio._
 import sifive.blocks.devices.spi._
@@ -61,7 +62,7 @@ trait HasTEEHWSystem
   //    with CanHaveMasterTLMemPort // NOTE: Manually created the TL port
   // This is intended only for simulations, but does not affect the fpga/chip versions
   extends CanHavePeripheryTLSerial // ONLY for simulations
-{ this: TEEHWSubsystem =>
+{ this: TEEHWBaseSubsystem =>
   // The clock resource. This is just for put in the DTS the tlclock
   // TODO: Now the clock is derived from the bus that is connected
   // TODO: We need a way now to extract that one in the makefiles
@@ -176,17 +177,24 @@ trait HasTEEHWSystem
   else None
 
   // add ROM devices
-  val bootROM  = p(BootROMLocated(location)).map { BootROM.attach(_, this, CBUS) }
   val maskROMs = p(MaskROMLocated(location)).map { MaskROM.attach(_, this, CBUS) }
 
-  // Connect the global reset vector
-  // In BootROM scenario: 0x20000000
-  // In QSPI & sim scenarios: 0x10040
-  // NOTE: I do not get the people of RISCV. BootROM ONLY gets to assign this reset vector
-  // Then, to put it, needs to be buried deep in the resources.
-  // What if I want to modify it from configuration? Only the glorified Rocket BootROM can? This is BS
-  // This code is copied from BootROM.scala
-  val maskROMResetVectorSourceNode = BundleBridgeSource[UInt]()
+  // TODO: I do not know how this work yet. Now the clock is VERY important, for knowing where the
+  // clock domains came from. You can assign it to different nodes, and create new ones.
+  // Eventually, this will create even their own dts for reference purposes.
+  // so, you DEFINITELLY need to define your clocks from now on. This will be assigned to asyncClockGroupsNode
+  // and the "SubsystemDriveAsyncClockGroupsKey" key needs to be None'd to avoid default clocks
+  // There should be a easier way, but right now also the Sifive peripherals and the TEE peripherals
+  // uses all of that. So, there is no way.
+  // (Code analyzed from: Clocks.scala:61, inside chipyard)
+  // (Code analyzed from: ClockGroup.scala:63, inside rocketChip. And yes... I know I can just do a SimpleGroup.)
+
+  // Create the ClockGroupSource (only 1...)
+  val clockGroup = ClockGroupSourceNode(List.fill(1) { ClockGroupSourceParameters() })
+  // Create the Aggregator. This will just take the SourceNode, then just replicate it in a Nexus
+  val clocksAggregator = LazyModule(new ClockGroupAggregator("allClocks")).node
+  // Connect it to the asyncClockGroupsNode, with the aggregator
+  asyncClockGroupsNode :*= clocksAggregator := clockGroup
 }
 
 class TEEHWSystem(implicit p: Parameters) extends TEEHWSubsystem
@@ -217,7 +225,7 @@ trait HasTEEHWSystemModule extends HasRTCModuleImp
   // This is intended only for simulations, but does not affect the fpga/chip versions
   with DontTouch
 {
-  val outer: TEEHWSubsystem with HasTEEHWSystem
+  val outer: TEEHWBaseSubsystem with HasTEEHWSystem with CanHavePeripheryCLINT
 
   // Main memory controller
   val memPorts = outer.memctl.map { A =>
@@ -261,8 +269,13 @@ trait HasTEEHWSystemModule extends HasRTCModuleImp
     port
   }
 
-  // NOTE: Continuation of the maskROM reset vector
-  outer.maskROMResetVectorSourceNode.bundle := p(TEEHWResetVector).U
+  // NOTE: Continuation of the clock assignation
+  outer.clockGroup.out.unzip._1.map {out: ClockGroupBundle =>
+    out.member.data.foreach { o =>
+      o.clock := clock
+      o.reset := reset
+    }
+  }
 }
 
 class TEEHWSystemModule[+L <: TEEHWSystem](_outer: L)

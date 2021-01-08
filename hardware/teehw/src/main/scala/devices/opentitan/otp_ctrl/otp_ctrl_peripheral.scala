@@ -9,7 +9,7 @@ import uec.teehardware._
 
 case object PeripheryOTPCtrlKey extends Field[List[OTPCtrlParams]](List())
 
-trait HasPeripheryOTPCtrl { this: TEEHWSubsystem =>
+trait HasPeripheryOTPCtrl { this: TEEHWBaseSubsystem =>
   val OTPCtrlDevs = p(PeripheryOTPCtrlKey).map { case key =>
     OTPCtrlAttachParams(key, alertnode).attachTo(this)
   }

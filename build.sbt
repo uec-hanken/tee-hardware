@@ -69,7 +69,7 @@ def isolateAllTests(tests: Seq[TestDefinition]) = tests map { test =>
 
 // This needs to stay in sync with the chisel3 and firrtl git submodules
 val chiselVersion = "3.4.1"
-lazy val chiselRef = ProjectRef(workspaceDirectory / "chisel3", "chisel")
+lazy val chiselRef = ProjectRef("./hardware/chipyard/tools/chisel3", "chisel")
 lazy val chiselLib = "edu.berkeley.cs" %% "chisel3" % chiselVersion
 lazy val chiselLibDeps = (chiselRef / Keys.libraryDependencies)
 // While not built from source, *must* be in sync with the chisel3 git submodule
@@ -78,7 +78,7 @@ lazy val chiselLibDeps = (chiselRef / Keys.libraryDependencies)
 lazy val chiselPluginLib = "edu.berkeley.cs" % "chisel3-plugin" % chiselVersion cross CrossVersion.full
 
 val firrtlVersion = "1.4.1"
-lazy val firrtlRef = ProjectRef(workspaceDirectory / "firrtl", "firrtl")
+lazy val firrtlRef = ProjectRef("./hardware/chipyard/tools/firrtl", "firrtl")
 lazy val firrtlLib = "edu.berkeley.cs" %% "firrtl" % firrtlVersion
 val firrtlLibDeps = settingKey[Seq[sbt.librarymanagement.ModuleID]]("FIRRTL Library Dependencies sans antlr4")
 Global / firrtlLibDeps := {

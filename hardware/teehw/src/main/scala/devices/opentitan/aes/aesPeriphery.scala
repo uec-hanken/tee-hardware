@@ -9,7 +9,7 @@ import uec.teehardware._
 
 case object PeripheryAESOTKey extends Field[List[AESOTParams]](List())
 
-trait HasPeripheryAESOT { this: TEEHWSubsystem =>
+trait HasPeripheryAESOT { this: TEEHWBaseSubsystem =>
   val aesotDevs = p(PeripheryAESOTKey).map { case key =>
     AESOTAttachParams(key, alertnode).attachTo(this)
   }

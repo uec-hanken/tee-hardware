@@ -10,7 +10,7 @@ import uec.teehardware.devices.opentitan.alert._
 
 case object PeripheryNmiGenKey extends Field[NmiGenParams](NmiGenParams(address = BigInt(0x64200000L)))
 
-trait HasPeripheryNmiGen { this: TEEHWSubsystem with HasPeripheryAlert =>
+trait HasPeripheryNmiGen { this: TEEHWBaseSubsystem with HasPeripheryAlert =>
   //println(escnode.toString)
   val nmiGenDev = p(WithAlertAndNMI).option(
     NmiGenAttachParams(p(PeripheryNmiGenKey), escnode, () => isAlert).attachTo(this))

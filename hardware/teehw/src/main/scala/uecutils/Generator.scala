@@ -119,14 +119,16 @@ sealed trait MultiTopApp extends LazyLogging { this: App =>
         case x: FirrtlExecutionSuccess =>
           dump(x, Some(targetDir + name + ".fir"), Some(targetDir + name + ".anno.json"))
           x.circuitState.circuit.modules.collect { case e: ExtModule => e }
-        case _ =>
+        case a : Throwable =>
           error(name)
+          throw a
           Seq()
       }
     }
     catch {
       case a : Throwable =>
         error(name)
+        throw a
         Seq()
     }
   }
@@ -155,7 +157,7 @@ sealed trait MultiTopApp extends LazyLogging { this: App =>
     val chipAnnos =
       Seq(ReParentCircuitAnnotation(rootCircuitTarget.module(chipTop.get))) ++
       Seq(BlackBoxResourceFileNameAnno(targetDir + chipTop.get + ".f")) ++
-      externals.map(ext => KeepNameAnnotation(rootCircuitTarget.module(ext))) ++
+      //externals.map(ext => KeepNameAnnotation(rootCircuitTarget.module(ext))) ++
       chipTop.map(ht => ModuleNameSuffixAnnotation(rootCircuitTarget, s"_in${ht}")) ++
       synTops.map(st => ConvertToExtModAnnotation(rootCircuitTarget.module(st))) :+
       LinkExtModulesAnnotation(topExtModules)
@@ -198,7 +200,7 @@ sealed trait MultiTopApp extends LazyLogging { this: App =>
 
     val harnessAnnos =
       Seq(BlackBoxResourceFileNameAnno(targetDir + multiTopOptions.harnessTop.get + ".f")) ++
-      externals.map(ext => KeepNameAnnotation(rootCircuitTarget.module(ext))) ++
+      //externals.map(ext => KeepNameAnnotation(rootCircuitTarget.module(ext))) ++
       harnessTop.map(ht => ModuleNameSuffixAnnotation(rootCircuitTarget, s"_in${ht}")) ++
       Seq(ConvertToExtModAnnotation(rootCircuitTarget.module(chipTop.get))) :+
       LinkExtModulesAnnotation(topExtModules)

@@ -48,22 +48,19 @@ class ReplaceMemMacrosNotExt(writer: ConfWriter, suffix: String) extends Replace
 
 class ReplSeqMemNotExt extends ReplSeqMem {
   def other_transforms(inConfigFile: Option[YamlFileReader], outConfigFile: ConfWriter, suffix: String): Seq[Transform] =
-    Seq(new SimpleMidTransform(Legalize),
+    Seq(
+      new SimpleMidTransform(Legalize),
       new SimpleMidTransform(ToMemIR),
       new SimpleMidTransform(ResolveMaskGranularity),
       new SimpleMidTransform(RenameAnnotatedMemoryPorts),
       new ResolveMemoryReference,
       new CreateMemoryAnnotations(inConfigFile),
+      new ReplaceMemMacros(outConfigFile),
       new ReplaceMemMacrosNotExt(outConfigFile, suffix),
-      new WiringTransform,
-      new SimpleMidTransform(RemoveEmpty),
-      new SimpleMidTransform(CheckInitialization),
-      new SimpleMidTransform(InferTypes),
-      Uniquify,
-      new SimpleMidTransform(ResolveKinds),
-      new SimpleMidTransform(ResolveFlows))
+      new WiringTransform
+    )
   override def execute(state: CircuitState): CircuitState = {
-    // Lets use their good'old ModuleNameSuffixAnnotation
+    // Lets use their good'old ModuleNameSuffixAnnotation to get the suffix
     val suffixes = state.annotations.collect { case ModuleNameSuffixAnnotation(_, suffix) => suffix }
     require(suffixes.length <= 1)
 

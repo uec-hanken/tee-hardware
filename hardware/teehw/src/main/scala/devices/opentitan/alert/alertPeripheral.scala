@@ -9,7 +9,7 @@ import uec.teehardware._
 
 case object PeripheryAlertKey extends Field[AlertParams](AlertParams(address = BigInt(0x64100000L)))
 
-trait HasPeripheryAlert { this: TEEHWSubsystem =>
+trait HasPeripheryAlert { this: TEEHWBaseSubsystem =>
   //println(alertnode.toString)
   val alertDev = p(WithAlertAndNMI).option(
     AlertAttachParams(p(PeripheryAlertKey), alertnode, escnode).attachTo(this))

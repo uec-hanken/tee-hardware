@@ -28,20 +28,17 @@ import uec.teehardware.devices.opentitan.nmi_gen._
 
 case object WithAlertAndNMI extends Field[Boolean](false)
 
-class TEEHWSubsystem(implicit p: Parameters) extends BaseSubsystem
-  with HasTiles
-  with HasPeripheryAlert
-  with HasPeripheryNmiGen
-{
-  // The alert nexus
-  val alertnode = AlertXbar.apply
-  // The esc nexus
-  val escnode = EscXbar.apply
-
+trait HasTEEHWTiles extends HasTiles { this: TEEHWBaseSubsystem =>
   def coreMonitorBundles = tiles.map {
     case r: RocketTile => r.module.core.rocketImpl.coreMonitorBundle
     case b: BoomTile => b.module.core.coreMonitorBundle
   }.toList
+
+  // Escalation node attachmenet (TODO)
+  tiles.foreach {
+    case i: IbexTile => i.escnode := escnode
+    case _ => /*Nothing*/
+  }
 
   // If the Ibex is not present, esc be connected to nothing
   val IbexExists = tileAttachParams.exists { case _: IbexTileParams => true; case _ => false }
@@ -60,23 +57,62 @@ class TEEHWSubsystem(implicit p: Parameters) extends BaseSubsystem
   // bus clocks to be given names of the form "subsystem_sbus_[0-9]*".
   // Conversly, if an async crossing is used, they instead receive names of the
   // form "subsystem_cbus_[0-9]*". The assignment below provides the latter names in all cases.
+  // NOTE: This relies on the fact of using HierarchicalMulticlockBusTopologyParams inside of the
+  // TLNetworkTopologyLocated Key (See CustomBusTopologies.scala:38 & 56 inside chipyard)
   Seq(PBUS, FBUS, MBUS, CBUS).foreach { loc =>
     tlBusWrapperLocationMap.lift(loc).foreach { _.clockGroupNode := asyncClockGroupsNode }
   }
-  override lazy val module = new TEEHWSubsystemModuleImp(this)
+
+  // Connect the global reset vector
+  // In BootROM scenario: 0x20000000
+  // In QSPI & sim scenarios: 0x10040
+  // NOTE: I do not get the people of RISCV. BootROM ONLY gets to assign this reset vector
+  // Then, to put it, needs to be buried deep in the resources.
+  // What if I want to modify it from configuration? Only the glorified Rocket BootROM can? This is BS
+  // This code is copied from BootROM.scala
+  val maskROMResetVectorSourceNode = BundleBridgeSource[UInt]()
+  tileResetVectorNexusNode := maskROMResetVectorSourceNode
 
   def getOMInterruptDevice(resourceBindingsMap: ResourceBindingsMap): Seq[OMInterrupt] = Nil
 }
 
-class TEEHWSubsystemModuleImp[+L <: TEEHWSubsystem](_outer: L) extends BaseSubsystemModuleImp(_outer)
-  with HasTilesModuleImp
-  with HasPeripheryAlertModuleImp
-  with HasPeripheryNmiGenModuleImp
-{
+trait HasTEEHWTilesModuleImp extends HasTilesModuleImp {
+  val outer: HasTEEHWTiles
   // TODO: The reset_vector and tile_hartids are exported as IO.
   // create file with core params
   ElaborationArtefacts.add("""core.config""", outer.tiles.map(x => x.module.toString).mkString("\n"))
   // Generate C header with relevant information for Dromajo
   // This is included in the `dromajo_params.h` header file
   DromajoHelper.addArtefacts(InSubsystem)
+
+  // NOTE: Continuation of the maskROM reset vector
+  outer.maskROMResetVectorSourceNode.bundle := p(TEEHWResetVector).U
+}
+
+// The base subsystem for the TEE system. Just contains the alerts for now
+abstract class TEEHWBaseSubsystem(implicit p: Parameters) extends BaseSubsystem {
+  override val module: TEEHWBaseSubsystemModuleImp[TEEHWBaseSubsystem]
+
+  // The alert nexus
+  val alertnode = AlertXbar.apply
+  // The esc nexus
+  val escnode = EscXbar.apply
+}
+
+abstract class TEEHWBaseSubsystemModuleImp[+L <: TEEHWBaseSubsystem](_outer: L) extends BaseSubsystemModuleImp(_outer) {
+}
+
+class TEEHWSubsystem(implicit p: Parameters) extends TEEHWBaseSubsystem
+  with HasTEEHWTiles
+  with HasPeripheryAlert
+  with HasPeripheryNmiGen
+{
+  override lazy val module = new TEEHWSubsystemModuleImp(this)
+}
+
+class TEEHWSubsystemModuleImp[+L <: TEEHWSubsystem](_outer: L) extends TEEHWBaseSubsystemModuleImp(_outer)
+  with HasTEEHWTilesModuleImp // Put the tiles in the System, not in the Subsystem
+  with HasPeripheryAlertModuleImp
+  with HasPeripheryNmiGenModuleImp
+{
 }

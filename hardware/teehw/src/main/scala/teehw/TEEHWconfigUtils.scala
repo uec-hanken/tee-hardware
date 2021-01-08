@@ -83,9 +83,12 @@ class ChipConfig extends Config(
     new WithNBreakpoints(4) ++
     new TEEHWPeripherals ++
     new WithJtagDTM ++
+    new WithNoSubsystemDrivenClocks ++
+    new WithDontDriveBusClocksFromSBus ++
     new WithCoherentBusTopology ++                                  // This adds a L2 cache
     //new WithIncoherentBusTopology ++ // This was the previous one
     new BaseConfig().alter((site,here,up) => {
+      case BootROMLocated(InSubsystem) => None // No BootROM.
       case SystemBusKey => up(SystemBusKey).copy(
         errorDevice = Some(BuiltInErrorDeviceParams(DevNullParams(
           Seq(AddressSet(0x4000, 0xfff)),
@@ -110,9 +113,12 @@ class MicroConfig extends Config(
     new WithNBreakpoints(4) ++
     new TEEHWPeripherals ++
     new WithJtagDTM ++
+    new WithNoSubsystemDrivenClocks ++
+    new WithDontDriveBusClocksFromSBus ++
     //new WithJustOneBus ++
     new WithIncoherentBusTopology ++
     new BaseConfig().alter((site,here,up) => {
+      case BootROMLocated(InSubsystem) => None // No BootROM.
       case SystemBusKey => up(SystemBusKey).copy(
         errorDevice = Some(BuiltInErrorDeviceParams(DevNullParams(
           Seq(AddressSet(0x4000, 0xfff)),
@@ -131,3 +137,13 @@ class MicroConfig extends Config(
       case FreqKeyMHz => 100.0
       //case MaxHartIdBits => log2Up(site(BoomTilesKey).size + site(RocketTilesKey).size + site(IbexTilesKey).size)
     }))
+
+// NOTE: Copied from chipyard
+
+// The default RocketChip BaseSubsystem drives its diplomatic clock graph
+// with the implicit clocks of Subsystem. Don't do that, instead we extend
+// the diplomacy graph upwards into the ChipTop, where we connect it to
+// our clock drivers
+class WithNoSubsystemDrivenClocks extends Config((site, here, up) => {
+  case SubsystemDriveAsyncClockGroupsKey => None
+})
