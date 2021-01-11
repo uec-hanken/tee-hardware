@@ -121,14 +121,14 @@ sealed trait MultiTopApp extends LazyLogging { this: App =>
           x.circuitState.circuit.modules.collect { case e: ExtModule => e }
         case a : Throwable =>
           error(name)
-          throw a
+          //throw a
           Seq()
       }
     }
     catch {
       case a : Throwable =>
         error(name)
-        throw a
+        //throw a
         Seq()
     }
   }

@@ -29,7 +29,7 @@ MACROCOMPILER_MODE ?= --mode synflops
 
 # The macro-compiler command creator. Just attach a buch of them, to avoid multiple-execution of sbt
 ALL_TOPS := $(TOP) $(MODEL) $(shell echo $(SEPARE) | sed "s/,/ /g")
-MACROCOMPILER_COMMANDS = $(foreach T, $(ALL_TOPS),"runMain uec.teehardware.uecutils.MacroCompiler -n $(build_dir)/$T.mems.conf -v $(build_dir)/$T.mems.v -f $(build_dir)/$T.mems.fir $(MACROCOMPILER_MODE)") 
+MACROCOMPILER_COMMANDS = $(foreach T, $(ALL_TOPS),"runMain barstools.macros.MacroCompiler -n $(build_dir)/$T.mems.conf -v $(build_dir)/$T.mems.v -f $(build_dir)/$T.mems.fir $(MACROCOMPILER_MODE)") 
 
 # This is for compiling all into the VRCS
 TOP_VERILOGS = $(addprefix $(build_dir)/,$(ALL_TOPS:=.v))

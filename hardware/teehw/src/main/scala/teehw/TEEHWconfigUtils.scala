@@ -80,7 +80,6 @@ class WithSmallCacheBigCore(n: Int, overrideIdOffset: Option[Int] = None) extend
 class ChipConfig extends Config(
   // The rest of the configurations, which are not-movable
   new WithNExtTopInterrupts(0) ++
-    new WithNBreakpoints(4) ++
     new TEEHWPeripherals ++
     new WithJtagDTM ++
     new WithNoSubsystemDrivenClocks ++
@@ -110,7 +109,6 @@ class ChipConfig extends Config(
 
 class MicroConfig extends Config(
   new WithNExtTopInterrupts(0) ++
-    new WithNBreakpoints(4) ++
     new TEEHWPeripherals ++
     new WithJtagDTM ++
     new WithNoSubsystemDrivenClocks ++

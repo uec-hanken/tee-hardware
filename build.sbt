@@ -15,6 +15,15 @@ lazy val commonSettings = Seq(
   scalacOptions ++= Seq("-deprecation","-unchecked","-Xsource:2.11"),
   addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full),
   unmanagedBase := (teeHardwareRoot / unmanagedBase).value,
+  libraryDependencies ++= Seq( // TODO: Seems to be a little unstable. Please remove this when the true master comes into place.
+    "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+    "org.scalatest" %% "scalatest" % "3.2.0" % "test",
+    "org.scalatestplus" %% "scalacheck-1-14" % "3.1.3.0" % "test",
+    "com.github.scopt" %% "scopt" % "3.7.1",
+    "net.jcazevedo" %% "moultingyaml" % "0.4.2",
+    "org.json4s" %% "json4s-native" % "3.6.9",
+    "org.apache.commons" % "commons-text" % "1.8"
+  ),
   allDependencies := {
     // drop specific maven dependencies in subprojects in favor of Chipyard's version
     val dropDeps = Seq(

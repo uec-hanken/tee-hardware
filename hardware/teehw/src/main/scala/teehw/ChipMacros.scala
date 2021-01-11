@@ -30,6 +30,7 @@ object PinToGPIO_24_A {
     io.OE := pin.o.oe
     io.IE := pin.o.ie
     pin.i.ival := io.I
+    pin.i.po.foreach(_ := false.B) // TODO: What is this? This is new, and there is no info in GPIO or similar
   }
   def apply(io: GPIO_24_A_PORT, pin: BasePin, pullup: Boolean = false): Unit = {
     io.DS := false.B
@@ -38,6 +39,7 @@ object PinToGPIO_24_A {
     io.OE := pin.o.oe
     io.IE := pin.o.ie
     pin.i.ival := io.I
+    pin.i.po.foreach(_ := false.B) // TODO: What is this? This is new, and there is no info in GPIO or similar
   }
   def asOutput(io: GPIO_24_A_PORT, in: Bool): Unit = {
     io.DS := false.B
@@ -69,10 +71,12 @@ class XTAL_DRV extends BlackBox {
 object BasePinToRegular {
   def apply(pin: BasePin) : Bool = {
     pin.i.ival := false.B
+    pin.i.po.foreach(_ := false.B) // TODO: What is this? This is new, and there is no info in GPIO or similar
     pin.o.oval
   }
   def apply(pin: BasePin, b: Bool) = {
     pin.i.ival := b
+    pin.i.po.foreach(_ := false.B) // TODO: What is this? This is new, and there is no info in GPIO or similar
   }
   def asVec(pins: Vec[BasePin]) : Vec[Bool] = {
     val bools = Wire(Vec(pins.length, Bool()))
