@@ -59,8 +59,7 @@ class WithSmallCacheBigCore(n: Int) extends Config((site, here, up) => {
   case RocketTilesKey => {
     val big = RocketTileParams(
       core = RocketCoreParams(mulDiv = Some(MulDivParams(
-        mulUnroll = 8, mulEarlyOut = true, divEarlyOut = true)),
-        nL2TLBEntries = 256),
+        mulUnroll = 8, mulEarlyOut = true, divEarlyOut = true))),
       dcache = Some(DCacheParams(
         rowBits = site(SystemBusKey).beatBits,
         nSets = 16, nWays = 1, nMSHRs = 0,
