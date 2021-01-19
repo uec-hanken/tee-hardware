@@ -52,18 +52,13 @@ class RV64IMAC extends Config((site, here, up) => {
 
 //Only Rocket: 2 cores
 class Rocket extends Config(
-  new WithNBigCores(2) ++
-    new chipyard.config.WithL2TLBs(entries = 1024) ++
-    new freechips.rocketchip.subsystem.WithInclusiveCache(capacityKB = 512))
+  new WithNBigCores(2))
 class RocketReduced extends Config(
-  new WithSmallCacheBigCore(2) ++
-    new chipyard.config.WithL2TLBs(entries = 256) ++ // use L2 TLBs
-    new freechips.rocketchip.subsystem.WithInclusiveCache(capacityKB = 128) )
+  new WithSmallCacheBigCore(2) )
 
 // Ibex only (For microcontrollers)
 class Ibex extends Config(
-  new WithNIbexCores(1) ++
-    new freechips.rocketchip.subsystem.WithInclusiveCache(capacityKB = 1))
+  new WithNIbexCores(1) )
 
 // Rocket Micro (For microcontrollers)
 class RocketMicro extends Config(
@@ -91,24 +86,18 @@ class RocketMicro extends Config(
         }
       )
     }
-  }) ++
-    new chipyard.config.WithL2TLBs(entries = 4) ++ // use L2 TLBs
-    new freechips.rocketchip.subsystem.WithInclusiveCache(capacityKB = 1)
+  })
 )
 
 // Non-secure Ibex (Without Isolation)
 class Ibex2RocketNonSecure extends Config(
     new WithNBigCores(2) ++
-    new WithNIbexCores(1) ++
-    new chipyard.config.WithL2TLBs(entries = 1024) ++  // use L2 TLBs
-    new freechips.rocketchip.subsystem.WithInclusiveCache(capacityKB = 512))
+    new WithNIbexCores(1) )
 
 // Non-secure Ibex (Without Isolation) but reduced
 class Ibex2RocketNonSecureReduced extends Config(
     new WithSmallCacheBigCore(2) ++
-    new WithNIbexCores(1) ++
-    new chipyard.config.WithL2TLBs(entries = 256) ++ // use L2 TLBs
-    new freechips.rocketchip.subsystem.WithInclusiveCache(capacityKB = 128))
+    new WithNIbexCores(1) )
 
 // ************ BootROM configuration (BOOTSRC) **************
 class BOOTROM extends Config((site, here, up) => {

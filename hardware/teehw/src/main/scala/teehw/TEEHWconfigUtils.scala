@@ -84,7 +84,9 @@ class ChipConfig extends Config(
     new WithJtagDTM ++
     new WithNoSubsystemDrivenClocks ++
     new WithDontDriveBusClocksFromSBus ++
-    new WithCoherentBusTopology ++                                  // This adds a L2 cache
+    new WithCoherentBusTopology ++                                  // This adds a L2 cache ++ ++
+    new chipyard.config.WithL2TLBs(entries = 1024) ++               // Will add the TLBs for the L2
+    new freechips.rocketchip.subsystem.WithInclusiveCache(capacityKB = 512) ++ // And the actual L2 (Do not deceive! This is form sifive-cache)
     //new WithIncoherentBusTopology ++ // This was the previous one
     new BaseConfig().alter((site,here,up) => {
       case BootROMLocated(InSubsystem) => None // No BootROM.
@@ -113,8 +115,12 @@ class MicroConfig extends Config(
     new WithJtagDTM ++
     new WithNoSubsystemDrivenClocks ++
     new WithDontDriveBusClocksFromSBus ++
-    //new WithJustOneBus ++
-    new WithIncoherentBusTopology ++
+    //new chipyard.config.WithBroadcastManager ++ // An utility from chipyard that forces the broadcast manager (Overkill?)
+    new WithCoherentBusTopology ++ // Will add the L2, but The L2 will be a broadcast
+    // new freechips.rocketchip.subsystem.WithInclusiveCache(capacityKB = 128) ++ // As long as you do not use this
+    // new chipyard.config.WithL2TLBs(entries = 256) ++               // Will add the TLBs for the L2, but I wonder if we need this in micro
+    //new WithIncoherentBusTopology ++ // This makes AMO kill each core
+    //new WithJustOneBus ++ // This is even worse
     new BaseConfig().alter((site,here,up) => {
       case BootROMLocated(InSubsystem) => None // No BootROM.
       case SystemBusKey => up(SystemBusKey).copy(
