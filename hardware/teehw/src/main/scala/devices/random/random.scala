@@ -61,7 +61,15 @@ abstract class Random(busWidthBytes: Int, val c: RandomParams)
   }
 
   // The function for generating the RandomNumberGenerator
-  def genRNG(c: RandomParams, rnd_reset: Bool, rnd_en: Bool) : (UInt, Bool) = {
+  def genRNG
+  (
+    c: RandomParams,
+    rnd_reset: Bool,
+    rnd_en: Bool,
+    trng_debug_reset: Bool,
+    trng_debug_enable: Bool,
+    trng_debug_control: UInt,
+    trng_debug_out: UInt) : (UInt, Bool) = {
     (LFSR(c.nbits, rnd_en), true.B)
   }
 
@@ -133,6 +141,14 @@ abstract class Random(busWidthBytes: Int, val c: RandomParams)
     val rst_bits_counter = WireInit(false.B)
     val rng_bist_cntr = RegInit(VecInit(Seq.fill(3)(0.U(22.W)))) // TODO: Not used
 
+    // Debug signals for the TRNG
+    val trng_debug_reset = RegInit(false.B)
+    val trng_debug_enable = RegInit(false.B)
+    val trng_debug_counter = WireInit(0.U(8.W))
+    val trng_debug_control =  RegInit(1.U(2.W))
+    val trng_debug_stop = WireInit(false.B)
+    val trng_debug_out = WireInit(0.U(c.nbits))
+
     // Parameters for the TRNG
 
     // Inputs for the TRNG
@@ -140,7 +156,17 @@ abstract class Random(busWidthBytes: Int, val c: RandomParams)
     val rnd_reset = WireInit(false.B)
 
     // Implementations
-    val (rnd_gen: UInt, rnd_ready: Bool) = genRNG(c, rnd_reset, rnd_en)
+    val (rnd_gen: UInt, rnd_ready: Bool) = genRNG(
+      c,
+      rnd_reset,
+      rnd_en,
+      trng_debug_reset,
+      trng_debug_enable,
+      trng_debug_control,
+      trng_debug_out)
+    // For the debug implementation left, just connect it here
+    trng_debug_stop := rnd_ready
+    trng_debug_counter := rnd_gen
 
     val trng_bit_counter = RegInit(0.U(8.W))
     val trng_sample_counter = RegInit(0.U(32.W))
@@ -231,6 +257,20 @@ abstract class Random(busWidthBytes: Int, val c: RandomParams)
       ),
       RandomRegs.rng_bist_cntr2 -> Seq(
         RegField(22, rng_bist_cntr(2), RegFieldDesc("rng_bist_cntr_2", "TRNG BIST counter 2", reset = Some(0)))
+      ),
+      RandomRegs.trng_debug_ctrl -> Seq(
+        RegField(1, trng_debug_enable),
+        RegField(1, trng_debug_reset),
+        RegField(2,trng_debug_control)
+      ),
+      RandomRegs.trng_debug_out -> Seq(
+        RegField.r(c.nbits, trng_debug_out)
+      ),
+      RandomRegs.trng_debug_stop -> Seq(
+        RegField.r(1, trng_debug_stop)
+      ),
+      RandomRegs.trng_debug_counters -> Seq(
+        RegField.r(8, trng_debug_counter)
       )
     )
     regmap(
