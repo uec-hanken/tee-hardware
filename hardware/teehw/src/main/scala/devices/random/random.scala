@@ -26,12 +26,14 @@ case class RandomParams
 (
   address: BigInt,
   impl: Int = 0,
-  nbits: Int = 8,
+  nbits: Int = 14,
   board: String = "Simulation",
   path: String = "TEEHWSoC/TEEHWPlatform/sys/randomClockDomainWrapper/",
   refLoc : ROLocHints = ROLocHints(15, 158),
   rngLoc : ROLocHints = ROLocHints(15, 161)
-)
+) {
+  require(nbits == 14, "TODO: This Random does not support nbits different than 14")
+}
 
 case class OMRANDOMDevice(
   memoryRegions: Seq[OMMemoryRegion],
