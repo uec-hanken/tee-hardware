@@ -308,6 +308,20 @@ class VC707MiniConfig extends Config((site,here,up) => {
   case PeripheryRandomKey => up(PeripheryRandomKey, site) map {r =>
     r.copy(board = "Xilinx")
   }})
+  
+class VCU118Config extends Config((site,here,up) => {
+  case FreqKeyMHz => 80.0
+  /* Force to use BootROM because VC707 doesn't have enough GPIOs for QSPI *///TODO: what fir VCU118?, has qspi on board
+  case PeripheryMaskROMKey => List(
+    MaskROMParams(address = BigInt(0x20000000), depth = 0x4000, name = "BootROM"))
+  case TEEHWResetVector => 0x20000000
+  case PeripherySPIFlashKey => List() // disable SPIFlash
+  /* Force to disable USB1.1, because there are no pins */
+  case PeripheryUSB11HSKey => List()
+  case PeripheryRandomKey => up(PeripheryRandomKey, site) map {r =>
+    r.copy(board = "Xilinx")
+  }})
+  
 
 // ***************** The simulation flag *****************
 class WithSimulation extends Config((site, here, up) => {

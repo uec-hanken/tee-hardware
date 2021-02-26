@@ -295,6 +295,160 @@ class FPGAVC707(implicit val p :Parameters) extends RawModule {
 }
 
 // ********************************************************************
+// FPGAVCU118 - Demo on VCU118 FPGA board
+// ********************************************************************
+import sifive.fpgashells.ip.xilinx.vcu118mig._
+import sifive.fpgashells.ip.xilinx._
+
+class FPGAVCU118(implicit val p :Parameters) extends RawModule {
+  val gpio_in = IO(Input(UInt(p(GPIOInKey).W)))
+  val gpio_out = IO(Output(UInt((p(PeripheryGPIOKey).head.width-p(GPIOInKey)).W)))
+  val jtag = IO(new Bundle {
+    val jtag_TDI = (Input(Bool())) // J19_20 / XADC_GPIO_2
+    val jtag_TDO = (Output(Bool())) // J19_17 / XADC_GPIO_1
+    val jtag_TCK = (Input(Bool())) // J19_19 / XADC_GPIO_3
+    val jtag_TMS = (Input(Bool())) // J19_18 / XADC_GPIO_0
+  })
+  val sdio = IO(new Bundle {
+    val sdio_clk = (Output(Bool()))
+    val sdio_cmd = (Output(Bool()))
+    val sdio_dat_0 = (Input(Bool()))
+    val sdio_dat_1 = (Analog(1.W))
+    val sdio_dat_2 = (Analog(1.W))
+    val sdio_dat_3 = (Output(Bool()))
+  })
+  val uart_txd = IO(Output(Bool()))
+  val uart_rxd = IO(Input(Bool()))
+
+  val qspi = p(PeripherySPIFlashKey).map{_ =>
+    IO(new Bundle {
+      val qspi_cs = (Output(UInt(p(PeripherySPIFlashKey).head.csWidth.W)))
+      val qspi_sck = (Output(Bool()))
+      val qspi_miso = (Input(Bool()))
+      val qspi_mosi = (Output(Bool()))
+      val qspi_wp = (Output(Bool()))
+      val qspi_hold = (Output(Bool()))
+    })}
+
+  val USB = p(PeripheryUSB11HSKey).map{_ => IO(new Bundle {
+    val FullSpeed = Output(Bool()) // D12 / LA05_N / J1_23
+    val WireDataIn = Input(Bits(2.W)) // H7 / LA02_P / J1_9 // H8 / LA02_N / J1_11
+    val WireCtrlOut = Output(Bool()) // D11 / LA05_P / J1_21
+    val WireDataOut = Output(Bits(2.W)) // G9 / LA03_P / J1_13 // G10 / LA03_N / J1_15
+  })}
+
+  val sys_clock_p = IO(Input(Clock()))
+  val sys_clock_n = IO(Input(Clock()))
+  val sys_clock_ibufds = Module(new IBUFDS())
+  val sys_clk_i = IBUFG(sys_clock_ibufds.io.O)
+  sys_clock_ibufds.io.I := sys_clock_p
+  sys_clock_ibufds.io.IB := sys_clock_n
+  val rst_0 = IO(Input(Bool()))
+  val rst_1 = IO(Input(Bool()))
+  val rst_2 = IO(Input(Bool()))
+  val rst_3 = IO(Input(Bool()))
+  val reset_0 = IBUF(rst_0)
+  val reset_1 = IBUF(rst_1)
+  val reset_2 = IBUF(rst_2)
+  val reset_3 = IBUF(rst_3)
+
+  val clock = Wire(Clock())
+  val reset = Wire(Bool())
+
+  val pciePorts = p(IncludePCIe).option(IO(new XilinxVC707PCIeX1Pads))
+
+  var ddr: Option[VCU118MIGIODDR] = None
+
+  withClockAndReset(clock, reset) {
+    // Instance our converter, and connect everything
+    val chip = Module(new TEEHWSoC)
+
+    // PLL instance
+    val c = new PLLParameters(
+      name = "pll",
+      input = PLLInClockParameters(freqMHz = 200.0, feedback = true),
+      req = Seq(
+        PLLOutClockParameters(freqMHz = 48.0),
+        PLLOutClockParameters(freqMHz = 50.0),
+        PLLOutClockParameters(freqMHz = p(FreqKeyMHz))
+      )
+    )
+    val pll = Module(new Series7MMCM(c))
+    pll.io.clk_in1 := sys_clk_i
+    pll.io.reset := reset_0
+
+    // The DDR port
+    val init_calib_complete = chip.tlport.map{ case chiptl =>
+      val mod = Module(LazyModule(new TLULtoMIGUltra(chip.cacheBlockBytes, chip.tlportw.get.params)).module)
+
+      // DDR port only
+      ddr = Some(IO(new VCU118MIGIODDR(mod.depth)))
+      ddr.get <> mod.io.ddrport
+      // MIG connections, like resets and stuff
+      mod.io.ddrport.c0_sys_clk_i := sys_clk_i.asUInt()
+      mod.io.ddrport.c0_ddr4_aresetn := !reset_0
+      mod.io.ddrport.sys_rst := reset_1
+
+      // TileLink Interface from platform
+      mod.io.tlport.a <> chiptl.a
+      chiptl.d <> mod.io.tlport.d
+
+      if(p(DDRPortOther)) {
+        chip.ChildClock.foreach(_ := pll.io.clk_out2.getOrElse(false.B))
+        chip.ChildReset.foreach(_ := reset_2)
+        mod.clock := pll.io.clk_out2.getOrElse(false.B)
+      }
+      else {
+        chip.ChildClock.foreach(_ := pll.io.clk_out3.getOrElse(false.B))
+        chip.ChildReset.foreach(_ := reset_2)
+        mod.clock := pll.io.clk_out3.getOrElse(false.B)
+      }
+
+      mod.io.ddrport.c0_init_calib_complete
+    }
+
+    // Main clock and reset assignments
+    clock := pll.io.clk_out3.get
+    reset := reset_2
+    chip.sys_clk := pll.io.clk_out3.get
+    chip.rst_n := !reset_2
+
+    // The rest of the platform connections
+    gpio_out := Cat(reset_0, reset_1, reset_2, reset_3, init_calib_complete.getOrElse(false.B))
+    chip.gpio_in := gpio_in
+    jtag <> chip.jtag
+    (chip.qspi zip qspi).foreach { case (sysqspi, portspi) => portspi <> sysqspi}
+    chip.jtag.jtag_TCK := IBUFG(jtag.jtag_TCK.asClock).asUInt
+    chip.uart_rxd := uart_rxd	  // UART_TXD
+    uart_txd := chip.uart_txd 	// UART_RXD
+    sdio <> chip.sdio
+    chip.jrst_n := !reset_3
+
+    // USB phy connections
+    (chip.usb11hs zip USB).foreach{ case (chipport, port) =>
+      port.FullSpeed := chipport.USBFullSpeed
+      chipport.USBWireDataIn := port.WireDataIn
+      port.WireCtrlOut := chipport.USBWireCtrlOut
+      port.WireDataOut := chipport.USBWireDataOut
+
+      chipport.usbClk := pll.io.clk_out1.getOrElse(false.B)
+    }
+
+    // PCIe (if available)
+    (pciePorts zip chip.pciePorts).foreach{ case (port, chipport) =>
+      chipport.REFCLK_rxp := port.REFCLK_rxp
+      chipport.REFCLK_rxn := port.REFCLK_rxn
+      port.pci_exp_txp := chipport.pci_exp_txp
+      port.pci_exp_txn := chipport.pci_exp_txn
+      chipport.pci_exp_rxp := port.pci_exp_rxp
+      chipport.pci_exp_rxn := port.pci_exp_rxn
+      chipport.axi_aresetn := !reset_0
+      chipport.axi_ctl_aresetn := !reset_0
+    }
+  }
+}
+
+// ********************************************************************
 // FPGADE4 - Demo on DE4 FPGA board
 // ********************************************************************
 class FPGADE4(implicit val p :Parameters) extends RawModule {

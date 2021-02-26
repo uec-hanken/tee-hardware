@@ -14,10 +14,11 @@ import sifive.blocks.devices.gpio._
 import sifive.blocks.devices.spi._
 import sifive.fpgashells.clocks._
 import sifive.fpgashells.devices.xilinx.xilinxvc707pciex1._
-import uec.teehardware.vc707mig32._
+//import uec.teehardware.vc707mig32._
 
 // ******* For Xilinx FPGAs
 import sifive.fpgashells.ip.xilinx.vc707mig._
+import sifive.fpgashells.ip.xilinx.vcu118mig._
 
 class XilinxVC707MIGIO(depth : BigInt) extends VC707MIGIODDR(depth) with VC707MIGIOClocksReset {
 }
@@ -268,6 +269,256 @@ class TLULtoMIG(cacheBlockBytes: Int, TLparams: TLBundleParameters)(implicit p :
         //bundle.c.bits := 0.U.asTypeOf(new TLBundleC(TLparams))
         bundle.e.valid := false.B
         //bundle.e.bits := 0.U.asTypeOf(new TLBundleE(TLparams))
+    }
+
+    // Create the actual module, and attach the DDR port
+    io.ddrport <> ddr.module.io.port
+  }
+
+}
+
+class XilinxVCU118MIGIO(depth : BigInt) extends VCU118MIGIODDR(depth) with VCU118MIGIOClocksReset {
+}
+
+class XilinxVCU118MIG(c : Seq[AddressSet], cacheBlockBytes: Int, val crossing: ClockCrossingType = AsynchronousCrossing(8))(implicit p: Parameters) extends LazyModule
+  with CrossesToOnlyOneClockDomain {
+  val ranges = AddressRange.fromSets(c)
+  require (ranges.size == 1, "DDR range must be contiguous")
+  val offset = ranges.head.base
+  val depth = ranges.head.size
+  require((depth<=0x80000000L),"vcu118mig supports upto 2GB depth configuraton?")
+
+  val device = new MemoryDevice
+  val node = AXI4SlaveNode(Seq( AXI4SlavePortParameters(
+    slaves = Seq(AXI4SlaveParameters(
+      address       = c,
+      resources     = device.reg,
+      regionType    = RegionType.UNCACHED,
+      executable    = true,
+      supportsWrite = TransferSizes(1, 128),
+      supportsRead  = TransferSizes(1, 128)
+    )),
+    beatBytes = p(ExtMem).head.master.beatBytes)
+  ))
+
+  lazy val module = new LazyRawModuleImp(this) {
+    val io = IO(new Bundle {
+      val port = new XilinxVCU118MIGIO(depth)
+    })
+
+    //MIG black box instantiation
+    val blackbox = Module(new vcu118mig(depth))
+    val (axi_async, _) = node.in(0)
+
+    // Debug AXI
+    //val ila = Module(new ilaaxi())
+    //ila.io.clk := childClock
+    //ila.connectAxi(axi_async)
+
+    childClock := io.port.c0_ddr4_ui_clk
+    childReset := io.port.c0_ddr4_ui_clk_sync_rst
+
+    //pins to top level
+
+    //inouts
+    attach(io.port.c0_ddr4_dq,blackbox.io.c0_ddr4_dq)
+    attach(io.port.c0_ddr4_dqs_c,blackbox.io.c0_ddr4_dqs_c)
+    attach(io.port.c0_ddr4_dqs_t,blackbox.io.c0_ddr4_dqs_t)
+    attach(io.port.c0_ddr4_dm_dbi_n,blackbox.io.c0_ddr4_dm_dbi_n)
+    //outputs
+    io.port.c0_ddr4_adr          := blackbox.io.c0_ddr4_adr
+    io.port.c0_ddr4_bg           := blackbox.io.c0_ddr4_bg
+    io.port.c0_ddr4_ba           := blackbox.io.c0_ddr4_ba
+    io.port.c0_ddr4_reset_n      := blackbox.io.c0_ddr4_reset_n
+    io.port.c0_ddr4_act_n        := blackbox.io.c0_ddr4_act_n
+    io.port.c0_ddr4_ck_c         := blackbox.io.c0_ddr4_ck_c
+    io.port.c0_ddr4_ck_t         := blackbox.io.c0_ddr4_ck_t
+    io.port.c0_ddr4_cke          := blackbox.io.c0_ddr4_cke
+    io.port.c0_ddr4_cs_n         := blackbox.io.c0_ddr4_cs_n
+    io.port.c0_ddr4_odt          := blackbox.io.c0_ddr4_odt
+
+    //inputs
+    //NO_BUFFER clock
+    blackbox.io.c0_sys_clk_i     := io.port.c0_sys_clk_i
+
+    io.port.c0_ddr4_ui_clk            := blackbox.io.c0_ddr4_ui_clk
+    io.port.c0_ddr4_ui_clk_sync_rst   := blackbox.io.c0_ddr4_ui_clk_sync_rst
+    blackbox.io.c0_ddr4_aresetn       := io.port.c0_ddr4_aresetn
+    //app_sr_active           := unconnected
+    //app_ref_ack             := unconnected
+    //app_zq_ack              := unconnected
+
+    val awaddr = axi_async.aw.bits.addr - offset.U
+    val araddr = axi_async.ar.bits.addr - offset.U
+
+    //slave AXI interface write address ports
+    blackbox.io.c0_ddr4_s_axi_awid    := axi_async.aw.bits.id
+    blackbox.io.c0_ddr4_s_axi_awaddr  := awaddr //truncated
+    blackbox.io.c0_ddr4_s_axi_awlen   := axi_async.aw.bits.len
+    blackbox.io.c0_ddr4_s_axi_awsize  := axi_async.aw.bits.size
+    blackbox.io.c0_ddr4_s_axi_awburst := axi_async.aw.bits.burst
+    blackbox.io.c0_ddr4_s_axi_awlock  := axi_async.aw.bits.lock
+    blackbox.io.c0_ddr4_s_axi_awcache := "b0011".U
+    blackbox.io.c0_ddr4_s_axi_awprot  := axi_async.aw.bits.prot
+    blackbox.io.c0_ddr4_s_axi_awqos   := axi_async.aw.bits.qos
+    blackbox.io.c0_ddr4_s_axi_awvalid := axi_async.aw.valid
+    axi_async.aw.ready        := blackbox.io.c0_ddr4_s_axi_awready
+
+    //slave interface write data ports
+    blackbox.io.c0_ddr4_s_axi_wdata   := axi_async.w.bits.data
+    blackbox.io.c0_ddr4_s_axi_wstrb   := axi_async.w.bits.strb
+    blackbox.io.c0_ddr4_s_axi_wlast   := axi_async.w.bits.last
+    blackbox.io.c0_ddr4_s_axi_wvalid  := axi_async.w.valid
+    axi_async.w.ready         := blackbox.io.c0_ddr4_s_axi_wready
+
+    //slave interface write response
+    blackbox.io.c0_ddr4_s_axi_bready  := axi_async.b.ready
+    axi_async.b.bits.id       := blackbox.io.c0_ddr4_s_axi_bid
+    axi_async.b.bits.resp     := blackbox.io.c0_ddr4_s_axi_bresp
+    axi_async.b.valid         := blackbox.io.c0_ddr4_s_axi_bvalid
+
+    //slave AXI interface read address ports
+    blackbox.io.c0_ddr4_s_axi_arid    := axi_async.ar.bits.id
+    blackbox.io.c0_ddr4_s_axi_araddr  := araddr // truncated
+    blackbox.io.c0_ddr4_s_axi_arlen   := axi_async.ar.bits.len
+    blackbox.io.c0_ddr4_s_axi_arsize  := axi_async.ar.bits.size
+    blackbox.io.c0_ddr4_s_axi_arburst := axi_async.ar.bits.burst
+    blackbox.io.c0_ddr4_s_axi_arlock  := axi_async.ar.bits.lock
+    blackbox.io.c0_ddr4_s_axi_arcache := "b0011".U
+    blackbox.io.c0_ddr4_s_axi_arprot  := axi_async.ar.bits.prot
+    blackbox.io.c0_ddr4_s_axi_arqos   := axi_async.ar.bits.qos
+    blackbox.io.c0_ddr4_s_axi_arvalid := axi_async.ar.valid
+    axi_async.ar.ready        := blackbox.io.c0_ddr4_s_axi_arready
+
+    //slace AXI interface read data ports
+    blackbox.io.c0_ddr4_s_axi_rready  := axi_async.r.ready
+    axi_async.r.bits.id       := blackbox.io.c0_ddr4_s_axi_rid
+    axi_async.r.bits.data     := blackbox.io.c0_ddr4_s_axi_rdata
+    axi_async.r.bits.resp     := blackbox.io.c0_ddr4_s_axi_rresp
+    axi_async.r.bits.last     := blackbox.io.c0_ddr4_s_axi_rlast
+    axi_async.r.valid         := blackbox.io.c0_ddr4_s_axi_rvalid
+
+    //misc
+    io.port.c0_init_calib_complete := blackbox.io.c0_init_calib_complete
+    blackbox.io.sys_rst       :=io.port.sys_rst
+    //mig.device_temp         :- unconnceted
+  }
+}
+
+class XilinxVCU118MIGPlatform(c : Seq[AddressSet], cacheBlockBytes: Int)(implicit p: Parameters) extends LazyModule {
+  val ranges = AddressRange.fromSets(c)
+  require (ranges.size == 1, "DDR range must be contiguous")
+  val offset = ranges.head.base
+  val depth = ranges.head.size
+
+  //val buffer  = LazyModule(new TLBuffer)
+  val toaxi4 = LazyModule(new TLToAXI4(adapterName = Some("mem"), stripBits = 1))
+  val indexer = LazyModule(new AXI4IdIndexer(idBits = 4))
+  val deint = LazyModule(new AXI4Deinterleaver(p(CacheBlockBytes)))
+  val yank = LazyModule(new AXI4UserYanker)
+  val island  = LazyModule(new XilinxVCU118MIG(c, cacheBlockBytes))
+
+  val indexernode = new AXI4IdentityNode
+  val deintnode = new AXI4IdentityNode
+  val yanknode = new AXI4IdentityNode
+  val islandnode = new AXI4IdentityNode
+
+  val node: TLInwardNode = indexernode := toaxi4.node // := buffer.node
+  indexer.node := indexernode
+  deintnode := indexer.node
+  deint.node := deintnode
+  yanknode := deint.node
+  yank.node := yanknode
+  islandnode := yank.node
+  island.crossAXI4In(island.node) := islandnode
+
+  lazy val module = new LazyModuleImp(this) {
+    val io = IO(new Bundle {
+      val port = new XilinxVCU118MIGIO(island.depth)
+    })
+
+    // Debug AXI indexer
+    /*val (axiindexer, _) = indexernode.in(0)
+    val ilaindexer = Module(new ilaaxi())
+    ilaindexer.io.clk := clock
+    ilaindexer.connectAxi(axiindexer)
+
+    // Debug AXI deinterlaver
+    val (axideint, _) = deintnode.in(0)
+    val iladeint = Module(new ilaaxi())
+    iladeint.io.clk := clock
+    iladeint.connectAxi(axideint)
+
+    // Debug AXI user yanker
+    val (axiyank, _) = yanknode.in(0)
+    val ilayank = Module(new ilaaxi())
+    ilayank.io.clk := clock
+    ilayank.connectAxi(axiyank)
+
+    // Debug AXI island
+    val (axiisland, _) = yanknode.out(0)
+    val ilaisland = Module(new ilaaxi())
+    ilaisland.io.clk := clock
+    ilaisland.connectAxi(axiisland)*/
+
+    io.port <> island.module.io.port
+  }
+}
+
+class TLULtoMIGUltra(cacheBlockBytes: Int, TLparams: TLBundleParameters)(implicit p :Parameters) extends LazyModule {
+  // Create the DDR
+  val ddr = LazyModule(
+    new XilinxVCU118MIGPlatform(
+      AddressSet.misaligned(
+        p(ExtMem).get.master.base,
+        0x40000000L * 1 // 1GiB for the VC707DDR,
+      ),
+      cacheBlockBytes
+    )
+  )
+
+  // Create a dummy node where we can attach our silly TL port
+  val node = TLClientNode(Seq.tabulate(1) { channel =>
+    TLMasterPortParameters.v1(
+      clients = Seq(TLMasterParameters.v1(
+        name = "dummy",
+        sourceId = IdRange(0, 64) // CKDUR: The maximum ID possible goes here.
+      ))
+    )
+  })
+
+  // Attach to the DDR
+  ddr.node := node
+
+  lazy val module = new LazyModuleImp(this) {
+    val io = IO(new Bundle {
+      val tlport = Flipped(new TLUL(TLparams))
+      var ddrport = new XilinxVCU118MIGIO(ddr.depth)
+    })
+
+    val depth = ddr.depth
+
+    //val mem_tl = Wire(HeterogeneousBag.fromNode(node.in))
+    node.out.foreach {
+      case  (bundle, _) =>
+        // Debug TL
+        //val ilatoaxi = Module(new ilatl())
+        //ilatoaxi.io.clk := clock
+        //ilatoaxi.connectAxi(bundle)
+
+        bundle.a.valid := io.tlport.a.valid
+        io.tlport.a.ready := bundle.a.ready
+        bundle.a.bits := io.tlport.a.bits
+
+        io.tlport.d.valid := bundle.d.valid
+        bundle.d.ready := io.tlport.d.ready
+        io.tlport.d.bits := bundle.d.bits
+        //bundle.b.bits := (new TLBundleB(TLparams)).fromBits(0.U)
+        bundle.b.ready := true.B
+        bundle.c.valid := false.B
+        //bundle.c.bits := 0.U.asTypeOf(new TLBundleC(TLparams))
+        bundle.e.valid := false.B
+      //bundle.e.bits := 0.U.asTypeOf(new TLBundleE(TLparams))
     }
 
     // Create the actual module, and attach the DDR port
