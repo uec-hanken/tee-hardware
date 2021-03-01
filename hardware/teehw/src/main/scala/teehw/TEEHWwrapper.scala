@@ -366,7 +366,7 @@ class FPGAVCU118(implicit val p :Parameters) extends RawModule {
     // PLL instance
     val c = new PLLParameters(
       name = "pll",
-      input = PLLInClockParameters(freqMHz = 200.0, feedback = true),
+      input = PLLInClockParameters(freqMHz = 250.0, feedback = true),
       req = Seq(
         PLLOutClockParameters(freqMHz = 48.0),
         PLLOutClockParameters(freqMHz = 50.0),

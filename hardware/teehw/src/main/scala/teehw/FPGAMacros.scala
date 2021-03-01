@@ -471,7 +471,7 @@ class TLULtoMIGUltra(cacheBlockBytes: Int, TLparams: TLBundleParameters)(implici
     new XilinxVCU118MIGPlatform(
       AddressSet.misaligned(
         p(ExtMem).get.master.base,
-        0x40000000L * 1 // 1GiB for the VC707DDR,
+        0x80000000L * 1 // 2GiB for the VCU118DDR,
       ),
       cacheBlockBytes
     )
