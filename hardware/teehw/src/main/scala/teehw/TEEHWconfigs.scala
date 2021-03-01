@@ -308,7 +308,7 @@ class VC707MiniConfig extends Config((site,here,up) => {
   case PeripheryRandomKey => up(PeripheryRandomKey, site) map {r =>
     r.copy(board = "Xilinx")
   }})
-  
+
 class VCU118Config extends Config((site,here,up) => {
   case FreqKeyMHz => 80.0
   /* Force to use BootROM because VC707 doesn't have enough GPIOs for QSPI *///TODO: what fir VCU118?, has qspi on board

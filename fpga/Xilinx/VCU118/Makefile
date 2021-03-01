@@ -13,7 +13,7 @@ build_dir=$(sim_dir)/generated_src
 SUB_PROJECT ?= FPGAVCU118
 BOARD?=VCU118
 ISACONF?=RV64GC
-#VC707 can only use MBus64 #TODO
+#FPGAVCU118 can only use MBus64 #TODO
 MBUS?=MBus64
 BOOTSRC?=BOOTROM
 PCIE?=WoPCIe
