@@ -318,9 +318,10 @@ class VCU118Config extends Config((site,here,up) => {
   case PeripherySPIFlashKey => List() // disable SPIFlash
   /* Force to disable USB1.1, because there are no pins */
   case PeripheryUSB11HSKey => List()
-  case PeripheryRandomKey => up(PeripheryRandomKey, site) map {r =>
-    r.copy(board = "Xilinx")
-  }})
+  case PeripheryRandomKey => List()
+  case PeripheryGPIOKey => up(PeripheryGPIOKey).map(_.copy(width = 12)) // Only 12
+  case GPIOInKey => 4
+})
   
 
 // ***************** The simulation flag *****************
