@@ -304,18 +304,18 @@ class FPGAVCU118(implicit val p :Parameters) extends RawModule {
   val gpio_in = IO(Input(UInt(p(GPIOInKey).W)))
   val gpio_out = IO(Output(UInt((p(PeripheryGPIOKey).head.width-p(GPIOInKey)).W)))
   val jtag = IO(new Bundle {
-    val jtag_TDI = (Input(Bool())) // J19_20 / XADC_GPIO_2
-    val jtag_TDO = (Output(Bool())) // J19_17 / XADC_GPIO_1
-    val jtag_TCK = (Input(Bool())) // J19_19 / XADC_GPIO_3
-    val jtag_TMS = (Input(Bool())) // J19_18 / XADC_GPIO_0
+    val jtag_TDI = (Input(Bool())) // J53.5
+    val jtag_TDO = (Output(Bool())) // J53.7
+    val jtag_TCK = (Input(Bool())) // J53.1
+    val jtag_TMS = (Input(Bool())) // J53.3
   })
   val sdio = IO(new Bundle {
-    val sdio_clk = (Output(Bool()))
-    val sdio_cmd = (Output(Bool()))
-    val sdio_dat_0 = (Input(Bool()))
-    val sdio_dat_1 = (Analog(1.W))
-    val sdio_dat_2 = (Analog(1.W))
-    val sdio_dat_3 = (Output(Bool()))
+    val sdio_clk = (Output(Bool())) // J53.2
+    val sdio_cmd = (Output(Bool())) // J53.4
+    val sdio_dat_0 = (Input(Bool())) // J53.6
+    val sdio_dat_1 = (Analog(1.W)) // NC
+    val sdio_dat_2 = (Analog(1.W)) // NC
+    val sdio_dat_3 = (Output(Bool())) // J53.8
   })
   val uart_txd = IO(Output(Bool()))
   val uart_rxd = IO(Input(Bool()))
@@ -331,10 +331,10 @@ class FPGAVCU118(implicit val p :Parameters) extends RawModule {
     })}
 
   val USB = p(PeripheryUSB11HSKey).map{_ => IO(new Bundle {
-    val FullSpeed = Output(Bool()) // D12 / LA05_N / J1_23
-    val WireDataIn = Input(Bits(2.W)) // H7 / LA02_P / J1_9 // H8 / LA02_N / J1_11
-    val WireCtrlOut = Output(Bool()) // D11 / LA05_P / J1_21
-    val WireDataOut = Output(Bits(2.W)) // G9 / LA03_P / J1_13 // G10 / LA03_N / J1_15
+    val FullSpeed = Output(Bool()) // NC
+    val WireDataIn = Input(Bits(2.W)) // NC // NC
+    val WireCtrlOut = Output(Bool()) // NC
+    val WireDataOut = Output(Bits(2.W)) // NC // NC
   })}
 
   val sys_clock_p = IO(Input(Clock()))
