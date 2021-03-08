@@ -24,7 +24,7 @@
 // SD card initialization must happen at 100-400kHz
 #define SD_POWER_ON_FREQ_KHZ 400L
 // SD cards normally support reading/writing at 20MHz
-#define SD_POST_INIT_CLK_KHZ 20000L
+#define SD_POST_INIT_CLK_KHZ 1000L
 
 // Command frame starts by asserting low and then high for first two clock edges
 #define SD_CMD(cmd) (0x40 | (cmd))

@@ -9,7 +9,10 @@ set_property CONFIG_VOLTAGE 1.8                       [current_design]
 set_property CONFIG_MODE SPIx8                        [current_design]
 
 # SDC part
-
+set_property PACKAGE_PIN D12      [get_ports {sys_clock_n}] ;
+set_property IOSTANDARD  DIFF_SSTL12 [get_ports {sys_clock_n}] ;
+set_property PACKAGE_PIN E12      [get_ports {sys_clock_p}] ;
+set_property IOSTANDARD  DIFF_SSTL12 [get_ports {sys_clock_p}] ;
 create_clock -name sys_diff_clk -period 4.0 [get_ports {sys_clock_p}]
 set_input_jitter sys_diff_clk 0.5
 create_clock -name JTCK -period 100.0 [get_ports {jtag_jtag_TCK}]
@@ -35,42 +38,49 @@ set_clock_groups -asynchronous \
     }]]
 
 # PINS
-set_property PACKAGE_PIN D12      [get_ports {sys_clock_n}] ;
-set_property IOSTANDARD  DIFF_SSTL12 [get_ports {sys_clock_n}] ;
-set_property PACKAGE_PIN E12      [get_ports {sys_clock_p}] ;
-set_property IOSTANDARD  DIFF_SSTL12 [get_ports {sys_clock_p}] ;
+
+# Attached to PMOD1 (J53.2,4,6,8)
+set_property PACKAGE_PIN {P29} [get_ports {jtag_jtag_TCK}]
+set_property IOSTANDARD {LVCMOS12} [get_ports {jtag_jtag_TCK}]
+set_property PULLUP {TRUE} [get_ports {jtag_jtag_TCK}]
+set_property PACKAGE_PIN {L31} [get_ports {jtag_jtag_TMS}]
+set_property IOSTANDARD {LVCMOS12} [get_ports {jtag_jtag_TMS}]
+set_property PULLUP {TRUE} [get_ports {jtag_jtag_TMS}]
+set_property PACKAGE_PIN {M31} [get_ports {jtag_jtag_TDI}]
+set_property IOSTANDARD {LVCMOS12} [get_ports {jtag_jtag_TDI}]
+set_property PULLUP {TRUE} [get_ports {jtag_jtag_TDI}]
+set_property PACKAGE_PIN {R29} [get_ports {jtag_jtag_TDO}]
+set_property IOSTANDARD {LVCMOS12} [get_ports {jtag_jtag_TDO}]
+set_property PULLUP {TRUE} [get_ports {jtag_jtag_TDO}]
 
 set_property CLOCK_DEDICATED_ROUTE {FALSE} [get_nets [get_ports {jtag_jtag_TCK}]]
 
-# Attached to PMOD1 (J53.1,3,5,7)
-set_property PACKAGE_PIN {N28} [get_ports {jtag_jtag_TCK}]
-set_property IOSTANDARD {LVCMOS12} [get_ports {jtag_jtag_TCK}]
-set_property PACKAGE_PIN {M30} [get_ports {jtag_jtag_TMS}]
-set_property IOSTANDARD {LVCMOS12} [get_ports {jtag_jtag_TMS}]
-set_property PACKAGE_PIN {N30} [get_ports {jtag_jtag_TDI}]
-set_property IOSTANDARD {LVCMOS12} [get_ports {jtag_jtag_TDI}]
-set_property PACKAGE_PIN {P30} [get_ports {jtag_jtag_TDO}]
-set_property IOSTANDARD {LVCMOS12} [get_ports {jtag_jtag_TDO}]
+# Attached to PMOD1 (J52.7,3,5,1 [2,4])
+set_property PACKAGE_PIN {AV15} [get_ports {sdio_sdio_clk}]
+set_property IOSTANDARD {LVCMOS18} [get_ports {sdio_sdio_clk}]
+set_property IOB {TRUE} [get_ports {sdio_sdio_clk}]
+# No pullup for SD clk
+set_property PACKAGE_PIN {AY15} [get_ports {sdio_sdio_cmd}]
+set_property IOSTANDARD {LVCMOS18} [get_ports {sdio_sdio_cmd}]
+set_property IOB {TRUE} [get_ports {sdio_sdio_cmd}]
+set_property PULLUP {TRUE} [get_ports {sdio_sdio_cmd}]
+set_property PACKAGE_PIN {AW15} [get_ports {sdio_sdio_dat_0}]
+set_property IOSTANDARD {LVCMOS18} [get_ports {sdio_sdio_dat_0}]
+set_property IOB {TRUE} [get_ports {sdio_sdio_dat_0}]
+set_property PULLUP {TRUE} [get_ports {sdio_sdio_dat_0}]
+set_property PACKAGE_PIN {AY14} [get_ports {sdio_sdio_dat_3}]
+set_property IOSTANDARD {LVCMOS18} [get_ports {sdio_sdio_dat_3}]
+set_property IOB {TRUE} [get_ports {sdio_sdio_dat_3}]
+set_property PULLUP {TRUE} [get_ports {sdio_sdio_dat_3}]
 
-# Attached to PMOD1 (J53.2,4,6,8)
-set_property PACKAGE_PIN {P29} [get_ports {sdio_sdio_clk}]
-set_property IOSTANDARD {LVCMOS12} [get_ports {sdio_sdio_clk}]
-set_property PACKAGE_PIN {L31} [get_ports {sdio_sdio_cmd}]
-set_property IOSTANDARD {LVCMOS12} [get_ports {sdio_sdio_cmd}]
-set_property PACKAGE_PIN {M31} [get_ports {sdio_sdio_dat_0}]
-set_property IOSTANDARD {LVCMOS12} [get_ports {sdio_sdio_dat_0}]
-set_property PACKAGE_PIN {R29} [get_ports {sdio_sdio_dat_3}]
-set_property IOSTANDARD {LVCMOS12} [get_ports {sdio_sdio_dat_3}]
-
-# Not attached!
-#set_property PACKAGE_PIN {AV16} [get_ports {sdio_sdio_dat_1}]
-#set_property IOSTANDARD {LVCMOS18} [get_ports {sdio_sdio_dat_1}]
-#set_property IOB {TRUE} [get_ports {sdio_sdio_dat_1}]
-#set_property PULLUP {TRUE} [get_ports {sdio_sdio_dat_1}]
-#set_property PACKAGE_PIN {AU16} [get_ports {sdio_sdio_dat_2}]
-#set_property IOSTANDARD {LVCMOS18} [get_ports {sdio_sdio_dat_2}]
-#set_property IOB {TRUE} [get_ports {sdio_sdio_dat_2}]
-#set_property PULLUP {TRUE} [get_ports {sdio_sdio_dat_2}]
+set_property PACKAGE_PIN {AV16} [get_ports {sdio_sdio_dat_1}]
+set_property IOSTANDARD {LVCMOS18} [get_ports {sdio_sdio_dat_1}]
+set_property IOB {TRUE} [get_ports {sdio_sdio_dat_1}]
+set_property PULLUP {TRUE} [get_ports {sdio_sdio_dat_1}]
+set_property PACKAGE_PIN {AU16} [get_ports {sdio_sdio_dat_2}]
+set_property IOSTANDARD {LVCMOS18} [get_ports {sdio_sdio_dat_2}]
+set_property IOB {TRUE} [get_ports {sdio_sdio_dat_2}]
+set_property PULLUP {TRUE} [get_ports {sdio_sdio_dat_2}]
 
 set_property PACKAGE_PIN {AY25} [get_ports {uart_ctsn}]
 set_property IOSTANDARD {LVCMOS18} [get_ports {uart_ctsn}]
@@ -106,18 +116,10 @@ set_property PACKAGE_PIN {B17} [get_ports {gpio_in[0]}]
 set_property PACKAGE_PIN {G16} [get_ports {gpio_in[1]}]
 set_property PACKAGE_PIN {J16} [get_ports {gpio_in[2]}]
 set_property PACKAGE_PIN {D21} [get_ports {gpio_in[3]}]
-#set_property PACKAGE_PIN {AW30} [get_ports {gpio_in[4]}]
-#set_property PACKAGE_PIN {AY30} [get_ports {gpio_in[5]}]
-#set_property PACKAGE_PIN {BA30} [get_ports {gpio_in[6]}]
-#set_property PACKAGE_PIN {BB31} [get_ports {gpio_in[7]}]
 set_property IOSTANDARD {LVCMOS12} [get_ports {gpio_in[0]}]
 set_property IOSTANDARD {LVCMOS12} [get_ports {gpio_in[1]}]
 set_property IOSTANDARD {LVCMOS12} [get_ports {gpio_in[2]}]
 set_property IOSTANDARD {LVCMOS12} [get_ports {gpio_in[3]}]
-#set_property IOSTANDARD {LVCMOS18} [get_ports {gpio_in[4]}]
-#set_property IOSTANDARD {LVCMOS18} [get_ports {gpio_in[5]}]
-#set_property IOSTANDARD {LVCMOS18} [get_ports {gpio_in[6]}]
-#set_property IOSTANDARD {LVCMOS18} [get_ports {gpio_in[7]}]
 
 #TODO: Still missing the FPGA_INIT_B
 set_property PACKAGE_PIN {AJ11} [get_ports {qspi_0_qspi_cs}]
@@ -277,9 +279,9 @@ set_property PACKAGE_PIN {G22} [get_ports {ddr_c0_ddr4_dm_dbi_n[7]}]
 #set_property IOSTANDARD {LVCMOS18} [get_ports {USB_0_FullSpeed}]
 
 # TODO: No idea about the REFCLK
-#set_property PACKAGE_PIN {} [get_ports {pciePorts_REFCLK_rxp}]
-#set_property PACKAGE_PIN {} [get_ports {pciePorts_REFCLK_rxn}]
-set_property PACKAGE_PIN {Y7} [get_ports {pciePorts_pci_exp_txp}]
-set_property PACKAGE_PIN {Y6} [get_ports {pciePorts_pci_exp_txn}]
-set_property PACKAGE_PIN {AA4} [get_ports {pciePorts_pci_exp_rxp}]
-set_property PACKAGE_PIN {AA3} [get_ports {pciePorts_pci_exp_rxn}]
+set_property PACKAGE_PIN {W9} [get_ports {pciePorts_REFCLK_rxp}]
+set_property PACKAGE_PIN {W8} [get_ports {pciePorts_REFCLK_rxn}]
+set_property PACKAGE_PIN {V7} [get_ports {pciePorts_pci_exp_txp}]
+set_property PACKAGE_PIN {V6} [get_ports {pciePorts_pci_exp_txn}]
+set_property PACKAGE_PIN {Y2} [get_ports {pciePorts_pci_exp_rxp}]
+set_property PACKAGE_PIN {Y1} [get_ports {pciePorts_pci_exp_rxn}]

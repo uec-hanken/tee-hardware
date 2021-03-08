@@ -310,7 +310,7 @@ class VC707MiniConfig extends Config((site,here,up) => {
   }})
 
 class VCU118Config extends Config((site,here,up) => {
-  case FreqKeyMHz => 80.0
+  case FreqKeyMHz => 20.0
   /* Force to use BootROM because VC707 doesn't have enough GPIOs for QSPI *///TODO: what fir VCU118?, has qspi on board
   case PeripheryMaskROMKey => List(
     MaskROMParams(address = BigInt(0x20000000), depth = 0x4000, name = "BootROM"))
