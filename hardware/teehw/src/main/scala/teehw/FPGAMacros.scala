@@ -412,7 +412,7 @@ class XilinxVCU118MIGPlatform(c : Seq[AddressSet], cacheBlockBytes: Int)(implici
   val depth = ranges.head.size
 
   //val buffer  = LazyModule(new TLBuffer)
-  val toaxi4 = LazyModule(new TLToAXI4(adapterName = Some("mem"), stripBits = 1))
+  val toaxi4 = LazyModule(new TLToAXI4(adapterName = Some("mem"), stripBits = 0))
   val indexer = LazyModule(new AXI4IdIndexer(idBits = 4))
   val deint = LazyModule(new AXI4Deinterleaver(p(CacheBlockBytes)))
   val yank = LazyModule(new AXI4UserYanker)
