@@ -120,7 +120,7 @@ trait HasTEEHWSystem
   // TODO: Also the tlclock binding is manual
   val spiDevs = p(PeripherySPIKey).map { ps => SPIAttachParams(ps).attachTo(this) }
   val spiNodes = spiDevs.map { ps => ps.ioNode.makeSink() }
-  val mmc = new MMCDevice(spiDevs.head.device) // Only the first one is mmc
+  val mmc = new MMCDevice(spiDevs.head.device, p(SDCardMHz)) // Only the first one is mmc
   ResourceBinding {
     Resource(mmc, "reg").bind(ResourceAddress(0))
   }
@@ -141,7 +141,7 @@ trait HasTEEHWSystem
   val qspiNodes = qspiDevs.map { ps => ps.ioNode.makeSink() }
   ResourceBinding {
     qspiDevs.foreach { case ps =>
-      val flash = new FlashDevice(ps.device)
+      val flash = new FlashDevice(ps.device, maxMHz = p(QSPICardMHz))
       Resource(flash, "reg").bind(ResourceAddress(0)) // NOTE: This is new. Maybe is not intended in this way.
     }
   }

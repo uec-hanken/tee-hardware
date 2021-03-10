@@ -19,6 +19,12 @@ case object GPIOInKey extends Field[Int](8)
 // Frequency
 case object FreqKeyMHz extends Field[Double](100.0)
 
+// Frequency of SD
+case object SDCardMHz extends Field[Double](20.0)
+
+// Frequency of QSPI
+case object QSPICardMHz extends Field[Double](50.0)
+
 // Include the PCIe
 case object IncludePCIe extends Field[Boolean](false)
 

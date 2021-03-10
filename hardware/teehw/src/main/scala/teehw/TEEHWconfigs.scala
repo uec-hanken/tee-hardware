@@ -311,14 +311,11 @@ class VC707MiniConfig extends Config((site,here,up) => {
 
 class VCU118Config extends Config((site,here,up) => {
   case FreqKeyMHz => 20.0
-  /* Force to use BootROM because VC707 doesn't have enough GPIOs for QSPI *///TODO: what fir VCU118?, has qspi on board
-  case PeripheryMaskROMKey => List(
-    MaskROMParams(address = BigInt(0x20000000), depth = 0x4000, name = "BootROM"))
-  case TEEHWResetVector => 0x20000000
-  case PeripherySPIFlashKey => List() // disable SPIFlash
+  case SDCardMHz => 5.0
+  case QSPICardMHz => 1.0
   /* Force to disable USB1.1, because there are no pins */
   case PeripheryUSB11HSKey => List()
-  case PeripheryRandomKey => List()
+  case PeripheryRandomKey => up(PeripheryRandomKey, site) map {case r => r.copy(impl = 0) } // TODO: Replace when TRNG ready
   case PeripheryGPIOKey => up(PeripheryGPIOKey).map(_.copy(width = 12)) // Only 12
   case GPIOInKey => 4
 })
