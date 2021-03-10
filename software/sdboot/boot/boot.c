@@ -110,5 +110,6 @@ int boot_load_gpt_partition(void* dst, const gpt_guid* partition_type_guid)
 void boot_fail(long code, int trap)
 {
   kputs("BOOT BY GPT FAILED\n");
+  while(1);
 }
 

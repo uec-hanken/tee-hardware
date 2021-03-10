@@ -92,12 +92,12 @@ class RocketMicro extends Config(
 // Non-secure Ibex (Without Isolation)
 class Ibex2RocketNonSecure extends Config(
     new WithNBigCores(2) ++
-    new WithNIbexCores(1) )
+    new WithNIbexCores(1))
 
 // Non-secure Ibex (Without Isolation) but reduced
 class Ibex2RocketNonSecureReduced extends Config(
     new WithSmallCacheBigCore(2) ++
-    new WithNIbexCores(1) )
+    new WithNIbexCores(1))
 
 // ************ BootROM configuration (BOOTSRC) **************
 class BOOTROM extends Config((site, here, up) => {
@@ -315,6 +315,18 @@ class VC707MiniConfig extends Config((site,here,up) => {
   case PeripheryRandomKey => up(PeripheryRandomKey, site) map {r =>
     r.copy(board = "Xilinx")
   }})
+
+class VCU118Config extends Config((site,here,up) => {
+  case FreqKeyMHz => 20.0
+  case SDCardMHz => 5.0
+  case QSPICardMHz => 1.0
+  /* Force to disable USB1.1, because there are no pins */
+  case PeripheryUSB11HSKey => List()
+  case PeripheryRandomKey => up(PeripheryRandomKey, site) map {case r => r.copy(impl = 0) } // TODO: Replace when TRNG ready
+  case PeripheryGPIOKey => up(PeripheryGPIOKey).map(_.copy(width = 12)) // Only 12
+  case GPIOInKey => 4
+})
+  
 
 // ***************** The simulation flag *****************
 class WithSimulation extends Config((site, here, up) => {

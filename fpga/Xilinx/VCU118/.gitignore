@@ -1,0 +1,5 @@
+*
+!.gitignore
+!Makefile
+!VCU118.shell*
+

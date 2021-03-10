@@ -23,4 +23,8 @@ object RandomRegs {
   val rng_bist_cntr0 = 0x1E0
   val rng_bist_cntr1 = 0x1E4
   val rng_bist_cntr2 = 0x1E8
+  val trng_debug_ctrl = 0x200
+  val trng_debug_out = 0x204
+  val trng_debug_stop = 0x208
+  val trng_debug_counters = 0x20C
 }
