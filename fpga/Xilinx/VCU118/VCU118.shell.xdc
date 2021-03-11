@@ -17,7 +17,7 @@ create_clock -name sys_diff_clk -period 4.0 [get_ports {sys_clock_p}]
 set_input_jitter sys_diff_clk 0.5
 create_clock -name JTCK -period 100.0 [get_ports {jtag_jtag_TCK}]
 set_input_jitter JTCK 0.5
-create_clock -name pcie_ref_clk -period 10.0 [get_ports {pciePorts_REFCLK_rxp}]
+create_clock -name pcie_ref_clk -period 10.0 [get_ports {xdmaPorts_refclk_p}]
 set_input_jitter pcie_ref_clk 0.5
 
 set_clock_groups -asynchronous \
@@ -284,10 +284,9 @@ set_property PACKAGE_PIN {G22} [get_ports {ddr_c0_ddr4_dm_dbi_n[7]}]
 #set_property IOSTANDARD {LVCMOS18} [get_ports {USB_0_WireCtrlOut}]
 #set_property IOSTANDARD {LVCMOS18} [get_ports {USB_0_FullSpeed}]
 
-# TODO: No idea about the REFCLK
-set_property PACKAGE_PIN {W9} [get_ports {pciePorts_REFCLK_rxp}]
-set_property PACKAGE_PIN {W8} [get_ports {pciePorts_REFCLK_rxn}]
-set_property PACKAGE_PIN {V7} [get_ports {pciePorts_pci_exp_txp}]
-set_property PACKAGE_PIN {V6} [get_ports {pciePorts_pci_exp_txn}]
-set_property PACKAGE_PIN {Y2} [get_ports {pciePorts_pci_exp_rxp}]
-set_property PACKAGE_PIN {Y1} [get_ports {pciePorts_pci_exp_rxn}]
+set_property PACKAGE_PIN {U40.7} [get_ports {xdmaPorts_refclk_p}]
+set_property PACKAGE_PIN {U40.6} [get_ports {xdmaPorts_refclk_n}]
+set_property PACKAGE_PIN {P42} [get_ports {xdmaPorts_lanes_pci_exp_txp[0]}]
+set_property PACKAGE_PIN {P43} [get_ports {xdmaPorts_lanes_pci_exp_txn[0]}]
+set_property PACKAGE_PIN {U45} [get_ports {xdmaPorts_lanes_pci_exp_rxp[0]}]
+set_property PACKAGE_PIN {U46} [get_ports {xdmaPorts_lanes_pci_exp_rxn[0]}]

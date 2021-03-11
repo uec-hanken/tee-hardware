@@ -11,6 +11,7 @@ import freechips.rocketchip.rocket._
 import freechips.rocketchip.system._
 import freechips.rocketchip.tile._
 import boom.common._
+import sifive.fpgashells.devices.xilinx.xdma.XDMAParams
 import uec.teehardware.ibex._
 
 // The number of gpios that we want as input
@@ -27,6 +28,7 @@ case object QSPICardMHz extends Field[Double](50.0)
 
 // Include the PCIe
 case object IncludePCIe extends Field[Boolean](false)
+case object XDMAPCIe extends Field[Option[XDMAParams]](None)
 
 // When external the DDR port, has to run at another freq
 case object DDRPortOther extends Field[Boolean](false)

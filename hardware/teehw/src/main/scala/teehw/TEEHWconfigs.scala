@@ -22,6 +22,7 @@ import uec.teehardware.devices.opentitan.alert._
 import uec.teehardware.devices.opentitan.hmac._
 import uec.teehardware.devices.opentitan.otp_ctrl._
 import boom.common._
+import freechips.rocketchip.util.BooleanToAugmentedBoolean
 import uec.teehardware.devices.opentitan.nmi_gen._
 import uec.teehardware.ibex._
 
@@ -324,6 +325,19 @@ class VCU118Config extends Config((site,here,up) => {
   case PeripheryRandomKey => up(PeripheryRandomKey, site) map {case r => r.copy(impl = 0) } // TODO: Replace when TRNG ready
   case PeripheryGPIOKey => up(PeripheryGPIOKey).map(_.copy(width = 12)) // Only 12
   case GPIOInKey => 4
+    // *********** PCI Support ************
+    // We are going to support the PCIe using XDMA
+    // The connections are similar, but the definitions are not
+    // In the case we detect the up(IncludePCIe), we enable the DMAPCIe
+    // From there, is just a matter of actually disabling always the IncludePCIe,
+    // as this one just enables the VC707 version
+    // TODO: Do a cleaner approach
+  case XDMAPCIe => up(IncludePCIe).option(sifive.fpgashells.ip.xilinx.xdma.XDMAParams(
+    name = "fmc_xdma", location = "X0Y3", lanes = 1,
+    bars = Seq(AddressSet(0x40000000L, 0x1FFFFFFFL)),
+    control = 0x2000000000L
+  ))
+  case IncludePCIe => false
 })
   
 

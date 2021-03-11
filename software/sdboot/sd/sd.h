@@ -15,6 +15,7 @@ extern uint32_t volatile * spi;
 int sd_init(unsigned int input_clk_khz);
 int sd_copy(void* dst, uint32_t src_lba, size_t size);
 int copy(void);
+extern long int sd_clk_freq;
 
 #endif /* !__ASSEMBLER__ */
 
