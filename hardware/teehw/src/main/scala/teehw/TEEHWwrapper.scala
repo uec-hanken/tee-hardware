@@ -13,6 +13,7 @@ import sifive.fpgashells.clocks._
 import sifive.fpgashells.devices.xilinx.xilinxvc707pciex1._
 import uec.teehardware.devices.usb11hs._
 import freechips.rocketchip.util._
+import sifive.fpgashells.shell.xilinx.XDMATopPads
 
 // **********************************************************************
 // **TEEHW chip - for doing the only-input/output chip
@@ -52,6 +53,7 @@ class TEEHWbase(implicit val p :Parameters) extends RawModule {
   val ChildClock = p(DDRPortOther).option(IO(Input(Clock())))
   val ChildReset = p(DDRPortOther).option(IO(Input(Bool())))
   val pciePorts = p(IncludePCIe).option(IO(new XilinxVC707PCIeX1IO))
+  val xdmaPorts = p(XDMAPCIe).map(A => IO(new XDMATopPads(A.lanes)))
   // These are later connected
   val clock = Wire(Clock())
   val reset = Wire(Bool()) // System reset (for cores)
@@ -122,6 +124,7 @@ class TEEHWbase(implicit val p :Parameters) extends RawModule {
 
     // PCIe port (if available)
     (pciePorts zip system.io.pciePorts).foreach{ case (port, sysport) => port <> sysport }
+    (xdmaPorts zip system.io.xdmaPorts).foreach{ case (port, sysport) => port <> sysport }
   }
   val cacheBlockBytes = cacheBlockBytesOpt.get
 }
@@ -197,6 +200,7 @@ class FPGAVC707(implicit val p :Parameters) extends RawModule {
   val reset = Wire(Bool())
 
   val pciePorts = p(IncludePCIe).option(IO(new XilinxVC707PCIeX1Pads))
+  val xdmaPorts = p(XDMAPCIe).map(A => IO(new XDMATopPads(A.lanes)))
 
   var ddr: Option[VC707MIGIODDR] = None
 
@@ -287,6 +291,7 @@ class FPGAVC707(implicit val p :Parameters) extends RawModule {
       chipport.axi_aresetn := !reset_0
       chipport.axi_ctl_aresetn := !reset_0
     }
+    (xdmaPorts zip chip.xdmaPorts).foreach{ case (port, sysport) => port <> sysport }
   }
 }
 
@@ -344,6 +349,7 @@ class FPGAVCU118(implicit val p :Parameters) extends RawModule {
   val reset = Wire(Bool())
 
   val pciePorts = p(IncludePCIe).option(IO(new XilinxVC707PCIeX1Pads))
+  val xdmaPorts = p(XDMAPCIe).map(A => IO(new XDMATopPads(A.lanes)))
 
   var ddr: Option[VCU118MIGIODDR] = None
 
@@ -434,6 +440,7 @@ class FPGAVCU118(implicit val p :Parameters) extends RawModule {
       chipport.axi_aresetn := !reset_0
       chipport.axi_ctl_aresetn := !reset_0
     }
+    (xdmaPorts zip chip.xdmaPorts).foreach{ case (port, sysport) => port <> sysport }
   }
 }
 

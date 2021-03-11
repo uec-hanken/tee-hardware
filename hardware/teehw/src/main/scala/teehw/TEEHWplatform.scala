@@ -20,6 +20,10 @@ import sifive.blocks.devices.uart._
 import sifive.blocks.devices.i2c._
 import sifive.blocks.devices.jtag._
 import sifive.fpgashells.devices.xilinx.xilinxvc707pciex1._
+import sifive.fpgashells.ip.xilinx.xdma._
+import sifive.fpgashells.devices.xilinx.xdma.{XDMAClocks, XDMAPads, _}
+import sifive.fpgashells.ip.xilinx.IBUFDS_GTE4
+import sifive.fpgashells.shell.xilinx.XDMATopPads
 import uec.teehardware.devices.aes._
 import uec.teehardware.devices.ed25519._
 import uec.teehardware.devices.random._
@@ -164,7 +168,7 @@ trait HasTEEHWSystem
     val nodeSlave = TLIdentityNode()
     val nodeMaster = TLIdentityNode()
 
-    // Attach to the PCIe. NOTE: For some reason, they use TLIdentitiNode here. Not sure why tho.
+    // Attach to the PCIe. NOTE: For some reason, they use TLIdentityNode here. Not sure why tho.
     // Maybe is the fact of just doing a crosstalk here
     pcie.crossTLIn(pcie.slave) := nodeSlave
     pcie.crossTLIn(pcie.control) := nodeSlave
@@ -182,6 +186,29 @@ trait HasTEEHWSystem
     Some(pcie)
   }
   else None
+
+  val xdma = p(XDMAPCIe).map { cfg =>
+    val xdma = LazyModule(new XDMA(cfg))
+    val nodeSlave = TLIdentityNode()
+    val nodeMaster = TLIdentityNode()
+
+    // Attach to the PCIe. NOTE: For some reason, they use TLIdentityNode here. Not sure why tho.
+    // Maybe is the fact of just doing a crosstalk here
+    xdma.crossTLIn(xdma.slave) := nodeSlave
+    xdma.crossTLIn(xdma.control) := nodeSlave
+    nodeMaster := xdma.crossTLOut(xdma.master)
+
+    val pciename = Some(s"xdma_0")
+    sbus.fromMaster(pciename) {
+      nodeMaster
+    }
+    sbus.toFixedWidthSlave(pciename) {
+      nodeSlave
+    }
+    ibus.fromSync := xdma.intnode
+
+    xdma
+  }
 
   // add ROM devices
   val maskROMs = p(MaskROMLocated(location)).map { MaskROM.attach(_, this, CBUS) }
@@ -273,6 +300,25 @@ trait HasTEEHWSystemModule extends HasRTCModuleImp
     port
   }
 
+  val xdmaPorts = outer.xdma.map { xdma =>
+    val io = IO(new XDMATopPads(p(XDMAPCIe).get.lanes))
+    val ibufds = Module(new IBUFDS_GTE4)
+    ibufds.suggestName(s"${name}_refclk_ibufds")
+    ibufds.io.CEB := false.B
+    ibufds.io.I   := io.refclk.p
+    ibufds.io.IB  := io.refclk.n
+    xdma.module.io.clocks.sys_clk_gt := ibufds.io.O
+    xdma.module.io.clocks.sys_clk := ibufds.io.ODIV2
+    xdma.module.io.clocks.sys_rst_n := !reset.asBool() // TODO: We have no idea this will work
+    io.lanes <> xdma.module.io.pads
+    io
+  }
+
+  // Connect the global reset vector
+  // In BootROM scenario: 0x20000000
+  // In QSPI & sim scenarios: 0x10040
+  global_reset_vector := p(TEEHWResetVector).U
+
   // NOTE: Continuation of the clock assignation
   outer.clockGroup.out.unzip._1.map {out: ClockGroupBundle =>
     out.member.data.foreach { o =>
@@ -330,6 +376,7 @@ class TEEHWPlatformIO(val params: Option[TLBundleParameters] = None)
   val ChildClock = p(DDRPortOther).option(Input(Clock()))
   val ChildReset = p(DDRPortOther).option(Input(Bool()))
   val pciePorts = p(IncludePCIe).option(new XilinxVC707PCIeX1IO)
+  val xdmaPorts = p(XDMAPCIe).map(A => new XDMATopPads(A.lanes))
 }
 
 object TEEHWPlatform {
@@ -427,9 +474,8 @@ object TEEHWPlatform {
     }
 
     // PCIe port connection
-    if(p(IncludePCIe)) {
-      io.pciePorts.get <> sys.pciePorts.get
-    }
+    (io.pciePorts zip sys.pciePorts).foreach{ case (a, b) => a <> b }
+    (io.xdmaPorts zip sys.xdmaPorts).foreach{ case (a, b) => a <> b }
   }
 }
 
