@@ -169,15 +169,7 @@ class FPGAVC707(implicit val p :Parameters) extends RawModule {
   val uart_txd = IO(Output(Bool()))
   val uart_rxd = IO(Input(Bool()))
 
-  val qspi = p(PeripherySPIFlashKey).map{_ =>
-    IO(new Bundle {
-      val qspi_cs = (Output(UInt(p(PeripherySPIFlashKey).head.csWidth.W)))
-      val qspi_sck = (Output(Bool()))
-      val qspi_miso = (Input(Bool()))
-      val qspi_mosi = (Output(Bool()))
-      val qspi_wp = (Output(Bool()))
-      val qspi_hold = (Output(Bool()))
-    })}
+  var qspi: Option[TEEHWQSPIBundle] = None
 
   val USB = p(PeripheryUSB11HSKey).map{_ => IO(new Bundle {
     val FullSpeed = Output(Bool()) // D12 / LA05_N / J1_23
@@ -266,6 +258,7 @@ class FPGAVC707(implicit val p :Parameters) extends RawModule {
     gpio_out := Cat(reset_0, reset_1, reset_2, reset_3, init_calib_complete.getOrElse(false.B))
     chip.gpio_in := gpio_in
     jtag <> chip.jtag
+    qspi = chip.qspi.map(A => IO ( new TEEHWQSPIBundle(A.csWidth) ) )
     (chip.qspi zip qspi).foreach { case (sysqspi, portspi) => portspi <> sysqspi}
     chip.jtag.jtag_TCK := IBUFG(jtag.jtag_TCK.asClock).asUInt
     chip.uart_rxd := uart_rxd	  // UART_TXD
@@ -323,15 +316,7 @@ class FPGAVCU118(implicit val p :Parameters) extends RawModule {
   val uart_txd = IO(Output(Bool()))
   val uart_rxd = IO(Input(Bool()))
 
-  val qspi = p(PeripherySPIFlashKey).map{_ =>
-    IO(new Bundle {
-      val qspi_cs = (Output(UInt(p(PeripherySPIFlashKey).head.csWidth.W)))
-      val qspi_sck = (Output(Bool()))
-      val qspi_miso = (Input(Bool()))
-      val qspi_mosi = (Output(Bool()))
-      val qspi_wp = (Output(Bool()))
-      val qspi_hold = (Output(Bool()))
-    })}
+  var qspi: Option[TEEHWQSPIBundle] = None
 
   val USB = p(PeripheryUSB11HSKey).map{_ => IO(new Bundle {
     val FullSpeed = Output(Bool()) // NC
@@ -420,6 +405,7 @@ class FPGAVCU118(implicit val p :Parameters) extends RawModule {
     gpio_out := Cat(reset_0, reset_1, reset_2, reset_3, init_calib_complete.getOrElse(false.B))
     chip.gpio_in := gpio_in
     jtag <> chip.jtag
+    qspi = chip.qspi.map(A => IO ( new TEEHWQSPIBundle(A.csWidth) ) )
     (chip.qspi zip qspi).foreach { case (sysqspi, portspi) => portspi <> sysqspi}
     chip.jtag.jtag_TCK := IBUFG(jtag.jtag_TCK.asClock).asUInt
     chip.uart_rxd := uart_rxd	  // UART_TXD
@@ -558,15 +544,8 @@ class FPGADE4(implicit val p :Parameters) extends RawModule {
     val jtag_TCK = (Input(Bool()))
     val jtag_TDO = (Output(Bool()))
   })
-  val qspi = p(PeripherySPIFlashKey).map{_ =>
-    IO(new Bundle {
-      val qspi_cs = (Output(UInt(p(PeripherySPIFlashKey).head.csWidth.W)))
-      val qspi_sck = (Output(Bool()))
-      val qspi_miso = (Input(Bool()))
-      val qspi_mosi = (Output(Bool()))
-      val qspi_wp = (Output(Bool()))
-      val qspi_hold = (Output(Bool()))
-    })}
+
+  var qspi: Option[TEEHWQSPIBundle] = None
 
   val USB = p(PeripheryUSB11HSKey).map{_ => IO(new Bundle {
     val FullSpeed = Output(Bool()) // GPIO0_D[7]
@@ -698,6 +677,7 @@ class FPGADE4(implicit val p :Parameters) extends RawModule {
     )
     chip.gpio_in := SW(7,0)			// input  [7:0]
     jtag <> chip.jtag
+    qspi = chip.qspi.map(A => IO ( new TEEHWQSPIBundle(A.csWidth) ) )
     (chip.qspi zip qspi).foreach { case (sysqspi, portspi) => portspi <> sysqspi}
     chip.uart_rxd := UART_RXD	// UART_TXD
     UART_TXD := chip.uart_txd 	// UART_RXD
@@ -868,15 +848,8 @@ class FPGATR4(implicit val p :Parameters) extends RawModule {
     val sdio_dat_2 = (Analog(1.W))
     val sdio_dat_3 = (Output(Bool()))
   })
-  val qspi = p(PeripherySPIFlashKey).map{_ =>
-    IO(new Bundle {
-      val qspi_cs = (Output(UInt(p(PeripherySPIFlashKey).head.csWidth.W)))
-      val qspi_sck = (Output(Bool()))
-      val qspi_miso = (Input(Bool()))
-      val qspi_mosi = (Output(Bool()))
-      val qspi_wp = (Output(Bool()))
-      val qspi_hold = (Output(Bool()))
-    })}
+
+  var qspi: Option[TEEHWQSPIBundle] = None
 
   val USB = p(PeripheryUSB11HSKey).map{_ => IO(new Bundle {
     val FullSpeed = Output(Bool()) // HSMC_TX_p[10] / PIN_AW27 / GPIO1_D17 GPIO1[20]
@@ -954,6 +927,7 @@ class FPGATR4(implicit val p :Parameters) extends RawModule {
     )
     chip.gpio_in := Cat(BUTTON(3), BUTTON(1,0), SW(1,0))
     jtag <> chip.jtag
+    qspi = chip.qspi.map(A => IO ( new TEEHWQSPIBundle(A.csWidth) ) )
     (chip.qspi zip qspi).foreach { case (sysqspi, portspi) => portspi <> sysqspi}
     chip.uart_rxd := UART_RXD	// UART_TXD
     UART_TXD := chip.uart_txd // UART_RXD
