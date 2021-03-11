@@ -12,10 +12,20 @@ import sifive.blocks.devices.spi._
 import sifive.fpgashells.clocks._
 import sifive.fpgashells.devices.xilinx.xilinxvc707pciex1._
 import uec.teehardware.devices.usb11hs._
+import freechips.rocketchip.util._
 
 // **********************************************************************
 // **TEEHW chip - for doing the only-input/output chip
 // **********************************************************************
+
+class TEEHWQSPIBundle(val csWidth: Int = 1) extends Bundle {
+  val qspi_cs = (Output(UInt(csWidth.W)))
+  val qspi_sck = (Output(Bool()))
+  val qspi_miso = (Input(Bool()))
+  val qspi_mosi = (Output(Bool()))
+  val qspi_wp = (Output(Bool()))
+  val qspi_hold = (Output(Bool()))
+}
 
 class TEEHWbase(implicit val p :Parameters) extends RawModule {
   // The actual pins of this module.
@@ -35,15 +45,7 @@ class TEEHWbase(implicit val p :Parameters) extends RawModule {
     val sdio_dat_2 = (Analog(1.W))
     val sdio_dat_3 = (Output(Bool()))
   })
-  val qspi = p(PeripherySPIFlashKey).map{ _ =>
-    IO(new Bundle {
-      val qspi_cs = (Output(UInt(p(PeripherySPIFlashKey).head.csWidth.W)))
-      val qspi_sck = (Output(Bool()))
-      val qspi_miso = (Input(Bool()))
-      val qspi_mosi = (Output(Bool()))
-      val qspi_wp = (Output(Bool()))
-      val qspi_hold = (Output(Bool()))
-    })}
+  var qspi: Option[TEEHWQSPIBundle] = None
   val uart_txd = IO(Output(Bool()))
   val uart_rxd = IO(Input(Bool()))
   val usb11hs = p(PeripheryUSB11HSKey).map{ _ => IO(new USB11HSPortIO)}
@@ -87,22 +89,23 @@ class TEEHWbase(implicit val p :Parameters) extends RawModule {
     system.io.jtag_reset := areset
 
     // QSPI (SPI as flash memory)
-    (system.io.pins.qspi zip qspi).foreach { case (sysqspi, portspi) =>
-      portspi.qspi_cs := BasePinToRegular(sysqspi.cs)
-      portspi.qspi_sck := BasePinToRegular(sysqspi.sck)
-      portspi.qspi_mosi := BasePinToRegular(sysqspi.dq(0))
-      BasePinToRegular(sysqspi.dq(1), portspi.qspi_miso)
-      portspi.qspi_wp := BasePinToRegular(sysqspi.dq(2))
-      portspi.qspi_hold := BasePinToRegular(sysqspi.dq(3))
+    qspi = (system.io.pins.spi.size >= 2).option( IO ( new TEEHWQSPIBundle(system.io.pins.spi(1).cs.size) ) )
+    qspi.foreach { portspi =>
+      portspi.qspi_cs := BasePinToRegular(system.io.pins.spi(1).cs.head)
+      portspi.qspi_sck := BasePinToRegular(system.io.pins.spi(1).sck)
+      portspi.qspi_mosi := BasePinToRegular(system.io.pins.spi(1).dq(0))
+      BasePinToRegular(system.io.pins.spi(1).dq(1), portspi.qspi_miso)
+      portspi.qspi_wp := BasePinToRegular(system.io.pins.spi(1).dq(2))
+      portspi.qspi_hold := BasePinToRegular(system.io.pins.spi(1).dq(3))
     }
 
-    // SPI (SPI as SD?)
-    sdio.sdio_dat_3 := BasePinToRegular(system.io.pins.spi.cs.head)
-    sdio.sdio_clk := BasePinToRegular(system.io.pins.spi.sck)
-    sdio.sdio_cmd := BasePinToRegular(system.io.pins.spi.dq(0))
-    BasePinToRegular(system.io.pins.spi.dq(1), sdio.sdio_dat_0)
-    BasePinToRegular(system.io.pins.spi.dq(2)) // Ignored
-    BasePinToRegular(system.io.pins.spi.dq(3)) // Ignored
+    // SPI (SPI as MMC)
+    sdio.sdio_dat_3 := BasePinToRegular(system.io.pins.spi(0).cs.head)
+    sdio.sdio_clk := BasePinToRegular(system.io.pins.spi(0).sck)
+    sdio.sdio_cmd := BasePinToRegular(system.io.pins.spi(0).dq(0))
+    BasePinToRegular(system.io.pins.spi(0).dq(1), sdio.sdio_dat_0)
+    BasePinToRegular(system.io.pins.spi(0).dq(2)) // Ignored
+    BasePinToRegular(system.io.pins.spi(0).dq(3)) // Ignored
 
     // UART
     BasePinToRegular(system.io.pins.uart.rxd, uart_rxd)
