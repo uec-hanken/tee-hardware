@@ -200,17 +200,20 @@ class TEEHWHarness()(implicit p: Parameters) extends Module {
   // but we are totally doing the qspi black box binding from testchipip
   // NOTE2: AS s for the qspi blackbox from testchipip, we just copy it, because
   // It only supports their precious SPIChipIO instead of the mainstream SPIPortIO
-  dut.spi.foreach {case port:SPIPortIO =>
-    port.dq.foreach(_.i := false.B)
-  }
-  dut.qspi.zip(ldut.p(PeripherySPIFlashKey)).zipWithIndex.foreach { case ((port: SPIPortIO, params), i) =>
-    val spi_mem = Module(new SimSPIFlashModel(params.fSize, i, true))
-    spi_mem.suggestName(s"spi_mem_${i}")
-    spi_mem.io.sck := port.sck
-    require(params.csWidth == 1, "I don't know what to do with your extra CS bits. Fix me please.")
-    spi_mem.io.cs(0) := port.cs(0)
-    spi_mem.io.dq.zip(port.dq).foreach { case (x, y) => x <> y }
-    spi_mem.io.reset := reset.asBool
+  dut.spi.zipWithIndex.foreach {
+    case (port:SPIPortIO, i: Int) =>
+    i match {
+      case 1 =>
+        val spi_mem = Module(new SimSPIFlashModel(0x20000000, i, true))
+        spi_mem.suggestName(s"spi_mem_${i}")
+        spi_mem.io.sck := port.sck
+        //require(params.csWidth == 1, "I don't know what to do with your extra CS bits. Fix me please.")
+        spi_mem.io.cs(0) := port.cs(0)
+        spi_mem.io.dq.zip(port.dq).foreach { case (x, y) => x <> y }
+        spi_mem.io.reset := reset.asBool
+      case _ =>
+        port.dq.foreach(_.i := false.B)
+    }
   }
 
   // GPIO tie down

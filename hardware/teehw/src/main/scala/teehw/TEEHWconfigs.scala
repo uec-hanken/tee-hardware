@@ -113,6 +113,9 @@ class QSPI extends Config((site, here, up) => {
   case TEEHWResetVector => 0x10040
   case PeripherySPIFlashKey => List(
     SPIFlashParams(fAddress = 0x20000000, rAddress = 0x64005000, defaultSampleDel = 3))
+  // Now, the PeripherySPIKey will have the SPI. Both the MMC(0) and the FLASH(1) may be here.
+  // We need to out only 1 element (Considered the MMC only) if QSPI is here.
+  case PeripherySPIKey => up(PeripherySPIKey).slice(0, 1)
 })
 
 // ************ Chip Peripherals (PERIPHERALS) ************
@@ -120,7 +123,8 @@ class TEEHWPeripherals extends Config((site, here, up) => {
   case PeripheryUARTKey => List(
     UARTParams(address = BigInt(0x64000000L)))
   case PeripherySPIKey => List(
-    SPIParams(rAddress = BigInt(0x64001000L)))
+    SPIParams(rAddress = BigInt(0x64001000L)),
+    SPIParams(rAddress = BigInt(0x64005000L)))
   case PeripheryGPIOKey => List(
     GPIOParams(address = BigInt(0x64002000L), width = 16))
   case GPIOInKey => 8
@@ -297,6 +301,7 @@ class VC707Config extends Config((site,here,up) => {
     MaskROMParams(address = BigInt(0x20000000), depth = 0x4000, name = "BootROM"))
   case TEEHWResetVector => 0x20000000
   case PeripherySPIFlashKey => List() // disable SPIFlash
+  case PeripherySPIKey => up(PeripherySPIKey).slice(0, 1) // Disable SPIFlash, even if is the backup
   /* Force to disable USB1.1, because there are no pins */
   case PeripheryUSB11HSKey => List()
   case PeripheryRandomKey => up(PeripheryRandomKey, site) map {r =>
@@ -310,6 +315,7 @@ class VC707MiniConfig extends Config((site,here,up) => {
     MaskROMParams(address = BigInt(0x20000000), depth = 0x1000, name = "BootROM"))
   case TEEHWResetVector => 0x20000000
   case PeripherySPIFlashKey => List() // disable SPIFlash
+  case PeripherySPIKey => up(PeripherySPIKey).slice(0, 1) // Disable SPIFlash, even if is the backup
   /* Force to disable USB1.1, because there are no pins */
   case PeripheryUSB11HSKey => List()
   case PeripheryRandomKey => up(PeripheryRandomKey, site) map {r =>

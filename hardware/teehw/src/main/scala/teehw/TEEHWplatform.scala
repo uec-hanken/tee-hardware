@@ -34,6 +34,8 @@ import uec.teehardware.devices.opentitan.kmac._
 import uec.teehardware.devices.opentitan.otp_ctrl._
 import testchipip.{CanHavePeripheryTLSerial}
 
+import java.lang.reflect.InvocationTargetException
+
 class SlowMemIsland(blockBytes: Int, val crossing: ClockCrossingType = AsynchronousCrossing(8))(implicit p: Parameters)
     extends LazyModule
     with CrossesToOnlyOneClockDomain {
@@ -118,14 +120,35 @@ trait HasTEEHWSystem
 
   // SPI to MMC conversion.
   // TODO: There is an intention from Sifive to do MMC, but has to be manual
-  // TODO: Also the tlclock binding is manual
-  val spiDevs = p(PeripherySPIKey).map { ps => SPIAttachParams(ps).attachTo(this) }
-  val spiNodes = spiDevs.map { ps => ps.ioNode.makeSink() }
-  val mmc = new MMCDevice(spiDevs.head.device, p(SDCardMHz)) // Only the first one is mmc
-  ResourceBinding {
-    Resource(mmc, "reg").bind(ResourceAddress(0))
+  // QSPI flash implementation. This is the same as HasPeripherySPIFlash
+  // TODO: This is done this way instead of "HasPeripherySPIFlash" because we need to do a bind to tlclock
+  val allspicfg = p(PeripherySPIKey) ++ p(PeripherySPIFlashKey)
+  val spiDevs = allspicfg.map {
+    case ps: SPIParams =>
+      SPIAttachParams(ps).attachTo(this)
+    case ps: SPIFlashParams =>
+      SPIFlashAttachParams(ps, fBufferDepth = 8).attachTo(this)
+    case _ =>
+      throw new RuntimeException("We cannot cast a configuration of SPI?")
   }
-  spiDevs.foreach { case ps =>
+  val spiNodes = spiDevs.map { ps => ps.ioNode.makeSink() }
+
+  spiDevs.zipWithIndex.foreach { case (ps, i) =>
+    i match {
+      case 0 => {
+        val mmc = new MMCDevice(ps.device, p(SDCardMHz)) // Only the first one is mmc
+        ResourceBinding {
+          Resource(mmc, "reg").bind(ResourceAddress(0))
+        }
+      }
+      case 1 => {
+        val flash = new FlashDevice(ps.device, maxMHz = p(QSPICardMHz))
+        ResourceBinding {
+          Resource(flash, "reg").bind(ResourceAddress(0))
+        }
+      }
+      case _ =>
+    }
     //tlclock.bind(ps.device)
   }
 
@@ -134,22 +157,6 @@ trait HasTEEHWSystem
     val gpio = GPIOAttachParams(ps).attachTo(this)
     (gpio.ioNode.makeSink(), gpio.iofPort)
   }.unzip
-
-  // QSPI flash implementation. This is the same as HasPeripherySPIFlash
-  // TODO: This is done this way instead of "HasPeripherySPIFlash" because we need to do a bind to tlclock
-  val qspiDevs = p(PeripherySPIFlashKey).map { ps =>
-    SPIFlashAttachParams(ps, fBufferDepth = 8).attachTo(this)
-  }
-  val qspiNodes = qspiDevs.map { ps => ps.ioNode.makeSink() }
-  ResourceBinding {
-    qspiDevs.foreach { case ps =>
-      val flash = new FlashDevice(ps.device, maxMHz = p(QSPICardMHz))
-      Resource(flash, "reg").bind(ResourceAddress(0)) // NOTE: This is new. Maybe is not intended in this way.
-    }
-  }
-  qspiDevs.foreach { case ps =>
-    //tlclock.bind(ps.device)
-  }
 
   // PCIe port export
   val pcie = if (p(IncludePCIe)) {
@@ -259,10 +266,7 @@ trait HasTEEHWSystemModule extends HasRTCModuleImp
     iof.getWrappedValue.iof_0.foreach(_.default())
     iof.getWrappedValue.iof_1.foreach(_.default())
   }}
-
-  // QSPI flash implementation.
-  val qspi = outer.qspiNodes.zipWithIndex.map { case(n,i) => n.makeIO()(ValName(s"qspi_$i")).asInstanceOf[SPIPortIO] }
-
+  
   val pciePorts = outer.pcie.map { pcie =>
     val port = IO(new XilinxVC707PCIeX1IO)
     port <> pcie.module.io.port
@@ -311,13 +315,13 @@ class TLUL(val params: TLBundleParameters) extends Bundle {
 
 class TEEHWPlatformIO(val params: Option[TLBundleParameters] = None)
                     (implicit val p: Parameters) extends Bundle {
+  val allspicfg = p(PeripherySPIKey) ++ p(PeripherySPIFlashKey)
   val pins = new Bundle {
     val jtag = new JTAGPins(() => PinGen(), false)
     val gpio = new GPIOPins(() => PinGen(), p(PeripheryGPIOKey)(0))
     val uart = new UARTPins(() => PinGen())
     //val i2c = new I2CPins(() => PinGen())
-    val spi = new SPIPins(() => PinGen(), p(PeripherySPIKey)(0))
-    val qspi = MixedVec( p(PeripherySPIFlashKey).map{A => new SPIPins(() => PinGen(), A)} )
+    val spi = MixedVec( allspicfg.map{A => new SPIPins(() => PinGen(), A)} )
   }
   val usb11hs = Vec( p(PeripheryUSB11HSKey).size,  new USB11HSPortIO )
   val jtag_reset = Input(Bool())
@@ -405,10 +409,9 @@ object TEEHWPlatform {
     GPIOPinsFromPort(io.pins.gpio, sys.gpio(0))
 
     // Dedicated SPI Pads
-    (io.pins.qspi zip sys.qspi).foreach { case (pins_qspi, sys_qspi) =>
-      SPIPinsFromPort(pins_qspi, sys_qspi, clock = sys.clock, reset = sys.reset.toBool, syncStages = 3)
+    (io.pins.spi zip sys.spi).foreach { case (pins_spi, sys_spi) =>
+      SPIPinsFromPort(pins_spi, sys_spi, clock = sys.clock, reset = sys.reset.toBool, syncStages = 3)
     }
-    SPIPinsFromPort(io.pins.spi, sys.spi(0), clock = sys.clock, reset = sys.reset.toBool, syncStages = 3)
 
     // JTAG Debug Interface
     // TODO: Now the debug is optional? The get will fail if the debug is disabled
