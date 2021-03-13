@@ -314,11 +314,6 @@ trait HasTEEHWSystemModule extends HasRTCModuleImp
     io
   }
 
-  // Connect the global reset vector
-  // In BootROM scenario: 0x20000000
-  // In QSPI & sim scenarios: 0x10040
-  global_reset_vector := p(TEEHWResetVector).U
-
   // NOTE: Continuation of the clock assignation
   outer.clockGroup.out.unzip._1.map {out: ClockGroupBundle =>
     out.member.data.foreach { o =>

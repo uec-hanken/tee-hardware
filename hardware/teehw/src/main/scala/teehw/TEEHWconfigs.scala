@@ -324,7 +324,7 @@ class VC707MiniConfig extends Config((site,here,up) => {
   }})
 
 class VCU118Config extends Config((site,here,up) => {
-  case FreqKeyMHz => 20.0
+  case FreqKeyMHz => 100.0
   case SDCardMHz => 5.0
   case QSPICardMHz => 1.0
   /* Force to disable USB1.1, because there are no pins */
@@ -342,7 +342,8 @@ class VCU118Config extends Config((site,here,up) => {
   case XDMAPCIe => up(IncludePCIe).option(sifive.fpgashells.ip.xilinx.xdma.XDMAParams(
     name = "fmc_xdma", location = "X0Y3", lanes = 1,
     bars = Seq(AddressSet(0x40000000L, 0x1FFFFFFFL)),
-    control = 0x2000000000L
+    control = 0x2000000000L,
+    bases = Nil
   ))
   case IncludePCIe => false
 })
