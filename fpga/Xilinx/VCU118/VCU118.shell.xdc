@@ -35,6 +35,9 @@ set_clock_groups -asynchronous \
     }]]] \
   -group [list [get_clocks { \
       JTCK \
+    }]] \
+  -group [list [get_clocks { \
+      pcie_ref_clk \
     }]]
 
 # PINS
@@ -284,8 +287,8 @@ set_property PACKAGE_PIN {G22} [get_ports {ddr_c0_ddr4_dm_dbi_n[7]}]
 #set_property IOSTANDARD {LVCMOS18} [get_ports {USB_0_WireCtrlOut}]
 #set_property IOSTANDARD {LVCMOS18} [get_ports {USB_0_FullSpeed}]
 
-set_property PACKAGE_PIN {U40.7} [get_ports {xdmaPorts_refclk_p}]
-set_property PACKAGE_PIN {U40.6} [get_ports {xdmaPorts_refclk_n}]
+set_property PACKAGE_PIN {V38} [get_ports {xdmaPorts_refclk_p}]
+set_property PACKAGE_PIN {V39} [get_ports {xdmaPorts_refclk_n}]
 set_property PACKAGE_PIN {P42} [get_ports {xdmaPorts_lanes_pci_exp_txp[0]}]
 set_property PACKAGE_PIN {P43} [get_ports {xdmaPorts_lanes_pci_exp_txn[0]}]
 set_property PACKAGE_PIN {U45} [get_ports {xdmaPorts_lanes_pci_exp_rxp[0]}]
