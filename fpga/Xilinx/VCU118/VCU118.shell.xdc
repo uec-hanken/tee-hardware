@@ -21,9 +21,9 @@ create_clock -name pcie_ref_clk -period 10.0 [get_ports {xdmaPorts_refclk_p}]
 set_input_jitter pcie_ref_clk 0.5
 
 set_clock_groups -asynchronous \
-  -group [list [get_clocks { \
-      sys_diff_clk \
-    }]] \
+  -group [list [get_clocks -of_objects [get_pins { \
+      mod/ddr/blackbox/c0_ddr4_ui_clk \
+    }]]] \
   -group [list [get_clocks -of_objects [get_pins { \
       pll/clk_out1 \
     }]]] \
@@ -34,10 +34,12 @@ set_clock_groups -asynchronous \
       pll/clk_out3 \
     }]]] \
   -group [list [get_clocks { \
-      JTCK \
-    }]] \
-  -group [list [get_clocks { \
       pcie_ref_clk \
+    }] [get_clocks -of_objects [get_pins { \
+      TEEHWSoC/TEEHWPlatform/sys/xdma/imp/blackbox/axi_aclk \
+    }]]] \
+  -group [list [get_clocks { \
+      JTCK \
     }]]
 
 # PINS
