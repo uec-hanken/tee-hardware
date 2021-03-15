@@ -53,7 +53,7 @@ class TEEHWbase(implicit val p :Parameters) extends RawModule {
   val ChildClock = p(DDRPortOther).option(IO(Input(Clock())))
   val ChildReset = p(DDRPortOther).option(IO(Input(Bool())))
   val pciePorts = p(IncludePCIe).option(IO(new XilinxVC707PCIeX1IO))
-  val xdmaPorts = p(XDMAPCIe).map(A => IO(new XDMATopPads(A.lanes)))
+  val xdmaPorts = p(XDMAPCIe).map(A => IO(new XDMATopPadswReset(A.lanes)))
   // These are later connected
   val clock = Wire(Clock())
   val reset = Wire(Bool()) // System reset (for cores)
@@ -291,7 +291,12 @@ class FPGAVC707(implicit val p :Parameters) extends RawModule {
       chipport.axi_aresetn := !reset_0
       chipport.axi_ctl_aresetn := !reset_0
     }
-    (xdmaPorts zip chip.xdmaPorts).foreach{ case (port, sysport) => port <> sysport }
+    (xdmaPorts zip chip.xdmaPorts).foreach{
+      case (port, sysport) =>
+        port.lanes <> sysport.lanes
+        port.refclk <> sysport.refclk
+        sysport.erst_n := !reset_0
+    }
   }
 }
 
@@ -440,7 +445,12 @@ class FPGAVCU118(implicit val p :Parameters) extends RawModule {
       chipport.axi_aresetn := !reset_0
       chipport.axi_ctl_aresetn := !reset_0
     }
-    (xdmaPorts zip chip.xdmaPorts).foreach{ case (port, sysport) => port <> sysport }
+    (xdmaPorts zip chip.xdmaPorts).foreach{
+      case (port, sysport) =>
+        port.lanes <> sysport.lanes
+        port.refclk <> sysport.refclk
+        sysport.erst_n := !reset_0
+    }
   }
 }
 

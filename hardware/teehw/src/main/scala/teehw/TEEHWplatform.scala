@@ -301,7 +301,7 @@ trait HasTEEHWSystemModule extends HasRTCModuleImp
   }
 
   val xdmaPorts = outer.xdma.map { xdma =>
-    val io = IO(new XDMATopPads(p(XDMAPCIe).get.lanes))
+    val io = IO(new XDMATopPadswReset(p(XDMAPCIe).get.lanes))
     val ibufds = Module(new IBUFDS_GTE4)
     ibufds.suggestName(s"${name}_refclk_ibufds")
     ibufds.io.CEB := false.B
@@ -309,7 +309,7 @@ trait HasTEEHWSystemModule extends HasRTCModuleImp
     ibufds.io.IB  := io.refclk.n
     xdma.module.io.clocks.sys_clk_gt := ibufds.io.O
     xdma.module.io.clocks.sys_clk := ibufds.io.ODIV2
-    xdma.module.io.clocks.sys_rst_n := !reset.asBool() // TODO: We have no idea this will work
+    xdma.module.io.clocks.sys_rst_n := io.erst_n
     io.lanes <> xdma.module.io.pads
     io
   }
@@ -353,6 +353,10 @@ class TLUL(val params: TLBundleParameters) extends Bundle {
   val a = Decoupled(new TLBundleA(params))
   val d = Flipped(Decoupled(new TLBundleD(params)))
 }
+// NOTE: We need an external reset for this PCIe
+class XDMATopPadswReset(n: Int) extends XDMATopPads(n) {
+  val erst_n = Input(Bool())
+}
 
 class TEEHWPlatformIO(val params: Option[TLBundleParameters] = None)
                     (implicit val p: Parameters) extends Bundle {
@@ -371,7 +375,7 @@ class TEEHWPlatformIO(val params: Option[TLBundleParameters] = None)
   val ChildClock = p(DDRPortOther).option(Input(Clock()))
   val ChildReset = p(DDRPortOther).option(Input(Bool()))
   val pciePorts = p(IncludePCIe).option(new XilinxVC707PCIeX1IO)
-  val xdmaPorts = p(XDMAPCIe).map(A => new XDMATopPads(A.lanes))
+  val xdmaPorts = p(XDMAPCIe).map(A => new XDMATopPadswReset(A.lanes))
 }
 
 object TEEHWPlatform {
