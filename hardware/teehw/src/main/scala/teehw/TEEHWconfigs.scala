@@ -55,7 +55,11 @@ class RV64IMAC extends Config((site, here, up) => {
 class Rocket extends Config(
   new WithNBigCores(2))
 class RocketReduced extends Config(
-  new WithSmallCacheBigCore(2) )
+  new WithSmallCacheBigCore(2))
+class Rocket4 extends Config(
+  new WithNBigCores(4))
+class Rocket8 extends Config(
+  new WithNBigCores(8))
 
 // Ibex only (For microcontrollers)
 class Ibex extends Config(
