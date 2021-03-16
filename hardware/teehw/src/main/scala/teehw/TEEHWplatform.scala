@@ -301,6 +301,7 @@ trait HasTEEHWSystemModule extends HasRTCModuleImp
   }
 
   val xdmaPorts = outer.xdma.map { xdma =>
+    // Exteriorize and connect ports
     val io = IO(new XDMATopPadswReset(p(XDMAPCIe).get.lanes))
     val ibufds = Module(new IBUFDS_GTE4)
     ibufds.suggestName(s"${name}_refclk_ibufds")
@@ -311,6 +312,14 @@ trait HasTEEHWSystemModule extends HasRTCModuleImp
     xdma.module.io.clocks.sys_clk := ibufds.io.ODIV2
     xdma.module.io.clocks.sys_rst_n := io.erst_n
     io.lanes <> xdma.module.io.pads
+
+    // Attach the child clock and reset
+    // We do not need to use ChildClock and ChildReset for this one
+    // I know.. weird...
+    xdma.module.clock := xdma.module.io.clocks.axi_aclk
+    xdma.module.reset := !io.erst_n // TODO: Not sure if works. Needs to be wrangled
+
+    // Put this as the public member
     io
   }
 

@@ -340,10 +340,11 @@ class VCU118Config extends Config((site,here,up) => {
     // as this one just enables the VC707 version
     // TODO: Do a cleaner approach
   case XDMAPCIe => up(IncludePCIe).option(sifive.fpgashells.ip.xilinx.xdma.XDMAParams(
-    name = "fmc_xdma", location = "X0Y3", lanes = 1,
+    name = "fmc_xdma", location = "X0Y3", lanes = 4,
     bars = Seq(AddressSet(0x40000000L, 0x1FFFFFFFL)),
     control = 0x2000000000L,
-    bases = Nil
+    bases = Seq(0x40000000L),
+    gen = 3
   ))
   case IncludePCIe => false
 })
