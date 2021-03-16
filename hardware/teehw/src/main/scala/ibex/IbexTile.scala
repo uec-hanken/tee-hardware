@@ -206,7 +206,7 @@ class IbexTile
   // Connect the ports to the bus
   (tlMasterXbar.node
     := imemTap
-    := TLBuffer()
+    := TLBuffer(3)
     := TLWidthWidget(beatBytes) // reduce size of TL
     := TLSourceShrinker(1)
     := TLFragmenter(cacheBlockBytes, beatBytes)
@@ -214,7 +214,7 @@ class IbexTile
     )
   (tlMasterXbar.node
     := dmemTap
-    := TLBuffer()
+    := TLBuffer(3)
     := TLWidthWidget(beatBytes) // reduce size of TL
     := TLSourceShrinker(1)
     := TLFragmenter(cacheBlockBytes, beatBytes)
