@@ -326,7 +326,9 @@ class VCU118Config extends Config((site,here,up) => {
   case QSPICardMHz => 1.0
   /* Force to disable USB1.1, because there are no pins */
   case PeripheryUSB11HSKey => List()
-  case PeripheryRandomKey => up(PeripheryRandomKey, site) map {case r => r.copy(impl = 0) } // TODO: Replace when TRNG ready
+  case PeripheryRandomKey => up(PeripheryRandomKey, site) map {r =>
+    r.copy(board = "Xilinx")
+  }
   case PeripheryGPIOKey => up(PeripheryGPIOKey).map(_.copy(width = 12)) // Only 12
   case GPIOInKey => 4
     // *********** PCI Support ************
