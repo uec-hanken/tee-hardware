@@ -57,6 +57,10 @@ hex := $(BUILD_DIR)/sdboot.hex
 $(hex): $(bin)
 	od -t x4 -An -w4 -v $< > $@
 
+romgen := $(BUILD_DIR)/rom.v
+$(romgen): $(hex)
+	$(rocketchip_dir)/scripts/vlsi_rom_gen $(ROMCONF) $< > $@
+
 .PHONY: hex
 hex: $(hex)
 

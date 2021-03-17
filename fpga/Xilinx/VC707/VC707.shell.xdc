@@ -14,6 +14,10 @@ set_clock_groups -asynchronous \
   -group [list [get_clocks { \
       sys_diff_clk \
     }]] \
+  -group [list [get_clocks { \
+      txoutclk \
+      userclk1 \
+    }]] \
   -group [list [get_clocks -of_objects [get_pins { \
       pll/clk_out1 \
     }]]] \

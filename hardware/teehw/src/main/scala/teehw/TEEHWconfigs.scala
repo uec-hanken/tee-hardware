@@ -300,7 +300,7 @@ class TR4Config extends Config((site,here,up) => {
   }})
 
 class VC707Config extends Config((site,here,up) => {
-  case FreqKeyMHz => 20.0
+  case FreqKeyMHz => 50.0
   /* Force to use BootROM because VC707 doesn't have enough GPIOs for QSPI */
   case MaskROMLocated(InSubsystem) => Seq(
     MaskROMParams(address = BigInt(0x20000000), depth = 0x4000, name = "BootROM"))
@@ -314,7 +314,7 @@ class VC707Config extends Config((site,here,up) => {
   }})
 
 class VC707MiniConfig extends Config((site,here,up) => {
-  case FreqKeyMHz => 20.0
+  case FreqKeyMHz => 50.0
   /* Force to use BootROM because VC707 doesn't have enough GPIOs for QSPI */
   case MaskROMLocated(InSubsystem) => Seq(
     MaskROMParams(address = BigInt(0x20000000), depth = 0x1000, name = "BootROM"))

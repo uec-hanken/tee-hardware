@@ -13,219 +13,24 @@ import sifive.blocks.devices.pinctrl._
 import sifive.blocks.devices.gpio._
 import sifive.blocks.devices.spi._
 import sifive.fpgashells.clocks._
+import sifive.fpgashells.devices.xilinx.xilinxvc707mig._
 import sifive.fpgashells.devices.xilinx.xilinxvc707pciex1._
+import sifive.fpgashells.devices.xilinx.xilinxvcu118mig._
 //import uec.teehardware.vc707mig32._
 
 // ******* For Xilinx FPGAs
 import sifive.fpgashells.ip.xilinx.vc707mig._
 import sifive.fpgashells.ip.xilinx.vcu118mig._
 
-class XilinxVC707MIGIO(depth : BigInt) extends VC707MIGIODDR(depth) with VC707MIGIOClocksReset {
-}
-
-class XilinxVC707MIG(c : Seq[AddressSet], cacheBlockBytes: Int, val crossing: ClockCrossingType = AsynchronousCrossing(8))(implicit p: Parameters) extends LazyModule
-  with CrossesToOnlyOneClockDomain {
-  val ranges = AddressRange.fromSets(c)
-  require (ranges.size == 1, "DDR range must be contiguous")
-  val offset = ranges.head.base
-  val depth = ranges.head.size
-  require((depth<=0x100000000L),"vc707mig supports upto 4GB depth configuraton")
-
-  val device = new MemoryDevice
-  val node = AXI4SlaveNode(Seq( AXI4SlavePortParameters(
-    slaves = Seq(AXI4SlaveParameters(
-      address       = c,
-      resources     = device.reg,
-      regionType    = RegionType.UNCACHED,
-      executable    = true,
-      supportsWrite = TransferSizes(1, 128),
-      supportsRead  = TransferSizes(1, 128)
-    )),
-    beatBytes = p(ExtMem).head.master.beatBytes)
-  ))
-
-  lazy val module = new LazyRawModuleImp(this) {
-    val io = IO(new Bundle {
-      val port = new XilinxVC707MIGIO(depth)
-    })
-
-    //MIG black box instantiation
-    val blackbox = Module(new vc707mig(depth))
-    val (axi_async, _) = node.in(0)
-
-    // Debug AXI
-    //val ila = Module(new ilaaxi())
-    //ila.io.clk := childClock
-    //ila.connectAxi(axi_async)
-
-    childClock := io.port.ui_clk
-    childReset := io.port.ui_clk_sync_rst
-
-    //pins to top level
-
-    //inouts
-    attach(io.port.ddr3_dq,blackbox.io.ddr3_dq)
-    attach(io.port.ddr3_dqs_n,blackbox.io.ddr3_dqs_n)
-    attach(io.port.ddr3_dqs_p,blackbox.io.ddr3_dqs_p)
-
-    //outputs
-    io.port.ddr3_addr         := blackbox.io.ddr3_addr
-    io.port.ddr3_ba           := blackbox.io.ddr3_ba
-    io.port.ddr3_ras_n        := blackbox.io.ddr3_ras_n
-    io.port.ddr3_cas_n        := blackbox.io.ddr3_cas_n
-    io.port.ddr3_we_n         := blackbox.io.ddr3_we_n
-    io.port.ddr3_reset_n      := blackbox.io.ddr3_reset_n
-    io.port.ddr3_ck_p         := blackbox.io.ddr3_ck_p
-    io.port.ddr3_ck_n         := blackbox.io.ddr3_ck_n
-    io.port.ddr3_cke          := blackbox.io.ddr3_cke
-    io.port.ddr3_cs_n         := blackbox.io.ddr3_cs_n
-    io.port.ddr3_dm           := blackbox.io.ddr3_dm
-    io.port.ddr3_odt          := blackbox.io.ddr3_odt
-
-    //inputs
-    //NO_BUFFER clock
-    blackbox.io.sys_clk_i     := io.port.sys_clk_i
-
-    io.port.ui_clk            := blackbox.io.ui_clk
-    io.port.ui_clk_sync_rst   := blackbox.io.ui_clk_sync_rst
-    io.port.mmcm_locked       := blackbox.io.mmcm_locked
-    blackbox.io.aresetn       := io.port.aresetn
-    blackbox.io.app_sr_req    := false.B
-    blackbox.io.app_ref_req   := false.B
-    blackbox.io.app_zq_req    := false.B
-    //app_sr_active           := unconnected
-    //app_ref_ack             := unconnected
-    //app_zq_ack              := unconnected
-
-    val awaddr = axi_async.aw.bits.addr - offset.U
-    val araddr = axi_async.ar.bits.addr - offset.U
-
-    //slave AXI interface write address ports
-    blackbox.io.s_axi_awid    := axi_async.aw.bits.id
-    blackbox.io.s_axi_awaddr  := awaddr //truncated
-    blackbox.io.s_axi_awlen   := axi_async.aw.bits.len
-    blackbox.io.s_axi_awsize  := axi_async.aw.bits.size
-    blackbox.io.s_axi_awburst := axi_async.aw.bits.burst
-    blackbox.io.s_axi_awlock  := axi_async.aw.bits.lock
-    blackbox.io.s_axi_awcache := "b0011".U
-    blackbox.io.s_axi_awprot  := axi_async.aw.bits.prot
-    blackbox.io.s_axi_awqos   := axi_async.aw.bits.qos
-    blackbox.io.s_axi_awvalid := axi_async.aw.valid
-    axi_async.aw.ready        := blackbox.io.s_axi_awready
-
-    //slave interface write data ports
-    blackbox.io.s_axi_wdata   := axi_async.w.bits.data
-    blackbox.io.s_axi_wstrb   := axi_async.w.bits.strb
-    blackbox.io.s_axi_wlast   := axi_async.w.bits.last
-    blackbox.io.s_axi_wvalid  := axi_async.w.valid
-    axi_async.w.ready         := blackbox.io.s_axi_wready
-
-    //slave interface write response
-    blackbox.io.s_axi_bready  := axi_async.b.ready
-    axi_async.b.bits.id       := blackbox.io.s_axi_bid
-    axi_async.b.bits.resp     := blackbox.io.s_axi_bresp
-    axi_async.b.valid         := blackbox.io.s_axi_bvalid
-
-    //slave AXI interface read address ports
-    blackbox.io.s_axi_arid    := axi_async.ar.bits.id
-    blackbox.io.s_axi_araddr  := araddr // truncated
-    blackbox.io.s_axi_arlen   := axi_async.ar.bits.len
-    blackbox.io.s_axi_arsize  := axi_async.ar.bits.size
-    blackbox.io.s_axi_arburst := axi_async.ar.bits.burst
-    blackbox.io.s_axi_arlock  := axi_async.ar.bits.lock
-    blackbox.io.s_axi_arcache := "b0011".U
-    blackbox.io.s_axi_arprot  := axi_async.ar.bits.prot
-    blackbox.io.s_axi_arqos   := axi_async.ar.bits.qos
-    blackbox.io.s_axi_arvalid := axi_async.ar.valid
-    axi_async.ar.ready        := blackbox.io.s_axi_arready
-
-    //slace AXI interface read data ports
-    blackbox.io.s_axi_rready  := axi_async.r.ready
-    axi_async.r.bits.id       := blackbox.io.s_axi_rid
-    axi_async.r.bits.data     := blackbox.io.s_axi_rdata
-    axi_async.r.bits.resp     := blackbox.io.s_axi_rresp
-    axi_async.r.bits.last     := blackbox.io.s_axi_rlast
-    axi_async.r.valid         := blackbox.io.s_axi_rvalid
-
-    //misc
-    io.port.init_calib_complete := blackbox.io.init_calib_complete
-    blackbox.io.sys_rst       :=io.port.sys_rst
-    //mig.device_temp         :- unconnceted
-  }
-}
-
-
-class XilinxVC707MIGPlatform(c : Seq[AddressSet], cacheBlockBytes: Int)(implicit p: Parameters) extends LazyModule {
-  val ranges = AddressRange.fromSets(c)
-  require (ranges.size == 1, "DDR range must be contiguous")
-  val offset = ranges.head.base
-  val depth = ranges.head.size
-
-  //val buffer  = LazyModule(new TLBuffer)
-  val toaxi4 = LazyModule(new TLToAXI4(adapterName = Some("mem"), stripBits = 0))
-  val indexer = LazyModule(new AXI4IdIndexer(idBits = 4))
-  val deint = LazyModule(new AXI4Deinterleaver(p(CacheBlockBytes)))
-  val yank = LazyModule(new AXI4UserYanker)
-  val island  = LazyModule(new XilinxVC707MIG(c, cacheBlockBytes))
-
-  val indexernode = new AXI4IdentityNode
-  val deintnode = new AXI4IdentityNode
-  val yanknode = new AXI4IdentityNode
-  val islandnode = new AXI4IdentityNode
-
-  val node: TLInwardNode = indexernode := toaxi4.node // := buffer.node
-  indexer.node := indexernode
-  deintnode := indexer.node
-  deint.node := deintnode
-  yanknode := deint.node
-  yank.node := yanknode
-  islandnode := yank.node
-  island.crossAXI4In(island.node) := islandnode
-
-  lazy val module = new LazyModuleImp(this) {
-    val io = IO(new Bundle {
-      val port = new XilinxVC707MIGIO(island.depth)
-    })
-
-    // Debug AXI indexer
-    /*val (axiindexer, _) = indexernode.in(0)
-    val ilaindexer = Module(new ilaaxi())
-    ilaindexer.io.clk := clock
-    ilaindexer.connectAxi(axiindexer)
-
-    // Debug AXI deinterlaver
-    val (axideint, _) = deintnode.in(0)
-    val iladeint = Module(new ilaaxi())
-    iladeint.io.clk := clock
-    iladeint.connectAxi(axideint)
-
-    // Debug AXI user yanker
-    val (axiyank, _) = yanknode.in(0)
-    val ilayank = Module(new ilaaxi())
-    ilayank.io.clk := clock
-    ilayank.connectAxi(axiyank)
-
-    // Debug AXI island
-    val (axiisland, _) = yanknode.out(0)
-    val ilaisland = Module(new ilaaxi())
-    ilaisland.io.clk := clock
-    ilaisland.connectAxi(axiisland)*/
-
-    io.port <> island.module.io.port
-  }
-}
-
 class TLULtoMIG(cacheBlockBytes: Int, TLparams: TLBundleParameters)(implicit p :Parameters) extends LazyModule {
   // Create the DDR
   val ddr = LazyModule(
-    new XilinxVC707MIGPlatform(
-      AddressSet.misaligned(
-        p(ExtMem).get.master.base,
-        0x40000000L * 1 // 1GiB for the VC707DDR,
-      ),
-      cacheBlockBytes
-    )
-  )
+    new XilinxVC707MIG(
+      XilinxVC707MIGParams(
+        AddressSet.misaligned(
+          p(ExtMem).get.master.base,
+          0x40000000L * 1 // 1GiB for the VC707DDR,
+        ))))
 
   // Create a dummy node where we can attach our silly TL port
   val node = TLClientNode(Seq.tabulate(1) { channel =>
@@ -238,12 +43,15 @@ class TLULtoMIG(cacheBlockBytes: Int, TLparams: TLBundleParameters)(implicit p :
   })
 
   // Attach to the DDR
-  ddr.node := node
+  if(p(ExtMem).head.master.beatBytes != 8)
+    ddr.node := TLWidthWidget(p(ExtMem).head.master.beatBytes) := node
+  else
+    ddr.node := node
 
   lazy val module = new LazyModuleImp(this) {
     val io = IO(new Bundle {
       val tlport = Flipped(new TLUL(TLparams))
-      var ddrport = new XilinxVC707MIGIO(ddr.depth)
+      val ddrport = new XilinxVC707MIGIO(ddr.depth)
     })
 
     val depth = ddr.depth
@@ -277,205 +85,15 @@ class TLULtoMIG(cacheBlockBytes: Int, TLparams: TLBundleParameters)(implicit p :
 
 }
 
-class XilinxVCU118MIGIO(depth : BigInt) extends VCU118MIGIODDR(depth) with VCU118MIGIOClocksReset {
-}
-
-class XilinxVCU118MIG(c : Seq[AddressSet], cacheBlockBytes: Int, val crossing: ClockCrossingType = AsynchronousCrossing(8))(implicit p: Parameters) extends LazyModule
-  with CrossesToOnlyOneClockDomain {
-  val ranges = AddressRange.fromSets(c)
-  require (ranges.size == 1, "DDR range must be contiguous")
-  val offset = ranges.head.base
-  val depth = ranges.head.size
-  require((depth<=0x80000000L),"vcu118mig supports upto 2GB depth configuraton?")
-
-  val device = new MemoryDevice
-  val node = AXI4SlaveNode(Seq( AXI4SlavePortParameters(
-    slaves = Seq(AXI4SlaveParameters(
-      address       = c,
-      resources     = device.reg,
-      regionType    = RegionType.UNCACHED,
-      executable    = true,
-      supportsWrite = TransferSizes(1, 128),
-      supportsRead  = TransferSizes(1, 128)
-    )),
-    beatBytes = p(ExtMem).head.master.beatBytes)
-  ))
-
-  lazy val module = new LazyRawModuleImp(this) {
-    val io = IO(new Bundle {
-      val port = new XilinxVCU118MIGIO(depth)
-    })
-
-    //MIG black box instantiation
-    val blackbox = Module(new vcu118mig(depth))
-    val (axi_async, _) = node.in(0)
-
-    // Debug AXI
-    //val ila = Module(new ilaaxi())
-    //ila.io.clk := childClock
-    //ila.connectAxi(axi_async)
-
-    childClock := io.port.c0_ddr4_ui_clk
-    childReset := io.port.c0_ddr4_ui_clk_sync_rst
-
-    //pins to top level
-
-    //inouts
-    attach(io.port.c0_ddr4_dq,blackbox.io.c0_ddr4_dq)
-    attach(io.port.c0_ddr4_dqs_c,blackbox.io.c0_ddr4_dqs_c)
-    attach(io.port.c0_ddr4_dqs_t,blackbox.io.c0_ddr4_dqs_t)
-    attach(io.port.c0_ddr4_dm_dbi_n,blackbox.io.c0_ddr4_dm_dbi_n)
-    //outputs
-    io.port.c0_ddr4_adr          := blackbox.io.c0_ddr4_adr
-    io.port.c0_ddr4_bg           := blackbox.io.c0_ddr4_bg
-    io.port.c0_ddr4_ba           := blackbox.io.c0_ddr4_ba
-    io.port.c0_ddr4_reset_n      := blackbox.io.c0_ddr4_reset_n
-    io.port.c0_ddr4_act_n        := blackbox.io.c0_ddr4_act_n
-    io.port.c0_ddr4_ck_c         := blackbox.io.c0_ddr4_ck_c
-    io.port.c0_ddr4_ck_t         := blackbox.io.c0_ddr4_ck_t
-    io.port.c0_ddr4_cke          := blackbox.io.c0_ddr4_cke
-    io.port.c0_ddr4_cs_n         := blackbox.io.c0_ddr4_cs_n
-    io.port.c0_ddr4_odt          := blackbox.io.c0_ddr4_odt
-
-    //inputs
-    //NO_BUFFER clock
-    blackbox.io.c0_sys_clk_i     := io.port.c0_sys_clk_i
-
-    io.port.c0_ddr4_ui_clk            := blackbox.io.c0_ddr4_ui_clk
-    io.port.c0_ddr4_ui_clk_sync_rst   := blackbox.io.c0_ddr4_ui_clk_sync_rst
-    blackbox.io.c0_ddr4_aresetn       := io.port.c0_ddr4_aresetn
-    //app_sr_active           := unconnected
-    //app_ref_ack             := unconnected
-    //app_zq_ack              := unconnected
-
-    val awaddr = axi_async.aw.bits.addr - offset.U
-    val araddr = axi_async.ar.bits.addr - offset.U
-
-    //slave AXI interface write address ports
-    blackbox.io.c0_ddr4_s_axi_awid    := axi_async.aw.bits.id
-    blackbox.io.c0_ddr4_s_axi_awaddr  := awaddr //truncated
-    blackbox.io.c0_ddr4_s_axi_awlen   := axi_async.aw.bits.len
-    blackbox.io.c0_ddr4_s_axi_awsize  := axi_async.aw.bits.size
-    blackbox.io.c0_ddr4_s_axi_awburst := axi_async.aw.bits.burst
-    blackbox.io.c0_ddr4_s_axi_awlock  := axi_async.aw.bits.lock
-    blackbox.io.c0_ddr4_s_axi_awcache := "b0011".U
-    blackbox.io.c0_ddr4_s_axi_awprot  := axi_async.aw.bits.prot
-    blackbox.io.c0_ddr4_s_axi_awqos   := axi_async.aw.bits.qos
-    blackbox.io.c0_ddr4_s_axi_awvalid := axi_async.aw.valid
-    axi_async.aw.ready        := blackbox.io.c0_ddr4_s_axi_awready
-
-    //slave interface write data ports
-    blackbox.io.c0_ddr4_s_axi_wdata   := axi_async.w.bits.data
-    blackbox.io.c0_ddr4_s_axi_wstrb   := axi_async.w.bits.strb
-    blackbox.io.c0_ddr4_s_axi_wlast   := axi_async.w.bits.last
-    blackbox.io.c0_ddr4_s_axi_wvalid  := axi_async.w.valid
-    axi_async.w.ready         := blackbox.io.c0_ddr4_s_axi_wready
-
-    //slave interface write response
-    blackbox.io.c0_ddr4_s_axi_bready  := axi_async.b.ready
-    axi_async.b.bits.id       := blackbox.io.c0_ddr4_s_axi_bid
-    axi_async.b.bits.resp     := blackbox.io.c0_ddr4_s_axi_bresp
-    axi_async.b.valid         := blackbox.io.c0_ddr4_s_axi_bvalid
-
-    //slave AXI interface read address ports
-    blackbox.io.c0_ddr4_s_axi_arid    := axi_async.ar.bits.id
-    blackbox.io.c0_ddr4_s_axi_araddr  := araddr // truncated
-    blackbox.io.c0_ddr4_s_axi_arlen   := axi_async.ar.bits.len
-    blackbox.io.c0_ddr4_s_axi_arsize  := axi_async.ar.bits.size
-    blackbox.io.c0_ddr4_s_axi_arburst := axi_async.ar.bits.burst
-    blackbox.io.c0_ddr4_s_axi_arlock  := axi_async.ar.bits.lock
-    blackbox.io.c0_ddr4_s_axi_arcache := "b0011".U
-    blackbox.io.c0_ddr4_s_axi_arprot  := axi_async.ar.bits.prot
-    blackbox.io.c0_ddr4_s_axi_arqos   := axi_async.ar.bits.qos
-    blackbox.io.c0_ddr4_s_axi_arvalid := axi_async.ar.valid
-    axi_async.ar.ready        := blackbox.io.c0_ddr4_s_axi_arready
-
-    //slace AXI interface read data ports
-    blackbox.io.c0_ddr4_s_axi_rready  := axi_async.r.ready
-    axi_async.r.bits.id       := blackbox.io.c0_ddr4_s_axi_rid
-    axi_async.r.bits.data     := blackbox.io.c0_ddr4_s_axi_rdata
-    axi_async.r.bits.resp     := blackbox.io.c0_ddr4_s_axi_rresp
-    axi_async.r.bits.last     := blackbox.io.c0_ddr4_s_axi_rlast
-    axi_async.r.valid         := blackbox.io.c0_ddr4_s_axi_rvalid
-
-    //misc
-    io.port.c0_init_calib_complete := blackbox.io.c0_init_calib_complete
-    blackbox.io.sys_rst       :=io.port.sys_rst
-    //mig.device_temp         :- unconnceted
-  }
-}
-
-class XilinxVCU118MIGPlatform(c : Seq[AddressSet], cacheBlockBytes: Int)(implicit p: Parameters) extends LazyModule {
-  val ranges = AddressRange.fromSets(c)
-  require (ranges.size == 1, "DDR range must be contiguous")
-  val offset = ranges.head.base
-  val depth = ranges.head.size
-
-  //val buffer  = LazyModule(new TLBuffer)
-  val toaxi4 = LazyModule(new TLToAXI4(adapterName = Some("mem"), stripBits = 0))
-  val indexer = LazyModule(new AXI4IdIndexer(idBits = 4))
-  val deint = LazyModule(new AXI4Deinterleaver(p(CacheBlockBytes)))
-  val yank = LazyModule(new AXI4UserYanker)
-  val island  = LazyModule(new XilinxVCU118MIG(c, cacheBlockBytes))
-
-  val indexernode = new AXI4IdentityNode
-  val deintnode = new AXI4IdentityNode
-  val yanknode = new AXI4IdentityNode
-  val islandnode = new AXI4IdentityNode
-
-  val node: TLInwardNode = indexernode := toaxi4.node // := buffer.node
-  indexer.node := indexernode
-  deintnode := indexer.node
-  deint.node := deintnode
-  yanknode := deint.node
-  yank.node := yanknode
-  islandnode := yank.node
-  island.crossAXI4In(island.node) := islandnode
-
-  lazy val module = new LazyModuleImp(this) {
-    val io = IO(new Bundle {
-      val port = new XilinxVCU118MIGIO(island.depth)
-    })
-
-    // Debug AXI indexer
-    /*val (axiindexer, _) = indexernode.in(0)
-    val ilaindexer = Module(new ilaaxi())
-    ilaindexer.io.clk := clock
-    ilaindexer.connectAxi(axiindexer)
-
-    // Debug AXI deinterlaver
-    val (axideint, _) = deintnode.in(0)
-    val iladeint = Module(new ilaaxi())
-    iladeint.io.clk := clock
-    iladeint.connectAxi(axideint)
-
-    // Debug AXI user yanker
-    val (axiyank, _) = yanknode.in(0)
-    val ilayank = Module(new ilaaxi())
-    ilayank.io.clk := clock
-    ilayank.connectAxi(axiyank)
-
-    // Debug AXI island
-    val (axiisland, _) = yanknode.out(0)
-    val ilaisland = Module(new ilaaxi())
-    ilaisland.io.clk := clock
-    ilaisland.connectAxi(axiisland)*/
-
-    io.port <> island.module.io.port
-  }
-}
-
 class TLULtoMIGUltra(cacheBlockBytes: Int, TLparams: TLBundleParameters)(implicit p :Parameters) extends LazyModule {
   // Create the DDR
   val ddr = LazyModule(
-    new XilinxVCU118MIGPlatform(
-      AddressSet.misaligned(
-        p(ExtMem).get.master.base,
-        0x80000000L * 1 // 2GiB for the VCU118DDR,
-      ),
-      cacheBlockBytes
-    )
-  )
+    new XilinxVCU118MIG(
+      XilinxVCU118MIGParams(
+        AddressSet.misaligned(
+          p(ExtMem).get.master.base,
+          0x80000000L * 1 // 2GiB for the VCU118DDR,
+        ))))
 
   // Create a dummy node where we can attach our silly TL port
   val node = TLClientNode(Seq.tabulate(1) { channel =>
@@ -488,12 +106,15 @@ class TLULtoMIGUltra(cacheBlockBytes: Int, TLparams: TLBundleParameters)(implici
   })
 
   // Attach to the DDR
-  ddr.node := node
+  if(p(ExtMem).head.master.beatBytes != 8)
+    ddr.node := TLWidthWidget(p(ExtMem).head.master.beatBytes) := node
+  else
+    ddr.node := node
 
   lazy val module = new LazyModuleImp(this) {
     val io = IO(new Bundle {
       val tlport = Flipped(new TLUL(TLparams))
-      var ddrport = new XilinxVCU118MIGIO(ddr.depth)
+      val ddrport = new XilinxVCU118MIGIO(ddr.depth)
     })
 
     val depth = ddr.depth

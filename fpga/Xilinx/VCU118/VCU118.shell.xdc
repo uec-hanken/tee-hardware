@@ -35,6 +35,7 @@ set_clock_groups -asynchronous \
     }]]] \
   -group [list [get_clocks { \
       pcie_ref_clk \
+      pipe_clk \
     }] [get_clocks -of_objects [get_pins { \
       TEEHWSoC/TEEHWPlatform/sys/xdma/imp/blackbox/axi_aclk \
     }]]] \
