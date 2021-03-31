@@ -412,7 +412,14 @@ class rising_edge() extends Module {
     val out    	  = Output(Bool())
   })
   val reg = RegNext(io.in)
-  io.out := (io.in)&&(!reg)
+  val reg_2 = RegNext(reg)
+  val reg_3 = RegNext(reg_2)//
+  val reg_4 = RegNext(reg_3)//
+  val reg_5 = RegNext(reg_4)//
+  val reg_6 = RegNext(reg_5)//
+  val reg_7 = RegNext(reg_6)//
+  val reg_8 = RegNext(reg_7)//
+  io.out := (io.in)&&(!reg)&&(!reg_2)&&(!reg_3)&&(!reg_4)&&(!reg_5)&&(!reg_6)&&(!reg_7)&&(!reg_8)
 }
 
 
@@ -460,45 +467,7 @@ class register_pulse_g() extends Module {
 }
 
 
-/*
 
-// Sampling counter, until all the 192 bits ready
-when(rnd_src_en && trng_bit_counter < 192.U) {
-  trng_busy := true.B // Make the TRNG busy
-  when(trng_sample_counter >= sample_cnt1) {
-    rnd_en := true.B // Trigger the enable, until the ready is done
-    when(rnd_ready) {
-      // Here is the sample enable. As long the sampler is enabled
-      // and also the LFSR, we count 'nbits' bits up, and shift them
-      trng_sample_counter := 0.U
-      ehr_data := Cat(ehr_data, rnd_gen)
-      trng_bit_counter := trng_bit_counter + c.nbits.U
-    }
-  }. otherwise {
-    when(trng_sample_counter <= (sample_cnt1 >> 1.U)) {
-      rnd_reset := true.B // Trigger the reset along the trng_sample_counter, but only half of the programmed
-    }
-    trng_sample_counter := trng_sample_counter + 1.U
-  }
-}
-
-when(trng_bit_counter >= 192.U) {
-  trng_busy := false.B
-  when(ehr_valid_int_mask) { ehr_valid_int := true.B }
-  ehr_valid := true.B
-}
-
-when(rst_bits_counter || trng_sw_reset) {
-  trng_bit_counter := 0.U
-  trng_sample_counter := 0.U
-  ehr_valid := false.B
-  trng_busy := false.B
-}
-
-when(trng_sw_reset) {
-  ehr_data := 0.U
-}
-*/
 
 
 
