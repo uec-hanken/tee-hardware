@@ -14,6 +14,7 @@ import sifive.blocks.devices.uart._
 import sifive.blocks.devices.i2c._
 import uec.teehardware.devices.aes._
 import uec.teehardware.devices.ed25519._
+import uec.teehardware.devices.chacha._
 import uec.teehardware.devices.sha3._
 import uec.teehardware.devices.usb11hs._
 import uec.teehardware.devices.random._
@@ -25,6 +26,7 @@ import boom.common._
 import freechips.rocketchip.util.BooleanToAugmentedBoolean
 import uec.teehardware.devices.opentitan.nmi_gen._
 import uec.teehardware.ibex._
+
 
 // ***************** ISA Configs (ISACONF) ********************
 class RV64GC extends Config((site, here, up) => {
@@ -139,6 +141,8 @@ class TEEHWPeripherals extends Config((site, here, up) => {
     USB11HSParams(address = BigInt(0x64008000L)))
   case PeripheryRandomKey => List(
     RandomParams(address = BigInt(0x64009000L), impl = 1))
+  case PeripheryChachaKey => List(
+    ChachaParams(address = BigInt(0x6400A000L)))
   // OpenTitan devices
   case PeripheryAESOTKey => List()
   case PeripheryHMACKey => List()
@@ -147,6 +151,7 @@ class TEEHWPeripherals extends Config((site, here, up) => {
     AlertParams(address = BigInt(0x64100000L))
   case PeripheryNmiGenKey =>
     NmiGenParams(address = BigInt(0x64200000L))
+
 })
 
 class OpenTitanPeripherals extends Config((site, here, up) => {
@@ -164,6 +169,7 @@ class OpenTitanPeripherals extends Config((site, here, up) => {
   case PeripheryAESKey => List()
   case PeripheryUSB11HSKey => List()
   case PeripheryRandomKey => List()
+  case PeripheryChachaKey => List()
   // OpenTitan devices
   case PeripheryAESOTKey => List(
     AESOTParams(address = BigInt(0x6400A000L)))
@@ -175,6 +181,7 @@ class OpenTitanPeripherals extends Config((site, here, up) => {
     AlertParams(address = BigInt(0x64100000L))
   case PeripheryNmiGenKey =>
     NmiGenParams(address = BigInt(0x64200000L))
+
 })
 
 class TEEHWAndOpenTitanPeripherals extends Config((site, here, up) => {
@@ -198,6 +205,7 @@ class TEEHWAndOpenTitanPeripherals extends Config((site, here, up) => {
     USB11HSParams(address = BigInt(0x64008000L)))
   case PeripheryRandomKey => List(
     RandomParams(address = BigInt(0x64009000L), impl = 1))
+  case PeripheryChachaKey => List()
   // OpenTitan devices
   case PeripheryAESOTKey => List(
     AESOTParams(address = BigInt(0x6400A000L)))
@@ -209,6 +217,7 @@ class TEEHWAndOpenTitanPeripherals extends Config((site, here, up) => {
     AlertParams(address = BigInt(0x64100000L))
   case PeripheryNmiGenKey =>
     NmiGenParams(address = BigInt(0x64200000L))
+
 })
 
 class NoSecurityPeripherals extends Config((site, here, up) => {
@@ -226,12 +235,16 @@ class NoSecurityPeripherals extends Config((site, here, up) => {
   case PeripheryUSB11HSKey => List()
   case PeripheryRandomKey => List(
     RandomParams(address = BigInt(0x64009000L), impl = 1))
+  case PeripheryChachaKey => List(
+    ChachaParams(address = BigInt(0x6400A000L))
+  )
   case PeripheryAESOTKey => List()
   case PeripheryHMACKey => List()
   case PeripheryAlertKey =>
     AlertParams(address = BigInt(0x64100000L))
   case PeripheryNmiGenKey =>
     NmiGenParams(address = BigInt(0x64200000L))
+
 })
 
 // *************** Bus configuration (MBUS) ******************

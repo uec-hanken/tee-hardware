@@ -4,20 +4,20 @@ import freechips.rocketchip.config.Field
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.subsystem.BaseSubsystem
 
-case object PeripheryChacha Key extends Field[List[Chacha Params]](List())
+case object PeripheryChachaKey extends Field[List[ChachaParams]](List())
 
 trait HasPeripheryChacha  { this: BaseSubsystem =>
-  val rndNodes = p(PeripheryChacha Key).zipWithIndex.map{ case (key, i) =>
-    Chacha AttachParams(key.copy(path = key.path + s"chacha_${i}/")).attachTo(this).ioNode.makeSink
+  val chaNodes = p(PeripheryChachaKey).zipWithIndex.map{ case (key, i) =>
+    ChachaAttachParams(key).attachTo(this).ioNode.makeSink
   }
 }
 
-trait HasPeripheryChacha Bundle {
+trait HasPeripheryChachaBundle {
 }
 
-trait HasPeripheryChacha ModuleImp extends LazyModuleImp with HasPeripheryChacha Bundle {
+trait HasPeripheryChachaModuleImp extends LazyModuleImp with HasPeripheryChachaBundle {
   val outer: HasPeripheryChacha 
-  val rnd = outer.rndNodes.zipWithIndex.map{ case (node, i) =>
-    node.makeIO()(ValName(s"chacha _" + i))
+  val cha = outer.chaNodes.zipWithIndex.map{ case (node, i) =>
+    node.makeIO()(ValName(s"chacha_" + i))
   }
 }

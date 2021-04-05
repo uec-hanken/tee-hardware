@@ -23,8 +23,9 @@ include prim.mk
 include tlul.mk
 include pkgs.mk
 include otp_ctrl.mk
+include chacha.mk
 
-all: ibex sha3 ed25519_base ed25519_sign aes usb11hs aesot hmac alert nmi_gen prim tlul pkgs otp_ctrl
+all: ibex sha3 ed25519_base ed25519_sign aes usb11hs aesot hmac alert nmi_gen prim tlul pkgs otp_ctrl chacha
 	touch resources.checkpoint
 
 clean:

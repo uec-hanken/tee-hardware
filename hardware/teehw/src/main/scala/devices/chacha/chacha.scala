@@ -36,6 +36,27 @@ case class OMCHACHADevice(
 class ChachaPortIO extends Bundle {
 }
 
+
+class chacha_core extends BlackBox with HasBlackBoxResource {
+  override def desiredName = "chacha"
+  val io = IO(new Bundle {
+    //Inputs
+    val clk           = Input(Clock())
+    val reset_n       = Input(Bool())
+    val cs            = Input(Bool())
+    val we            = Input(Bool())
+    val addr          = Input(UInt(8.W))
+    val write_data    = Input(UInt(32.W))
+    //Outputs
+    val read_data     = Output(UInt(32.W))
+  })
+  // add wrapper/blackbox after it is pre-processed
+  addResource("/chacha.preprocessed.v")
+}
+
+
+
+
 abstract class Chacha(busWidthBytes: Int, val c: ChachaParams)
                      (implicit p: Parameters)
   extends IORegisterRouter(
@@ -62,12 +83,39 @@ abstract class Chacha(busWidthBytes: Int, val c: ChachaParams)
     interrupts(0) := false.B
 
     // Registers
-    val dummy = RegInit(false.B)
+    val reg_read    = Reg(UInt(32.W))
+    val reg_write   = RegInit(0.U(32.W))
+    val reg_addr    = RegInit(0.U(8.W))
+    val reg_cs      = RegInit(false.B)
+    val reg_we      = RegInit(false.B)
+
+
+    // Crypto-Core
+    val chacha_core = Module(new(chacha_core))
+    chacha_core.io.clk       := clock
+    chacha_core.io.reset_n   := !reset.asBool
+    reg_read                 := chacha_core.io.read_data
+    chacha_core.io.write_data:= reg_write
+    chacha_core.io.addr      := reg_addr
+    chacha_core.io.cs        := reg_cs
+    chacha_core.io.we        := reg_we
 
     // Tcha register mapping
     val tcha_map = Seq(
-      ChachaRegs.dummy -> Seq(
-        RegField(1, dummy, RegFieldDesc("cha_src_sel", "Tcha loop select", reset = Some(0)))
+      ChachaRegs.reg_write -> Seq(
+        RegField(32, reg_write, RegFieldDesc("write_data", "Tcha write data", reset = Some(0)))
+      ),
+      ChachaRegs.reg_read -> Seq(
+        RegField.r(32, reg_read, RegFieldDesc("read_data", "Tcha write data", volatile = true))
+      ),
+      ChachaRegs.reg_addr -> Seq(
+        RegField(8, reg_addr, RegFieldDesc("address", "Tcha address", reset = Some(0)))
+      ),
+      ChachaRegs.reg_cs -> Seq(
+        RegField(1, reg_cs, RegFieldDesc("CS", "Tcha CS", reset = Some(0)))
+      ),
+      ChachaRegs.reg_we -> Seq(
+        RegField(1, reg_we, RegFieldDesc("write enable", "Tcha write enable", reset = Some(0)))
       )
     )
     regmap(

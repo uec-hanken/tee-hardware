@@ -26,6 +26,7 @@ import sifive.fpgashells.shell.xilinx.XDMATopPads
 import uec.teehardware.devices.aes._
 import uec.teehardware.devices.ed25519._
 import uec.teehardware.devices.random._
+import uec.teehardware.devices.chacha._
 import uec.teehardware.devices.sha3._
 import uec.teehardware.devices.usb11hs._
 import uec.teehardware.devices.opentitan.aes._
@@ -222,6 +223,7 @@ class TEEHWSystem(implicit p: Parameters) extends TEEHWSubsystem
   with HasPeripheryAES
   with HasPeripheryUSB11HS
   with HasPeripheryRandom
+  with HasPeripheryChacha
   // The opentitan components
   with HasPeripheryAESOT
   with HasPeripheryHMAC
@@ -317,6 +319,7 @@ class TEEHWSystemModule[+L <: TEEHWSystem](_outer: L)
     with HasPeripheryAESModuleImp
     with HasPeripheryUSB11HSModuleImp
     with HasPeripheryRandomModuleImp
+    with HasPeripheryChachaModuleImp
     // The opentitan components
     with HasPeripheryAESOTModuleImp
     with HasPeripheryHMACModuleImp
