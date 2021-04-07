@@ -62,7 +62,7 @@ abstract class Chacha(busWidthBytes: Int, val c: ChachaParams)
   extends IORegisterRouter(
     RegisterRouterParams(
       name = "chacha",
-      compat = Seq("uec,chacha"),
+      compat = Seq("uec,chacha-0"),
       base = c.address,
       beatBytes = busWidthBytes),
     new ChachaPortIO

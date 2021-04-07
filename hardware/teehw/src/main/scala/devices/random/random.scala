@@ -49,7 +49,7 @@ abstract class Random(busWidthBytes: Int, val c: RandomParams)
   extends IORegisterRouter(
     RegisterRouterParams(
       name = "random",
-      compat = Seq("uec,random"),
+      compat = Seq("uec,random-0"),
       base = c.address,
       beatBytes = busWidthBytes),
     new RandomPortIO
