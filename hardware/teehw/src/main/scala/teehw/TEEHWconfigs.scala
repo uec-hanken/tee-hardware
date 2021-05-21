@@ -15,6 +15,7 @@ import sifive.blocks.devices.i2c._
 import uec.teehardware.devices.aes._
 import uec.teehardware.devices.ed25519._
 import uec.teehardware.devices.chacha._
+import uec.teehardware.devices.poly._
 import uec.teehardware.devices.sha3._
 import uec.teehardware.devices.usb11hs._
 import uec.teehardware.devices.random._
@@ -143,6 +144,8 @@ class TEEHWPeripherals extends Config((site, here, up) => {
     RandomParams(address = BigInt(0x64009000L), impl = 1))
   case PeripheryChachaKey => List(
     ChachaParams(address = BigInt(0x6400A000L)))
+  case PeripheryPolyKey => List(
+    PolyParams(address = BigInt(0x6400D000L)))
   // OpenTitan devices
   case PeripheryAESOTKey => List()
   case PeripheryHMACKey => List()
@@ -170,6 +173,7 @@ class OpenTitanPeripherals extends Config((site, here, up) => {
   case PeripheryUSB11HSKey => List()
   case PeripheryRandomKey => List()
   case PeripheryChachaKey => List()
+  case PeripheryPolyKey => List()
   // OpenTitan devices
   case PeripheryAESOTKey => List(
     AESOTParams(address = BigInt(0x6400A000L)))
@@ -206,6 +210,7 @@ class TEEHWAndOpenTitanPeripherals extends Config((site, here, up) => {
   case PeripheryRandomKey => List(
     RandomParams(address = BigInt(0x64009000L), impl = 1))
   case PeripheryChachaKey => List()
+  case PeripheryPolyKey => List()
   // OpenTitan devices
   case PeripheryAESOTKey => List(
     AESOTParams(address = BigInt(0x6400A000L)))
@@ -233,11 +238,10 @@ class NoSecurityPeripherals extends Config((site, here, up) => {
   case PeripheryI2CKey => List()
   case PeripheryAESKey => List()
   case PeripheryUSB11HSKey => List()
-  case PeripheryRandomKey => List(
-    RandomParams(address = BigInt(0x64009000L), impl = 1))
+  case PeripheryRandomKey => List()
   case PeripheryChachaKey => List(
-    ChachaParams(address = BigInt(0x6400A000L))
-  )
+    ChachaParams(address = BigInt(0x6400A000L)))
+  case PeripheryPolyKey => List()
   case PeripheryAESOTKey => List()
   case PeripheryHMACKey => List()
   case PeripheryAlertKey =>
@@ -334,7 +338,7 @@ class VC707MiniConfig extends Config((site,here,up) => {
 
 class VCU118Config extends Config((site,here,up) => {
   case SDCardMHz => 5.0
-  case FreqKeyMHz => 100.0
+  case FreqKeyMHz => 20.0
   case QSPICardMHz => 1.0
   /* Force to disable USB1.1, because there are no pins */
   case PeripheryUSB11HSKey => List()

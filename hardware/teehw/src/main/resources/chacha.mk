@@ -1,7 +1,7 @@
 #########################################################################################
 # pre-process chacha into a single blackbox file
 #########################################################################################
-CHACHA_DIR ?= $(vsrc_dir)/chacha/src/rtl
+CHACHA_DIR ?= $(optvsrc_dir)/chacha/
 
 # name of output pre-processed verilog file
 CHACHA_PREPROC_VERILOG = chacha.preprocessed.v
@@ -14,11 +14,10 @@ chacha:  $(CHACHA_PREPROC_VERILOG)
 #########################################################################################
 CHACHA_PKGS = 
 
-CHACHA_VSRCS = $(CHACHA_DIR)/chacha_core.v \
-	$(CHACHA_DIR)/chacha_qr.v 
+CHACHA_VSRCS = $(CHACHA_DIR)/chacha_qr.v
 
 CHACHA_WRAPPER = \
-	$(CHACHA_DIR)/chacha.v
+	$(CHACHA_DIR)/chacha_core.v
 
 CHACHA_ALL_VSRCS = $(CHACHA_PKGS) $(CHACHA_VSRCS) $(CHACHA_WRAPPER)
 
