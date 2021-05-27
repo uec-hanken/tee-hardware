@@ -163,7 +163,7 @@ class TLSHA3(busWidthBytes: Int, params: SHA3Params)(implicit p: Parameters)
 
 case class SHA3AttachParams(
    sha3par: SHA3Params,
-   controlWhere: TLBusWrapperLocation = PBUS,
+   controlWhere: TLBusWrapperLocation = uec.teehardware.CRYPTOBUS,
    blockerAddr: Option[BigInt] = None,
    controlXType: ClockCrossingType = NoCrossing,
    intXType: ClockCrossingType = NoCrossing)

@@ -420,7 +420,7 @@ class TLed25519(busWidthBytes: Int, params: ed25519Params)(implicit p: Parameter
 
 case class ed25519AttachParams(
   ed25519par: ed25519Params,
-  controlWhere: TLBusWrapperLocation = PBUS,
+  controlWhere: TLBusWrapperLocation = uec.teehardware.CRYPTOBUS,
   blockerAddr: Option[BigInt] = None,
   controlXType: ClockCrossingType = NoCrossing,
   intXType: ClockCrossingType = NoCrossing)

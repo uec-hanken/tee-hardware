@@ -36,6 +36,12 @@ case object DDRPortOther extends Field[Boolean](false)
 // Our own reset vector
 case object TEEHWResetVector extends Field[Int](0x10040)
 
+// The new additional bus config traits
+case object CRYPTOBUS extends TLBusWrapperLocation("subsystem_cryptobus")
+case object CryptoBusKey extends Field[CryptoBusParams]
+case object CbusToCryptoBusXTypeKey extends Field[ClockCrossingType](SynchronousCrossing())
+
+
 /**
   * Class to renumber BOOM + Rocket harts so that there are no overlapped harts
   * This fragment assumes Rocket tiles are numbered before BOOM tiles
@@ -83,12 +89,32 @@ class WithSmallCacheBigCore(n: Int, overrideIdOffset: Option[Int] = None) extend
   }
 })
 
+class SeparateBusClocks(depth: Int, sync: Int) extends Config((site, here, up) => {
+  case CbusToPbusXTypeKey => AsynchronousCrossing(depth, sync)
+  case CbusToCryptoBusXTypeKey => AsynchronousCrossing(depth, sync)
+})
+
+class SeparateCoreClocks(depth: Int, sync: Int) extends Config((site, here, up) => {
+  case TilesLocated(InSubsystem) => up(TilesLocated(InSubsystem), site) map {
+    // There is no way to actually use the general CanAttachTile here for copying. Maybe there is a cheat?
+    // In the meantime, the cases are only done with the cores we support
+    case r: RocketTileAttachParams => r.copy(crossingParams = r.crossingParams.copy(
+      crossingType = AsynchronousCrossing(depth, sync)))
+    case b: BoomTileAttachParams => b.copy(crossingParams = b.crossingParams.copy(
+      AsynchronousCrossing(depth, sync)))
+    case i: IbexTileAttachParams => i.copy(crossingParams = i.crossingParams.copy(
+      AsynchronousCrossing(depth, sync)))
+    case other => other
+  }
+})
+
 // Chip Configs
 class ChipConfig extends Config(
   // The rest of the configurations, which are not-movable
   new WithNExtTopInterrupts(0) ++
     new TEEHWPeripherals ++
     new WithJtagDTM ++
+    new WithAsynchronousRocketTiles(8,3) ++
     new WithNoSubsystemDrivenClocks ++
     new WithDontDriveBusClocksFromSBus ++
     new WithCoherentBusTopology ++                                  // This adds a L2 cache ++ ++
@@ -103,9 +129,13 @@ class ChipConfig extends Config(
           maxAtomic=site(XLen)/8,
           maxTransfer=128,
           region = RegionType.TRACKED))))
-      case PeripheryBusKey => up(PeripheryBusKey, site).copy(dtsFrequency =
-        Some(BigDecimal(site(FreqKeyMHz)*1000000).setScale(0, BigDecimal.RoundingMode.HALF_UP).toBigInt),
+      case PeripheryBusKey => up(PeripheryBusKey, site).copy(
+        dtsFrequency = Some(BigDecimal(site(FreqKeyMHz)*1000000).setScale(0, BigDecimal.RoundingMode.HALF_UP).toBigInt),
         errorDevice = None)
+      case CryptoBusKey => CryptoBusParams(
+        beatBytes = site(XLen)/8,
+        blockBytes = site(CacheBlockBytes),
+        dtsFrequency = Some(BigDecimal(site(FreqKeyMHz)*1000000).setScale(0, BigDecimal.RoundingMode.HALF_UP).toBigInt))
       case DTSTimebase => BigInt(1000000)
       case JtagDTMKey => new JtagDTMConfig (
         idcodeVersion = 2,      // 1 was legacy (FE310-G000, Acai).
@@ -136,9 +166,13 @@ class MicroConfig extends Config(
           maxAtomic=site(XLen)/8,
           maxTransfer=128,
           region = RegionType.TRACKED))))
-      case PeripheryBusKey => up(PeripheryBusKey, site).copy(dtsFrequency =
-        Some(BigDecimal(site(FreqKeyMHz)*1000000).setScale(0, BigDecimal.RoundingMode.HALF_UP).toBigInt),
+      case PeripheryBusKey => up(PeripheryBusKey, site).copy(
+        dtsFrequency = Some(BigDecimal(site(FreqKeyMHz)*1000000).setScale(0, BigDecimal.RoundingMode.HALF_UP).toBigInt),
         errorDevice = None)
+      case CryptoBusKey => CryptoBusParams(
+        beatBytes = site(XLen)/8,
+        blockBytes = site(CacheBlockBytes),
+        dtsFrequency = Some(BigDecimal(site(FreqKeyMHz)*1000000).setScale(0, BigDecimal.RoundingMode.HALF_UP).toBigInt))
       case DTSTimebase => BigInt(1000000)
       case JtagDTMKey => new JtagDTMConfig (
         idcodeVersion = 2,      // 1 was legacy (FE310-G000, Acai).

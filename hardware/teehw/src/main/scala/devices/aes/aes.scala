@@ -146,7 +146,7 @@ class TLAES(busWidthBytes: Int, params: AESParams)(implicit p: Parameters)
 
 case class AESAttachParams(
   aespar: AESParams,
-  controlWhere: TLBusWrapperLocation = PBUS,
+  controlWhere: TLBusWrapperLocation = uec.teehardware.CRYPTOBUS,
   blockerAddr: Option[BigInt] = None,
   controlXType: ClockCrossingType = NoCrossing,
   intXType: ClockCrossingType = NoCrossing)

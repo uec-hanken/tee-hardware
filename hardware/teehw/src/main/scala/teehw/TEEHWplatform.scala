@@ -213,7 +213,7 @@ trait HasTEEHWSystem
   // add ROM devices
   val maskROMs = p(MaskROMLocated(location)).map { MaskROM.attach(_, this, CBUS) }
 
-  // TODO: I do not know how this work yet. Now the clock is VERY important, for knowing where the
+  // NOTE: I do not know how this work yet. Now the clock is VERY important, for knowing where the
   // clock domains came from. You can assign it to different nodes, and create new ones.
   // Eventually, this will create even their own dts for reference purposes.
   // so, you DEFINITELLY need to define your clocks from now on. This will be assigned to asyncClockGroupsNode
@@ -222,6 +222,14 @@ trait HasTEEHWSystem
   // uses all of that. So, there is no way.
   // (Code analyzed from: Clocks.scala:61, inside chipyard)
   // (Code analyzed from: ClockGroup.scala:63, inside rocketChip. And yes... I know I can just do a SimpleGroup.)
+
+  // PRC domains:
+  // The final analysis of the clock domains is just accumulated in the asyncClockGroupsNode
+  // Everytime a clock is needed, the node just gets populated using "clockNode := (...) := asyncClockGroupsNode"
+  // This means all the solicited clocks are going to be accumulated in the asyncClockGroupsNode
+  // We can use the clock aggregator (ClockGroupAggregator) which will take a single clock and a reset, then
+  // replicate it for all asyncClockGroupsNode. This requires a ClockGroup with only 1 group.
+  // Then we iterate them using node.out.unzip. Unfortunately, will not have names.
 
   // Create the ClockGroupSource (only 1...)
   val clockGroup = ClockGroupSourceNode(List.fill(1) { ClockGroupSourceParameters() })
@@ -324,11 +332,15 @@ trait HasTEEHWSystemModule extends HasRTCModuleImp
   }
 
   // NOTE: Continuation of the clock assignation
-  outer.clockGroup.out.unzip._1.map {out: ClockGroupBundle =>
-    out.member.data.foreach { o =>
-      o.clock := clock
-      o.reset := reset
-    }
+  // Extract the number of clocks. According to the clockGroup definition, there is only one clockGroup
+  val numClocks: Int = outer.clockGroup.out.map(_._1.member.data.size).sum
+  // Create the actual port
+  val aclocks = IO(Vec(numClocks, Flipped(new ClockBundle(ClockBundleParameters()))))
+  val extclocks = outer.clockGroup.out.flatMap(_._1.member.data)
+  // Connect the clocks in the hardware
+  (extclocks zip aclocks).foreach{ case (o, ai) =>
+    o.clock := ai.clock
+    o.reset := ai.reset
   }
 }
 
@@ -367,7 +379,7 @@ class XDMATopPadswReset(n: Int) extends XDMATopPads(n) {
   val erst_n = Input(Bool())
 }
 
-class TEEHWPlatformIO(val params: Option[TLBundleParameters] = None)
+class TEEHWPlatformIO(val params: Option[TLBundleParameters] = None, val numClocks: Int = 1)
                     (implicit val p: Parameters) extends Bundle {
   val allspicfg = p(PeripherySPIKey) ++ p(PeripherySPIFlashKey)
   val pins = new Bundle {
@@ -385,6 +397,7 @@ class TEEHWPlatformIO(val params: Option[TLBundleParameters] = None)
   val ChildReset = p(DDRPortOther).option(Input(Bool()))
   val pciePorts = p(IncludePCIe).option(new XilinxVC707PCIeX1IO)
   val xdmaPorts = p(XDMAPCIe).map(A => new XDMATopPadswReset(A.lanes))
+  val aclocks = Vec(numClocks, Input(Clock()))
 }
 
 object TEEHWPlatform {
@@ -396,7 +409,14 @@ object TEEHWPlatform {
     reset: Reset)(implicit p: Parameters): Unit = {
 
     // Add in debug-controlled reset.
+    // TODO: Now this is okay? We also use a lot of sys.clock
     sys.reset := ResetCatchAndSync(clock, reset.toBool, 20)
+
+    // Connect the clocks and the resets that are asynchronous
+    sys.aclocks.zip(io.aclocks).foreach{ case(sysaclock, ioaclock) =>
+      sysaclock.clock := ioaclock
+      sysaclock.reset := ResetCatchAndSync(ioaclock, reset.toBool, 20)
+    }
 
     // NEW: Reset system nows connects each core's reset independently
     sys.resetctrl.map { rcio => rcio.hartIsInReset.map { _ := sys.reset.asBool() }}
@@ -492,7 +512,7 @@ class TEEHWPlatform(implicit val p: Parameters) extends Module {
 
   // Not actually sure if "node.head.in.head._1.params" (where node is A._1) is the
   // correct way to get the params... TODO: Get the correct way
-  val io = IO(new TEEHWPlatformIO(sys.outer.memctl.map{A => A._1.in.head._1.params} ) )
+  val io = IO(new TEEHWPlatformIO(sys.outer.memctl.map{A => A._1.in.head._1.params}, sys.numClocks ) )
 
   TEEHWPlatform.connect(sys, io, clock, reset)
 }
