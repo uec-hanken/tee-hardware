@@ -47,13 +47,8 @@ HELP_COMMANDS += \
 "   launch-sbt             = start sbt terminal"
 
 #########################################################################################
-# extra make variables/rules from subprojects
-#
-# EXTRA_GENERATOR_REQS - requirements needed for the main generator
-# EXTRA_SIM_FLAGS - runtime simulation flags
-# EXTRA_SIM_CC_FLAGS - cc flags for simulators
-# EXTRA_SIM_SOURCES - simulation sources needed for simulator
-# EXTRA_SIM_REQS - requirements to build the simulator
+# include additional subproject make fragments
+# see HELP_COMPILATION_VARIABLES
 #########################################################################################
 include $(teehw_dir)/hardware/chipyard/generators/cva6/cva6.mk
 include $(teehw_dir)/hardware/chipyard/generators/tracegen/tracegen.mk

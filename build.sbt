@@ -6,7 +6,7 @@ lazy val teeHardwareRoot = Project("teeHardwareRoot", file("."))
 
 lazy val commonSettings = Seq(
   organization := "vlsilab.ee.uec.ac",
-  version := "0.1",
+  version := "0.3",
   scalaVersion := "2.12.10",
   test in assembly := {},
   assemblyMergeStrategy in assembly := { _ match {
@@ -15,15 +15,6 @@ lazy val commonSettings = Seq(
   scalacOptions ++= Seq("-deprecation","-unchecked","-Xsource:2.11"),
   addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full),
   unmanagedBase := (teeHardwareRoot / unmanagedBase).value,
-  libraryDependencies ++= Seq( // TODO: Seems to be a little unstable. Please remove this when the true master comes into place.
-    "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-    "org.scalatest" %% "scalatest" % "3.2.0" % "test",
-    "org.scalatestplus" %% "scalacheck-1-14" % "3.1.3.0" % "test",
-    "com.github.scopt" %% "scopt" % "3.7.1",
-    "net.jcazevedo" %% "moultingyaml" % "0.4.2",
-    "org.json4s" %% "json4s-native" % "3.6.9",
-    "org.apache.commons" % "commons-text" % "1.8"
-  ),
   allDependencies := {
     // drop specific maven dependencies in subprojects in favor of Chipyard's version
     val dropDeps = Seq(
@@ -78,7 +69,7 @@ def isolateAllTests(tests: Seq[TestDefinition]) = tests map { test =>
 
 // This needs to stay in sync with the chisel3 and firrtl git submodules
 val chiselVersion = "3.4.1"
-lazy val chiselRef = ProjectRef("./hardware/chipyard/tools/chisel3", "chisel")
+lazy val chiselRef = ProjectRef(workspaceDirectory / "chisel3", "chisel")
 lazy val chiselLib = "edu.berkeley.cs" %% "chisel3" % chiselVersion
 lazy val chiselLibDeps = (chiselRef / Keys.libraryDependencies)
 // While not built from source, *must* be in sync with the chisel3 git submodule
@@ -87,7 +78,7 @@ lazy val chiselLibDeps = (chiselRef / Keys.libraryDependencies)
 lazy val chiselPluginLib = "edu.berkeley.cs" % "chisel3-plugin" % chiselVersion cross CrossVersion.full
 
 val firrtlVersion = "1.4.1"
-lazy val firrtlRef = ProjectRef("./hardware/chipyard/tools/firrtl", "firrtl")
+lazy val firrtlRef = ProjectRef(workspaceDirectory / "firrtl", "firrtl")
 lazy val firrtlLib = "edu.berkeley.cs" %% "firrtl" % firrtlVersion
 val firrtlLibDeps = settingKey[Seq[sbt.librarymanagement.ModuleID]]("FIRRTL Library Dependencies sans antlr4")
 Global / firrtlLibDeps := {
@@ -309,6 +300,7 @@ lazy val sifive_cache = (project in file("hardware/chipyard/generators/sifive-ca
   .settings(libraryDependencies ++= rocketLibDeps.value)
 
 // -- The FPGA shells, because in the TEE they are still needed --
+// TODO: Now chipyard includes their own version of fpga-shells. Need to look into this.
 lazy val fpga_shells = (project in file("hardware/fpga-shells")).
   dependsOn(rocketchip, sifive_blocks, utilities).
   settings(
