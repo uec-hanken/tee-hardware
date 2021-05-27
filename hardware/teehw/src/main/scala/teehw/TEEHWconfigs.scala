@@ -129,7 +129,8 @@ class TEEHWPeripherals extends Config((site, here, up) => {
     UARTParams(address = BigInt(0x64000000L)))
   case PeripherySPIKey => List(
     SPIParams(rAddress = BigInt(0x64001000L)),
-    SPIParams(rAddress = BigInt(0x64005000L)))
+    //SPIParams(rAddress = BigInt(0x64005000L)) // TODO: Add this for OTP in the release
+  )
   case PeripheryGPIOKey => List(
     GPIOParams(address = BigInt(0x64002000L), width = 16))
   case GPIOInKey => 8
@@ -145,8 +146,7 @@ class TEEHWPeripherals extends Config((site, here, up) => {
   case PeripheryUSB11HSKey => List(
     USB11HSParams(address = BigInt(0x64008000L)))
   case PeripheryRandomKey => List(
-    RandomParams(address = BigInt(0x64009000L), impl = 1),
-    RandomParams(address = BigInt(0x6400A000L), impl = 0))
+    RandomParams(address = BigInt(0x64009000L), impl = 1))
   // OpenTitan devices
   case PeripheryAESOTKey => List()
   case PeripheryHMACKey => List()
@@ -205,8 +205,7 @@ class TEEHWAndOpenTitanPeripherals extends Config((site, here, up) => {
   case PeripheryUSB11HSKey => List(
     USB11HSParams(address = BigInt(0x64008000L)))
   case PeripheryRandomKey => List(
-    RandomParams(address = BigInt(0x64009000L), impl = 1),
-    RandomParams(address = BigInt(0x6400A000L), impl = 0))
+    RandomParams(address = BigInt(0x64009000L), impl = 1))
   // OpenTitan devices
   case PeripheryAESOTKey => List(
     AESOTParams(address = BigInt(0x6400A000L)))
