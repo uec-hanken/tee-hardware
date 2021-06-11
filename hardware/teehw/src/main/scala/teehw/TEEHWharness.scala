@@ -5,10 +5,10 @@ package uec.teehardware
 import chisel3._
 import freechips.rocketchip.amba.axi4._
 import freechips.rocketchip.config.Parameters
-import freechips.rocketchip.devices.debug.Debug
+import freechips.rocketchip.devices.debug.{Debug, SimJTAG}
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.subsystem._
-import freechips.rocketchip.util.AsyncResetReg
+import freechips.rocketchip.util.{AsyncResetReg, PlusArg, ResetCatchAndSync}
 import freechips.rocketchip.system._
 import freechips.rocketchip.tilelink._
 import sifive.blocks.devices.gpio.GPIOPortIO
@@ -34,7 +34,8 @@ class TLULtoSimDRAM( cacheBlockBytes: Int,
   })
 
   // Create the AXI4 Helper nodes to do connection
-  val toaxi4  = LazyModule(new TLToAXI4(adapterName = Some("mem"), stripBits = 1))
+  val buffer  = LazyModule(new TLBuffer)
+  val toaxi4  = LazyModule(new TLToAXI4(adapterName = Some("mem")))
   val indexer = LazyModule(new AXI4IdIndexer(idBits = 4))
   val deint   = LazyModule(new AXI4Deinterleaver(p(CacheBlockBytes)))
   val yank    = LazyModule(new AXI4UserYanker)
@@ -54,7 +55,7 @@ class TLULtoSimDRAM( cacheBlockBytes: Int,
   )))
 
   // Attach to the axi4 node (Hopefully does not explode)
-  axinode := yank.node := deint.node := indexer.node := toaxi4.node := node
+  axinode := yank.node := deint.node := indexer.node := toaxi4.node := buffer.node := node
 
   lazy val module = new LazyModuleImp(this) {
     val io = IO(new Bundle {
@@ -99,8 +100,7 @@ class TEEHWHarness()(implicit p: Parameters) extends Module {
     val success = Output(Bool())
   })
 
-  val ldut = LazyModule(new TEEHWSystem)
-  val dut = Module(ldut.module)
+  val dut = Module(new TEEHWPlatform)
 
   // IMPORTANT NOTE:
   // The old version yields the debugger and loads using the fevsr. This does not work anymore
@@ -112,75 +112,68 @@ class TEEHWHarness()(implicit p: Parameters) extends Module {
 
   // This is the new way (just look at chipyard.IOBinders package about details)
 
+  // Async clocks and resets
+  dut.io.aclocks.foreach( _ := clock)
+
   // Simulated memory.
-  dut.memPorts.foreach{
-    case (ioh, cclk, crst) =>
-      ioh.foreach { case ioi: TLBundle =>
-        // Step 1: Our conversion
-        val simdram = LazyModule(new TLULtoSimDRAM(ldut.p(CacheBlockBytes), ioi.params))
-        val simdrammod = Module(simdram.module)
-        // Step 2: Perform the conversion from TL to our TLUL port (Remember we do in this way because chip)
+  dut.io.tlport.foreach{
+    case ioi: TLUL =>
+      // Step 1: Our conversion
+      val simdram = LazyModule(new uec.teehardware.TLULtoSimDRAM(dut.p(CacheBlockBytes), ioi.params))
+      val simdrammod = Module(simdram.module)
+      // Step 2: Perform the conversion from TL to our TLUL port (Remember we do in this way because chip)
 
-        // Connect outside the ones that can be untied
-        simdrammod.io.tlport.a.valid := ioi.a.valid
-        ioi.a.ready := simdrammod.io.tlport.a.ready
-        simdrammod.io.tlport.a.bits := ioi.a.bits
+      // Connect outside the ones that can be untied
+      simdrammod.io.tlport.a.valid := ioi.a.valid
+      ioi.a.ready := simdrammod.io.tlport.a.ready
+      simdrammod.io.tlport.a.bits := ioi.a.bits
 
-        ioi.d.valid := simdrammod.io.tlport.d.valid
-        simdrammod.io.tlport.d.ready := ioi.d.ready
-        ioi.d.bits := simdrammod.io.tlport.d.bits
+      ioi.d.valid := simdrammod.io.tlport.d.valid
+      simdrammod.io.tlport.d.ready := ioi.d.ready
+      ioi.d.bits := simdrammod.io.tlport.d.bits
+      // REMEMBER: no usage of channels B, C and E (except for some TL Monitors)
 
-        // Tie off the channels we dont need...
-        ioi.b.bits := 0.U.asTypeOf(new TLBundleB(ioi.params))
-        ioi.b.valid := false.B
-        ioi.c.ready := false.B
-        ioi.e.ready := false.B
-        // REMEMBER: no usage of channels B, C and E (except for some TL Monitors)
-
-        // If the other-clock-memory is activated, we need to associate the clock and the reset
-        // NOTE: Please consider that supporting other-clock is not on the boundaries of this
-        // simulation. Please refrain of activating DDRPortOther
-        (cclk zip crst).foreach {
-          case (ck,rst) =>
-            ck := clock
-            rst := reset
-        }
+      // If the other-clock-memory is activated, we need to associate the clock and the reset
+      // NOTE: Please consider that supporting other-clock is not on the boundaries of this
+      // simulation. Please refrain of activating DDRPortOther
+      (dut.io.ChildClock zip dut.io.ChildReset).foreach {
+        case (ck,rst) =>
+          ck := clock
+          rst := reset
       }
   }
 
-  // Debug connections (This also handles the reset system)
-  val debug_success = WireInit(false.B)
-  if(dut.debug.nonEmpty) {
-    // Debug tie off, only if there is dmi
-    if(dut.debug.get.systemjtag.isEmpty) {
-      Debug.tieoffDebug(dut.debug, dut.resetctrl, Some(dut.psd))
-      dut.debug.foreach { d =>
-        d.clockeddmi.foreach({ cdmi => cdmi.dmi.req.bits := DontCare; cdmi.dmiClock := clock })
-        d.dmactiveAck := DontCare
-        d.clock := clock
-      }
-    }
-
-    // If the debug have JTAG, then connect it
-    else {
-      Debug.connectDebug(dut.debug, dut.resetctrl, dut.psd, clock, reset.asBool(), debug_success)
-    }
+  // Debug connections (JTAG)
+  dut.io.jtag_reset := reset
+  val simjtag = Module(new SimJTAG(tickDelay=3))
+  // Equivalent of simjtag.connect
+  BasePinToRegular(dut.io.pins.jtag.TCK, simjtag.io.jtag.TCK.asBool)
+  BasePinToRegular(dut.io.pins.jtag.TMS, simjtag.io.jtag.TMS)
+  BasePinToRegular(dut.io.pins.jtag.TDI, simjtag.io.jtag.TDI)
+  simjtag.io.jtag.TDO.data := BasePinToRegular(dut.io.pins.jtag.TDO)
+  simjtag.io.jtag.TDO.driven := dut.io.pins.jtag.TDO.o.oe
+  simjtag.io.clock := clock
+  simjtag.io.reset := reset
+  simjtag.io.enable := PlusArg("jtag_rbb_enable", 0, "Enable SimJTAG for JTAG Connections. Simulation will pause until connection is made.")
+  simjtag.io.init_done := !reset.asBool
+  when (simjtag.io.exit === 1.U) { io.success := true.B }
+  when (simjtag.io.exit >= 2.U) {
+    printf("*** FAILED *** (exit code = %d)\n", simjtag.io.exit >> 1.U)
+    stop(1)
   }
 
   // Don't touch stuff (avoids firrtl of cutting down hardware because Dead Code Elimination)
-  dut.dontTouchPorts()
+  //dut.dontTouchPorts()
 
   // Serial interface (if existent) will be connected here
   io.success := false.B
-  ldut.serial_tl.foreach{ port =>
-    val ram = SerialAdapter.connectHarnessRAM(ldut.serdesser.get, port, reset)
-    val ser_success = SerialAdapter.connectSimSerial(ram.module.io.tsi_ser, clock, reset)
+  dut.io.tlserial.foreach{ port =>
+    val ser_success = SerialAdapter.connectSimSerial(port, clock, reset)
     when (ser_success) { io.success := true.B }
   }
-  when (debug_success) { io.success := true.B }
 
   // Tie down USB11HS
-  dut.usb11hs.foreach{ case usb =>
+  dut.io.usb11hs.foreach{ case usb =>
     usb.USBWireDataIn := 0.U
     //usb.vBusDetect := true.B
     usb.usbClk := clock // TODO: Do an actual 48MHz clock?
@@ -189,43 +182,49 @@ class TEEHWHarness()(implicit p: Parameters) extends Module {
   // Tie down UART
   // NOTE: Why UART does not have a function for tie down that?
   // Only exist testchipip.UARTAdapter.connect
-  UARTAdapter.connect(uart = dut.uart, baudrate = BigInt(115200)) // If you want it, just uncomment it
-  /*dut.uart.foreach{ case uart:UARTPortIO =>
-      uart.rxd := true.B
-      // uart.txd ignored
-  }*/ // If you want to activate the tie down, uncomment these
+
+
+  val baudrate = BigInt(115200)
+  val clockFrequency = dut.p(PeripheryBusKey).dtsFrequency.get
+  val div = (clockFrequency / baudrate).toInt
+  val uart_sim = Module(new UARTAdapter(0, div))
+  uart_sim.suggestName(s"uart_sim_0")
+  uart_sim.io.uart.txd := BasePinToRegular(dut.io.pins.uart.txd)
+  BasePinToRegular(dut.io.pins.uart.rxd, uart_sim.io.uart.rxd)
 
   // Tie down qspi and spi
   // NOTE: Those also does not have a function for tie down
   // but we are totally doing the qspi black box binding from testchipip
   // NOTE2: AS s for the qspi blackbox from testchipip, we just copy it, because
   // It only supports their precious SPIChipIO instead of the mainstream SPIPortIO
-  dut.spi.zipWithIndex.foreach {
-    case (port:SPIPortIO, i: Int) =>
-    i match {
-      case 1 =>
-        val spi_mem = Module(new SimSPIFlashModel(0x20000000, i, true))
-        spi_mem.suggestName(s"spi_mem_${i}")
-        spi_mem.io.sck := port.sck
-        //require(params.csWidth == 1, "I don't know what to do with your extra CS bits. Fix me please.")
-        spi_mem.io.cs(0) := port.cs(0)
-        spi_mem.io.dq.zip(port.dq).foreach { case (x, y) => x <> y }
-        spi_mem.io.reset := reset.asBool
-      case _ =>
-        port.dq.foreach(_.i := false.B)
-    }
+  dut.io.pins.spi.zipWithIndex.foreach {
+    case (port, i: Int) =>
+      i match {
+        case 1 =>
+          val spi_mem = Module(new SimSPIFlashModel(0x20000000, i, true))
+          spi_mem.suggestName(s"spi_mem_${i}")
+          spi_mem.io.sck := port.sck.o.oval
+          //require(params.csWidth == 1, "I don't know what to do with your extra CS bits. Fix me please.")
+          spi_mem.io.cs(0) := port.cs(0).o.oval
+          /*spi_mem.io.dq.zip(port.dq).foreach { case (x, y) =>
+            x <> y
+          }*/
+          spi_mem.io.reset := reset.asBool
+        case _ =>
+          port.dq.foreach(_.i.ival := false.B)
+      }
   }
 
   // GPIO tie down
-  dut.gpio.foreach{case gpio:GPIOPortIO =>
-    gpio.pins.foreach{ case pin =>
-      pin.i.ival := false.B
+  Option(dut.io.pins.gpio).foreach { case gpio =>
+    gpio.pins.foreach {
+      BasePinToRegular(_)
     }
   }
 
   // PCIE tie down, but seriously, who is going to use it?
   // Answer: please don't
-  dut.pciePorts.foreach{
+  dut.io.pciePorts.foreach{
     case pcie =>
       pcie.axi_aresetn := false.B
       pcie.pci_exp_rxp := false.B
@@ -233,5 +232,4 @@ class TEEHWHarness()(implicit p: Parameters) extends Module {
       pcie.REFCLK_rxp := false.B
       pcie.REFCLK_rxn := false.B
   }
-
 }

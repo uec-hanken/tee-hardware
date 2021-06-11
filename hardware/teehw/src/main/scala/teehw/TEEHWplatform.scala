@@ -24,6 +24,7 @@ import sifive.fpgashells.ip.xilinx.xdma._
 import sifive.fpgashells.devices.xilinx.xdma.{XDMAClocks, XDMAPads, _}
 import sifive.fpgashells.ip.xilinx.IBUFDS_GTE4
 import sifive.fpgashells.shell.xilinx.XDMATopPads
+import testchipip.SerialAdapter.SERIAL_TSI_WIDTH
 import uec.teehardware.devices.aes._
 import uec.teehardware.devices.ed25519._
 import uec.teehardware.devices.random._
@@ -36,7 +37,7 @@ import uec.teehardware.devices.opentitan.hmac._
 import uec.teehardware.devices.opentitan.keymgr._
 import uec.teehardware.devices.opentitan.kmac._
 import uec.teehardware.devices.opentitan.otp_ctrl._
-import testchipip.{CanHavePeripheryTLSerial}
+import testchipip.{CanHavePeripheryTLSerial, ClockedIO, SerialAdapter, SerialIO, SerialTLKey}
 
 import java.lang.reflect.InvocationTargetException
 
@@ -342,6 +343,9 @@ trait HasTEEHWSystemModule extends HasRTCModuleImp
     o.clock := ai.clock
     o.reset := ai.reset
   }
+
+  // Explicitly export the tlserial port
+  val serial_tl = outer.serial_tl
 }
 
 class TEEHWSystemModule[+L <: TEEHWSystem](_outer: L)
@@ -398,6 +402,7 @@ class TEEHWPlatformIO(val params: Option[TLBundleParameters] = None, val numCloc
   val pciePorts = p(IncludePCIe).option(new XilinxVC707PCIeX1IO)
   val xdmaPorts = p(XDMAPCIe).map(A => new XDMATopPadswReset(A.lanes))
   val aclocks = Vec(numClocks, Input(Clock()))
+  val tlserial = p(SerialTLKey).map(A => new SerialIO(SERIAL_TSI_WIDTH))
 }
 
 object TEEHWPlatform {
@@ -410,21 +415,54 @@ object TEEHWPlatform {
 
     // Add in debug-controlled reset.
     // TODO: Now this is okay? We also use a lot of sys.clock
-    sys.reset := ResetCatchAndSync(clock, reset.toBool, 20)
+    sys.reset := ResetCatchAndSync(clock, reset.toBool, 5)
 
     // Connect the clocks and the resets that are asynchronous
     sys.aclocks.zip(io.aclocks).foreach{ case(sysaclock, ioaclock) =>
       sysaclock.clock := ioaclock
-      sysaclock.reset := ResetCatchAndSync(ioaclock, reset.toBool, 20)
+      sysaclock.reset := ResetCatchAndSync(ioaclock, reset.toBool, 5)
     }
 
-    // NEW: Reset system nows connects each core's reset independently
-    sys.resetctrl.map { rcio => rcio.hartIsInReset.map { _ := sys.reset.asBool() }}
-
-    // NEW: The debug system now manually connects the clock and reset
-    // Actually this helper only connects the clock, and the reset is from the DMI
-    // NOTE: This also connects the new sys.debug.get.dmactiveAck
-    Debug.connectDebugClockAndReset(sys.debug, clock)
+    // JTAG & Debug Interface
+    sys.debug.foreach({ debug =>
+      // We never use the PSDIO, so tie it off on-chip
+      sys.psd.psd.foreach { _ <> 0.U.asTypeOf(new PSDTestMode) }
+      sys.resetctrl.foreach { rcio => rcio.hartIsInReset.map { _ := reset.toBool } }
+      sys.debug.foreach { d =>
+        // Tie off extTrigger
+        d.extTrigger.foreach { t =>
+          t.in.req := false.B
+          t.out.ack := t.out.req
+        }
+        // Tie off dmi
+        d.clockeddmi.foreach { d =>
+          d.dmi.req.valid := false.B
+          d.dmi.resp.ready := true.B
+          d.dmiClock := false.B.asClock
+          d.dmiReset := true.B.asAsyncReset
+        }
+        // Tie off APB
+        d.apb.foreach { apb =>
+          apb.tieoff()
+          apb.clock := false.B.asClock
+          apb.reset := true.B.asAsyncReset
+          apb.psel := false.B
+          apb.penable := false.B
+        }
+        // Tie off disableDebug
+        d.disableDebug.foreach { d => d := false.B }
+        // Drive JTAG on-chip IOs
+        d.systemjtag.foreach { j =>
+          j.reset := io.jtag_reset.asAsyncReset // Was only reset
+          JTAGPinsFromPort(io.pins.jtag, j.jtag)
+          j.mfr_id := p(JtagDTMKey).idcodeManufId.U(11.W)
+          j.part_number := p(JtagDTMKey).idcodePartNum.U(16.W)
+          j.version := p(JtagDTMKey).idcodeVersion.U(4.W)
+        }
+        io.ndreset := d.ndreset
+      }
+      Debug.connectDebugClockAndReset(Some(debug), clock)
+    })
 
     // The TL memory port. This is a configurable one for the address space
     // and the ports are exposed inside the "foreach". Do not worry, there is
@@ -488,22 +526,16 @@ object TEEHWPlatform {
       SPIPinsFromPort(pins_spi, sys_spi, clock = sys.clock, reset = sys.reset.toBool, syncStages = 3)
     }
 
-    // JTAG Debug Interface
-    // TODO: Now the debug is optional? The get will fail if the debug is disabled
-    val sjtag = sys.debug.get.systemjtag.get
-    JTAGPinsFromPort(io.pins.jtag, sjtag.jtag)
-    sjtag.reset := io.jtag_reset
-    sjtag.mfr_id := p(JtagDTMKey).idcodeManufId.U(11.W)
-    sjtag.part_number := p(JtagDTMKey).idcodePartNum.U(16.W)
-    sjtag.version := p(JtagDTMKey).idcodeVersion.U(4.W)
-
-    sys.debug.foreach { case debug =>
-      io.ndreset := debug.ndreset
-    }
-
     // PCIe port connection
     (io.pciePorts zip sys.pciePorts).foreach{ case (a, b) => a <> b }
     (io.xdmaPorts zip sys.xdmaPorts).foreach{ case (a, b) => a <> b }
+
+    // TL serial
+    (io.tlserial zip sys.serial_tl).foreach{ case (a, b) =>
+      val serdesser = sys.outer.asInstanceOf[HasTEEHWSystem].serdesser.get
+      val ram = SerialAdapter.connectHarnessRAM(serdesser, b, reset)
+      a <> ram.module.io.tsi_ser
+    }
   }
 }
 

@@ -12,8 +12,7 @@ teehw_dir=$(abspath ../..)
 base_dir=$(teehw_dir)
 sim_dir=$(abspath .)
 build_dir=$(sim_dir)/generated-src/$(long_name)
-xip_dir=$(base_dir)/software/xip
-ROMGEN ?= $(base_dir)/hardware/vlsi_rom_gen_real
+xip_dir=$(teehw_dir)/software/xip
 
 BOARD?=VC707Mini
 ISACONF?=RV64GC
@@ -22,7 +21,7 @@ BOOTSRC?=BOOTROM
 PCIE?=WoPCIe
 DDRCLK?=WoSepaDDRClk
 HYBRID?=RocketMicro
-ROMHEX ?= $(xip_dir)/xip.hex
+#PERIPHERALS?=NoSecurityPeripherals
 
 #########################################################################################
 # include shared variables
@@ -37,8 +36,7 @@ sim_vsrcs = \
 	$(HARNESS_FILE) \
 	$(TOP_SMEMS_FILE) \
 	$(HARNESS_SMEMS_FILE) \
-	$(ROM_FILE) \
-	$(ADD_VSRC)
+	$(ROM_FILE)
 
 #########################################################################################
 # name of simulator (used to generate *.f arguments file)
@@ -66,12 +64,12 @@ include $(base_dir)/common.mk
 #########################################################################################
 # ROM rules
 #########################################################################################
-$(ROM_FILE): $(ROMHEX) $(ROMGEN)
-	$(ROMGEN) $(ROM_CONF_FILE) $(ROMHEX) > $(ROM_FILE)
-
-$(ROMHEX):
-	make -C $(xip_dir) BUILD_DIR=$(build_dir) long_name=$(long_name) ISACONF=$(ISACONF) XIP_TARGET_ADDR=0x80000000 clean
-	make -C $(xip_dir) BUILD_DIR=$(build_dir) long_name=$(long_name) ISACONF=$(ISACONF) XIP_TARGET_ADDR=0x80000000 hex
+ROMGEN=$(teehw_dir)/hardware/vlsi_rom_gen_real
+HEXFILE=$(build_dir)/xip.hex
+$(ROM_FILE): $(ROMGEN)
+	make -C $(xip_dir) BUILD_DIR=$(build_dir) long_name=$(long_name) ISACONF=$(ISACONF) XIP_TARGET_ADDR=0x80000000 ADD_OPTS=-DSKIP_HANG clean
+	make -C $(xip_dir) BUILD_DIR=$(build_dir) long_name=$(long_name) ISACONF=$(ISACONF) XIP_TARGET_ADDR=0x80000000 ADD_OPTS=-DSKIP_HANG hex
+	$(ROMGEN) $(ROM_CONF_FILE) $(HEXFILE) > $(ROM_FILE)
 
 #########################################################################################
 # verilator binary and flags
@@ -120,6 +118,7 @@ TIMESCALE_OPTS := $(shell verilator --version | perl -lne 'if (/(\d.\d+)/ && $$1
 VERILATOR_NONCC_OPTS = \
 	$(TIMESCALE_OPTS) \
 	--top-module $(VLOG_MODEL) \
+	--vpi \
 	-Wno-fatal \
 	$(CHIPYARD_VERILATOR_FLAGS) \
 	--output-split 10000 \

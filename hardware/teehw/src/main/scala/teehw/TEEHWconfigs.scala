@@ -22,7 +22,7 @@ import uec.teehardware.devices.opentitan.alert._
 import uec.teehardware.devices.opentitan.hmac._
 import uec.teehardware.devices.opentitan.otp_ctrl._
 import boom.common._
-import testchipip.{SerialTLKey, SerialTLParams}
+import testchipip.{SerialTLAttachKey, SerialTLAttachParams, SerialTLKey, SerialTLParams}
 import freechips.rocketchip.util.BooleanToAugmentedBoolean
 import uec.teehardware.devices.opentitan.nmi_gen._
 import uec.teehardware.ibex._
@@ -364,13 +364,14 @@ class WithSimulation extends Config((site, here, up) => {
   // Force also the Serial interface
   case SerialTLKey => Some(SerialTLParams(
     memParams = MasterPortParams(
-      base = BigInt("80000000", 16),
-      size = BigInt("10000000", 16),
+      base = BigInt("10000000", 16),
+      size = BigInt("00001000", 16),
       beatBytes = site(MemoryBusKey).beatBytes,
       idBits = 4
     ),
     width = 4
   ))
+  case SerialTLAttachKey => SerialTLAttachParams()
   /* Force to use QSPI-scenario because then the XIP will be put in the BootROM */
   /* Simulation needs the hang function in the XIP */
   case MaskROMLocated(InSubsystem) => Seq(

@@ -298,29 +298,6 @@ int main(int argc, char** argv) {
   printstr("\r\nTime calculation: ");
   printhex32(delta_mcycle);
   
-  // Random number generation
-  // Reset first the TRNG
-  printstr("\r\nEntering RNG test:\r\n");
-  RANDOM_REG(RANDOM_RND_SOURCE_ENABLE) = 0;
-  RANDOM_REG(RANDOM_TRNG_SW_RESET) = 1;
-  while(RANDOM_REG(RANDOM_TRNG_BUSY));
-  // Put the sampling to a odd number (remember that is a LFSR16 anyways)
-  RANDOM_REG(RANDOM_SAMPLE_CNT1) = 29;
-  for(int ii = 0; ii < 20; ii++) {
-    printstr("\r\nRandom:\r\n");
-    // Enable the random number generator
-    RANDOM_REG(RANDOM_RND_SOURCE_ENABLE) = 1;
-    // Wait until we have the random number
-    while(!RANDOM_REG(RANDOM_TRNG_VALID));
-    // Get our random
-    for(int i = 0; i < 6; i++) 
-      printhex32(RANDOM_REG(RANDOM_EHR_DATA0 + i*4));
-    // Reset the sampling counters only
-    RANDOM_REG(RANDOM_RND_SOURCE_ENABLE) = 0;
-    RANDOM_REG(RANDOM_RST_BITS_COUNTER) = 1;
-    while(RANDOM_REG(RANDOM_TRNG_BUSY));
-  }
-  
   /*printstr("\r\nUSB Write: ");
   *((unsigned char*)0x10008000) = 0xEA;
   *((unsigned char*)0x10008001) = 0xEA;
@@ -330,6 +307,8 @@ int main(int argc, char** argv) {
   printhex32(*((unsigned char*)0x10008001));
   printhex32(*((unsigned char*)0x10008002));
   printstr("\r\n");*/
+  
+  printstr("\r\nFinished!\r\n");
   
   tohost_exit(0);
   return 0;
