@@ -41,6 +41,8 @@ case object CRYPTOBUS extends TLBusWrapperLocation("subsystem_cryptobus")
 case object CryptoBusKey extends Field[CryptoBusParams]
 case object CbusToCryptoBusXTypeKey extends Field[ClockCrossingType](SynchronousCrossing())
 
+// Async clock exposure
+case object ExposeClocks extends Field[Boolean](false)
 
 /**
   * Class to renumber BOOM + Rocket harts so that there are no overlapped harts

@@ -134,7 +134,7 @@ class TEEHWbase(implicit val p :Parameters) extends RawModule {
 class TEEHWSoC(implicit override val p :Parameters) extends TEEHWbase {
   // Some additional ports to connect to the chip
   val sys_clk = IO(Input(Clock()))
-  val aclocks = IO(Vec(aclocks_wire.get.size, Input(Clock())))
+  val aclocks = p(ExposeClocks).option(IO(Vec(aclocks_wire.get.size, Input(Clock()))))
   val rst_n = IO(Input(Bool()))
   val jrst_n = IO(Input(Bool()))
   val tlport = tlportw.map{tl => IO(new TLUL(tl.params))}
@@ -145,7 +145,10 @@ class TEEHWSoC(implicit override val p :Parameters) extends TEEHWbase {
   }
   // Clock and reset connection
   clock := sys_clk
-  aclocks_wire.get := aclocks
+  if(p(ExposeClocks)) aclocks_wire.get := aclocks.get
+  else {
+    aclocks_wire.get.foreach(_ := sys_clk)
+  }
   reset := !rst_n || ndreset // This connects the debug reset and the general reset together
   areset := !jrst_n
 }
@@ -260,7 +263,7 @@ class FPGAVC707(implicit val p :Parameters) extends RawModule {
     clock := pll.io.clk_out3.get
     reset := reset_2
     chip.sys_clk := pll.io.clk_out3.get
-    chip.aclocks.foreach(_ := pll.io.clk_out3.get) // TODO: Connect your clocks here
+    chip.aclocks.foreach(_.foreach(_ := pll.io.clk_out3.get)) // TODO: Connect your clocks here
     chip.rst_n := !reset_2
 
     // The rest of the platform connections
@@ -415,7 +418,7 @@ class FPGAVCU118(implicit val p :Parameters) extends RawModule {
     clock := pll.io.clk_out3.get
     reset := reset_2
     chip.sys_clk := pll.io.clk_out3.get
-    chip.aclocks.foreach(_ := pll.io.clk_out3.get) // TODO: Connect your clocks here
+    chip.aclocks.foreach(_.foreach(_ := pll.io.clk_out3.get)) // TODO: Connect your clocks here
     chip.rst_n := !reset_2
 
     // The rest of the platform connections
@@ -655,7 +658,7 @@ class FPGADE4(implicit val p :Parameters) extends RawModule {
     clock := mod.io.ckrst.qsys_clk
     reset := SLIDE_SW(3)
     chip.sys_clk := mod.io.ckrst.qsys_clk
-    chip.aclocks.foreach(_ := mod.io.ckrst.qsys_clk) // TODO: Connect your clocks here
+    chip.aclocks.foreach(_.foreach(_ := mod.io.ckrst.qsys_clk)) // TODO: Connect your clocks here
     chip.rst_n := !SLIDE_SW(3)
     if(p(DDRPortOther)) {
       chip.ChildClock.get := mod.io.ckrst.io_clk
@@ -906,7 +909,7 @@ class FPGATR4(implicit val p :Parameters) extends RawModule {
     clock := mod.io.ckrst.qsys_clk
     reset := SW(1)
     chip.sys_clk := mod.io.ckrst.qsys_clk
-    chip.aclocks.foreach(_ := mod.io.ckrst.qsys_clk) // TODO: Connect your clocks here
+    chip.aclocks.foreach(_.foreach(_ := mod.io.ckrst.qsys_clk)) // TODO: Connect your clocks here
     chip.rst_n := !SW(2)
     if(p(DDRPortOther)) {
       chip.ChildClock.get := mod.io.ckrst.io_clk
