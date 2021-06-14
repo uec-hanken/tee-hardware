@@ -100,6 +100,9 @@ class TEEHWHarness()(implicit p: Parameters) extends Module {
     val success = Output(Bool())
   })
 
+  // A delayed reset to be handled properly, as the internal reset is embedded with the same sync
+  val del_reset = ResetCatchAndSync(clock, reset.asBool, 5)
+
   val dut = Module(new TEEHWPlatform)
 
   // IMPORTANT NOTE:
@@ -139,12 +142,12 @@ class TEEHWHarness()(implicit p: Parameters) extends Module {
       (dut.io.ChildClock zip dut.io.ChildReset).foreach {
         case (ck,rst) =>
           ck := clock
-          rst := reset
+          rst := reset // NOTE: Normal reset
       }
   }
 
   // Debug connections (JTAG)
-  dut.io.jtag_reset := reset
+  dut.io.jtag_reset := reset // NOTE: Normal reset
   val simjtag = Module(new SimJTAG(tickDelay=3))
   // Equivalent of simjtag.connect
   BasePinToRegular(dut.io.pins.jtag.TCK, simjtag.io.jtag.TCK.asBool)
@@ -153,9 +156,9 @@ class TEEHWHarness()(implicit p: Parameters) extends Module {
   simjtag.io.jtag.TDO.data := BasePinToRegular(dut.io.pins.jtag.TDO)
   simjtag.io.jtag.TDO.driven := dut.io.pins.jtag.TDO.o.oe
   simjtag.io.clock := clock
-  simjtag.io.reset := reset
+  simjtag.io.reset := del_reset
   simjtag.io.enable := PlusArg("jtag_rbb_enable", 0, "Enable SimJTAG for JTAG Connections. Simulation will pause until connection is made.")
-  simjtag.io.init_done := !reset.asBool
+  simjtag.io.init_done := !del_reset.asBool
   when (simjtag.io.exit === 1.U) { io.success := true.B }
   when (simjtag.io.exit >= 2.U) {
     printf("*** FAILED *** (exit code = %d)\n", simjtag.io.exit >> 1.U)
@@ -168,7 +171,7 @@ class TEEHWHarness()(implicit p: Parameters) extends Module {
   // Serial interface (if existent) will be connected here
   io.success := false.B
   dut.io.tlserial.foreach{ port =>
-    val ser_success = SerialAdapter.connectSimSerial(port, clock, reset)
+    val ser_success = SerialAdapter.connectSimSerial(port, clock, del_reset)
     when (ser_success) { io.success := true.B }
   }
 
@@ -203,15 +206,17 @@ class TEEHWHarness()(implicit p: Parameters) extends Module {
         case 1 =>
           val spi_mem = Module(new SimSPIFlashModel(0x20000000, i, true))
           spi_mem.suggestName(s"spi_mem_${i}")
-          spi_mem.io.sck := port.sck.o.oval
+          spi_mem.io.sck := BasePinToRegular(port.sck)
           //require(params.csWidth == 1, "I don't know what to do with your extra CS bits. Fix me please.")
-          spi_mem.io.cs(0) := port.cs(0).o.oval
+          spi_mem.io.cs(0) := BasePinToRegular(port.cs(0))
           /*spi_mem.io.dq.zip(port.dq).foreach { case (x, y) =>
             x <> y
           }*/
-          spi_mem.io.reset := reset.asBool
+          spi_mem.io.reset := del_reset.asBool
         case _ =>
-          port.dq.foreach(_.i.ival := false.B)
+          BasePinToRegular(port.sck)
+          BasePinToRegular(port.cs)
+          BasePinToRegular(port.dq)
       }
   }
 
