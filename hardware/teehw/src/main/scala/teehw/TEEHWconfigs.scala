@@ -327,7 +327,7 @@ class VC707MiniConfig extends Config((site,here,up) => {
   }})
 
 class VCU118Config extends Config((site,here,up) => {
-  case FreqKeyMHz => 100.0
+  case FreqKeyMHz => 50.0
   case SDCardMHz => 5.0
   case QSPICardMHz => 1.0
   /* Force to disable USB1.1, because there are no pins */

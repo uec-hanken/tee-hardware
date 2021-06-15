@@ -15,7 +15,7 @@ else #RV32IMAC
 CFLAGS_ARCH=-march=rv32imac -mabi=ilp32
 endif
 CFLAGS=$(CFLAGS_ARCH) -mcmodel=medany -O2 -std=gnu11 -Wall -nostartfiles 
-CFLAGS+= -fno-common -g -DENTROPY=0 -mabi=lp64 -DNONSMP_HART=0 
+CFLAGS+= -fno-common -g -DENTROPY=0 -DNONSMP_HART=0 
 CFLAGS+= -I $(BOOTROM_DIR)/include -I. -I./gpt -I./boot -I./sd -I./kprintf $(ADD_OPTS) 
 LFLAGS=-static -nostdlib -L $(BOOTROM_DIR)/linker -T sdboot.elf.lds
 SDBOOT_TARGET_ADDR?=0x90000000UL
