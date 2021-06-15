@@ -49,7 +49,7 @@ abstract class Random(busWidthBytes: Int, val c: RandomParams)
   extends IORegisterRouter(
     RegisterRouterParams(
       name = "random",
-      compat = Seq("uec,random"),
+      compat = Seq("uec,random-0"),
       base = c.address,
       beatBytes = busWidthBytes),
     new RandomPortIO
@@ -150,6 +150,7 @@ abstract class Random(busWidthBytes: Int, val c: RandomParams)
     val trng_debug_control =  RegInit(1.U(2.W))
     val trng_debug_stop = WireInit(false.B)
     val trng_debug_out = WireInit(0.U(c.nbits))
+    val trng_number_bits = RegInit(1.U(2.W))
 
     // Parameters for the TRNG
 
@@ -161,7 +162,7 @@ abstract class Random(busWidthBytes: Int, val c: RandomParams)
     val r_edge = Module(new rising_edge())
     val FIFO = Module(new sh_register(8,24))
     val pulse_generator = Module(new register_pulse_g())
-    val counter_interface = Module (new counter_trace(5,24))
+    val counter_interface = Module (new counter_trace(5))
 
     // Implementations
     val (rnd_gen: UInt, rnd_ready: Bool) = genRNG(
@@ -183,28 +184,58 @@ abstract class Random(busWidthBytes: Int, val c: RandomParams)
     r_edge.io.in := rnd_ready
     FIFO.io.data_in := rnd_gen
     FIFO.io.enable := r_edge.io.out
+    FIFO.io.number := trng_number_bits
     pulse_generator.io.reset := RegNext(r_edge.io.out)
     ehr_data := FIFO.io.out
     counter_interface.io.enable := RegNext(r_edge.io.out)
     counter_interface.io.reset  := rst_bits_counter
 
-    when(counter_interface.io.count_debug===24.U){
-      rnd_src_en := false.B
-      ehr_valid := true.B
-      trng_busy := false.B
+    //Define the output bits of the platform
+    when(trng_number_bits === 0.U){
+      counter_interface.io.number := 1.U
+      when(counter_interface.io.count_debug === 1.U ){
+        rnd_src_en := false.B
+        ehr_valid := true.B
+        trng_busy := false.B
+      }.otherwise{
+        rnd_src_en := rnd_src_en
+        ehr_valid := false.B
+        trng_busy := true.B
+      }
+    }.elsewhen(trng_number_bits === 1.U){
+      counter_interface.io.number := 4.U
+      when(counter_interface.io.count_debug === 4.U ){
+        rnd_src_en := false.B
+        ehr_valid := true.B
+        trng_busy := false.B
+      }.otherwise{
+        rnd_src_en := rnd_src_en
+        ehr_valid := false.B
+        trng_busy := true.B
+      }
+    }.elsewhen(trng_number_bits === 2.U){
+      counter_interface.io.number := 8.U
+      when(counter_interface.io.count_debug === 8.U ){
+        rnd_src_en := false.B
+        ehr_valid := true.B
+        trng_busy := false.B
+      }.otherwise{
+        rnd_src_en := rnd_src_en
+        ehr_valid := false.B
+        trng_busy := true.B
+      }
     }.otherwise{
-      rnd_src_en := rnd_src_en
-      ehr_valid := false.B
-      trng_busy := true.B
+      counter_interface.io.number := 24.U
+      when(counter_interface.io.count_debug === 24.U ){
+        rnd_src_en := false.B
+        ehr_valid := true.B
+        trng_busy := false.B
+      }.otherwise{
+        rnd_src_en := rnd_src_en
+        ehr_valid := false.B
+        trng_busy := true.B
+      }
     }
-/*
-    rnd_src_en := rnd_src_en
-    ehr_valid := true.B
-    trng_busy := false.B
-*/
-
-
-
 
     // TRNG register mapping
     val trng_map = Seq(
@@ -269,6 +300,9 @@ abstract class Random(busWidthBytes: Int, val c: RandomParams)
       ),
       RandomRegs.trng_debug_counters -> Seq(
         RegField.r(8, trng_debug_counter)
+      ),
+      RandomRegs.trng_number_bits -> Seq(
+        RegField(2, trng_number_bits)
       )
     )
     regmap(
@@ -366,6 +400,7 @@ class sh_register(val nbits_counter :Int,val size :Int) extends Module {
     //Input's
     val data_in   = Input(UInt(nbits_counter.W))
     val enable    = Input(Bool())
+    val number    = Input(UInt(2.W))
     //Output's
     val out    	= Output(UInt((nbits_counter*size).W))
   })
@@ -383,8 +418,18 @@ class sh_register(val nbits_counter :Int,val size :Int) extends Module {
       s_regs(i).enable  := io.enable
     }
   )
-  io.out := Cat(s_regs(23).out,s_regs(22).out,s_regs(21).out,s_regs(20).out,s_regs(19).out,s_regs(18).out,s_regs(17).out,s_regs(16).out,s_regs(15).out,s_regs(14).out,s_regs(13).out,s_regs(12).out,s_regs(11).out,s_regs(10).out,s_regs(9).out,s_regs(8).out,s_regs(7).out,s_regs(6).out,s_regs(5).out,s_regs(4).out,s_regs(3).out,s_regs(2).out,s_regs(1).out,s_regs(0).out)
-}
+
+  when(io.number === 0.U){
+    io.out := Cat(s_regs(0).out)
+  }.elsewhen(io.number === 1.U){
+    io.out := Cat(s_regs(3).out,s_regs(2).out,s_regs(1).out,s_regs(0).out)
+  }.elsewhen(io.number === 2.U){
+    io.out := Cat(s_regs(7)out,s_regs(6).out,s_regs(5).out,s_regs(4).out,s_regs(3).out,s_regs(2).out,s_regs(1).out,s_regs(0).out)
+  }.otherwise {
+    io.out := Cat(s_regs(23).out, s_regs(22).out, s_regs(21).out, s_regs(20).out, s_regs(19).out, s_regs(18).out, s_regs(17).out, s_regs(16).out, s_regs(15).out, s_regs(14).out, s_regs(13).out, s_regs(12).out, s_regs(11).out, s_regs(10).out, s_regs(9).out, s_regs(8).out, s_regs(7).out, s_regs(6).out, s_regs(5).out, s_regs(4).out, s_regs(3).out, s_regs(2).out, s_regs(1).out, s_regs(0).out)
+  }
+
+  }
 
 class register_size(val nbits_counter :Int) extends Module {
   val io = IO(new Bundle {
@@ -412,20 +457,28 @@ class rising_edge() extends Module {
     val out    	  = Output(Bool())
   })
   val reg = RegNext(io.in)
-  io.out := (io.in)&&(!reg)
+  val reg_2 = RegNext(reg)
+  val reg_3 = RegNext(reg_2)//
+  val reg_4 = RegNext(reg_3)//
+  val reg_5 = RegNext(reg_4)//
+  val reg_6 = RegNext(reg_5)//
+  val reg_7 = RegNext(reg_6)//
+  val reg_8 = RegNext(reg_7)//
+  io.out := (io.in)&&(!reg)&&(!reg_2)&&(!reg_3)&&(!reg_4)&&(!reg_5)&&(!reg_6)&&(!reg_7)&&(!reg_8)
 }
 
 
-class counter_trace(val nbits_counter :Int, val count: Int) extends Module {
+class counter_trace(val nbits_counter :Int) extends Module {
   val io = IO(new Bundle {
     //Input's
     val enable = Input(Bool())
     val reset  = Input(Bool())
+    val number = Input(UInt(5.W))
     //Output's
     val count_debug = Output(UInt(nbits_counter.W))
   })
   val reg = RegInit(0.U(nbits_counter.W))
-  when(reg === count.asUInt & io.enable === true.B){
+  when((reg === io.number)&(io.enable === true.B)){
     reg := 0.U
   }.elsewhen(io.enable === true.B){
     reg := reg + 1.U
@@ -460,45 +513,7 @@ class register_pulse_g() extends Module {
 }
 
 
-/*
 
-// Sampling counter, until all the 192 bits ready
-when(rnd_src_en && trng_bit_counter < 192.U) {
-  trng_busy := true.B // Make the TRNG busy
-  when(trng_sample_counter >= sample_cnt1) {
-    rnd_en := true.B // Trigger the enable, until the ready is done
-    when(rnd_ready) {
-      // Here is the sample enable. As long the sampler is enabled
-      // and also the LFSR, we count 'nbits' bits up, and shift them
-      trng_sample_counter := 0.U
-      ehr_data := Cat(ehr_data, rnd_gen)
-      trng_bit_counter := trng_bit_counter + c.nbits.U
-    }
-  }. otherwise {
-    when(trng_sample_counter <= (sample_cnt1 >> 1.U)) {
-      rnd_reset := true.B // Trigger the reset along the trng_sample_counter, but only half of the programmed
-    }
-    trng_sample_counter := trng_sample_counter + 1.U
-  }
-}
-
-when(trng_bit_counter >= 192.U) {
-  trng_busy := false.B
-  when(ehr_valid_int_mask) { ehr_valid_int := true.B }
-  ehr_valid := true.B
-}
-
-when(rst_bits_counter || trng_sw_reset) {
-  trng_bit_counter := 0.U
-  trng_sample_counter := 0.U
-  ehr_valid := false.B
-  trng_busy := false.B
-}
-
-when(trng_sw_reset) {
-  ehr_data := 0.U
-}
-*/
 
 
 
