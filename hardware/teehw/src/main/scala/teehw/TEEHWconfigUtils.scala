@@ -116,7 +116,7 @@ class ChipConfig extends Config(
   new WithNExtTopInterrupts(0) ++
     new TEEHWPeripherals ++
     new WithJtagDTM ++
-    new WithAsynchronousRocketTiles(8,3) ++
+    //new WithAsynchronousRocketTiles(8,3) ++
     new WithNoSubsystemDrivenClocks ++
     new WithDontDriveBusClocksFromSBus ++
     new WithCoherentBusTopology ++                                  // This adds a L2 cache ++ ++
