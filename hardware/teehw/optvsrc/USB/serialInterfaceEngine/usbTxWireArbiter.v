@@ -45,11 +45,11 @@ module USBTxWireArbiter (
 	// Next State Logic (combinatorial)
 	//----------------------------------
 	always@(*) begin
-		NextState_txWireArb = CurrState_txWireArb;
+		NextState_txWireArb <= CurrState_txWireArb;
 		// Set default values for outputs and signals
-		next_prcTxByteGnt = prcTxByteGnt;
-		next_muxSIENotPTXB = muxSIENotPTXB;
-		next_SIETxGnt = SIETxGnt;
+		next_prcTxByteGnt <= prcTxByteGnt;
+		next_muxSIENotPTXB <= muxSIENotPTXB;
+		next_SIETxGnt <= SIETxGnt;
 		case(CurrState_txWireArb)
 			2'd0:	NextState_txWireArb <= 2'd1;
 			2'd1:	if(prcTxByteReq) begin
