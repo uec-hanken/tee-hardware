@@ -25,12 +25,12 @@ module slaveDirectControl (
 	// Next State Logic (combinatorial)
 	//----------------------------------
 	always@(*) begin
-		NextState_slvDrctCntl = CurrState_slvDrctCntl;
+		NextState_slvDrctCntl <= CurrState_slvDrctCntl;
 		// Set default values for outputs and signals
-		next_SCTxPortReq = SCTxPortReq;
-		next_SCTxPortWEn = SCTxPortWEn;
-		next_SCTxPortData = SCTxPortData;
-		next_SCTxPortCntl = SCTxPortCntl;
+		next_SCTxPortReq <= SCTxPortReq;
+		next_SCTxPortWEn <= SCTxPortWEn;
+		next_SCTxPortData <= SCTxPortData;
+		next_SCTxPortCntl <= SCTxPortCntl;
 		case(CurrState_slvDrctCntl)
 			3'd0: begin
 				NextState_slvDrctCntl <= 3'd1;
