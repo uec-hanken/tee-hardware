@@ -314,11 +314,11 @@ trait HasTEEHWSystemModule extends HasRTCModuleImp
   val mem_ChildReset = memPorts.map(_._3) // For making work HeterogeneousBag
 
   // Main memory serial controller
-  val memSerPorts = outer.memserctl.map { A =>
+  val (memSerPorts, serSourceBits) = outer.memserctl.map { A =>
     val ser = IO(new SerialIO(A.module.io.ser.head.w))
     ser <> A.module.io.ser.head
-    ser
-  }
+    (ser, A.node.in.head._1.params.sourceBits)
+  }.unzip
 
   // UART implementation
   val uart = outer.uartNodes.zipWithIndex.map { case(n,i) => n.makeIO()(ValName(s"uart_$i")).asInstanceOf[UARTPortIO] }

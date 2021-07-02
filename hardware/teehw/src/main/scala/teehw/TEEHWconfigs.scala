@@ -249,7 +249,8 @@ class TEEHWAndOpenTitanPeripherals extends Config((site, here, up) => {
     USB11HSParams(address = BigInt(0x64008000L)))
   case PeripheryRandomKey => List(
     RandomParams(address = BigInt(0x64009000L), impl = 1))
-  case PeripheryChachaKey => List()
+  case PeripheryChachaKey => List(
+    ChachaParams(address = BigInt(0x6400A000L)))
   case PeripheryPolyKey => List()
   // OpenTitan devices
   case PeripheryAESOTKey => List(
@@ -276,11 +277,11 @@ class NoSecurityPeripherals extends Config((site, here, up) => {
   case PeripherySHA3Key => List()
   case Peripheryed25519Key => List()
   case PeripheryI2CKey => List()
-  case PeripheryAESKey => List()
+  case PeripheryAESKey => List(
+    AESParams(address = BigInt(0x64007000L)))
   case PeripheryUSB11HSKey => List()
   case PeripheryRandomKey => List()
-  case PeripheryChachaKey => List(
-    ChachaParams(address = BigInt(0x6400A000L)))
+  case PeripheryChachaKey => List()
   case PeripheryPolyKey => List()
   case PeripheryAESOTKey => List()
   case PeripheryHMACKey => List()

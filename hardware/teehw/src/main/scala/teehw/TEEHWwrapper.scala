@@ -279,7 +279,10 @@ trait WithFPGAVC707Connect {
       mod.io.ddrport.init_calib_complete
     }
     val init_calib_complete_ser = chip.memser.map { A =>
-      val mod = Module(LazyModule(new SertoMIG(A.w)).module)
+      val mod = Module(LazyModule(new SertoMIG(
+        A.w,
+        chip.system.asInstanceOf[HasTEEHWSystemModule].serSourceBits.get
+      )).module)
 
       // Serial port
       mod.io.serport.flipConnect(A)
@@ -461,7 +464,10 @@ trait WithFPGAVCU118Connect {
       mod.io.ddrport.c0_init_calib_complete
     }
     val init_calib_complete_ser = chip.memser.map { A =>
-      val mod = Module(LazyModule(new SertoMIGUltra(A.w)).module)
+      val mod = Module(LazyModule(new SertoMIGUltra(
+        A.w,
+        chip.system.asInstanceOf[HasTEEHWSystemModule].serSourceBits.get
+      )).module)
 
       // Serial port
       mod.io.serport.flipConnect(A)

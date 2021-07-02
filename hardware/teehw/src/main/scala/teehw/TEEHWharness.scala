@@ -96,11 +96,10 @@ class TLULtoSimDRAM
   }
 }
 
-class SertoSimDRAM(w: Int, cacheBlockBytes: Int)(implicit p :Parameters)
+class SertoSimDRAM(w: Int, cacheBlockBytes: Int, idBits: Int = 6)(implicit p :Parameters)
   extends LazyModule {
 
   // Create the desser
-  val idBits = 6
   val params = Seq(TLMasterParameters.v1(
     name = "tl-desser",
     sourceId = IdRange(0, 1 << idBits)))
@@ -208,7 +207,10 @@ trait WithTEEHWHarnessConnect {
 
   dut.io.memser.foreach{ A =>
     // Step 1: Our conversion
-    val simdram = LazyModule(new uec.teehardware.SertoSimDRAM(p(ExtSerMem).get.serWidth, dut.p(CacheBlockBytes)))
+    val simdram = LazyModule(new uec.teehardware.SertoSimDRAM(
+      p(ExtSerMem).get.serWidth,
+      dut.p(CacheBlockBytes),
+      dut.sys.serSourceBits.get))
     val simdrammod = Module(simdram.module)
 
     simdrammod.io.serport.flipConnect(A)

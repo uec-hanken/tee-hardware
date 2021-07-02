@@ -23,7 +23,7 @@ import testchipip.{SerialIO, TLDesser}
 import sifive.fpgashells.ip.xilinx.vc707mig._
 import sifive.fpgashells.ip.xilinx.vcu118mig._
 
-class SertoMIG(w: Int)(implicit p :Parameters) extends LazyModule {
+class SertoMIG(w: Int, idBits: Int = 6)(implicit p :Parameters) extends LazyModule {
   // Create the DDR
   val ddr = LazyModule(
     new XilinxVC707MIG(
@@ -33,7 +33,6 @@ class SertoMIG(w: Int)(implicit p :Parameters) extends LazyModule {
           0x40000000L * 1 // 1GiB for the VC707DDR,
         ))))
   // Create the desser
-  val idBits = 6
   val params = Seq(TLMasterParameters.v1(
     name = "tl-desser",
     sourceId = IdRange(0, 1 << idBits)))
@@ -120,7 +119,7 @@ class TLULtoMIG(cacheBlockBytes: Int, TLparams: TLBundleParameters)(implicit p :
 
 }
 
-class SertoMIGUltra(w: Int)(implicit p :Parameters) extends LazyModule {
+class SertoMIGUltra(w: Int, idBits: Int = 6)(implicit p :Parameters) extends LazyModule {
   // Create the DDR
   val ddr = LazyModule(
     new XilinxVCU118MIG(
@@ -130,7 +129,6 @@ class SertoMIGUltra(w: Int)(implicit p :Parameters) extends LazyModule {
           0x80000000L * 1 // 2GiB for the VCU118DDR,
         ))))
   // Create the desser
-  val idBits = 6
   val params = Seq(TLMasterParameters.v1(
     name = "tl-desser",
     sourceId = IdRange(0, 1 << idBits)))
