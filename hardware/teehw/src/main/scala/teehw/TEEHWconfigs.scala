@@ -76,7 +76,7 @@ class RocketMicro extends Config(
         btb = None,
         dcache = r.dcache map {d =>
           d.copy(
-            nSets = 256, // 16Kb scratchpad
+            nSets = 64, // 16Kb scratchpad
             nWays = 1,
             nTLBSets = 1,
             nTLBWays = 4,
@@ -299,6 +299,7 @@ class MBus32 extends Config((site, here, up) => {
     size = x"0_4000_0000",
     beatBytes = 4,
     idBits = 4), 1))
+  case ExtSerMem => None
 })
 
 class MBus64 extends Config((site, here, up) => {
@@ -307,10 +308,30 @@ class MBus64 extends Config((site, here, up) => {
     size = x"0_4000_0000",
     beatBytes = 8,
     idBits = 4), 1))
+  case ExtSerMem => None
+})
+
+class SBus8 extends Config((site, here, up) => {
+  case ExtMem => None
+  case ExtSerMem => Some(MemorySerialPortParams(MasterPortParams(
+    base = x"0_8000_0000",
+    size = x"0_4000_0000",
+    beatBytes = 4,
+    idBits = 4), 1, 8))
+})
+
+class SBus16 extends Config((site, here, up) => {
+  case ExtMem => None
+  case ExtSerMem => Some(MemorySerialPortParams(MasterPortParams(
+    base = x"0_8000_0000",
+    size = x"0_4000_0000",
+    beatBytes = 4,
+    idBits = 4), 1, 16))
 })
 
 class MBusNone extends Config((site, here, up) => {
   case ExtMem => None
+  case ExtSerMem => None
 })
 
 // *************** PCI Configuration (PCIE) ******************

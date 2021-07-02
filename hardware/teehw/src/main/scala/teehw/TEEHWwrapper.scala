@@ -5,6 +5,7 @@ import chisel3.util._
 import chisel3.experimental.{Analog, IO, attach}
 import freechips.rocketchip.config._
 import freechips.rocketchip.diplomacy._
+import freechips.rocketchip.subsystem.BaseSubsystem
 import freechips.rocketchip.util._
 import sifive.blocks.devices.pinctrl._
 import sifive.blocks.devices.gpio._
@@ -14,6 +15,7 @@ import sifive.fpgashells.devices.xilinx.xilinxvc707pciex1._
 import uec.teehardware.devices.usb11hs._
 import freechips.rocketchip.util._
 import sifive.fpgashells.shell.xilinx.XDMATopPads
+import testchipip.SerialIO
 
 // **********************************************************************
 // **TEEHW chip - for doing the only-input/output chip
@@ -28,7 +30,9 @@ class TEEHWQSPIBundle(val csWidth: Int = 1) extends Bundle {
   val qspi_hold = (Output(Bool()))
 }
 
-class TEEHWbase(implicit val p :Parameters) extends RawModule {
+trait WithTEEHWbaseConnect {
+  this: RawModule =>
+  implicit val p: Parameters
   // The actual pins of this module.
   val gpio_in = IO(Input(UInt(p(GPIOInKey).W)))
   val gpio_out = IO(Output(UInt((p(PeripheryGPIOKey).head.width-p(GPIOInKey)).W)))
@@ -55,83 +59,77 @@ class TEEHWbase(implicit val p :Parameters) extends RawModule {
   val pciePorts = p(IncludePCIe).option(IO(new XilinxVC707PCIeX1IO))
   val xdmaPorts = p(XDMAPCIe).map(A => IO(new XDMATopPadswReset(A.lanes)))
   // These are later connected
-  val clock = Wire(Clock())
-  var aclocks_wire: Option[Vec[Clock]] = None
-  val reset = Wire(Bool()) // System reset (for cores)
   val areset = Wire(Bool()) // Global reset (a BUFFd version of the reset from the button)
   val ndreset = Wire(Bool()) // Debug reset (The reset you can trigger from JTAG)
+  val memser = p(ExtSerMem).map(A => IO(new SerialIO(A.serWidth)))
   // An option to dynamically assign
-  var tlportw : Option[TLUL] = None
-  var cacheBlockBytesOpt: Option[Int] = None
-  var memdevice: Option[MemoryDevice] = None
 
-  // All the modules declared here have this clock and reset
-  withClockAndReset(clock, reset) {
-    // The platform module
-    val system = Module(new TEEHWPlatform)
-    aclocks_wire = Some(system.io.aclocks)
-    ndreset := system.io.ndreset
-    cacheBlockBytesOpt = Some(system.sys.outer.mbus.blockBytes)
+  val clock : Clock
+  val reset : Bool // System reset (for cores)
+  val system: WithTEEHWPlatformConnect
 
-    // Merge all the gpio vector
-    val vgpio_in = VecInit(gpio_in.toBools)
-    val vgpio_out = Wire(Vec(p(PeripheryGPIOKey).head.width-p(GPIOInKey), Bool()))
-    gpio_out := vgpio_out.asUInt()
-    val gpio = vgpio_in ++ vgpio_out
-    // GPIOs
-    (gpio zip system.io.pins.gpio.pins).zipWithIndex.foreach {
-      case ((g: Bool, pin: BasePin), i: Int) =>
-        if(i < p(GPIOInKey)) BasePinToRegular(pin, g)
-        else g := BasePinToRegular(pin)
-    }
+  val aclocks_wire = Some(system.io.aclocks)
+  ndreset := system.io.ndreset
+  val cacheBlockBytes = system.sys.outer.asInstanceOf[BaseSubsystem].mbus.blockBytes
 
-    // JTAG
-    BasePinToRegular(system.io.pins.jtag.TMS, jtag.jtag_TMS)
-    BasePinToRegular(system.io.pins.jtag.TCK, jtag.jtag_TCK)
-    BasePinToRegular(system.io.pins.jtag.TDI, jtag.jtag_TDI)
-    jtag.jtag_TDO := BasePinToRegular(system.io.pins.jtag.TDO)
-    system.io.jtag_reset := areset
-
-    // QSPI (SPI as flash memory)
-    qspi = (system.io.pins.spi.size >= 2).option( IO ( new TEEHWQSPIBundle(system.io.pins.spi(1).cs.size) ) )
-    qspi.foreach { portspi =>
-      portspi.qspi_cs := BasePinToRegular(system.io.pins.spi(1).cs.head)
-      portspi.qspi_sck := BasePinToRegular(system.io.pins.spi(1).sck)
-      portspi.qspi_mosi := BasePinToRegular(system.io.pins.spi(1).dq(0))
-      BasePinToRegular(system.io.pins.spi(1).dq(1), portspi.qspi_miso)
-      portspi.qspi_wp := BasePinToRegular(system.io.pins.spi(1).dq(2))
-      portspi.qspi_hold := BasePinToRegular(system.io.pins.spi(1).dq(3))
-    }
-
-    // SPI (SPI as MMC)
-    sdio.sdio_dat_3 := BasePinToRegular(system.io.pins.spi(0).cs.head)
-    sdio.sdio_clk := BasePinToRegular(system.io.pins.spi(0).sck)
-    sdio.sdio_cmd := BasePinToRegular(system.io.pins.spi(0).dq(0))
-    BasePinToRegular(system.io.pins.spi(0).dq(1), sdio.sdio_dat_0)
-    BasePinToRegular(system.io.pins.spi(0).dq(2)) // Ignored
-    BasePinToRegular(system.io.pins.spi(0).dq(3)) // Ignored
-
-    // UART
-    BasePinToRegular(system.io.pins.uart.rxd, uart_rxd)
-    uart_txd := BasePinToRegular(system.io.pins.uart.txd)
-
-    // USB11
-    (usb11hs zip system.io.usb11hs).foreach{ case (port, sysport) => port <> sysport }
-
-    // The memory port
-    tlportw = system.io.tlport
-    memdevice = Some(new MemoryDevice)
-    (ChildClock zip system.io.ChildClock).foreach{ case (port, sysport) => sysport := port }
-    (ChildReset zip system.io.ChildReset).foreach{ case (port, sysport) => sysport := port }
-
-    // PCIe port (if available)
-    (pciePorts zip system.io.pciePorts).foreach{ case (port, sysport) => port <> sysport }
-    (xdmaPorts zip system.io.xdmaPorts).foreach{ case (port, sysport) => port <> sysport }
+  // Merge all the gpio vector
+  val vgpio_in = VecInit(gpio_in.toBools)
+  val vgpio_out = Wire(Vec(p(PeripheryGPIOKey).head.width-p(GPIOInKey), Bool()))
+  gpio_out := vgpio_out.asUInt()
+  val gpio = vgpio_in ++ vgpio_out
+  // GPIOs
+  (gpio zip system.io.pins.gpio.pins).zipWithIndex.foreach {
+    case ((g: Bool, pin: BasePin), i: Int) =>
+      if(i < p(GPIOInKey)) BasePinToRegular(pin, g)
+      else g := BasePinToRegular(pin)
   }
-  val cacheBlockBytes = cacheBlockBytesOpt.get
-}
 
-class TEEHWSoC(implicit override val p :Parameters) extends TEEHWbase {
+  // JTAG
+  BasePinToRegular(system.io.pins.jtag.TMS, jtag.jtag_TMS)
+  BasePinToRegular(system.io.pins.jtag.TCK, jtag.jtag_TCK)
+  BasePinToRegular(system.io.pins.jtag.TDI, jtag.jtag_TDI)
+  jtag.jtag_TDO := BasePinToRegular(system.io.pins.jtag.TDO)
+  system.io.jtag_reset := areset
+
+  // QSPI (SPI as flash memory)
+  qspi = (system.io.pins.spi.size >= 2).option( IO ( new TEEHWQSPIBundle(system.io.pins.spi(1).cs.size) ) )
+  qspi.foreach { portspi =>
+    portspi.qspi_cs := BasePinToRegular(system.io.pins.spi(1).cs.head)
+    portspi.qspi_sck := BasePinToRegular(system.io.pins.spi(1).sck)
+    portspi.qspi_mosi := BasePinToRegular(system.io.pins.spi(1).dq(0))
+    BasePinToRegular(system.io.pins.spi(1).dq(1), portspi.qspi_miso)
+    portspi.qspi_wp := BasePinToRegular(system.io.pins.spi(1).dq(2))
+    portspi.qspi_hold := BasePinToRegular(system.io.pins.spi(1).dq(3))
+  }
+
+  // SPI (SPI as SD?)
+  sdio.sdio_dat_3 := BasePinToRegular(system.io.pins.spi(0).cs.head)
+  sdio.sdio_clk := BasePinToRegular(system.io.pins.spi(0).sck)
+  sdio.sdio_cmd := BasePinToRegular(system.io.pins.spi(0).dq(0))
+  BasePinToRegular(system.io.pins.spi(0).dq(1), sdio.sdio_dat_0)
+  BasePinToRegular(system.io.pins.spi(0).dq(2)) // Ignored
+  BasePinToRegular(system.io.pins.spi(0).dq(3)) // Ignored
+
+  // UART
+  BasePinToRegular(system.io.pins.uart.rxd, uart_rxd)
+  uart_txd := BasePinToRegular(system.io.pins.uart.txd)
+
+  // USB11
+  (usb11hs zip system.io.usb11hs).foreach{ case (port, sysport) => port <> sysport }
+
+  // The memory port
+  val tlportw = system.io.tlport
+  val memdevice = Some(new MemoryDevice)
+  (ChildClock zip system.io.ChildClock).foreach{ case (port, sysport) => sysport := port }
+  (ChildReset zip system.io.ChildReset).foreach{ case (port, sysport) => sysport := port }
+
+  // The serialized memory port
+  (memser zip system.io.memser).foreach{ case (port, sysport) => port <> sysport }
+
+  // PCIe port (if available)
+  (pciePorts zip system.io.pciePorts).foreach{ case (port, sysport) => port <> sysport }
+  (xdmaPorts zip system.io.xdmaPorts).foreach{ case (port, sysport) => port <> sysport }
+
   // Some additional ports to connect to the chip
   val sys_clk = IO(Input(Clock()))
   val aclocks = p(ExposeClocks).option(IO(Vec(aclocks_wire.get.size, Input(Clock()))))
@@ -153,13 +151,33 @@ class TEEHWSoC(implicit override val p :Parameters) extends TEEHWbase {
   areset := !jrst_n
 }
 
+trait HasTEEHWbase {
+  this: RawModule =>
+  implicit val p: Parameters
+  // All the modules declared here have this clock and reset
+  val clock = Wire(Clock())
+  val reset = Wire(Bool()) // System reset (for cores)
+  val system = withClockAndReset(clock, reset) {
+    // The platform module
+    Module(new TEEHWPlatform)
+  }
+}
+
+class TEEHWSoC(implicit val p :Parameters) extends RawModule with HasTEEHWbase with WithTEEHWbaseConnect {
+}
+
+trait HasTEEHWChip {
+  implicit val p: Parameters
+  val chip = Module(new TEEHWSoC)
+}
+
 // ********************************************************************
 // FPGAVC707 - Demo on VC707 FPGA board
 // ********************************************************************
 import sifive.fpgashells.ip.xilinx.vc707mig._
 import sifive.fpgashells.ip.xilinx._
 
-class FPGAVC707(implicit val p :Parameters) extends RawModule {
+class FPGAVC707Shell(implicit val p :Parameters) extends RawModule {
   val gpio_in = IO(Input(UInt(p(GPIOInKey).W)))
   val gpio_out = IO(Output(UInt((p(PeripheryGPIOKey).head.width-p(GPIOInKey)).W)))
   val jtag = IO(new Bundle {
@@ -210,11 +228,13 @@ class FPGAVC707(implicit val p :Parameters) extends RawModule {
   val xdmaPorts = p(XDMAPCIe).map(A => IO(new XDMATopPads(A.lanes)))
 
   var ddr: Option[VC707MIGIODDR] = None
+}
+
+trait WithFPGAVC707Connect {
+  this: FPGAVC707Shell =>
+  val chip : WithTEEHWbaseConnect
 
   withClockAndReset(clock, reset) {
-    // Instance our converter, and connect everything
-    val chip = Module(new TEEHWSoC)
-
     // PLL instance
     val c = new PLLParameters(
       name = "pll",
@@ -230,7 +250,7 @@ class FPGAVC707(implicit val p :Parameters) extends RawModule {
     pll.io.reset := reset_0
 
     // The DDR port
-    val init_calib_complete = chip.tlport.map{ case chiptl =>
+    val init_calib_complete_tl = chip.tlport.map{ case chiptl =>
       val mod = Module(LazyModule(new TLULtoMIG(chip.cacheBlockBytes, chip.tlportw.get.params)).module)
 
       // DDR port only
@@ -258,6 +278,25 @@ class FPGAVC707(implicit val p :Parameters) extends RawModule {
 
       mod.io.ddrport.init_calib_complete
     }
+    val init_calib_complete_ser = chip.memser.map { A =>
+      val mod = Module(LazyModule(new SertoMIG(A.w)).module)
+
+      // Serial port
+      mod.io.serport.flipConnect(A)
+
+      // DDR port only
+      ddr = Some(IO(new VC707MIGIODDR(mod.depth)))
+      ddr.get <> mod.io.ddrport
+      // MIG connections, like resets and stuff
+      mod.io.ddrport.sys_clk_i := sys_clk_i.asUInt()
+      mod.io.ddrport.aresetn := !reset_0
+      mod.io.ddrport.sys_rst := reset_1
+      mod.clock := pll.io.clk_out3.getOrElse(false.B)
+
+      mod.io.ddrport.init_calib_complete
+    }
+
+    val init_calib_complete = init_calib_complete_tl.getOrElse(init_calib_complete_ser.getOrElse(false.B))
 
     // Main clock and reset assignments
     clock := pll.io.clk_out3.get
@@ -267,7 +306,7 @@ class FPGAVC707(implicit val p :Parameters) extends RawModule {
     chip.rst_n := !reset_2
 
     // The rest of the platform connections
-    gpio_out := Cat(reset_0, reset_1, reset_2, reset_3, init_calib_complete.getOrElse(false.B))
+    gpio_out := Cat(reset_0, reset_1, reset_2, reset_3, init_calib_complete)
     chip.gpio_in := gpio_in
     jtag <> chip.jtag
     qspi = chip.qspi.map(A => IO ( new TEEHWQSPIBundle(A.csWidth) ) )
@@ -308,15 +347,19 @@ class FPGAVC707(implicit val p :Parameters) extends RawModule {
   }
 }
 
+class FPGAVC707(implicit p :Parameters) extends FPGAVC707Shell()(p)
+  with HasTEEHWChip with WithFPGAVC707Connect {
+}
+
 // ********************************************************************
 // FPGAVCU118 - Demo on VCU118 FPGA board
 // ********************************************************************
 import sifive.fpgashells.ip.xilinx.vcu118mig._
 import sifive.fpgashells.ip.xilinx._
 
-class FPGAVCU118(implicit val p :Parameters) extends RawModule {
+class FPGAVCU118Shell(implicit val p :Parameters) extends RawModule {
   val gpio_in = IO(Input(UInt(p(GPIOInKey).W)))
-  val gpio_out = IO(Output(UInt((p(PeripheryGPIOKey).head.width-p(GPIOInKey)).W)))
+  val gpio_out = IO(Output(UInt((p(PeripheryGPIOKey).head.width - p(GPIOInKey)).W)))
   val jtag = IO(new Bundle {
     val jtag_TDI = (Input(Bool())) // J53.6
     val jtag_TDO = (Output(Bool())) // J53.8
@@ -336,12 +379,14 @@ class FPGAVCU118(implicit val p :Parameters) extends RawModule {
 
   var qspi: Option[TEEHWQSPIBundle] = None
 
-  val USB = p(PeripheryUSB11HSKey).map{_ => IO(new Bundle {
-    val FullSpeed = Output(Bool()) // NC
-    val WireDataIn = Input(Bits(2.W)) // NC // NC
-    val WireCtrlOut = Output(Bool()) // NC
-    val WireDataOut = Output(Bits(2.W)) // NC // NC
-  })}
+  val USB = p(PeripheryUSB11HSKey).map { _ =>
+    IO(new Bundle {
+      val FullSpeed = Output(Bool()) // NC
+      val WireDataIn = Input(Bits(2.W)) // NC // NC
+      val WireCtrlOut = Output(Bool()) // NC
+      val WireDataOut = Output(Bits(2.W)) // NC // NC
+    })
+  }
 
   val sys_clock_p = IO(Input(Clock()))
   val sys_clock_n = IO(Input(Clock()))
@@ -365,11 +410,13 @@ class FPGAVCU118(implicit val p :Parameters) extends RawModule {
   val xdmaPorts = p(XDMAPCIe).map(A => IO(new XDMATopPads(A.lanes)))
 
   var ddr: Option[VCU118MIGIODDR] = None
+}
+
+trait WithFPGAVCU118Connect {
+  this: FPGAVCU118Shell =>
+  val chip : WithTEEHWbaseConnect
 
   withClockAndReset(clock, reset) {
-    // Instance our converter, and connect everything
-    val chip = Module(new TEEHWSoC)
-
     // PLL instance
     val c = new PLLParameters(
       name = "pll",
@@ -385,7 +432,7 @@ class FPGAVCU118(implicit val p :Parameters) extends RawModule {
     pll.io.reset := reset_0
 
     // The DDR port
-    val init_calib_complete = chip.tlport.map{ case chiptl =>
+    val init_calib_complete_tl = chip.tlport.map{ case chiptl =>
       val mod = Module(LazyModule(new TLULtoMIGUltra(chip.cacheBlockBytes, chip.tlportw.get.params)).module)
 
       // DDR port only
@@ -413,6 +460,24 @@ class FPGAVCU118(implicit val p :Parameters) extends RawModule {
 
       mod.io.ddrport.c0_init_calib_complete
     }
+    val init_calib_complete_ser = chip.memser.map { A =>
+      val mod = Module(LazyModule(new SertoMIGUltra(A.w)).module)
+
+      // Serial port
+      mod.io.serport.flipConnect(A)
+
+      // DDR port only
+      ddr = Some(IO(new VCU118MIGIODDR(mod.depth)))
+      ddr.get <> mod.io.ddrport
+      // MIG connections, like resets and stuff
+      mod.io.ddrport.c0_sys_clk_i := sys_clk_i.asUInt()
+      mod.io.ddrport.c0_ddr4_aresetn := !reset_0
+      mod.io.ddrport.sys_rst := reset_1
+
+      mod.io.ddrport.c0_init_calib_complete
+    }
+
+    val init_calib_complete = init_calib_complete_tl.getOrElse(init_calib_complete_ser.getOrElse(false.B))
 
     // Main clock and reset assignments
     clock := pll.io.clk_out3.get
@@ -422,7 +487,7 @@ class FPGAVCU118(implicit val p :Parameters) extends RawModule {
     chip.rst_n := !reset_2
 
     // The rest of the platform connections
-    gpio_out := Cat(reset_0, reset_1, reset_2, reset_3, init_calib_complete.getOrElse(false.B))
+    gpio_out := Cat(reset_0, reset_1, reset_2, reset_3, init_calib_complete)
     chip.gpio_in := gpio_in
     jtag <> chip.jtag
     qspi = chip.qspi.map(A => IO ( new TEEHWQSPIBundle(A.csWidth) ) )
@@ -461,6 +526,10 @@ class FPGAVCU118(implicit val p :Parameters) extends RawModule {
         sysport.erst_n := !reset_0
     }
   }
+}
+
+class FPGAVCU118(implicit p :Parameters) extends FPGAVCU118Shell()(p)
+  with HasTEEHWChip with WithFPGAVCU118Connect {
 }
 
 // ********************************************************************

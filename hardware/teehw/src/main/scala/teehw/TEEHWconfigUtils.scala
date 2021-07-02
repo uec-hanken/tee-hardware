@@ -32,6 +32,8 @@ case object XDMAPCIe extends Field[Option[XDMAParams]](None)
 
 // When external the DDR port, has to run at another freq
 case object DDRPortOther extends Field[Boolean](false)
+case class MemorySerialPortParams(master: MasterPortParams, nMemoryChannels: Int, serWidth: Int)
+case object ExtSerMem extends Field[Option[MemorySerialPortParams]](None)
 
 // Our own reset vector
 case object TEEHWResetVector extends Field[Int](0x10040)

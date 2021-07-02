@@ -39,7 +39,7 @@ import uec.teehardware.devices.opentitan.hmac._
 import uec.teehardware.devices.opentitan.keymgr._
 import uec.teehardware.devices.opentitan.kmac._
 import uec.teehardware.devices.opentitan.otp_ctrl._
-import testchipip.{CanHavePeripheryTLSerial, ClockedIO, SerialAdapter, SerialIO, SerialTLKey}
+import testchipip.{CanHavePeripheryTLSerial, ClockedIO, SerialAdapter, SerialIO, SerialTLKey, TLSerdes}
 
 import java.lang.reflect.InvocationTargetException
 
@@ -82,7 +82,7 @@ trait HasTEEHWSystem
   val memctl: Option[(TLManagerNode, Option[SlowMemIsland])] = p(ExtMem).map { A =>
     val memdevice = new MemoryDevice
     val mainMemParam = TLSlavePortParameters.v1(
-      managers = Seq(TLManagerParameters(
+      managers = Seq(TLSlaveParameters.v1(
         address = AddressSet.misaligned(A.master.base, A.master.size),
         resources = memdevice.reg,
         regionType = RegionType.UNCACHED, // cacheable
@@ -112,6 +112,27 @@ trait HasTEEHWSystem
       None
     }
     (memTLNode, island)
+  }
+  val memserctl = p(ExtSerMem).map {A =>
+    val memdevice = new MemoryDevice
+    val mainMemParam = Seq(TLSlaveParameters.v1(
+        address = AddressSet.misaligned(A.master.base, A.master.size),
+        resources = memdevice.reg,
+        regionType = RegionType.UNCACHED, // cacheable
+        executable = true,
+        supportsGet = TransferSizes(1, mbus.blockBytes),
+        supportsPutFull = TransferSizes(1, mbus.blockBytes),
+        supportsPutPartial = TransferSizes(1, mbus.blockBytes),
+        fifoId = Some(0),
+        mayDenyPut = true,
+        mayDenyGet = true))
+    val serdes = LazyModule(new TLSerdes(
+      w = A.serWidth,
+      params = mainMemParam,
+      beatBytes = A.master.beatBytes))
+    serdes.node := TLBuffer() := mbus.toDRAMController(Some("ser"))()
+    // TODO: The clock separation for this is obviusly not done
+    serdes
   }
 
   // UART implementation. This is the same as HasPeripheryUART
@@ -292,6 +313,13 @@ trait HasTEEHWSystemModule extends HasRTCModuleImp
   val mem_ChildClock = memPorts.map(_._2) // For making work HeterogeneousBag
   val mem_ChildReset = memPorts.map(_._3) // For making work HeterogeneousBag
 
+  // Main memory serial controller
+  val memSerPorts = outer.memserctl.map { A =>
+    val ser = IO(new SerialIO(A.module.io.ser.head.w))
+    ser <> A.module.io.ser.head
+    ser
+  }
+
   // UART implementation
   val uart = outer.uartNodes.zipWithIndex.map { case(n,i) => n.makeIO()(ValName(s"uart_$i")).asInstanceOf[UARTPortIO] }
 
@@ -409,6 +437,7 @@ class TEEHWPlatformIO(val params: Option[TLBundleParameters] = None, val numCloc
   val xdmaPorts = p(XDMAPCIe).map(A => new XDMATopPadswReset(A.lanes))
   val aclocks = Vec(numClocks, Input(Clock()))
   val tlserial = p(SerialTLKey).map(A => new SerialIO(SERIAL_TSI_WIDTH))
+  val memser = p(ExtSerMem).map(A => new SerialIO(A.serWidth))
 }
 
 object TEEHWPlatform {
@@ -505,6 +534,9 @@ object TEEHWPlatform {
         }
     }
 
+    // Serialized memory
+    (sys.memSerPorts zip io.memser).foreach { case(sysport, ioport) => ioport <> sysport }
+
     // Connect the USB to the outside (only the first one)
     (sys.usb11hs zip io.usb11hs).foreach{ case (sysusb, usbport) => sysusb <> usbport }
 
@@ -545,12 +577,22 @@ object TEEHWPlatform {
   }
 }
 
-class TEEHWPlatform(implicit val p: Parameters) extends Module {
+trait WithTEEHWPlatformConnect {
+  implicit val p: Parameters
+  val clock: Clock
+  val reset: Reset
+  val io: TEEHWPlatformIO
+  val sys: HasTEEHWSystemModule with HasTilesModuleImp with HasPeripheryUSB11HSModuleImp
+
+  TEEHWPlatform.connect(sys, io, clock, reset)(p)
+}
+
+trait HasTEEHWPlatform {
+  this: Module =>
+  implicit val p: Parameters
   val sys: TEEHWSystemModule[TEEHWSystem] = Module(LazyModule(new TEEHWSystem).module)
-
-  // Not actually sure if "node.head.in.head._1.params" (where node is A._1) is the
-  // correct way to get the params... TODO: Get the correct way
   val io = IO(new TEEHWPlatformIO(sys.outer.memctl.map{A => A._1.in.head._1.params}, sys.numClocks ) )
+}
 
-  TEEHWPlatform.connect(sys, io, clock, reset)
+class TEEHWPlatform(implicit val p: Parameters) extends Module with HasTEEHWPlatform with WithTEEHWPlatformConnect {
 }

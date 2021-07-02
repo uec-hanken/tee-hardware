@@ -14,13 +14,15 @@ import freechips.rocketchip.tilelink._
 import sifive.blocks.devices.gpio.GPIOPortIO
 import sifive.blocks.devices.spi._
 import sifive.blocks.devices.uart._
-import testchipip.{SerialAdapter, SimDRAM, SimSPIFlashModel}
+import testchipip.{SerialAdapter, SerialIO, SimDRAM, SimSPIFlashModel, TLDesser}
 
 // There is no simulation resource for TileLink buses, only for axi (for... some reason)
 // this is a LazyModule which instances the SimDRAM in axi4 mode from the TL bus
-class TLULtoSimDRAM( cacheBlockBytes: Int,
-                             TLparams: TLBundleParameters
-                           )(implicit p :Parameters)
+class TLULtoSimDRAM
+(
+  cacheBlockBytes: Int,
+  TLparams: TLBundleParameters
+)(implicit p :Parameters)
   extends LazyModule {
 
   // Create a dummy node where we can attach our TL port
@@ -92,18 +94,76 @@ class TLULtoSimDRAM( cacheBlockBytes: Int,
       mem.io.reset := reset
     }
   }
-
 }
 
-class TEEHWHarness()(implicit p: Parameters) extends Module {
-  val io = IO(new Bundle {
-    val success = Output(Bool())
-  })
+class SertoSimDRAM(w: Int, cacheBlockBytes: Int)(implicit p :Parameters)
+  extends LazyModule {
+
+  // Create the desser
+  val idBits = 6
+  val params = Seq(TLMasterParameters.v1(
+    name = "tl-desser",
+    sourceId = IdRange(0, 1 << idBits)))
+  val desser = LazyModule(new TLDesser(w, params, true))
+
+  // Create the AXI4 Helper nodes to do connection
+  val buffer  = LazyModule(new TLBuffer)
+  val toaxi4  = LazyModule(new TLToAXI4(adapterName = Some("mem")))
+  val indexer = LazyModule(new AXI4IdIndexer(idBits = 4))
+  val deint   = LazyModule(new AXI4Deinterleaver(p(CacheBlockBytes)))
+  val yank    = LazyModule(new AXI4UserYanker)
+  val device = new MemoryDevice // I Still dont know why I need to create a device, but is not being added to the DTC
+  val axinode = AXI4SlaveNode(Seq(AXI4SlavePortParameters(
+    slaves = Seq(AXI4SlaveParameters(
+      address       = AddressSet.misaligned(
+        p(ExtSerMem).get.master.base,
+        p(ExtSerMem).get.master.size
+      ),
+      resources     = device.reg,
+      regionType    = RegionType.UNCACHED,
+      executable    = true,
+      supportsWrite = TransferSizes(1, cacheBlockBytes),
+      supportsRead  = TransferSizes(1, cacheBlockBytes))),
+    beatBytes = p(ExtSerMem).head.master.beatBytes
+  )))
+
+  // Attach to the axi4 node (Hopefully does not explode)
+  axinode := yank.node := deint.node := indexer.node := toaxi4.node := buffer.node := desser.node
+
+  lazy val module = new LazyModuleImp(this) {
+    val io = IO(new Bundle {
+      val serport = new SerialIO(w)
+    })
+
+    // Connect the serport
+    io.serport <> desser.module.io.ser.head
+
+    // axinode connection to the simulated memory provided by chipyard
+    val memSize = p(ExtSerMem).get.master.size
+    val lineSize = cacheBlockBytes
+    axinode.in.foreach { case (io, edge) =>
+      val mem = Module(new SimDRAM(memSize, lineSize, edge.bundle))
+      mem.io.axi <> io
+      mem.io.clock := clock
+      mem.io.reset := reset
+    }
+  }
+}
+
+class TEEHWHarnessBundle extends Bundle {
+  val success = Output(Bool())
+}
+
+trait WithTEEHWHarnessConnect {
+  implicit val p: Parameters
+  val clock: Clock
+  val reset: Reset
+  val io: TEEHWHarnessBundle
+
+  val dut: WithTEEHWPlatformConnect
 
   // A delayed reset to be handled properly, as the internal reset is embedded with the same sync
   val del_reset = ResetCatchAndSync(clock, reset.asBool, 5)
-
-  val dut = Module(new TEEHWPlatform)
 
   // IMPORTANT NOTE:
   // The old version yields the debugger and loads using the fevsr. This does not work anymore
@@ -144,6 +204,14 @@ class TEEHWHarness()(implicit p: Parameters) extends Module {
           ck := clock
           rst := reset // NOTE: Normal reset
       }
+  }
+
+  dut.io.memser.foreach{ A =>
+    // Step 1: Our conversion
+    val simdram = LazyModule(new uec.teehardware.SertoSimDRAM(p(ExtSerMem).get.serWidth, dut.p(CacheBlockBytes)))
+    val simdrammod = Module(simdram.module)
+
+    simdrammod.io.serport.flipConnect(A)
   }
 
   // Debug connections (JTAG)
@@ -237,4 +305,15 @@ class TEEHWHarness()(implicit p: Parameters) extends Module {
       pcie.REFCLK_rxp := false.B
       pcie.REFCLK_rxn := false.B
   }
+}
+
+trait HasTEEHWHarness {
+  this: Module =>
+  implicit val p: Parameters
+
+  val io = IO(new TEEHWHarnessBundle)
+  val dut = Module(new TEEHWPlatform)
+}
+
+class TEEHWHarness()(implicit val p: Parameters) extends Module with HasTEEHWHarness with WithTEEHWHarnessConnect {
 }

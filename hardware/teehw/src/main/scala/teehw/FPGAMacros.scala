@@ -16,11 +16,46 @@ import sifive.fpgashells.clocks._
 import sifive.fpgashells.devices.xilinx.xilinxvc707mig._
 import sifive.fpgashells.devices.xilinx.xilinxvc707pciex1._
 import sifive.fpgashells.devices.xilinx.xilinxvcu118mig._
+import testchipip.{SerialIO, TLDesser}
 //import uec.teehardware.vc707mig32._
 
 // ******* For Xilinx FPGAs
 import sifive.fpgashells.ip.xilinx.vc707mig._
 import sifive.fpgashells.ip.xilinx.vcu118mig._
+
+class SertoMIG(w: Int)(implicit p :Parameters) extends LazyModule {
+  // Create the DDR
+  val ddr = LazyModule(
+    new XilinxVC707MIG(
+      XilinxVC707MIGParams(
+        AddressSet.misaligned(
+          p(ExtSerMem).get.master.base,
+          0x40000000L * 1 // 1GiB for the VC707DDR,
+        ))))
+  // Create the desser
+  val idBits = 6
+  val params = Seq(TLMasterParameters.v1(
+    name = "tl-desser",
+    sourceId = IdRange(0, 1 << idBits)))
+  val desser = LazyModule(new TLDesser(w, params, true))
+  // Attach nodes
+  ddr.node := TLBuffer() := desser.node
+  // Create the module
+  lazy val module = new LazyModuleImp(this) {
+    val io = IO(new Bundle {
+      val serport = new SerialIO(w)
+      val ddrport = new XilinxVC707MIGIO(ddr.depth)
+    })
+
+    val depth = ddr.depth
+
+    // Connect the serport
+    io.serport <> desser.module.io.ser.head
+
+    // Create the actual module, and attach the DDR port
+    io.ddrport <> ddr.module.io.port
+  }
+}
 
 class TLULtoMIG(cacheBlockBytes: Int, TLparams: TLBundleParameters)(implicit p :Parameters) extends LazyModule {
   // Create the DDR
@@ -83,6 +118,40 @@ class TLULtoMIG(cacheBlockBytes: Int, TLparams: TLBundleParameters)(implicit p :
     io.ddrport <> ddr.module.io.port
   }
 
+}
+
+class SertoMIGUltra(w: Int)(implicit p :Parameters) extends LazyModule {
+  // Create the DDR
+  val ddr = LazyModule(
+    new XilinxVCU118MIG(
+      XilinxVCU118MIGParams(
+        AddressSet.misaligned(
+          p(ExtSerMem).get.master.base,
+          0x80000000L * 1 // 2GiB for the VCU118DDR,
+        ))))
+  // Create the desser
+  val idBits = 6
+  val params = Seq(TLMasterParameters.v1(
+    name = "tl-desser",
+    sourceId = IdRange(0, 1 << idBits)))
+  val desser = LazyModule(new TLDesser(w, params, true))
+  // Attach nodes
+  ddr.node := TLBuffer() := desser.node
+  // Create the module
+  lazy val module = new LazyModuleImp(this) {
+    val io = IO(new Bundle {
+      val serport = new SerialIO(w)
+      val ddrport = new XilinxVCU118MIGIO(ddr.depth)
+    })
+
+    val depth = ddr.depth
+
+    // Connect the serport
+    io.serport <> desser.module.io.ser.head
+
+    // Create the actual module, and attach the DDR port
+    io.ddrport <> ddr.module.io.port
+  }
 }
 
 class TLULtoMIGUltra(cacheBlockBytes: Int, TLparams: TLBundleParameters)(implicit p :Parameters) extends LazyModule {
