@@ -36,9 +36,16 @@ class SertoMIG(w: Int, idBits: Int = 6)(implicit p :Parameters) extends LazyModu
   val params = Seq(TLMasterParameters.v1(
     name = "tl-desser",
     sourceId = IdRange(0, 1 << idBits)))
-  val desser = LazyModule(new TLDesser(w, params, true))
+  val desser = LazyModule(new TLDesser(w, params, true)) // Attach to the DDR
   // Attach nodes
-  ddr.node := TLBuffer() := desser.node
+  if(p(ExtSerMem).head.master.beatBytes != 8)
+    ddr.node := //TLSourceShrinker(16) :=
+      TLWidthWidget(p(ExtSerMem).head.master.beatBytes) :=
+      //TLFragmenter(p(ExtSerMem).head.master.beatBytes, p(MemoryBusKey).blockBytes) :=
+      desser.node
+  else
+    ddr.node := //TLSourceShrinker(16) :=
+      desser.node
   // Create the module
   lazy val module = new LazyModuleImp(this) {
     val io = IO(new Bundle {
@@ -134,7 +141,14 @@ class SertoMIGUltra(w: Int, idBits: Int = 6)(implicit p :Parameters) extends Laz
     sourceId = IdRange(0, 1 << idBits)))
   val desser = LazyModule(new TLDesser(w, params, true))
   // Attach nodes
-  ddr.node := TLBuffer() := desser.node
+  if(p(ExtSerMem).head.master.beatBytes != 8)
+    ddr.node := //TLSourceShrinker(16) :=
+      TLWidthWidget(p(ExtSerMem).head.master.beatBytes) :=
+      //TLFragmenter(p(ExtSerMem).head.master.beatBytes, p(MemoryBusKey).blockBytes) :=
+      desser.node
+  else
+    ddr.node := //TLSourceShrinker(16) :=
+      desser.node
   // Create the module
   lazy val module = new LazyModuleImp(this) {
     val io = IO(new Bundle {

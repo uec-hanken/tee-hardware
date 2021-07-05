@@ -382,21 +382,10 @@ class VC707Config extends Config((site,here,up) => {
   case PeripheryUSB11HSKey => List()
   case PeripheryRandomKey => up(PeripheryRandomKey, site) map {r =>
     r.copy(board = "Xilinx")
-  }})
-
-class VC707MiniConfig extends Config((site,here,up) => {
-  case FreqKeyMHz => 50.0
-  /* Force to use BootROM because VC707 doesn't have enough GPIOs for QSPI */
-  case MaskROMLocated(InSubsystem) => Seq(
-    MaskROMParams(address = BigInt(0x20000000), depth = 0x1000, name = "BootROM"))
-  case TEEHWResetVector => 0x20000000
-  case PeripherySPIFlashKey => List() // disable SPIFlash
-  case PeripherySPIKey => up(PeripherySPIKey).slice(0, 1) // Disable SPIFlash, even if is the backup
-  /* Force to disable USB1.1, because there are no pins */
-  case PeripheryUSB11HSKey => List()
-  case PeripheryRandomKey => up(PeripheryRandomKey, site) map {r =>
-    r.copy(board = "Xilinx")
-  }})
+  }
+  /* The DDR memory supports 128 transactions. This is to avoid modifying chipyard*/
+  case MemoryBusKey => up(MemoryBusKey).copy(blockBytes = 128)
+})
 
 class VCU118Config extends Config((site,here,up) => {
   case FreqKeyMHz => 50.0
@@ -425,6 +414,8 @@ class VCU118Config extends Config((site,here,up) => {
     gen = 3
   ))
   case IncludePCIe => false
+  /* The DDR memory supports 256*8 transactions. This is to avoid modifying chipyard*/
+  case MemoryBusKey => up(MemoryBusKey).copy(blockBytes = 256*8)
 })
   
 

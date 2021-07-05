@@ -126,6 +126,7 @@ trait HasTEEHWSystem
         fifoId = Some(0),
         mayDenyPut = true,
         mayDenyGet = true))
+    println(s"SERDES added to the system ${mbus.blockBytes}")
     val serdes = LazyModule(new TLSerdes(
       w = A.serWidth,
       params = mainMemParam,

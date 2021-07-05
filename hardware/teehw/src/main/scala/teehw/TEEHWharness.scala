@@ -24,6 +24,7 @@ class TLULtoSimDRAM
   TLparams: TLBundleParameters
 )(implicit p :Parameters)
   extends LazyModule {
+  val beatBytes = if(p(MemoryBusKey).blockBytes > 1024) 8 else p(ExtMem).head.master.beatBytes
 
   // Create a dummy node where we can attach our TL port
   val node = TLClientNode(Seq.tabulate(1) { channel =>
@@ -51,13 +52,18 @@ class TLULtoSimDRAM
       resources     = device.reg,
       regionType    = RegionType.UNCACHED,
       executable    = true,
-      supportsWrite = TransferSizes(1, cacheBlockBytes),
-      supportsRead  = TransferSizes(1, cacheBlockBytes))),
-    beatBytes = p(ExtMem).head.master.beatBytes
+      supportsWrite = TransferSizes(1, p(MemoryBusKey).blockBytes),
+      supportsRead  = TransferSizes(1, p(MemoryBusKey).blockBytes))),
+    beatBytes = beatBytes
   )))
 
   // Attach to the axi4 node (Hopefully does not explode)
-  axinode := yank.node := deint.node := indexer.node := toaxi4.node := buffer.node := node
+  if(p(ExtMem).head.master.beatBytes != beatBytes)
+    axinode := yank.node := deint.node := indexer.node := toaxi4.node := buffer.node :=
+      TLWidthWidget(p(ExtSerMem).head.master.beatBytes) := node
+  else
+    axinode := yank.node := deint.node := indexer.node := toaxi4.node := buffer.node :=
+      node
 
   lazy val module = new LazyModuleImp(this) {
     val io = IO(new Bundle {
@@ -99,6 +105,8 @@ class TLULtoSimDRAM
 class SertoSimDRAM(w: Int, cacheBlockBytes: Int, idBits: Int = 6)(implicit p :Parameters)
   extends LazyModule {
 
+  val beatBytes = if(p(MemoryBusKey).blockBytes > 1024) 8 else p(ExtSerMem).head.master.beatBytes
+
   // Create the desser
   val params = Seq(TLMasterParameters.v1(
     name = "tl-desser",
@@ -121,13 +129,19 @@ class SertoSimDRAM(w: Int, cacheBlockBytes: Int, idBits: Int = 6)(implicit p :Pa
       resources     = device.reg,
       regionType    = RegionType.UNCACHED,
       executable    = true,
-      supportsWrite = TransferSizes(1, cacheBlockBytes),
-      supportsRead  = TransferSizes(1, cacheBlockBytes))),
-    beatBytes = p(ExtSerMem).head.master.beatBytes
+      supportsWrite = TransferSizes(1, p(MemoryBusKey).blockBytes),
+      supportsRead  = TransferSizes(1, p(MemoryBusKey).blockBytes))),
+    beatBytes = beatBytes
   )))
 
   // Attach to the axi4 node (Hopefully does not explode)
-  axinode := yank.node := deint.node := indexer.node := toaxi4.node := buffer.node := desser.node
+  if(p(ExtSerMem).head.master.beatBytes != beatBytes)
+     axinode := yank.node := deint.node := indexer.node := toaxi4.node := buffer.node :=
+       TLWidthWidget(p(ExtSerMem).head.master.beatBytes) := desser.node
+  else
+    axinode := yank.node := deint.node := indexer.node := toaxi4.node := buffer.node :=
+      desser.node
+
 
   lazy val module = new LazyModuleImp(this) {
     val io = IO(new Bundle {
