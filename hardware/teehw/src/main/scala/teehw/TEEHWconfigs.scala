@@ -359,7 +359,7 @@ class DE4Config extends Config((site,here,up) => {
   /* DE4 is not support PCIe (yet) */
   case IncludePCIe => false
   case PeripheryRandomKey => up(PeripheryRandomKey, site) map {r =>
-    r.copy(board = "Altera")
+    r.copy(board = "Altera", impl = 0)
   }})
 
 class TR4Config extends Config((site,here,up) => {
@@ -367,7 +367,7 @@ class TR4Config extends Config((site,here,up) => {
   /* TR4 is not support PCIe (yet) */
   case IncludePCIe => false
   case PeripheryRandomKey => up(PeripheryRandomKey, site) map {r =>
-    r.copy(board = "Altera")
+    r.copy(board = "Altera", impl = 0)
   }})
 
 class VC707Config extends Config((site,here,up) => {
