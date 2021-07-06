@@ -541,7 +541,8 @@ class FPGAVCU118(implicit p :Parameters) extends FPGAVCU118Shell()(p)
 // ********************************************************************
 // FPGADE4 - Demo on DE4 FPGA board
 // ********************************************************************
-class FPGADE4(implicit val p :Parameters) extends RawModule {
+
+class FPGADE4Shell(implicit val p :Parameters) extends RawModule {
   ///////// CLOCKS /////////
   val OSC_50_BANK2 = IO(Input(Clock())) //HSMA + UART + ext_pll
   val OSC_50_BANK3 = IO(Input(Clock())) //DIMM1		<-- most used
@@ -557,7 +558,7 @@ class FPGADE4(implicit val p :Parameters) extends RawModule {
   val CPU_RESET_n = IO(Input(Bool()))
 
   ///////// LED /////////
-  val LED = IO(Output(Bits((7+1).W)))
+  val LED = IO(Output(Bits((7 + 1).W)))
 
   //////////// 7-Segment Display //////////
   /*val SEG0_D = IO(Output(Bits((6+1).W)))
@@ -566,13 +567,13 @@ class FPGADE4(implicit val p :Parameters) extends RawModule {
   val SEG1_DP = IO(Output(Bool()))*/
 
   ///////// BUTTON /////////
-  val BUTTON = IO(Input(Bits((3+1).W)))
+  val BUTTON = IO(Input(Bits((3 + 1).W)))
 
   ///////// SW /////////
-  val SW = IO(Input(Bits((7+1).W)))
+  val SW = IO(Input(Bits((7 + 1).W)))
 
   //////////// SLIDE SWITCH x 4 //////////
-  val SLIDE_SW = IO(Input(Bits((3+1).W)))
+  val SLIDE_SW = IO(Input(Bits((3 + 1).W)))
 
   ///////// FAN /////////
   val FAN_CTRL = IO(Output(Bool()))
@@ -595,18 +596,18 @@ class FPGADE4(implicit val p :Parameters) extends RawModule {
     val PCIE_WAKE_n = IO(Output(Bool()))  */
 
   //////////// DDR2 SODIMM //////////
-  val M1_DDR2_addr = IO(Output(Bits((15+1).W)))
-  val M1_DDR2_ba = IO(Output(Bits((2+1).W)))
+  val M1_DDR2_addr = IO(Output(Bits((15 + 1).W)))
+  val M1_DDR2_ba = IO(Output(Bits((2 + 1).W)))
   val M1_DDR2_cas_n = IO(Output(Bool()))
-  val M1_DDR2_cke = IO(Output(Bits((1+1).W)))
-  val M1_DDR2_clk = IO(Output(Bits((1+1).W)))
-  val M1_DDR2_clk_n = IO(Output(Bits((1+1).W)))
-  val M1_DDR2_cs_n = IO(Output(Bits((1+1).W)))
-  val M1_DDR2_dm = IO(Output(Bits((7+1).W)))
-  val M1_DDR2_dq = IO(Analog((63+1).W))
-  val M1_DDR2_dqs = IO(Analog((7+1).W))
-  val M1_DDR2_dqsn = IO(Analog((7+1).W))
-  val M1_DDR2_odt = IO(Output(Bits((1+1).W)))
+  val M1_DDR2_cke = IO(Output(Bits((1 + 1).W)))
+  val M1_DDR2_clk = IO(Output(Bits((1 + 1).W)))
+  val M1_DDR2_clk_n = IO(Output(Bits((1 + 1).W)))
+  val M1_DDR2_cs_n = IO(Output(Bits((1 + 1).W)))
+  val M1_DDR2_dm = IO(Output(Bits((7 + 1).W)))
+  val M1_DDR2_dq = IO(Analog((63 + 1).W))
+  val M1_DDR2_dqs = IO(Analog((7 + 1).W))
+  val M1_DDR2_dqsn = IO(Analog((7 + 1).W))
+  val M1_DDR2_odt = IO(Output(Bits((1 + 1).W)))
   val M1_DDR2_ras_n = IO(Output(Bool()))
   //val M1_DDR2_SA = IO(Output(Bits((1+1).W)))
   //val M1_DDR2_SCL = IO(Output(Bool()))
@@ -648,12 +649,14 @@ class FPGADE4(implicit val p :Parameters) extends RawModule {
 
   var qspi: Option[TEEHWQSPIBundle] = None
 
-  val USB = p(PeripheryUSB11HSKey).map{_ => IO(new Bundle {
-    val FullSpeed = Output(Bool()) // GPIO0_D[7]
-    val WireDataIn = Input(Bits(2.W)) // GPIO0_D[1:0]
-    val WireCtrlOut = Output(Bool()) // GPIO0_D[6]
-    val WireDataOut = Output(Bits(2.W)) // GPIO0_D[3:2]
-  })}
+  val USB = p(PeripheryUSB11HSKey).map { _ =>
+    IO(new Bundle {
+      val FullSpeed = Output(Bool()) // GPIO0_D[7]
+      val WireDataIn = Input(Bits(2.W)) // GPIO0_D[1:0]
+      val WireCtrlOut = Output(Bool()) // GPIO0_D[6]
+      val WireDataOut = Output(Bits(2.W)) // GPIO0_D[3:2]
+    })
+  }
 
   ///////////  EXT_IO /////////
   //val EXT_IO = IO(Analog(1.W))
@@ -718,10 +721,14 @@ class FPGADE4(implicit val p :Parameters) extends RawModule {
 
   val clock = Wire(Clock())
   val reset = Wire(Bool())
+}
+
+trait WithFPGADE4Connect {
+  this: FPGADE4Shell =>
+  val chip : WithTEEHWbaseConnect
 
   withClockAndReset(clock, reset) {
     // Instance our converter, and connect everything
-    val chip = Module(new TEEHWSoC)
     val mod = Module(LazyModule(
       new TLULtoQuartusPlatform(
         chip.cacheBlockBytes,
@@ -801,10 +808,15 @@ class FPGADE4(implicit val p :Parameters) extends RawModule {
   }
 }
 
+class FPGADE4(implicit p :Parameters) extends FPGADE4Shell()(p)
+  with HasTEEHWChip with WithFPGADE4Connect {
+}
+
 // ********************************************************************
 // FPGATR4 - Demo on TR4 FPGA board
 // ********************************************************************
-class FPGATR4(implicit val p :Parameters) extends RawModule {
+
+class FPGATR4Shell(implicit val p :Parameters) extends RawModule {
   ///////// CLOCKS /////////
   val OSC_50_BANK1 = IO(Input(Clock()))
   val OSC_50_BANK3 = IO(Input(Clock()))
@@ -813,13 +825,13 @@ class FPGATR4(implicit val p :Parameters) extends RawModule {
   val OSC_50_BANK8 = IO(Input(Clock()))
 
   ///////// BUTTON /////////
-  val BUTTON = IO(Input(Bits((3+1).W)))
+  val BUTTON = IO(Input(Bits((3 + 1).W)))
 
   ///////// LED /////////
-  val LED = IO(Output(Bits((3+1).W)))
+  val LED = IO(Output(Bits((3 + 1).W)))
 
   ///////// SW /////////
-  val SW = IO(Input(Bits((3+1).W)))
+  val SW = IO(Input(Bits((3 + 1).W)))
 
   ///////// FAN /////////
   val FAN_CTRL = IO(Output(Bool()))
@@ -914,18 +926,18 @@ class FPGATR4(implicit val p :Parameters) extends RawModule {
   val HSMF_TX_p = IO(Analog((16+1).W))*/
 
   //////////// mem //////////
-  val mem_a = IO(Output(Bits((15+1).W)))
-  val mem_ba = IO(Output(Bits((2+1).W)))
+  val mem_a = IO(Output(Bits((15 + 1).W)))
+  val mem_ba = IO(Output(Bits((2 + 1).W)))
   val mem_cas_n = IO(Output(Bool()))
-  val mem_cke = IO(Output(Bits((1+1).W)))
-  val mem_ck = IO(Output(Bits((0+1).W))) // NOTE: Is impossible to do [0:0]
-  val mem_ck_n = IO(Output(Bits((0+1).W))) // NOTE: Is impossible to do [0:0]
-  val mem_cs_n = IO(Output(Bits((1+1).W)))
-  val mem_dm = IO(Output(Bits((7+1).W)))
-  val mem_dq = IO(Analog((63+1).W))
-  val mem_dqs = IO(Analog((7+1).W))
-  val mem_dqs_n = IO(Analog((7+1).W))
-  val mem_odt = IO(Output(Bits((1+1).W)))
+  val mem_cke = IO(Output(Bits((1 + 1).W)))
+  val mem_ck = IO(Output(Bits((0 + 1).W))) // NOTE: Is impossible to do [0:0]
+  val mem_ck_n = IO(Output(Bits((0 + 1).W))) // NOTE: Is impossible to do [0:0]
+  val mem_cs_n = IO(Output(Bits((1 + 1).W)))
+  val mem_dm = IO(Output(Bits((7 + 1).W)))
+  val mem_dq = IO(Analog((63 + 1).W))
+  val mem_dqs = IO(Analog((7 + 1).W))
+  val mem_dqs_n = IO(Analog((7 + 1).W))
+  val mem_odt = IO(Output(Bits((1 + 1).W)))
   val mem_ras_n = IO(Output(Bool()))
   val mem_reset_n = IO(Output(Bool()))
   val mem_we_n = IO(Output(Bool()))
@@ -937,10 +949,10 @@ class FPGATR4(implicit val p :Parameters) extends RawModule {
 
   ///////// GPIO /////////
   val jtag = IO(new Bundle {
-    val jtag_TDI = (Input(Bool()))
-    val jtag_TMS = (Input(Bool()))
-    val jtag_TCK = (Input(Bool()))
-    val jtag_TDO = (Output(Bool()))
+    val jtag_TDI = (Input(Bool()))  // PIN_AP27 / GPIO1_D4 / JP10 5
+    val jtag_TMS = (Input(Bool()))  // PIN_AN27 / GPIO1_D6 / JP10 7
+    val jtag_TCK = (Input(Bool()))  // PIN_AL25 / GPIO1_D8 / JP10 9
+    val jtag_TDO = (Output(Bool())) // PIN_AP26 / GPIO1_D10 / JP10 13
   })
   val sdio = IO(new Bundle {
     val sdio_clk = (Output(Bool()))
@@ -953,25 +965,31 @@ class FPGATR4(implicit val p :Parameters) extends RawModule {
 
   var qspi: Option[TEEHWQSPIBundle] = None
 
-  val USB = p(PeripheryUSB11HSKey).map{_ => IO(new Bundle {
-    val FullSpeed = Output(Bool()) // HSMC_TX_p[10] / PIN_AW27 / GPIO1_D17 GPIO1[20]
-    val WireDataIn = Input(Bits(2.W)) // HSMC_TX_p[7] HSMC_TX_n[7] / PIN_AB30 PIN_AB31 / GPIO1_D24 GPIO1_D26 GPIO1[27,31]
-    val WireCtrlOut = Output(Bool()) // HSMC_TX_n[10] / PIN_AW28 / GPIO1_D19 GPIO[22]
-    val WireDataOut = Output(Bits(2.W)) // HSMC_TX_p[8] HSMC_TX_n[8] / PIN_AL27 PIN_AH26 / GPIO1_D16 GPIO1_D18 GPIO1[19,21]
-  })}
-  
+  val USB = p(PeripheryUSB11HSKey).map { _ =>
+    IO(new Bundle {
+      val FullSpeed = Output(Bool()) // HSMC_TX_p[10] / PIN_AW27 / GPIO1_D17 GPIO1[20]
+      val WireDataIn = Input(Bits(2.W)) // HSMC_TX_p[7] HSMC_TX_n[7] / PIN_AB30 PIN_AB31 / GPIO1_D24 GPIO1_D26 GPIO1[27,31]
+      val WireCtrlOut = Output(Bool()) // HSMC_TX_n[10] / PIN_AW28 / GPIO1_D19 GPIO[22]
+      val WireDataOut = Output(Bits(2.W)) // HSMC_TX_p[8] HSMC_TX_n[8] / PIN_AL27 PIN_AH26 / GPIO1_D16 GPIO1_D18 GPIO1[19,21]
+    })
+  }
+
   //////////// Uart //////////
-  val UART_TXD = IO(Output(Bool()))
-  val UART_RXD = IO(Input(Bool()))
+  val UART_TXD = IO(Output(Bool())) // GPIO1_D34 / PIN_AG30 / JP10 39
+  val UART_RXD = IO(Input(Bool())) // GPIO1_D35 / PIN_AD29 / JP10 40
 
   FAN_CTRL := true.B
 
   val clock = Wire(Clock())
   val reset = Wire(Bool())
+}
+
+trait WithFPGATR4Connect {
+  this: FPGATR4Shell =>
+  val chip : WithTEEHWbaseConnect
 
   withClockAndReset(clock, reset) {
     // Instance our converter, and connect everything
-    val chip = Module(new TEEHWSoC)
     val mod = Module(LazyModule(
       new TLULtoQuartusPlatform(
         chip.cacheBlockBytes,
@@ -1047,4 +1065,8 @@ class FPGATR4(implicit val p :Parameters) extends RawModule {
       chipport.usbClk := mod.io.ckrst.usb_clk
     }
   }
+}
+
+class FPGATR4(implicit p :Parameters) extends FPGATR4Shell()(p)
+  with HasTEEHWChip with WithFPGATR4Connect {
 }

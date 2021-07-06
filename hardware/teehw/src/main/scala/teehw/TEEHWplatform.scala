@@ -40,6 +40,7 @@ import uec.teehardware.devices.opentitan.keymgr._
 import uec.teehardware.devices.opentitan.kmac._
 import uec.teehardware.devices.opentitan.otp_ctrl._
 import testchipip.{CanHavePeripheryTLSerial, ClockedIO, SerialAdapter, SerialIO, SerialTLKey, TLSerdes}
+import uec.teehardware.devices.clockctrl._
 
 import java.lang.reflect.InvocationTargetException
 
@@ -278,6 +279,7 @@ class TEEHWSystem(implicit p: Parameters) extends TEEHWSubsystem
   with HasPeripheryAESOT
   with HasPeripheryHMAC
   with HasPeripheryOTPCtrl
+  with HasPeripheryClockCtrl
 {
   // System module creation
   override lazy val module = new TEEHWSystemModule(this)
@@ -396,6 +398,7 @@ class TEEHWSystemModule[+L <: TEEHWSystem](_outer: L)
     with HasPeripheryAESOTModuleImp
     with HasPeripheryHMACModuleImp
     with HasPeripheryOTPCtrlModuleImp
+    with HasPeripheryClockCtrlModuleImp
 
 object PinGen {
   def apply(): BasePin =  {

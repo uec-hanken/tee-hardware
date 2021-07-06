@@ -26,6 +26,7 @@ import uec.teehardware.devices.opentitan.otp_ctrl._
 import boom.common._
 import testchipip.{SerialTLAttachKey, SerialTLAttachParams, SerialTLKey, SerialTLParams}
 import freechips.rocketchip.util.BooleanToAugmentedBoolean
+import uec.teehardware.devices.clockctrl.{ClockCtrlParams, PeripheryClockCtrlKey}
 import uec.teehardware.devices.opentitan.nmi_gen._
 import uec.teehardware.ibex._
 
@@ -152,6 +153,8 @@ class TEEHWPeripherals extends Config((site, here, up) => {
     RandomParams(address = BigInt(0x64009000L), impl = 1))
   case PeripheryChachaKey => List()
   case PeripheryPolyKey => List()
+  case PeripheryClockCtrlKey => List(
+    ClockCtrlParams(address = BigInt(0x6400E000L)))
   // OpenTitan devices
   case PeripheryAESOTKey => List()
   case PeripheryHMACKey => List()
@@ -355,7 +358,7 @@ class WoSepaDDRClk extends Config((site, here, up) => {
 
 // *************** Board Config (BOARD) ***************
 class DE4Config extends Config((site,here,up) => {
-  case FreqKeyMHz => 100.0
+  case FreqKeyMHz => 50.0
   /* DE4 is not support PCIe (yet) */
   case IncludePCIe => false
   case PeripheryRandomKey => up(PeripheryRandomKey, site) map {r =>
@@ -363,7 +366,7 @@ class DE4Config extends Config((site,here,up) => {
   }})
 
 class TR4Config extends Config((site,here,up) => {
-  case FreqKeyMHz => 100.0
+  case FreqKeyMHz => 50.0
   /* TR4 is not support PCIe (yet) */
   case IncludePCIe => false
   case PeripheryRandomKey => up(PeripheryRandomKey, site) map {r =>

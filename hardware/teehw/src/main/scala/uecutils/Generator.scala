@@ -102,11 +102,19 @@ sealed trait MultiTopApp extends LazyLogging { this: App =>
     }
   }
 
+  // Zeroize a file, for error purposes
+  protected def zeroize(file: String): Unit = {
+    val outputFile = new java.io.PrintWriter(file)
+    outputFile.write("\n")
+    outputFile.close()
+  }
+
   private def error(name: String) = {
     println("Failed to extract " + name + ", continuing...")
-    (new File(targetDir + name + ".v")).createNewFile()
-    (new File(targetDir + name + ".f")).createNewFile()
-    (new File(targetDir + name + ".mems.v")).createNewFile()
+    zeroize(targetDir + name + ".v")
+    zeroize(targetDir + name + ".f")
+    zeroize(targetDir + name + ".mems.v")
+    zeroize(targetDir + name + ".mems.conf")
   }
 
   // TopGeneration
