@@ -955,12 +955,12 @@ class FPGATR4Shell(implicit val p :Parameters) extends RawModule {
     val jtag_TDO = (Output(Bool())) // PIN_AP26 / GPIO1_D10 / JP10 13
   })
   val sdio = IO(new Bundle {
-    val sdio_clk = (Output(Bool()))
-    val sdio_cmd = (Output(Bool()))
-    val sdio_dat_0 = (Input(Bool()))
+    val sdio_clk = (Output(Bool())) // PIN_AV32 / GPIO0_D28 / JP9 33
+    val sdio_cmd = (Output(Bool())) // PIN_AW32 / GPIO0_D30 / JP9 35
+    val sdio_dat_0 = (Input(Bool())) // PIN_AV28 / GPIO0_D32 / JP9 37
     val sdio_dat_1 = (Analog(1.W))
     val sdio_dat_2 = (Analog(1.W))
-    val sdio_dat_3 = (Output(Bool()))
+    val sdio_dat_3 = (Output(Bool())) // PIN_AW29 / GPIO0_D34 / JP9 39
   })
 
   var qspi: Option[TEEHWQSPIBundle] = None

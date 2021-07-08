@@ -154,7 +154,8 @@ class TEEHWPeripherals extends Config((site, here, up) => {
   case PeripheryChachaKey => List()
   case PeripheryPolyKey => List()
   case PeripheryClockCtrlKey => List(
-    ClockCtrlParams(address = BigInt(0x6400E000L)))
+  //  ClockCtrlParams(address = BigInt(0x6400E000L))
+  )
   // OpenTitan devices
   case PeripheryAESOTKey => List()
   case PeripheryHMACKey => List()
@@ -358,20 +359,30 @@ class WoSepaDDRClk extends Config((site, here, up) => {
 
 // *************** Board Config (BOARD) ***************
 class DE4Config extends Config((site,here,up) => {
-  case FreqKeyMHz => 50.0
+  case FreqKeyMHz => 25.0
+  case QSPICardMHz => 1.0
+  case SDCardMHz => 5.0
   /* DE4 is not support PCIe (yet) */
   case IncludePCIe => false
   case PeripheryRandomKey => up(PeripheryRandomKey, site) map {r =>
     r.copy(board = "Altera", impl = 0)
-  }})
+  }
+  /* The DDR memory supports 128 transactions. This is to avoid modifying chipyard*/
+  case MemoryBusKey => up(MemoryBusKey).copy(blockBytes = 64)
+})
 
 class TR4Config extends Config((site,here,up) => {
-  case FreqKeyMHz => 50.0
+  case FreqKeyMHz => 25.0
+  case QSPICardMHz => 1.0
+  case SDCardMHz => 5.0
   /* TR4 is not support PCIe (yet) */
   case IncludePCIe => false
   case PeripheryRandomKey => up(PeripheryRandomKey, site) map {r =>
     r.copy(board = "Altera", impl = 0)
-  }})
+  }
+  /* The DDR memory supports 128 transactions. This is to avoid modifying chipyard*/
+  case MemoryBusKey => up(MemoryBusKey).copy(blockBytes = 128)
+})
 
 class VC707Config extends Config((site,here,up) => {
   case FreqKeyMHz => 50.0
@@ -393,7 +404,6 @@ class VC707Config extends Config((site,here,up) => {
 class VCU118Config extends Config((site,here,up) => {
   case FreqKeyMHz => 50.0
   case SDCardMHz => 5.0
-  case FreqKeyMHz => 20.0
   case QSPICardMHz => 1.0
   /* Force to disable USB1.1, because there are no pins */
   case PeripheryUSB11HSKey => List()

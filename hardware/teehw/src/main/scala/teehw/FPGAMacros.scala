@@ -426,7 +426,6 @@ class QuartusPlatformBlackBox(c: QuartusDDRConfig = QuartusDDRConfig())(implicit
 }
 
 class QuartusIsland(c : Seq[AddressSet],
-                    cacheBlockBytes: Int,
                     val crossing: ClockCrossingType = AsynchronousCrossing(8),
                     ddrc: QuartusDDRConfig = QuartusDDRConfig()
                    )(implicit p: Parameters) extends LazyModule with CrossesToOnlyOneClockDomain {
@@ -443,9 +442,9 @@ class QuartusIsland(c : Seq[AddressSet],
       resources     = device.reg,
       regionType    = RegionType.UNCACHED,
       executable    = true,
-      supportsWrite = TransferSizes(1, cacheBlockBytes),
-      supportsRead  = TransferSizes(1, cacheBlockBytes))),
-    beatBytes = p(ExtMem).head.master.beatBytes
+      supportsWrite = TransferSizes(1, 64),
+      supportsRead  = TransferSizes(1, 64))),
+    beatBytes = 4
   )))
 
   lazy val module = new LazyRawModuleImp(this) {
@@ -557,14 +556,15 @@ class QuartusPlatform(c : Seq[AddressSet],
   val depth = ranges.head.size
 
   //val buffer  = LazyModule(new TLBuffer)
-  val toaxi4  = LazyModule(new TLToAXI4(adapterName = Some("mem"), stripBits = 0))
+  val buffer  = LazyModule(new TLBuffer)
+  val toaxi4  = LazyModule(new TLToAXI4(adapterName = Some("mem")))
   val indexer = LazyModule(new AXI4IdIndexer(idBits = 4))
   val deint   = LazyModule(new AXI4Deinterleaver(p(CacheBlockBytes)))
   val yank    = LazyModule(new AXI4UserYanker)
-  val island  = LazyModule(new QuartusIsland(c, cacheBlockBytes, ddrc = ddrc))
+  val island  = LazyModule(new QuartusIsland(c, ddrc = ddrc))
 
   val node: TLInwardNode =
-    island.crossAXI4In(island.node) := yank.node := deint.node := indexer.node := toaxi4.node// := buffer.node
+    island.crossAXI4In(island.node) := yank.node := deint.node := indexer.node := toaxi4.node := buffer.node
 
   lazy val module = new LazyModuleImp(this) {
     val io = IO(new Bundle {
@@ -606,7 +606,10 @@ class TLULtoQuartusPlatform( cacheBlockBytes: Int,
   })
 
   // Attach to the DDR
-  ddr.node := node
+  if(p(ExtMem).head.master.beatBytes != 4)
+    ddr.node := TLWidthWidget(p(ExtMem).head.master.beatBytes) := node
+  else
+    ddr.node := node
 
   lazy val module = new LazyModuleImp(this) {
     val io = IO(new Bundle {

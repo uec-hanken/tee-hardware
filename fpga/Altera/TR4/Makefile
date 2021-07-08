@@ -33,5 +33,6 @@ FPGA_DIR=$(base_dir)/hardware/fpga-shells/altera
 export FPGA_BOARD=TR4
 TCL_SHELL=$(sim_dir)/TR4.shell.quartus.tcl
 TCL_QSYS_MAIN=$(sim_dir)/main.qsys
+SDC_FILE=$(sim_dir)/constraints.sdc
 include $(base_dir)/fpga/Altera/common.mk
 
