@@ -1,6 +1,7 @@
 package uec.teehardware.devices.clockctrl
 
 import chisel3._
+import chisel3.experimental.{StringParam, IntParam, RawParam}
 import chisel3.util._
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.devices.tilelink.{BasicBusBlockerParams, TLClockBlocker}
@@ -50,6 +51,57 @@ class DRPCounter extends Bundle {
   val countvalue =  UInt(32.W)
 }
 
+class counter_drp extends BlackBox with HasBlackBoxResource {
+  val io = IO(new Bundle{
+    val reset = Input(Bool())
+    val ref_clock = Input(Bool())
+    val target_clock = Input(Bool())
+    val counter_value = Output(UInt(32.W))
+    val done = Output(Bool())
+  })
+  addResource("clockctrl/counter_drp.v")
+}
+
+class mmcme2_drp extends BlackBox( // TODO: Not parametrizable from Scala
+  Map(
+    "REGISTER_LOCKED" -> StringParam("NoReg"),
+    "USE_REG_LOCKED" -> StringParam("No"),
+    "CLKFBOUT_PHASE" -> IntParam(0),
+    "CLKFBOUT_FRAC_EN" -> IntParam(1),
+    "BANDWIDTH" -> StringParam("OPTIMIZED"),
+    "CLKOUT0_DUTY" -> IntParam(50000),
+    "CLKOUT0_FRAC_EN" -> IntParam(1),
+    "CLKOUT5_DIVIDE" -> IntParam(1),
+    "CLKOUT5_PHASE" -> IntParam(0),
+    "CLKOUT5_DUTY" -> IntParam(50000),
+    "CLKOUT6_DIVIDE" -> IntParam(1),
+    "CLKOUT6_PHASE" -> IntParam(0),
+    "CLKOUT6_DUTY" -> IntParam(50000),
+  )
+)
+  with HasBlackBoxResource {
+  val io = IO(new Bundle{
+    val CLKFBOUT_MULT = Input(UInt(7.W))
+    val CLKFBOUT_FRAC = Input(UInt(10.W))
+    val CLKOUT0_DIVIDE = Input(UInt(7.W))
+    val CLKOUT0_FRAC = Input(UInt(9.W))
+    val CLKOUT0_PHASE = Input(UInt(18.W))
+
+    val SRDY = Output(Bool())
+  })
+  addResource("clockctrl/mmcme2_drp.v")
+}
+
+class MMCME2_ADV extends BlackBox  {
+  val io = IO(new Bundle{
+    val reset = Input(Bool())
+    val ref_clock = Input(Bool())
+    val target_clock = Input(Bool())
+    val counter_value = Output(UInt(32.W))
+    val done = Output(Bool())
+  })
+}
+
 abstract class ClockCtrl(busWidthBytes: Int, val c: ClockCtrlParams, divisorInit: Int = 0)
                         (implicit p: Parameters)
   extends IORegisterRouter(
@@ -87,6 +139,16 @@ abstract class ClockCtrl(busWidthBytes: Int, val c: ClockCtrlParams, divisorInit
 
     // BA 15/02/2021 #2 end
     drpcounterReg.countvalue := Cat(drpclkfbReg(15,0),drpclk0dReg(15,0))
+
+    // Behaviour
+    val counter = Module(new counter_drp)
+    counter.io.reset := reset.asBool()
+    counter.io.ref_clock := false.B // TODO: Not assigned
+    counter.io.target_clock := false.B // TODO: Not assigned
+    drpcounterReg.countvalue := counter.io.counter_value
+    drpcounterReg.countdone := counter.io.done
+
+    val mmcme2 = Module(new mmcme2_drp)
 
     // Regfields
     regmap(
