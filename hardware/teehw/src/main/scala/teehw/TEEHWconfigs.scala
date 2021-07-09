@@ -359,7 +359,7 @@ class WoSepaDDRClk extends Config((site, here, up) => {
 
 // *************** Board Config (BOARD) ***************
 class DE4Config extends Config((site,here,up) => {
-  case FreqKeyMHz => 25.0
+  case FreqKeyMHz => 50.0
   case QSPICardMHz => 1.0
   case SDCardMHz => 5.0
   /* DE4 is not support PCIe (yet) */
@@ -372,7 +372,7 @@ class DE4Config extends Config((site,here,up) => {
 })
 
 class TR4Config extends Config((site,here,up) => {
-  case FreqKeyMHz => 25.0
+  case FreqKeyMHz => 50.0
   case QSPICardMHz => 1.0
   case SDCardMHz => 5.0
   /* TR4 is not support PCIe (yet) */
@@ -381,7 +381,7 @@ class TR4Config extends Config((site,here,up) => {
     r.copy(board = "Altera", impl = 0)
   }
   /* The DDR memory supports 128 transactions. This is to avoid modifying chipyard*/
-  case MemoryBusKey => up(MemoryBusKey).copy(blockBytes = 128)
+  case MemoryBusKey => up(MemoryBusKey).copy(blockBytes = 64)
 })
 
 class VC707Config extends Config((site,here,up) => {
