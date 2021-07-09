@@ -30,9 +30,7 @@ class TEEHWQSPIBundle(val csWidth: Int = 1) extends Bundle {
   val qspi_hold = (Output(Bool()))
 }
 
-trait WithTEEHWbaseConnect {
-  this: RawModule =>
-  implicit val p: Parameters
+class  WithTEEHWbaseShell(implicit val p :Parameters) extends RawModule {
   // The actual pins of this module.
   val gpio_in = IO(Input(UInt(p(GPIOInKey).W)))
   val gpio_out = IO(Output(UInt((p(PeripheryGPIOKey).head.width-p(GPIOInKey)).W)))
@@ -50,7 +48,6 @@ trait WithTEEHWbaseConnect {
     val sdio_dat_2 = (Analog(1.W))
     val sdio_dat_3 = (Output(Bool()))
   })
-  var qspi: Option[TEEHWQSPIBundle] = None
   val uart_txd = IO(Output(Bool()))
   val uart_rxd = IO(Input(Bool()))
   val usb11hs = p(PeripheryUSB11HSKey).map{ _ => IO(new USB11HSPortIO)}
@@ -58,18 +55,26 @@ trait WithTEEHWbaseConnect {
   val ChildReset = p(DDRPortOther).option(IO(Input(Bool())))
   val pciePorts = p(IncludePCIe).option(IO(new XilinxVC707PCIeX1IO))
   val xdmaPorts = p(XDMAPCIe).map(A => IO(new XDMATopPadswReset(A.lanes)))
-  // These are later connected
-  val areset = Wire(Bool()) // Global reset (a BUFFd version of the reset from the button)
-  val ndreset = Wire(Bool()) // Debug reset (The reset you can trigger from JTAG)
+  // Memory port serialized
   val memser = p(ExtSerMem).map(A => IO(new SerialIO(A.serWidth)))
+  // Clocks and resets
+  val sys_clk = IO(Input(Clock()))
+  val rst_n = IO(Input(Bool()))
+  val jrst_n = IO(Input(Bool()))
   // An option to dynamically assign
+  var qspi: Option[TEEHWQSPIBundle] = None // QSPI gets added progresively using both PeripherySPIKey and PeripherySPIFlashKey
+  var aclocks: Option[Vec[Clock]] = None // Async clocks depends on a node of clocks named "globalClocksNode"
+  var tlport: Option[TLUL] = None // The TL port depends of a node, and a edge, for parameters
+}
+
+trait WithTEEHWbaseConnect {
+  this: WithTEEHWbaseShell =>
+  implicit val p: Parameters
 
   val clock : Clock
   val reset : Bool // System reset (for cores)
   val system: WithTEEHWPlatformConnect
 
-  val aclocks_wire = Some(system.io.aclocks)
-  ndreset := system.io.ndreset
   val cacheBlockBytes = system.sys.outer.asInstanceOf[BaseSubsystem].mbus.blockBytes
 
   // Merge all the gpio vector
@@ -89,7 +94,6 @@ trait WithTEEHWbaseConnect {
   BasePinToRegular(system.io.pins.jtag.TCK, jtag.jtag_TCK)
   BasePinToRegular(system.io.pins.jtag.TDI, jtag.jtag_TDI)
   jtag.jtag_TDO := BasePinToRegular(system.io.pins.jtag.TDO)
-  system.io.jtag_reset := areset
 
   // QSPI (SPI as flash memory)
   qspi = (system.io.pins.spi.size >= 2).option( IO ( new TEEHWQSPIBundle(system.io.pins.spi(1).cs.size) ) )
@@ -130,25 +134,23 @@ trait WithTEEHWbaseConnect {
   (pciePorts zip system.io.pciePorts).foreach{ case (port, sysport) => port <> sysport }
   (xdmaPorts zip system.io.xdmaPorts).foreach{ case (port, sysport) => port <> sysport }
 
-  // Some additional ports to connect to the chip
-  val sys_clk = IO(Input(Clock()))
-  val aclocks = p(ExposeClocks).option(IO(Vec(aclocks_wire.get.size, Input(Clock()))))
-  val rst_n = IO(Input(Bool()))
-  val jrst_n = IO(Input(Bool()))
-  val tlport = tlportw.map{tl => IO(new TLUL(tl.params))}
+  // TL external memory port
+  tlport = tlportw.map{tl => IO(new TLUL(tl.params))}
   // TL port connection
   (tlportw zip tlport).foreach{case (base, chip) =>
     chip.a <> base.a
     base.d <> chip.d
   }
+
   // Clock and reset connection
+  aclocks = p(ExposeClocks).option(IO(Vec(system.io.aclocks.size, Input(Clock()))))
   clock := sys_clk
-  if(p(ExposeClocks)) aclocks_wire.get := aclocks.get
+  if(p(ExposeClocks)) system.io.aclocks := aclocks.get
   else {
-    aclocks_wire.get.foreach(_ := sys_clk)
+    system.io.aclocks.foreach(_ := sys_clk)
   }
-  reset := !rst_n || ndreset // This connects the debug reset and the general reset together
-  areset := !jrst_n
+  reset := !rst_n || system.io.ndreset // This connects the debug reset and the general reset together
+  system.io.jtag_reset := !jrst_n
 }
 
 trait HasTEEHWbase {
@@ -163,7 +165,7 @@ trait HasTEEHWbase {
   }
 }
 
-class TEEHWSoC(implicit val p :Parameters) extends RawModule with HasTEEHWbase with WithTEEHWbaseConnect {
+class TEEHWSoC(implicit p :Parameters) extends WithTEEHWbaseShell()(p) with HasTEEHWbase with WithTEEHWbaseConnect {
 }
 
 trait HasTEEHWChip {
@@ -232,7 +234,7 @@ class FPGAVC707Shell(implicit val p :Parameters) extends RawModule {
 
 trait WithFPGAVC707Connect {
   this: FPGAVC707Shell =>
-  val chip : WithTEEHWbaseConnect
+  val chip : WithTEEHWbaseShell with WithTEEHWbaseConnect
 
   withClockAndReset(clock, reset) {
     // PLL instance
@@ -417,7 +419,7 @@ class FPGAVCU118Shell(implicit val p :Parameters) extends RawModule {
 
 trait WithFPGAVCU118Connect {
   this: FPGAVCU118Shell =>
-  val chip : WithTEEHWbaseConnect
+  val chip : WithTEEHWbaseShell with WithTEEHWbaseConnect
 
   withClockAndReset(clock, reset) {
     // PLL instance
@@ -725,7 +727,7 @@ class FPGADE4Shell(implicit val p :Parameters) extends RawModule {
 
 trait WithFPGADE4Connect {
   this: FPGADE4Shell =>
-  val chip : WithTEEHWbaseConnect
+  val chip : WithTEEHWbaseShell with WithTEEHWbaseConnect
 
   withClockAndReset(clock, reset) {
     // Instance our converter, and connect everything
@@ -986,7 +988,7 @@ class FPGATR4Shell(implicit val p :Parameters) extends RawModule {
 
 trait WithFPGATR4Connect {
   this: FPGATR4Shell =>
-  val chip : WithTEEHWbaseConnect
+  val chip : WithTEEHWbaseShell with WithTEEHWbaseConnect
 
   withClockAndReset(clock, reset) {
     // Instance our converter, and connect everything
