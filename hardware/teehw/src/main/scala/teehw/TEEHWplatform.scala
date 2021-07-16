@@ -133,7 +133,32 @@ trait HasTEEHWSystem
       params = mainMemParam,
       beatBytes = A.master.beatBytes))
     serdes.node := TLBuffer() := mbus.toDRAMController(Some("ser"))()
-    // TODO: The clock separation for this is obviusly not done
+    // TODO: The clock separation for this is obviously not done
+    serdes
+  }
+
+  val extserctl = p(ExtSerBus).map {A =>
+    val device = new SimpleBus("ext_mmio".kebab, Nil)
+    val mainMemParam = Seq(TLSlaveParameters.v1(
+      address = AddressSet.misaligned(A.master.base, A.master.size),
+      resources = device.ranges,
+      regionType = RegionType.GET_EFFECTS, // Not cacheable
+      executable = true,
+      supportsGet = TransferSizes(1, cbus.blockBytes),
+      supportsPutFull = TransferSizes(1, cbus.blockBytes),
+      supportsPutPartial = TransferSizes(1, cbus.blockBytes),
+      fifoId = Some(0),
+      mayDenyPut = true,
+      mayDenyGet = true))
+    println(s"SERDES added to the system ${cbus.blockBytes}")
+    val serdes = LazyModule(new TLSerdes(
+      w = A.serWidth,
+      params = mainMemParam,
+      beatBytes = A.master.beatBytes))
+    cbus.coupleTo("ser") {
+      serdes.node := TLBuffer() := TLWidthWidget(cbus.beatBytes) := _
+    }
+    // TODO: The clock separation for this is obviously not done
     serdes
   }
 
@@ -279,7 +304,6 @@ class TEEHWSystem(implicit p: Parameters) extends TEEHWSubsystem
   with HasPeripheryAESOT
   with HasPeripheryHMAC
   with HasPeripheryOTPCtrl
-  with HasPeripheryClockCtrl
 {
   // System module creation
   override lazy val module = new TEEHWSystemModule(this)
@@ -318,6 +342,13 @@ trait HasTEEHWSystemModule extends HasRTCModuleImp
 
   // Main memory serial controller
   val (memSerPorts, serSourceBits) = outer.memserctl.map { A =>
+    val ser = IO(new SerialIO(A.module.io.ser.head.w))
+    ser <> A.module.io.ser.head
+    (ser, A.node.in.head._1.params.sourceBits)
+  }.unzip
+
+  // MMIO external serial controller
+  val (extSerPorts, extSourceBits) = outer.extserctl.map { A =>
     val ser = IO(new SerialIO(A.module.io.ser.head.w))
     ser <> A.module.io.ser.head
     (ser, A.node.in.head._1.params.sourceBits)
@@ -398,7 +429,6 @@ class TEEHWSystemModule[+L <: TEEHWSystem](_outer: L)
     with HasPeripheryAESOTModuleImp
     with HasPeripheryHMACModuleImp
     with HasPeripheryOTPCtrlModuleImp
-    with HasPeripheryClockCtrlModuleImp
 
 object PinGen {
   def apply(): BasePin =  {
@@ -442,6 +472,7 @@ class TEEHWPlatformIO(val params: Option[TLBundleParameters] = None, val numCloc
   val aclocks = Vec(numClocks, Input(Clock()))
   val tlserial = p(SerialTLKey).map(A => new SerialIO(SERIAL_TSI_WIDTH))
   val memser = p(ExtSerMem).map(A => new SerialIO(A.serWidth))
+  val extser = p(ExtSerBus).map(A => new SerialIO(A.serWidth))
 }
 
 object TEEHWPlatform {
@@ -540,6 +571,9 @@ object TEEHWPlatform {
 
     // Serialized memory
     (sys.memSerPorts zip io.memser).foreach { case(sysport, ioport) => ioport <> sysport }
+
+    // Serialized external bus
+    (sys.extSerPorts zip io.extser).foreach { case(sysport, ioport) => ioport <> sysport }
 
     // Connect the USB to the outside (only the first one)
     (sys.usb11hs zip io.usb11hs).foreach{ case (sysusb, usbport) => sysusb <> usbport }

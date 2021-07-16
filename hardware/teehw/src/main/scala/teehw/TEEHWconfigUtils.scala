@@ -43,6 +43,12 @@ case object CRYPTOBUS extends TLBusWrapperLocation("subsystem_cryptobus")
 case object CryptoBusKey extends Field[CryptoBusParams]
 case object CbusToCryptoBusXTypeKey extends Field[ClockCrossingType](SynchronousCrossing())
 
+// The new external bus config traits
+case object EXTBUS extends TLBusWrapperLocation("subsystem_extbus")
+case object ExtBusKey extends Field[ExtBusParams]
+case object CbusToExtBusXTypeKey extends Field[ClockCrossingType](SynchronousCrossing())
+case object ExtSerBus extends Field[Option[MemorySerialPortParams]](None)
+
 // Async clock exposure
 case object ExposeClocks extends Field[Boolean](false)
 

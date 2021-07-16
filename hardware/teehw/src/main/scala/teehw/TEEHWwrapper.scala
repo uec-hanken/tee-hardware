@@ -16,6 +16,7 @@ import uec.teehardware.devices.usb11hs._
 import freechips.rocketchip.util._
 import sifive.fpgashells.shell.xilinx.XDMATopPads
 import testchipip.SerialIO
+import uec.teehardware.devices.clockctrl.ClockCtrlPortIO
 
 // **********************************************************************
 // **TEEHW chip - for doing the only-input/output chip
@@ -57,6 +58,8 @@ class  WithTEEHWbaseShell(implicit val p :Parameters) extends RawModule {
   val xdmaPorts = p(XDMAPCIe).map(A => IO(new XDMATopPadswReset(A.lanes)))
   // Memory port serialized
   val memser = p(ExtSerMem).map(A => IO(new SerialIO(A.serWidth)))
+  // Ext port serialized
+  val extser = p(ExtSerBus).map(A => IO(new SerialIO(A.serWidth)))
   // Clocks and resets
   val sys_clk = IO(Input(Clock()))
   val rst_n = IO(Input(Bool()))
@@ -129,6 +132,9 @@ trait WithTEEHWbaseConnect {
 
   // The serialized memory port
   (memser zip system.io.memser).foreach{ case (port, sysport) => port <> sysport }
+
+  // The serialized external port
+  (extser zip system.io.extser).foreach{ case (port, sysport) => port <> sysport }
 
   // PCIe port (if available)
   (pciePorts zip system.io.pciePorts).foreach{ case (port, sysport) => port <> sysport }
@@ -309,6 +315,21 @@ trait WithFPGAVC707Connect {
     chip.sys_clk := pll.io.clk_out3.get
     chip.aclocks.foreach(_.foreach(_ := pll.io.clk_out3.get)) // TODO: Connect your clocks here
     chip.rst_n := !reset_2
+
+    // Clock controller
+    chip.extser.foreach { A =>
+      val mod = Module(LazyModule(new FPGAMiniSystem(
+        chip.system.sys.asInstanceOf[HasTEEHWSystemModule].extSourceBits.get
+      )).module)
+
+      // Serial port
+      mod.serport.flipConnect(A)
+
+      // TODO: Connect the clock, to the aclock that you need
+      chip.aclocks.foreach{ aclocks =>
+        aclocks(1) := mod.clockctrl.head.asInstanceOf[ClockCtrlPortIO].clko
+      }
+    }
 
     // The rest of the platform connections
     gpio_out := Cat(reset_0, reset_1, reset_2, reset_3, init_calib_complete)
@@ -493,6 +514,21 @@ trait WithFPGAVCU118Connect {
     chip.sys_clk := pll.io.clk_out3.get
     chip.aclocks.foreach(_.foreach(_ := pll.io.clk_out3.get)) // TODO: Connect your clocks here
     chip.rst_n := !reset_2
+
+    // Clock controller
+    chip.extser.foreach { A =>
+      val mod = Module(LazyModule(new FPGAMiniSystem(
+        chip.system.sys.asInstanceOf[HasTEEHWSystemModule].extSourceBits.get
+      )).module)
+
+      // Serial port
+      mod.serport.flipConnect(A)
+
+      // TODO: Connect the clock, to the aclock that you need
+      chip.aclocks.foreach{ aclocks =>
+        aclocks(1) := mod.clockctrl.head.asInstanceOf[ClockCtrlPortIO].clko
+      }
+    }
 
     // The rest of the platform connections
     gpio_out := Cat(reset_0, reset_1, reset_2, reset_3, init_calib_complete)
@@ -777,6 +813,16 @@ trait WithFPGADE4Connect {
     mod.io.tlport.a <> chip.tlport.get.a
     chip.tlport.get.d <> mod.io.tlport.d
 
+    // The external bus
+    chip.extser.foreach { A =>
+      val mod = Module(LazyModule(new FPGAMiniSystem(
+        chip.system.sys.asInstanceOf[HasTEEHWSystemModule].extSourceBits.get
+      )).module)
+
+      // Serial port
+      mod.serport.flipConnect(A)
+    }
+
     // The rest of the platform connections
     val chipshell_led = chip.gpio_out 	// output [7:0]
     LED := Cat(
@@ -1039,6 +1085,16 @@ trait WithFPGATR4Connect {
     // TODO: Make the DDR optional. Need to stop using the Quartus Platform
     mod.io.tlport.a <> chip.tlport.get.a
     chip.tlport.get.d <> mod.io.tlport.d
+
+    // The external bus
+    chip.extser.foreach { A =>
+      val mod = Module(LazyModule(new FPGAMiniSystem(
+        chip.system.sys.asInstanceOf[HasTEEHWSystemModule].extSourceBits.get
+      )).module)
+
+      // Serial port
+      mod.serport.flipConnect(A)
+    }
 
     // The rest of the platform connections
     val chipshell_led = chip.gpio_out 	// TODO: Not used! LED [3:0]

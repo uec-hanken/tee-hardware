@@ -2,11 +2,11 @@ package uec.teehardware.devices.clockctrl
 
 import freechips.rocketchip.config.Field
 import freechips.rocketchip.diplomacy._
-import freechips.rocketchip.subsystem.BaseSubsystem
+import freechips.rocketchip.subsystem.{Attachable, BaseSubsystem, HasTileLinkLocations}
 
 case object PeripheryClockCtrlKey extends Field[List[ClockCtrlParams]](List())
 
-trait HasPeripheryClockCtrl { this: BaseSubsystem =>
+trait HasPeripheryClockCtrl { this: Attachable =>
   val clockctrlNodes = p(PeripheryClockCtrlKey).map { case key =>
     ClockCtrlAttachParams(key).attachTo(this).ioNode.makeSink
   }

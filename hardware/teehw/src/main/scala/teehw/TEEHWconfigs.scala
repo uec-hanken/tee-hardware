@@ -154,8 +154,7 @@ class TEEHWPeripherals extends Config((site, here, up) => {
   case PeripheryChachaKey => List()
   case PeripheryPolyKey => List()
   case PeripheryClockCtrlKey => List(
-    ClockCtrlParams(address = BigInt(0x6400E000L))
-  )
+    ClockCtrlParams(address = BigInt(0x64010000L)))
   // OpenTitan devices
   case PeripheryAESOTKey => List()
   case PeripheryHMACKey => List()
@@ -339,6 +338,26 @@ class MBusNone extends Config((site, here, up) => {
   case ExtSerMem => None
 })
 
+// *************** Bus configuration (EXTBUS) ******************
+
+class EBus8 extends Config((site, here, up) => {
+  case ExtSerBus => Some(MemorySerialPortParams(MasterPortParams(
+    base = x"0_6401_0000",
+    size = x"0_0002_0000",
+    beatBytes = 4,
+    idBits = 4), 1, 8))
+  case ExtBusKey => ExtBusParams(4, 64)
+})
+
+class EBus16 extends Config((site, here, up) => {
+  case ExtSerBus => Some(MemorySerialPortParams(MasterPortParams(
+    base = x"0_6401_0000",
+    size = x"0_0002_0000",
+    beatBytes = 4,
+    idBits = 4), 1, 16))
+  case ExtBusKey => ExtBusParams(4, 64)
+})
+
 // *************** PCI Configuration (PCIE) ******************
 class WPCIe extends Config((site, here, up) => {
   case IncludePCIe => true
@@ -355,6 +374,10 @@ class WSepaDDRClk extends Config((site, here, up) => {
 
 class WoSepaDDRClk extends Config((site, here, up) => {
   case DDRPortOther => false
+})
+
+class WExposeClk extends Config((site, here, up) => {
+  case ExposeClocks => true
 })
 
 // *************** Board Config (BOARD) ***************

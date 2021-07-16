@@ -1,7 +1,7 @@
 package uec.teehardware.devices.clockctrl
 
 import chisel3._
-import chisel3.experimental.{StringParam, IntParam, RawParam, DoubleParam}
+import chisel3.experimental.{DoubleParam, IntParam, RawParam, StringParam}
 import chisel3.util._
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.devices.tilelink.{BasicBusBlockerParams, TLClockBlocker}
@@ -15,6 +15,7 @@ import freechips.rocketchip.regmapper._
 import freechips.rocketchip.subsystem.{Attachable, CBUS, PBUS, TLBusWrapperLocation}
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.util._
+import uec.teehardware.EXTBUS
 
 import sys.process._
 
@@ -39,6 +40,7 @@ case class OMClockCtrlDevice
 ) extends OMDevice
 
 class ClockCtrlPortIO extends Bundle {
+  val clko = Output(Clock())
 }
 
 class DRPInterrupts extends Bundle {
@@ -251,6 +253,10 @@ abstract class ClockCtrl(busWidthBytes: Int, val c: ClockCtrlParams, divisorInit
     drpcounterReg.countvalue := counter_drp_inst.io.counter_value
     drpcounterReg.countdone := counter_drp_inst.io.done
 
+    // Export the clock to the module
+    val iop: ClockCtrlPortIO = port.getWrappedValue.asInstanceOf[ClockCtrlPortIO]
+    iop.clko := mmcme2_adv_inst.io.CLKOUT0.asClock()
+
     // Regfields
     regmap(
       // BA 15/02/2021 #3
@@ -300,7 +306,7 @@ class TLClockCtrl(busWidthBytes: Int, params: ClockCtrlParams)(implicit p: Param
 case class ClockCtrlAttachParams
 (
   clockctrlpar: ClockCtrlParams,
-  controlWhere: TLBusWrapperLocation = CBUS,
+  controlWhere: TLBusWrapperLocation = EXTBUS,
   blockerAddr: Option[BigInt] = None,
   controlXType: ClockCrossingType = NoCrossing,
   intXType: ClockCrossingType = NoCrossing)
