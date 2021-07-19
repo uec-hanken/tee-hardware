@@ -49,13 +49,6 @@ class FPGAMiniSubSystem(val idBits: Int = 6)(implicit p :Parameters) extends Laz
     tlBusWrapperLocationMap.lift(loc).foreach { _.clockGroupNode := asyncClockGroupsNode }
   }
 
-  // Create the ClockGroupSource (only 1...)
-  val clockGroup = ClockGroupSourceNode(List.fill(1) { ClockGroupSourceParameters() })
-  // Create the Aggregator. This will just take the SourceNode, then just replicate it in a Nexus
-  val clocksAggregator = LazyModule(new ClockGroupAggregator("allClocks")).node
-  // Connect it to the asyncClockGroupsNode, with the aggregator
-  asyncClockGroupsNode :*= clocksAggregator := clockGroup
-
   // Create a nexus node for accepting all Ints.
   val intnode: IntNexusNode = IntNexusNode(
     sourceFn = { _ => IntSourcePortParameters(Seq(IntSourceParameters(1))) },
@@ -122,11 +115,6 @@ class FPGAMiniSubSystemModule[+L <: FPGAMiniSubSystem](_outer: L) extends LazyMo
   // Connect the serport
   serport <> outer.desser.module.io.ser.head
 
-  outer.clockGroup.in.flatMap(_._1.member.data).foreach { o =>
-    o.clock := clock
-    o.reset := reset
-  }
-
   // Report the ibus, just to report that is lost
   println(s"Interrupt map lost in FPGA piece, ${outer.nDevices} interrupts):")
   outer.flatSources.foreach { s =>
@@ -157,9 +145,23 @@ class FPGAMiniSubSystemModule[+L <: FPGAMiniSubSystem](_outer: L) extends LazyMo
 
 class FPGAMiniSystem(idBits: Int = 6)(implicit p :Parameters) extends FPGAMiniSubSystem(idBits)(p)
   with HasPeripheryClockCtrl {
+
+  // Create the ClockGroupSource (only 1...)
+  val clockGroup = ClockGroupSourceNode(List.fill(1) { ClockGroupSourceParameters() })
+  // Create the Aggregator. This will just take the SourceNode, then just replicate it in a Nexus
+  val clocksAggregator = LazyModule(new ClockGroupAggregator("allClocks")).node
+  // Connect it to the asyncClockGroupsNode, with the aggregator
+  asyncClockGroupsNode :*= clocksAggregator := clockGroup
+
   override lazy val module = new FPGAMiniSystemModule(this)
 }
 
 class FPGAMiniSystemModule[+L <: FPGAMiniSystem](_outer: L) extends FPGAMiniSubSystemModule(_outer)
   with HasPeripheryClockCtrlModuleImp {
+
+  // Connect the clock to the clockgroup (all of them)
+  outer.clockGroup.out.flatMap(_._1.member.data).foreach { o =>
+    o.clock := clock
+    o.reset := reset
+  }
 }
