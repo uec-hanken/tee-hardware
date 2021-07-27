@@ -169,6 +169,7 @@ trait HasTEEHWbase {
     // The platform module
     Module(new TEEHWPlatform)
   }
+  system.suggestName("system")
 }
 
 class TEEHWSoC(implicit p :Parameters) extends WithTEEHWbaseShell()(p) with HasTEEHWbase with WithTEEHWbaseConnect {
@@ -177,6 +178,7 @@ class TEEHWSoC(implicit p :Parameters) extends WithTEEHWbaseShell()(p) with HasT
 trait HasTEEHWChip {
   implicit val p: Parameters
   val chip = Module(new TEEHWSoC)
+  chip.suggestName("chip")
 }
 
 // ********************************************************************
@@ -326,8 +328,15 @@ trait WithFPGAVC707Connect {
       mod.serport.flipConnect(A)
 
       // TODO: Connect the clock, to the aclock that you need
+      val namedclocks = chip.system.sys.asInstanceOf[HasTEEHWSystemModule].namedclocks
       chip.aclocks.foreach{ aclocks =>
-        aclocks(1) := mod.clockctrl.head.asInstanceOf[ClockCtrlPortIO].clko
+        (aclocks zip namedclocks).foreach{ case (aclk, nam) =>
+          println(s"Detected clock ${nam}")
+          if(nam.contains("cryptobus")) {
+            aclk := mod.clockctrl.head.asInstanceOf[ClockCtrlPortIO].clko
+            println("  Connected to first clock control")
+          }
+        }
       }
     }
 
@@ -523,11 +532,6 @@ trait WithFPGAVCU118Connect {
 
       // Serial port
       mod.serport.flipConnect(A)
-
-      // TODO: Connect the clock, to the aclock that you need
-      chip.aclocks.foreach{ aclocks =>
-        aclocks(1) := mod.clockctrl.head.asInstanceOf[ClockCtrlPortIO].clko
-      }
     }
 
     // The rest of the platform connections

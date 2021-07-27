@@ -404,6 +404,7 @@ trait HasTEEHWSystemModule extends HasRTCModuleImp
   // Create the actual port
   val aclocks = IO(Vec(numClocks, Flipped(new ClockBundle(ClockBundleParameters()))))
   val extclocks = outer.clockGroup.out.flatMap(_._1.member.data)
+  val namedclocks = outer.clocksAggregator.out.flatMap(_._1.member.elements).map(A => A._1)
   // Connect the clocks in the hardware
   (extclocks zip aclocks).foreach{ case (o, ai) =>
     o.clock := ai.clock
