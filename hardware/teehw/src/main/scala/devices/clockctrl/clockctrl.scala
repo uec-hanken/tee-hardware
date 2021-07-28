@@ -174,10 +174,13 @@ class MMCME2_ADV extends BlackBox(
   })
   ElaborationArtefacts.add(
     "MMCME2_ADV.xdc",
-    s"""create_clock -name MMCME2_ADV_CLKOUT0 -period 10.0 [get_ports {${instanceName}/CLKOUT0}]
-       |set_input_jitter MMCME2_ADV_CLKOUT0 0.5
-       |
-       |""".stripMargin
+    {
+      val master = pathName.split("\\.").drop(1).mkString("/")
+      s"""create_clock -name MMCME2_ADV_CLKOUT0 -period 10.0 [get_ports {${master}/CLKOUT0}]
+         |set_input_jitter MMCME2_ADV_CLKOUT0 0.5
+         |
+         |""".stripMargin
+    }
   )
 }
 

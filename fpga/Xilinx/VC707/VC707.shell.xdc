@@ -10,6 +10,7 @@ set_input_jitter JTCK 0.5
 create_clock -name pcie_ref_clk -period 10.0 [get_ports {pciePorts_REFCLK_rxp}]
 set_input_jitter pcie_ref_clk 0.5
 
+
 set_clock_groups -asynchronous \
   -group [list [get_clocks { \
       sys_diff_clk \
@@ -29,7 +30,10 @@ set_clock_groups -asynchronous \
     }]]] \
   -group [list [get_clocks { \
       JTCK \
-    }]]
+    }]] \
+  -group [list [get_clocks -of_objects [get_pins { \
+      mod_1/clockctrlClockDomainWrapper/clockctrl_0/mmcme2_adv_inst/CLKOUT0 \
+    }]]]
 
 # Nah, definitelly quit here. Going to put the false path in the clock
 

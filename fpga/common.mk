@@ -17,7 +17,6 @@ sim_debug = $(sim_dir)/$(sim_prefix)-$(MODEL_PACKAGE)-$(CONFIG)-debug
 ROM_FILE = $(build_dir)/$(long_name).rom.v
 ROM_CONF_FILE = $(build_dir)/$(long_name).rom.conf
 DTS_FILE = $(build_dir)/$(long_name).dts
-xip_dir=$(teehw_dir)/software/xip
 
 PERMISSIVE_ON=
 PERMISSIVE_OFF=
@@ -59,26 +58,31 @@ include $(teehw_dir)/common.mk
 # ROM generation
 #########################################################################################
 ROMGEN=$(teehw_dir)/hardware/vlsi_rom_gen_real
-bootrom_dir=$(teehw_dir)/software/sdboot
+xip_dir=$(teehw_dir)/software/xip
+sdboot_dir=$(teehw_dir)/software/sdboot
 ifeq ($(BOOTSRC),BOOTROM)
-HEXFILE=$(build_dir)/sdboot.hex
+HEXFILE?=$(build_dir)/sdboot.hex
 else #QSPI
-HEXFILE=$(build_dir)/xip.hex $(build_dir)/sdboot.hex
+HEXFILE?=$(build_dir)/xip.hex $(build_dir)/sdboot.hex
 endif
 
-$(ROM_FILE): $(ROMGEN)
-	make -C $(bootrom_dir) BUILD_DIR=$(build_dir) long_name=$(long_name) ISACONF=$(ISACONF) SDBOOT_TARGET_ADDR=0x90000000UL clean
-	make -C $(bootrom_dir) BUILD_DIR=$(build_dir) long_name=$(long_name) ISACONF=$(ISACONF) SDBOOT_TARGET_ADDR=0x90000000UL hex
+$(build_dir)/xip.hex:
 	make -C $(xip_dir) BUILD_DIR=$(build_dir) long_name=$(long_name) ISACONF=$(ISACONF) XIP_TARGET_ADDR=0x20000000 ADD_OPTS=-DSKIP_HANG clean
 	make -C $(xip_dir) BUILD_DIR=$(build_dir) long_name=$(long_name) ISACONF=$(ISACONF) XIP_TARGET_ADDR=0x20000000 ADD_OPTS=-DSKIP_HANG hex
+
+$(build_dir)/sdboot.hex:
+	make -C $(sdboot_dir) BUILD_DIR=$(build_dir) long_name=$(long_name) ISACONF=$(ISACONF) SDBOOT_TARGET_ADDR=0x90000000UL clean
+	make -C $(sdboot_dir) BUILD_DIR=$(build_dir) long_name=$(long_name) ISACONF=$(ISACONF) SDBOOT_TARGET_ADDR=0x90000000UL hex
+
+$(ROM_FILE): $(ROMGEN) $(HEXFILE)
 	$(ROMGEN) $(ROM_CONF_FILE) $(HEXFILE) > $(ROM_FILE)
 
 #########################################################################################
 # general cleanup rule
 #########################################################################################
-.PHONY: clean $(ROM_FILE)
+.PHONY: clean
 clean:
 	rm -rf $(build_dir) $(sim_prefix)-*
-	make -C $(bootrom_dir) BUILD_DIR=$(build_dir) long_name=$(long_name) BOARD=$(BOARD) TEEHW=1 ISACONF=$(ISACONF) clean
+	make -C $(sdboot_dir) BUILD_DIR=$(build_dir) long_name=$(long_name) BOARD=$(BOARD) TEEHW=1 ISACONF=$(ISACONF) clean
 	make -C $(xip_dir) ISACONF=$(ISACONF) XIP_TARGET_ADDR=0x20000000 ADD_OPTS=-DSKIP_HANG clean
 

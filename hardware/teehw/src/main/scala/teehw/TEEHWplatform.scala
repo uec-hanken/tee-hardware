@@ -281,6 +281,7 @@ trait HasTEEHWSystem
   // We can use the clock aggregator (ClockGroupAggregator) which will take a single clock and a reset, then
   // replicate it for all asyncClockGroupsNode. This requires a ClockGroup with only 1 group.
   // Then we iterate them using node.out.unzip. Unfortunately, will not have names.
+  // NOTE2: The names are now extracted using the clocksAggregator out node. It contains all the names.
 
   // Create the ClockGroupSource (only 1...)
   val clockGroup = ClockGroupSourceNode(List.fill(1) { ClockGroupSourceParameters() })
