@@ -14,8 +14,6 @@ import sifive.blocks.devices.uart._
 import sifive.blocks.devices.i2c._
 import uec.teehardware.devices.aes._
 import uec.teehardware.devices.ed25519._
-import uec.teehardware.devices.chacha._
-import uec.teehardware.devices.poly._
 import uec.teehardware.devices.sha3._
 import uec.teehardware.devices.usb11hs._
 import uec.teehardware.devices.random._
@@ -151,8 +149,6 @@ class TEEHWPeripherals extends Config((site, here, up) => {
 //    USB11HSParams(address = BigInt(0x64008000L)))
   case PeripheryRandomKey => List(
     RandomParams(address = BigInt(0x64009000L), impl = 1))
-  case PeripheryChachaKey => List()
-  case PeripheryPolyKey => List()
   case PeripheryClockCtrlKey => List(
     ClockCtrlParams(address = BigInt(0x64010000L)))
   // OpenTitan devices
@@ -186,10 +182,6 @@ class TLS13Peripherals extends Config((site, here, up) => {
     USB11HSParams(address = BigInt(0x64008000L)))
   case PeripheryRandomKey => List(
     RandomParams(address = BigInt(0x64009000L), impl = 1))
-  case PeripheryChachaKey => List(
-    ChachaParams(address = BigInt(0x6400A000L)))
-  case PeripheryPolyKey => List(
-    PolyParams(address = BigInt(0x6400D000L)))
   // OpenTitan devices
   case PeripheryAESOTKey => List()
   case PeripheryHMACKey => List()
@@ -215,8 +207,6 @@ class OpenTitanPeripherals extends Config((site, here, up) => {
   case PeripheryAESKey => List()
   case PeripheryUSB11HSKey => List()
   case PeripheryRandomKey => List()
-  case PeripheryChachaKey => List()
-  case PeripheryPolyKey => List()
   // OpenTitan devices
   case PeripheryAESOTKey => List(
     AESOTParams(address = BigInt(0x6400A000L)))
@@ -252,9 +242,6 @@ class TEEHWAndOpenTitanPeripherals extends Config((site, here, up) => {
     USB11HSParams(address = BigInt(0x64008000L)))
   case PeripheryRandomKey => List(
     RandomParams(address = BigInt(0x64009000L), impl = 1))
-  case PeripheryChachaKey => List(
-    ChachaParams(address = BigInt(0x6400A000L)))
-  case PeripheryPolyKey => List()
   // OpenTitan devices
   case PeripheryAESOTKey => List(
     AESOTParams(address = BigInt(0x6400A000L)))
@@ -284,8 +271,6 @@ class NoSecurityPeripherals extends Config((site, here, up) => {
     AESParams(address = BigInt(0x64007000L)))
   case PeripheryUSB11HSKey => List()
   case PeripheryRandomKey => List()
-  case PeripheryChachaKey => List()
-  case PeripheryPolyKey => List()
   case PeripheryAESOTKey => List()
   case PeripheryHMACKey => List()
   case PeripheryAlertKey =>
