@@ -200,6 +200,8 @@ sim_vsrcs = \
 	$(TOP_SMEMS_FILE) \
 	$(HARNESS_SMEMS_FILE)
 
+resources_checkpoints = $(teehw_dir)/hardware/teehw/src/main/resources/resources.checkpoint
+
 #########################################################################################
 # assembly/benchmark variables
 #########################################################################################
