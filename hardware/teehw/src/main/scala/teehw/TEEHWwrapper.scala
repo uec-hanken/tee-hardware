@@ -5,7 +5,7 @@ import chisel3.util._
 import chisel3.experimental.{Analog, IO, attach}
 import freechips.rocketchip.config._
 import freechips.rocketchip.diplomacy._
-import freechips.rocketchip.subsystem.BaseSubsystem
+import freechips.rocketchip.subsystem.{BaseSubsystem, SbusToMbusXTypeKey}
 import freechips.rocketchip.util._
 import sifive.blocks.devices.pinctrl._
 import sifive.blocks.devices.gpio._
@@ -251,7 +251,7 @@ trait WithFPGAVC707Connect {
       input = PLLInClockParameters(freqMHz = 200.0, feedback = true),
       req = Seq(
         PLLOutClockParameters(freqMHz = 48.0),
-        PLLOutClockParameters(freqMHz = 50.0),
+        PLLOutClockParameters(freqMHz = 10.0),
         PLLOutClockParameters(freqMHz = p(FreqKeyMHz))
       )
     )
@@ -304,7 +304,13 @@ trait WithFPGAVC707Connect {
       mod.io.ddrport.sys_clk_i := sys_clk_i.asUInt()
       mod.io.ddrport.aresetn := !reset_0
       mod.io.ddrport.sys_rst := reset_1
-      mod.clock := pll.io.clk_out3.getOrElse(false.B)
+
+      p(SbusToMbusXTypeKey) match {
+        case _: AsynchronousCrossing =>
+          mod.clock := pll.io.clk_out2.getOrElse(false.B)
+        case _ =>
+          mod.clock := pll.io.clk_out3.getOrElse(false.B)
+      }
 
       mod.io.ddrport.init_calib_complete
     }
@@ -315,7 +321,7 @@ trait WithFPGAVC707Connect {
     clock := pll.io.clk_out3.get
     reset := reset_2
     chip.sys_clk := pll.io.clk_out3.get
-    chip.aclocks.foreach(_.foreach(_ := pll.io.clk_out3.get)) // TODO: Connect your clocks here
+    chip.aclocks.foreach(_.foreach(_ := pll.io.clk_out3.get)) // Connecting all aclocks to the default sysclock.
     chip.rst_n := !reset_2
 
     // Clock controller
@@ -327,17 +333,36 @@ trait WithFPGAVC707Connect {
       // Serial port
       mod.serport.flipConnect(A)
 
-      // TODO: Connect the clock, to the aclock that you need
       val namedclocks = chip.system.sys.asInstanceOf[HasTEEHWSystemModule].namedclocks
       chip.aclocks.foreach{ aclocks =>
+        println(s"Connecting clock for CryptoBus from clock controller =>")
         (aclocks zip namedclocks).foreach{ case (aclk, nam) =>
-          println(s"Detected clock ${nam}")
+          println(s"  Detected clock ${nam}")
           if(nam.contains("cryptobus")) {
             aclk := mod.clockctrl.head.asInstanceOf[ClockCtrlPortIO].clko
-            println("  Connected to first clock control")
+            println("    Connected to first clock control")
           }
         }
       }
+    }
+
+    // Connect any possible mbus clock into clock_2, only if clock is separated
+    p(SbusToMbusXTypeKey) match {
+      case _: AsynchronousCrossing =>
+        // Search for the aclock that belongs to mbus
+        chip.aclocks.foreach{ aclocks =>
+          val namedclocks = chip.system.sys.asInstanceOf[HasTEEHWSystemModule].namedclocks
+          println(s"Connecting clock for MBus to clock2 =>")
+          (aclocks zip namedclocks).foreach { case (aclk, nam) =>
+            println(s"  Detected clock ${nam}")
+            if(nam.contains("mbus")) {
+              aclk := pll.io.clk_out2.getOrElse(false.B)
+              println("    Connected!")
+            }
+          }
+        }
+      case _ =>
+        // Nothing
     }
 
     // The rest of the platform connections
