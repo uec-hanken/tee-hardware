@@ -125,12 +125,19 @@ trait HasTEEHWSystem
         fifoId = Some(0),
         mayDenyPut = true,
         mayDenyGet = true))
-    println(s"SERDES added to the system ${mbus.blockBytes}")
+    println(s"SERDES in mbus added to the system ${mbus.blockBytes}")
     val serdes = LazyModule(new TLSerdes(
       w = A.serWidth,
       params = mainMemParam,
       beatBytes = A.master.beatBytes))
     serdes.node := TLBuffer() := mbus.toDRAMController(Some("ser"))()
+    // Request a clock node
+    val clkNode = ClockSinkNode(Seq(ClockSinkParameters()))
+    clkNode := mbus.fixedClockNode
+    InModuleBody {
+      serdes.module.clock := clkNode.in.head._1.clock
+      serdes.module.reset := clkNode.in.head._1.reset
+    }
     // TODO: The clock separation for this is obviously not done
     serdes
   }
@@ -148,13 +155,20 @@ trait HasTEEHWSystem
       fifoId = Some(0),
       mayDenyPut = true,
       mayDenyGet = true))
-    println(s"SERDES added to the system ${cbus.blockBytes}")
+    println(s"SERDES in sbus added to the system ${cbus.blockBytes}")
     val serdes = LazyModule(new TLSerdes(
       w = A.serWidth,
       params = mainMemParam,
       beatBytes = A.master.beatBytes))
     cbus.coupleTo("ser") {
       serdes.node := TLBuffer() := TLWidthWidget(cbus.beatBytes) := _
+    }
+    // Request a clock node
+    val clkNode = ClockSinkNode(Seq(ClockSinkParameters()))
+    clkNode := cbus.fixedClockNode
+    InModuleBody {
+      serdes.module.clock := clkNode.in.head._1.clock
+      serdes.module.reset := clkNode.in.head._1.reset
     }
     // TODO: The clock separation for this is obviously not done
     serdes
@@ -341,6 +355,7 @@ trait HasTEEHWSystemModule extends HasRTCModuleImp
   val (memSerPorts, serSourceBits) = outer.memserctl.map { A =>
     val ser = IO(new SerialIO(A.module.io.ser.head.w))
     ser <> A.module.io.ser.head
+    //A.module.clock := outer.mbus.fixedClockNode.in.head._1.clock // TODO: This is the right way?
     (ser, A.node.in.head._1.params.sourceBits)
   }.unzip
 
@@ -348,6 +363,7 @@ trait HasTEEHWSystemModule extends HasRTCModuleImp
   val (extSerPorts, extSourceBits) = outer.extserctl.map { A =>
     val ser = IO(new SerialIO(A.module.io.ser.head.w))
     ser <> A.module.io.ser.head
+    //A.module.clock := outer.cbus.fixedClockNode.in.head._1.clock // TODO: This is the right way?
     (ser, A.node.in.head._1.params.sourceBits)
   }.unzip
 
