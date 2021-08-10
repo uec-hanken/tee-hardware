@@ -338,9 +338,17 @@ trait WithFPGAVC707Connect {
         println(s"Connecting clock for CryptoBus from clock controller =>")
         (aclocks zip namedclocks).foreach{ case (aclk, nam) =>
           println(s"  Detected clock ${nam}")
-          if(nam.contains("cryptobus")) {
-            aclk := mod.clockctrl.head.asInstanceOf[ClockCtrlPortIO].clko
+          if(nam.contains("cryptobus") && mod.clockctrl.size >= 1) {
+            aclk := mod.clockctrl(0).asInstanceOf[ClockCtrlPortIO].clko
             println("    Connected to first clock control")
+          }
+          if(nam.contains("tile_0") && mod.clockctrl.size >= 2) {
+            aclk := mod.clockctrl(1).asInstanceOf[ClockCtrlPortIO].clko
+            println("    Connected to second clock control")
+          }
+          if(nam.contains("tile_1") && mod.clockctrl.size >= 3) {
+            aclk := mod.clockctrl(2).asInstanceOf[ClockCtrlPortIO].clko
+            println("    Connected to third clock control")
           }
         }
       }
