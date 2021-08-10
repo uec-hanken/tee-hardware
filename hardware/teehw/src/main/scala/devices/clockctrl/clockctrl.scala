@@ -19,15 +19,37 @@ import uec.teehardware.EXTBUS
 
 import sys.process._
 
-object ClockCtrlCtrlRegs {
-  val drpclkfb = 0x30
-  val drpclk0d = 0x34
-  val drpclk0p = 0x38
-  val drpsen   = 0x3c
-  val drpsrdy  = 0x40
-  val drpclkdiv = 0x44
-  val drpcountdone = 0x48
-  val drpcountervalue = 0x4c
+object ClockCtrlCtrlRegs_0 {
+  val drpclkfb = 0x00
+  val drpclk0d = 0x04
+  val drpclk0p = 0x08
+  val drpsen   = 0x0c
+  val drpsrdy  = 0x10
+  val drpclkdiv = 0x14
+  val drpcountdone = 0x18
+  val drpcountervalue = 0x1c
+}
+
+object ClockCtrlCtrlRegs_1 {
+  val drpclkfb = 0x100
+  val drpclk0d = 0x104
+  val drpclk0p = 0x108
+  val drpsen   = 0x10c
+  val drpsrdy  = 0x110
+  val drpclkdiv = 0x114
+  val drpcountdone = 0x118
+  val drpcountervalue = 0x11c
+}
+
+object ClockCtrlCtrlRegs_2 {
+  val drpclkfb = 0x200
+  val drpclk0d = 0x204
+  val drpclk0p = 0x208
+  val drpsen   = 0x20c
+  val drpsrdy  = 0x210
+  val drpclkdiv = 0x214
+  val drpcountdone = 0x218
+  val drpcountervalue = 0x21c
 }
 
 case class ClockCtrlParams(address: BigInt)
@@ -40,7 +62,9 @@ case class OMClockCtrlDevice
 ) extends OMDevice
 
 class ClockCtrlPortIO extends Bundle {
-  val clko = Output(Clock())
+  val clko_0 = Output(Clock())
+  val clko_1 = Output(Clock())
+  val clko_2 = Output(Clock())
 }
 
 class DRPInterrupts extends Bundle {
@@ -118,14 +142,14 @@ class MMCME2_ADV extends BlackBox(
   Map(
     "BANDWIDTH" -> StringParam("OPTIMIZED"),
     "DIVCLK_DIVIDE" -> IntParam(2),
-    "CLKFBOUT_MULT_F" -> IntParam(24),
+    "CLKFBOUT_MULT_F" -> IntParam(60),
     "CLKFBOUT_PHASE" -> IntParam(0),
     "CLKFBOUT_USE_FINE_PS" -> StringParam("FALSE"),
     "CLKIN1_PERIOD" -> IntParam(10),
     "REF_JITTER1" -> DoubleParam(0.01),
     "CLKIN2_PERIOD" -> IntParam(10),
     "REF_JITTER2" -> DoubleParam(0.01),
-    "CLKOUT0_DIVIDE_F" -> IntParam(12),
+    "CLKOUT0_DIVIDE_F" -> IntParam(30),
     "CLKOUT0_DUTY_CYCLE" -> DoubleParam(0.5),
     "CLKOUT0_PHASE" -> IntParam(0),
     "CLKOUT0_USE_FINE_PS" -> StringParam("FALSE"),
@@ -202,83 +226,221 @@ abstract class ClockCtrl(busWidthBytes: Int, val c: ClockCtrlParams, divisorInit
   lazy val module = new LazyModuleImp(this) {
     interrupts(0) := false.B
 
-    // BA 15/02/2021 #2
-    val drpclkfbReg = RegInit(0.U(17.W))
-    val drpclk0dReg = RegInit(0.U(18.W))
-    val drpclk0pReg = RegInit(0.U(19.W))
-    val drpsenReg   = RegInit(false.B)
-    val drpsrdyReg  = Wire(new DRPInterrupts)
-    val drpclkdivReg = RegInit(0.U(7.W))
-    val drpcounterReg = Wire(new DRPCounter)
-    // BA 15/02/2021 #2 end
+// Registers for ClockCtrl_0
+    val drpclkfbReg_0 = RegInit(0.U(17.W))
+    val drpclk0dReg_0 = RegInit(0.U(18.W))
+    val drpclk0pReg_0 = RegInit(0.U(19.W))
+    val drpsenReg_0   = RegInit(false.B)
+    val drpsrdyReg_0  = Wire(new DRPInterrupts)
+    val drpclkdivReg_0 = RegInit(0.U(7.W))
+    val drpcounterReg_0 = Wire(new DRPCounter)
 
-    // Behaviour
-    val mmcme2_drp_inst = Module(new mmcme2_drp)
-    val counter_drp_inst = Module(new counter_drp)
-    val mmcme2_adv_inst = Module(new MMCME2_ADV)
+    // Registers for ClockCtrl_1
+    val drpclkfbReg_1 = RegInit(0.U(17.W))
+    val drpclk0dReg_1 = RegInit(0.U(18.W))
+    val drpclk0pReg_1 = RegInit(0.U(19.W))
+    val drpsenReg_1   = RegInit(false.B)
+    val drpsrdyReg_1  = Wire(new DRPInterrupts)
+    val drpclkdivReg_1 = RegInit(0.U(7.W))
+    val drpcounterReg_1 = Wire(new DRPCounter)
+
+    // Registers for ClockCtrl_2
+    val drpclkfbReg_2 = RegInit(0.U(17.W))
+    val drpclk0dReg_2 = RegInit(0.U(18.W))
+    val drpclk0pReg_2 = RegInit(0.U(19.W))
+    val drpsenReg_2   = RegInit(false.B)
+    val drpsrdyReg_2  = Wire(new DRPInterrupts)
+    val drpclkdivReg_2 = RegInit(0.U(7.W))
+    val drpcounterReg_2 = Wire(new DRPCounter)
+
+    //======== Behaviour ============
+    // modules for ClockCtrl_0
+    val mmcme2_drp_inst_0 = Module(new mmcme2_drp)
+    val counter_drp_inst_0 = Module(new counter_drp)
+    val mmcme2_adv_inst_0 = Module(new MMCME2_ADV)
     // wiring MMIO register - mmcme2_drp
-    mmcme2_drp_inst.io.CLKFBOUT_MULT := drpclkfbReg(16,10)
-    mmcme2_drp_inst.io.CLKFBOUT_FRAC := drpclkfbReg(9,0)
-    mmcme2_drp_inst.io.CLKOUT0_DIVIDE := drpclk0dReg(17,10)
-    mmcme2_drp_inst.io.CLKOUT0_FRAC := drpclk0dReg(9,0)
-    mmcme2_drp_inst.io.CLKOUT0_PHASE := drpclk0pReg(18,0)
-    mmcme2_drp_inst.io.CLKDIV_DIVIDE := drpclkdivReg(6,0)
-    mmcme2_drp_inst.io.SEN := drpsenReg
-    mmcme2_drp_inst.io.RST := reset.asBool()
+    mmcme2_drp_inst_0.io.CLKFBOUT_MULT := drpclkfbReg_0(16,10)
+    mmcme2_drp_inst_0.io.CLKFBOUT_FRAC := drpclkfbReg_0(9,0)
+    mmcme2_drp_inst_0.io.CLKOUT0_DIVIDE := drpclk0dReg_0(17,10)
+    mmcme2_drp_inst_0.io.CLKOUT0_FRAC := drpclk0dReg_0(9,0)
+    mmcme2_drp_inst_0.io.CLKOUT0_PHASE := drpclk0pReg_0(18,0)
+    mmcme2_drp_inst_0.io.CLKDIV_DIVIDE := drpclkdivReg_0(6,0)
+    mmcme2_drp_inst_0.io.SEN := drpsenReg_0
+    mmcme2_drp_inst_0.io.RST := reset.asBool()
     //    drpsrdyReg.srdy := mmcme2_drp_inst.SRDY
-    mmcme2_drp_inst.io.SCLK := clock.asBool()
-    mmcme2_drp_inst.io.DO := mmcme2_adv_inst.io.DO
-    mmcme2_drp_inst.io.DRDY := mmcme2_adv_inst.io.DRDY
-    mmcme2_drp_inst.io.LOCK_REG_CLK_IN := clock.asBool()
-    mmcme2_drp_inst.io.LOCKED_IN := mmcme2_adv_inst.io.LOCKED
-    mmcme2_adv_inst.io.DWE := mmcme2_drp_inst.io.DWE
-    mmcme2_adv_inst.io.DEN := mmcme2_drp_inst.io.DEN
-    mmcme2_adv_inst.io.DADDR := mmcme2_drp_inst.io.DADDR
-    mmcme2_adv_inst.io.DI := mmcme2_drp_inst.io.DI
-    mmcme2_adv_inst.io.DCLK := mmcme2_drp_inst.io.DCLK
-    mmcme2_adv_inst.io.RST := mmcme2_drp_inst.io.RST_MMCM
-    drpsrdyReg.srdy := mmcme2_drp_inst.io.LOCKED_OUT
+    mmcme2_drp_inst_0.io.SCLK := clock.asBool()
+    mmcme2_drp_inst_0.io.DO := mmcme2_adv_inst_0.io.DO
+    mmcme2_drp_inst_0.io.DRDY := mmcme2_adv_inst_0.io.DRDY
+    mmcme2_drp_inst_0.io.LOCK_REG_CLK_IN := clock.asBool()
+    mmcme2_drp_inst_0.io.LOCKED_IN := mmcme2_adv_inst_0.io.LOCKED
+    mmcme2_adv_inst_0.io.DWE := mmcme2_drp_inst_0.io.DWE
+    mmcme2_adv_inst_0.io.DEN := mmcme2_drp_inst_0.io.DEN
+    mmcme2_adv_inst_0.io.DADDR := mmcme2_drp_inst_0.io.DADDR
+    mmcme2_adv_inst_0.io.DI := mmcme2_drp_inst_0.io.DI
+    mmcme2_adv_inst_0.io.DCLK := mmcme2_drp_inst_0.io.DCLK
+    mmcme2_adv_inst_0.io.RST := mmcme2_drp_inst_0.io.RST_MMCM
+    drpsrdyReg_0.srdy := mmcme2_drp_inst_0.io.LOCKED_OUT
     // wiring mmcm_drp and mmcm_adv
-    mmcme2_adv_inst.io.CLKFBIN := mmcme2_adv_inst.io.CLKFBOUT
-    counter_drp_inst.io.target_clock := mmcme2_adv_inst.io.CLKOUT0
-    mmcme2_adv_inst.io.CLKIN1 := clock.asBool() //TODO: should be a new clock of 800MHz
-    mmcme2_adv_inst.io.CLKINSEL := true.B
-    mmcme2_adv_inst.io.PSCLK := false.B
-    mmcme2_adv_inst.io.PSEN := false.B
-    mmcme2_adv_inst.io.PSINCDEC := false.B
-    mmcme2_adv_inst.io.PWRDWN := false.B
+    mmcme2_adv_inst_0.io.CLKFBIN := mmcme2_adv_inst_0.io.CLKFBOUT
+    counter_drp_inst_0.io.target_clock := mmcme2_adv_inst_0.io.CLKOUT0
+    mmcme2_adv_inst_0.io.CLKIN1 := clock.asBool() //TODO: should be a new clock of 800MHz
+    mmcme2_adv_inst_0.io.CLKINSEL := true.B
+    mmcme2_adv_inst_0.io.PSCLK := false.B
+    mmcme2_adv_inst_0.io.PSEN := false.B
+    mmcme2_adv_inst_0.io.PSINCDEC := false.B
+    mmcme2_adv_inst_0.io.PWRDWN := false.B
     // wiring counter_drp
-    counter_drp_inst.io.reset := reset.asBool()
-    counter_drp_inst.io.ref_clock := clock.asBool() //TODO: could be the on-board 200MHz clk
-    drpcounterReg.countvalue := counter_drp_inst.io.counter_value
-    drpcounterReg.countdone := counter_drp_inst.io.done
+    counter_drp_inst_0.io.reset := mmcme2_drp_inst_0.io.LOCKED_OUT
+    counter_drp_inst_0.io.ref_clock := clock.asBool() //TODO: could be the on-board 200MHz clk
+    drpcounterReg_0.countvalue := counter_drp_inst_0.io.counter_value
+    drpcounterReg_0.countdone := counter_drp_inst_0.io.done
+
+    // modules for ClockCtrl_1
+    val mmcme2_drp_inst_1 = Module(new mmcme2_drp)
+    val counter_drp_inst_1 = Module(new counter_drp)
+    val mmcme2_adv_inst_1 = Module(new MMCME2_ADV)
+    // wiring MMIO register - mmcme2_drp
+    mmcme2_drp_inst_1.io.CLKFBOUT_MULT := drpclkfbReg_1(16,10)
+    mmcme2_drp_inst_1.io.CLKFBOUT_FRAC := drpclkfbReg_1(9,0)
+    mmcme2_drp_inst_1.io.CLKOUT0_DIVIDE := drpclk0dReg_1(17,10)
+    mmcme2_drp_inst_1.io.CLKOUT0_FRAC := drpclk0dReg_1(9,0)
+    mmcme2_drp_inst_1.io.CLKOUT0_PHASE := drpclk0pReg_1(18,0)
+    mmcme2_drp_inst_1.io.CLKDIV_DIVIDE := drpclkdivReg_1(6,0)
+    mmcme2_drp_inst_1.io.SEN := drpsenReg_1
+    mmcme2_drp_inst_1.io.RST := reset.asBool()
+    //    drpsrdyReg.srdy := mmcme2_drp_inst.SRDY
+    mmcme2_drp_inst_1.io.SCLK := clock.asBool()
+    mmcme2_drp_inst_1.io.DO := mmcme2_adv_inst_1.io.DO
+    mmcme2_drp_inst_1.io.DRDY := mmcme2_adv_inst_1.io.DRDY
+    mmcme2_drp_inst_1.io.LOCK_REG_CLK_IN := clock.asBool()
+    mmcme2_drp_inst_1.io.LOCKED_IN := mmcme2_adv_inst_1.io.LOCKED
+    mmcme2_adv_inst_1.io.DWE := mmcme2_drp_inst_1.io.DWE
+    mmcme2_adv_inst_1.io.DEN := mmcme2_drp_inst_1.io.DEN
+    mmcme2_adv_inst_1.io.DADDR := mmcme2_drp_inst_1.io.DADDR
+    mmcme2_adv_inst_1.io.DI := mmcme2_drp_inst_1.io.DI
+    mmcme2_adv_inst_1.io.DCLK := mmcme2_drp_inst_1.io.DCLK
+    mmcme2_adv_inst_1.io.RST := mmcme2_drp_inst_1.io.RST_MMCM
+    drpsrdyReg_1.srdy := mmcme2_drp_inst_1.io.LOCKED_OUT
+    // wiring mmcm_drp and mmcm_adv
+    mmcme2_adv_inst_1.io.CLKFBIN := mmcme2_adv_inst_1.io.CLKFBOUT
+    counter_drp_inst_1.io.target_clock := mmcme2_adv_inst_1.io.CLKOUT0
+    mmcme2_adv_inst_1.io.CLKIN1 := clock.asBool() //TODO: should be a new clock of 800MHz
+    mmcme2_adv_inst_1.io.CLKINSEL := true.B
+    mmcme2_adv_inst_1.io.PSCLK := false.B
+    mmcme2_adv_inst_1.io.PSEN := false.B
+    mmcme2_adv_inst_1.io.PSINCDEC := false.B
+    mmcme2_adv_inst_1.io.PWRDWN := false.B
+    // wiring counter_drp
+    counter_drp_inst_1.io.reset := mmcme2_drp_inst_1.io.LOCKED_OUT
+    counter_drp_inst_1.io.ref_clock := clock.asBool() //TODO: could be the on-board 200MHz clk
+    drpcounterReg_1.countvalue := counter_drp_inst_1.io.counter_value
+    drpcounterReg_1.countdone := counter_drp_inst_1.io.done
+
+    // modules for ClockCtrl_2
+    val mmcme2_drp_inst_2 = Module(new mmcme2_drp)
+    val counter_drp_inst_2 = Module(new counter_drp)
+    val mmcme2_adv_inst_2 = Module(new MMCME2_ADV)
+    // wiring MMIO register - mmcme2_drp
+    mmcme2_drp_inst_2.io.CLKFBOUT_MULT := drpclkfbReg_2(16,10)
+    mmcme2_drp_inst_2.io.CLKFBOUT_FRAC := drpclkfbReg_2(9,0)
+    mmcme2_drp_inst_2.io.CLKOUT0_DIVIDE := drpclk0dReg_2(17,10)
+    mmcme2_drp_inst_2.io.CLKOUT0_FRAC := drpclk0dReg_2(9,0)
+    mmcme2_drp_inst_2.io.CLKOUT0_PHASE := drpclk0pReg_2(18,0)
+    mmcme2_drp_inst_2.io.CLKDIV_DIVIDE := drpclkdivReg_2(6,0)
+    mmcme2_drp_inst_2.io.SEN := drpsenReg_2
+    mmcme2_drp_inst_2.io.RST := reset.asBool()
+    //    drpsrdyReg.srdy := mmcme2_drp_inst.SRDY
+    mmcme2_drp_inst_2.io.SCLK := clock.asBool()
+    mmcme2_drp_inst_2.io.DO := mmcme2_adv_inst_2.io.DO
+    mmcme2_drp_inst_2.io.DRDY := mmcme2_adv_inst_2.io.DRDY
+    mmcme2_drp_inst_2.io.LOCK_REG_CLK_IN := clock.asBool()
+    mmcme2_drp_inst_2.io.LOCKED_IN := mmcme2_adv_inst_2.io.LOCKED
+    mmcme2_adv_inst_2.io.DWE := mmcme2_drp_inst_2.io.DWE
+    mmcme2_adv_inst_2.io.DEN := mmcme2_drp_inst_2.io.DEN
+    mmcme2_adv_inst_2.io.DADDR := mmcme2_drp_inst_2.io.DADDR
+    mmcme2_adv_inst_2.io.DI := mmcme2_drp_inst_2.io.DI
+    mmcme2_adv_inst_2.io.DCLK := mmcme2_drp_inst_2.io.DCLK
+    mmcme2_adv_inst_2.io.RST := mmcme2_drp_inst_2.io.RST_MMCM
+    drpsrdyReg_2.srdy := mmcme2_drp_inst_2.io.LOCKED_OUT
+    // wiring mmcm_drp and mmcm_adv
+    mmcme2_adv_inst_2.io.CLKFBIN := mmcme2_adv_inst_2.io.CLKFBOUT
+    counter_drp_inst_2.io.target_clock := mmcme2_adv_inst_2.io.CLKOUT0
+    mmcme2_adv_inst_2.io.CLKIN1 := clock.asBool() //TODO: should be a new clock of 800MHz
+    mmcme2_adv_inst_2.io.CLKINSEL := true.B
+    mmcme2_adv_inst_2.io.PSCLK := false.B
+    mmcme2_adv_inst_2.io.PSEN := false.B
+    mmcme2_adv_inst_2.io.PSINCDEC := false.B
+    mmcme2_adv_inst_2.io.PWRDWN := false.B
+    // wiring counter_drp
+    counter_drp_inst_2.io.reset := mmcme2_drp_inst_2.io.LOCKED_OUT
+    counter_drp_inst_2.io.ref_clock := clock.asBool() //TODO: could be the on-board 200MHz clk
+    drpcounterReg_2.countvalue := counter_drp_inst_2.io.counter_value
+    drpcounterReg_2.countdone := counter_drp_inst_2.io.done
 
     // Export the clock to the module
     val iop: ClockCtrlPortIO = port.getWrappedValue.asInstanceOf[ClockCtrlPortIO]
-    iop.clko := mmcme2_adv_inst.io.CLKOUT0.asClock()
+    iop.clko_0 := mmcme2_adv_inst_0.io.CLKOUT0.asClock()
+    iop.clko_1 := mmcme2_adv_inst_1.io.CLKOUT0.asClock()
+    iop.clko_2 := mmcme2_adv_inst_2.io.CLKOUT0.asClock()
 
     // Regfields
     regmap(
-      // BA 15/02/2021 #3
-      ClockCtrlCtrlRegs.drpclkfb -> Seq(RegField(17, drpclkfbReg, RegFieldDesc("drpclkfb","DRP_MMCM clkfbout Mult and Frac",reset=Some(0)))),
-      ClockCtrlCtrlRegs.drpclk0d -> Seq(RegField(18, drpclk0dReg, RegFieldDesc("drpclk0d","DRP_MMCM clkout0 Divide and Frac",reset=Some(0)))),
-      ClockCtrlCtrlRegs.drpclk0p -> Seq(RegField(19, drpclk0pReg, RegFieldDesc("drpclk0p","DRP_MMCM clkout0 Phase",reset=Some(0)))),
-      ClockCtrlCtrlRegs.drpsen   -> Seq(RegField(1, drpsenReg, RegFieldDesc("drpsen","DRP_MMCM SEN enable signal",reset=Some(0)))),
-      ClockCtrlCtrlRegs.drpclkdiv -> Seq(RegField(7, drpclkdivReg, RegFieldDesc("drpclkdiv","DRP_MMCM clkin Divide",reset=Some(0)))),
-      ClockCtrlCtrlRegs.drpsrdy -> RegFieldGroup("drpsrdyReg",Some("Serial interrupt pending"),Seq(
-        RegField.r(1, drpsrdyReg.srdy,
+      // regmap for ClockCtrl_0
+      ClockCtrlCtrlRegs_0.drpclkfb -> Seq(RegField(17, drpclkfbReg_0, RegFieldDesc("drpclkfb","DRP_MMCM clkfbout Mult and Frac",reset=Some(0)))),
+      ClockCtrlCtrlRegs_0.drpclk0d -> Seq(RegField(18, drpclk0dReg_0, RegFieldDesc("drpclk0d","DRP_MMCM clkout0 Divide and Frac",reset=Some(0)))),
+      ClockCtrlCtrlRegs_0.drpclk0p -> Seq(RegField(19, drpclk0pReg_0, RegFieldDesc("drpclk0p","DRP_MMCM clkout0 Phase",reset=Some(0)))),
+      ClockCtrlCtrlRegs_0.drpsen   -> Seq(RegField(1, drpsenReg_0, RegFieldDesc("drpsen","DRP_MMCM SEN enable signal",reset=Some(0)))),
+      ClockCtrlCtrlRegs_0.drpclkdiv -> Seq(RegField(7, drpclkdivReg_0, RegFieldDesc("drpclkdiv","DRP_MMCM clkin Divide",reset=Some(0)))),
+      ClockCtrlCtrlRegs_0.drpsrdy -> RegFieldGroup("drpsrdyReg",Some("Serial interrupt pending"),Seq(
+        RegField.r(1, drpsrdyReg_0.srdy,
           RegFieldDesc("drpsrdy","DRP_MMCM SRDY _output clk is ready_ signal", volatile=true)))),
-
-      ClockCtrlCtrlRegs.drpcountervalue -> Seq(
-        RegField.r(8, drpcounterReg.countvalue(31, 24),RegFieldDesc("countvalue4","1st MSB count value", volatile=true)),
-        RegField.r(8, drpcounterReg.countvalue(23, 16),RegFieldDesc("countvalue3","2nd MSB count value", volatile=true)),
-        RegField.r(8, drpcounterReg.countvalue(15, 8),RegFieldDesc("countvalue2","3rd MSB count value", volatile=true)),
-        RegField.r(8, drpcounterReg.countvalue(7, 0),RegFieldDesc("countvalue1","4th MSB count value", volatile=true)),
+      ClockCtrlCtrlRegs_0.drpcountervalue -> Seq(
+        RegField.r(8, drpcounterReg_0.countvalue(31, 24),RegFieldDesc("countvalue4","1st MSB count value", volatile=true)),
+        RegField.r(8, drpcounterReg_0.countvalue(23, 16),RegFieldDesc("countvalue3","2nd MSB count value", volatile=true)),
+        RegField.r(8, drpcounterReg_0.countvalue(15, 8),RegFieldDesc("countvalue2","3rd MSB count value", volatile=true)),
+        RegField.r(8, drpcounterReg_0.countvalue(7, 0),RegFieldDesc("countvalue1","4th MSB count value", volatile=true)),
       ),
-      ClockCtrlCtrlRegs.drpcountdone -> RegFieldGroup("drpsrdyReg",Some("Serial interrupt pending"),Seq(
-        RegField.r(1, drpcounterReg.countdone,
+      ClockCtrlCtrlRegs_0.drpcountdone -> RegFieldGroup("drpsrdyReg",Some("Serial interrupt pending"),Seq(
+        RegField.r(1, drpcounterReg_0.countdone,
           RegFieldDesc("drpcountdone","Clock counter is ready_ signal", volatile=true)))),
-      // BA 15/02/2021 #3 end
+
+      // regmap for ClockCtrl_1
+      ClockCtrlCtrlRegs_1.drpclkfb -> Seq(RegField(17, drpclkfbReg_1, RegFieldDesc("drpclkfb","DRP_MMCM clkfbout Mult and Frac",reset=Some(0)))),
+      ClockCtrlCtrlRegs_1.drpclk0d -> Seq(RegField(18, drpclk0dReg_1, RegFieldDesc("drpclk0d","DRP_MMCM clkout0 Divide and Frac",reset=Some(0)))),
+      ClockCtrlCtrlRegs_1.drpclk0p -> Seq(RegField(19, drpclk0pReg_1, RegFieldDesc("drpclk0p","DRP_MMCM clkout0 Phase",reset=Some(0)))),
+      ClockCtrlCtrlRegs_1.drpsen   -> Seq(RegField(1, drpsenReg_1, RegFieldDesc("drpsen","DRP_MMCM SEN enable signal",reset=Some(0)))),
+      ClockCtrlCtrlRegs_1.drpclkdiv -> Seq(RegField(7, drpclkdivReg_1, RegFieldDesc("drpclkdiv","DRP_MMCM clkin Divide",reset=Some(0)))),
+      ClockCtrlCtrlRegs_1.drpsrdy -> RegFieldGroup("drpsrdyReg",Some("Serial interrupt pending"),Seq(
+        RegField.r(1, drpsrdyReg_1.srdy,
+          RegFieldDesc("drpsrdy","DRP_MMCM SRDY _output clk is ready_ signal", volatile=true)))),
+      ClockCtrlCtrlRegs_1.drpcountervalue -> Seq(
+        RegField.r(8, drpcounterReg_1.countvalue(31, 24),RegFieldDesc("countvalue4","1st MSB count value", volatile=true)),
+        RegField.r(8, drpcounterReg_1.countvalue(23, 16),RegFieldDesc("countvalue3","2nd MSB count value", volatile=true)),
+        RegField.r(8, drpcounterReg_1.countvalue(15, 8),RegFieldDesc("countvalue2","3rd MSB count value", volatile=true)),
+        RegField.r(8, drpcounterReg_1.countvalue(7, 0),RegFieldDesc("countvalue1","4th MSB count value", volatile=true)),
+      ),
+      ClockCtrlCtrlRegs_1.drpcountdone -> RegFieldGroup("drpsrdyReg",Some("Serial interrupt pending"),Seq(
+        RegField.r(1, drpcounterReg_1.countdone,
+          RegFieldDesc("drpcountdone","Clock counter is ready_ signal", volatile=true)))),
+
+      // regmap for ClockCtrl_2
+      ClockCtrlCtrlRegs_2.drpclkfb -> Seq(RegField(17, drpclkfbReg_2, RegFieldDesc("drpclkfb","DRP_MMCM clkfbout Mult and Frac",reset=Some(0)))),
+      ClockCtrlCtrlRegs_2.drpclk0d -> Seq(RegField(18, drpclk0dReg_2, RegFieldDesc("drpclk0d","DRP_MMCM clkout0 Divide and Frac",reset=Some(0)))),
+      ClockCtrlCtrlRegs_2.drpclk0p -> Seq(RegField(19, drpclk0pReg_2, RegFieldDesc("drpclk0p","DRP_MMCM clkout0 Phase",reset=Some(0)))),
+      ClockCtrlCtrlRegs_2.drpsen   -> Seq(RegField(1, drpsenReg_2, RegFieldDesc("drpsen","DRP_MMCM SEN enable signal",reset=Some(0)))),
+      ClockCtrlCtrlRegs_2.drpclkdiv -> Seq(RegField(7, drpclkdivReg_2, RegFieldDesc("drpclkdiv","DRP_MMCM clkin Divide",reset=Some(0)))),
+      ClockCtrlCtrlRegs_2.drpsrdy -> RegFieldGroup("drpsrdyReg",Some("Serial interrupt pending"),Seq(
+        RegField.r(1, drpsrdyReg_2.srdy,
+          RegFieldDesc("drpsrdy","DRP_MMCM SRDY _output clk is ready_ signal", volatile=true)))),
+      ClockCtrlCtrlRegs_2.drpcountervalue -> Seq(
+        RegField.r(8, drpcounterReg_2.countvalue(31, 24),RegFieldDesc("countvalue4","1st MSB count value", volatile=true)),
+        RegField.r(8, drpcounterReg_2.countvalue(23, 16),RegFieldDesc("countvalue3","2nd MSB count value", volatile=true)),
+        RegField.r(8, drpcounterReg_2.countvalue(15, 8),RegFieldDesc("countvalue2","3rd MSB count value", volatile=true)),
+        RegField.r(8, drpcounterReg_2.countvalue(7, 0),RegFieldDesc("countvalue1","4th MSB count value", volatile=true)),
+      ),
+      ClockCtrlCtrlRegs_2.drpcountdone -> RegFieldGroup("drpsrdyReg",Some("Serial interrupt pending"),Seq(
+        RegField.r(1, drpcounterReg_2.countdone,
+          RegFieldDesc("drpcountdone","Clock counter is ready_ signal", volatile=true)))),
     )
   }
 

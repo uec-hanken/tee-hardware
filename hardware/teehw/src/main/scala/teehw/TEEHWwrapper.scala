@@ -327,12 +327,15 @@ trait WithFPGAVC707Connect {
 
       // TODO: Connect the clock, to the aclock that you need
       chip.aclocks.foreach{ aclocks =>
-        aclocks(1) := mod.clockctrl.head.asInstanceOf[ClockCtrlPortIO].clko
+        aclocks(2) := mod.clockctrl.head.asInstanceOf[ClockCtrlPortIO].clko_1 // for Tile_0
+        aclocks(3) := mod.clockctrl.head.asInstanceOf[ClockCtrlPortIO].clko_2 // for Tile_1
+        aclocks(8) := mod.clockctrl.head.asInstanceOf[ClockCtrlPortIO].clko_0 // for Cryptobus
       }
     }
 
     // The rest of the platform connections
-    gpio_out := Cat(reset_0, reset_1, reset_2, reset_3, init_calib_complete)
+    // gpio_out := Cat(reset_0, reset_1, reset_2, reset_3, init_calib_complete)
+    gpio_out := chip.gpio_out
     chip.gpio_in := gpio_in
     jtag <> chip.jtag
     qspi = chip.qspi.map(A => IO ( new TEEHWQSPIBundle(A.csWidth) ) )
@@ -526,7 +529,7 @@ trait WithFPGAVCU118Connect {
 
       // TODO: Connect the clock, to the aclock that you need
       chip.aclocks.foreach{ aclocks =>
-        aclocks(1) := mod.clockctrl.head.asInstanceOf[ClockCtrlPortIO].clko
+        // aclocks(1) := mod.clockctrl.head.asInstanceOf[ClockCtrlPortIO].clko
       }
     }
 
