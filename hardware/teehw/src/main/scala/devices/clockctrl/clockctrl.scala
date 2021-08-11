@@ -118,14 +118,14 @@ class MMCME2_ADV extends BlackBox(
   Map(
     "BANDWIDTH" -> StringParam("OPTIMIZED"),
     "DIVCLK_DIVIDE" -> IntParam(2),
-    "CLKFBOUT_MULT_F" -> IntParam(24),
+    "CLKFBOUT_MULT_F" -> IntParam(60),
     "CLKFBOUT_PHASE" -> IntParam(0),
     "CLKFBOUT_USE_FINE_PS" -> StringParam("FALSE"),
     "CLKIN1_PERIOD" -> IntParam(10),
     "REF_JITTER1" -> DoubleParam(0.01),
     "CLKIN2_PERIOD" -> IntParam(10),
     "REF_JITTER2" -> DoubleParam(0.01),
-    "CLKOUT0_DIVIDE_F" -> IntParam(12),
+    "CLKOUT0_DIVIDE_F" -> IntParam(30),
     "CLKOUT0_DUTY_CYCLE" -> DoubleParam(0.5),
     "CLKOUT0_PHASE" -> IntParam(0),
     "CLKOUT0_USE_FINE_PS" -> StringParam("FALSE"),
@@ -251,7 +251,7 @@ abstract class ClockCtrl(busWidthBytes: Int, val c: ClockCtrlParams, divisorInit
     mmcme2_adv_inst.io.PSINCDEC := false.B
     mmcme2_adv_inst.io.PWRDWN := false.B
     // wiring counter_drp
-    counter_drp_inst.io.reset := reset.asBool()
+    counter_drp_inst.io.reset := mmcme2_drp_inst.io.LOCKED_OUT
     counter_drp_inst.io.ref_clock := clock.asBool() //TODO: could be the on-board 200MHz clk
     drpcounterReg.countvalue := counter_drp_inst.io.counter_value
     drpcounterReg.countdone := counter_drp_inst.io.done
