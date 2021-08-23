@@ -112,7 +112,10 @@ class IbexBlackbox
   })
 
   // add wrapper/blackbox after it is pre-processed
-  if(Synth) addResource(s"/ibex_syn/IbexBlackbox.$SynthFlavor.v")
+  addResource("/prim_nopkg.preprocessed.sv")
+  if(Synth) {
+    addResource(s"/ibex_syn/IbexBlackbox.$SynthFlavor.v")
+  }
   else {
     addResource("/aaaa_pkgs.preprocessed.sv")
     addResource("/tlul.preprocessed.sv")

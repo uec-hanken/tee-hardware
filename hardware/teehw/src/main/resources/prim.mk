@@ -18,11 +18,8 @@ PRIM_OPENTITAN_VSRCS = \
 	$(vsrc_dir)/prim/prim_flop.sv \
 	$(vsrc_dir)/prim/prim_flop_2sync.sv \
 	$(opentitan_dir)/hw/ip/prim/rtl/prim_alert_receiver.sv \
-	$(vsrc_dir)/prim/prim_ram_1p.sv \
 	$(opentitan_dir)/hw/ip/prim/rtl/prim_esc_receiver.sv \
 	$(opentitan_dir)/hw/ip/prim/rtl/prim_diff_decode.sv \
-	$(opentitan_dir)/hw/ip/prim/rtl/prim_fifo_sync.sv \
-	$(opentitan_dir)/hw/ip/prim/rtl/prim_fifo_async.sv \
 	$(opentitan_dir)/hw/ip/prim/rtl/prim_lfsr.sv \
 	$(opentitan_dir)/hw/ip/prim/rtl/prim_secded_22_16_dec.sv \
 	$(opentitan_dir)/hw/ip/prim/rtl/prim_secded_22_16_enc.sv \
