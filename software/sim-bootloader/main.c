@@ -135,6 +135,8 @@ void hwsha3_final(byte* hash, void* data, size_t size) {
 // Trap handler
 void handle_trap(void) {
   printstr("Trap: ");
+  printhex32(read_csr(mepc));
+  printstr(", Cause: ");
   printhex32(read_csr(mcause));
   tohost_exit(0);
 }
@@ -148,6 +150,14 @@ int main(int argc, char** argv) {
   // Only execute everything in core 0
   int core = read_csr(mhartid);
   if (core != 0) {
+#ifdef SECURE_CORE
+    if(core == SECURE_CORE) {
+      // TODO: The SECURE_CORE is supposed to be the last core.
+      for(int i = 0; i < SECURE_CORE; i++) {
+        _REG32(CLINT_CTRL_ADDR, i*4) = 1;
+      }
+    }
+#endif
     printstr("Core Trapped: \r\n");
     printhex32(core);
     printstr("\r\n");

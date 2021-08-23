@@ -377,6 +377,12 @@ class DE4Config extends Config((site,here,up) => {
   }
   /* The DDR memory supports 128 transactions. This is to avoid modifying chipyard*/
   case MemoryBusKey => up(MemoryBusKey).copy(blockBytes = 64)
+  case TilesLocated(InSubsystem) => up(TilesLocated(InSubsystem), site) map {
+    case i: IbexTileAttachParams => i.copy(tileParams = i.tileParams.copy(core = i.tileParams.core.copy(
+      Synth = true, SynthFlavor = "IbexSecureDefault"
+    )))
+    case other => other
+  }
 })
 
 class TR4Config extends Config((site,here,up) => {
@@ -390,6 +396,12 @@ class TR4Config extends Config((site,here,up) => {
   }
   /* The DDR memory supports 128 transactions. This is to avoid modifying chipyard*/
   case MemoryBusKey => up(MemoryBusKey).copy(blockBytes = 64)
+  case TilesLocated(InSubsystem) => up(TilesLocated(InSubsystem), site) map {
+    case i: IbexTileAttachParams => i.copy(tileParams = i.tileParams.copy(core = i.tileParams.core.copy(
+      Synth = true, SynthFlavor = "IbexSecureDefault"
+    )))
+    case other => other
+  }
 })
 
 class VC707Config extends Config((site,here,up) => {

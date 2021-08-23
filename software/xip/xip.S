@@ -14,7 +14,11 @@ _start:
 // boot all cores (only hart 0) and jump to main program execution
   li a1, 0x2000000 // base address of clint
   csrr a0, mhartid
+#ifndef ISOLATED
   bnez a0, boot_core // If mhartid is not 0, directly go to boot_core
+#else
+  j boot_core_hart0 // Regardless of the mhartid, go to boot_core_hart0 (boot without waiting hart0)
+#endif
   addi a2, a1, 1 << 2 // Starts with interrupting hart #1
   addi a4, a1, NUM_CORES << 2 // Ends with hart #NUM_CORES
   li a3, 1
@@ -36,7 +40,9 @@ _hang_jmp: // Other-system reset vector
 _hang: // reset vector
   csrr a0, mhartid
   li a1, NUM_CORES
+#ifndef ISOLATED
 1:bge a0, a1, 1b     // If the hart ID is greater or equals the NUMCORES, that means is a ghost
+#endif
   la a0, _start      // on MSIP interrupt, go to _start
   csrw mtvec, a0
   //csrwi 0x7c1, 0x8   // Disables the Out-of-Order execution of boom

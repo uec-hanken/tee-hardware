@@ -43,7 +43,9 @@ case class IbexCoreParams
   WritebackStage: Boolean = false,
   SecureIbex: Boolean = false,
   PipeLine: Boolean = false,
-  useRVE: Boolean = false
+  useRVE: Boolean = false,
+  Synth: Boolean = false,
+  SynthFlavor: String = "IbexSecureDefault"
 ) extends CoreParams {
   /* DO NOT CHANGE BELOW THIS */
   val useVM: Boolean = false // TODO: Check
@@ -286,7 +288,9 @@ class IbexTileModuleImp(outer: IbexTile) extends BaseTileModuleImp(outer){
     SecureIbex = outer.ibexParams.core.SecureIbex,
     DmHaltAddr = debugBaseAddr + BigInt(0x800),
     DmExceptionAddr = debugBaseAddr + BigInt(0x808),
-    PipeLine = outer.ibexParams.core.PipeLine
+    PipeLine = outer.ibexParams.core.PipeLine,
+    Synth = outer.ibexParams.core.Synth,
+    SynthFlavor = outer.ibexParams.core.SynthFlavor
   ))
 
   core.io.clk_i := clock

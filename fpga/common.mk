@@ -61,7 +61,7 @@ ROMGEN=$(teehw_dir)/hardware/vlsi_rom_gen_real
 xip_dir=$(teehw_dir)/software/xip
 sdboot_dir=$(teehw_dir)/software/sdboot
 ifeq ($(BOOTSRC),BOOTROM)
-HEXFILE?=$(build_dir)/sdboot.hex
+HEXFILE?=$(build_dir)/sdboot.hex $(build_dir)/sdboot.hex
 else #QSPI
 HEXFILE?=$(build_dir)/xip.hex $(build_dir)/sdboot.hex
 endif
