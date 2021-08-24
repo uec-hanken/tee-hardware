@@ -148,7 +148,7 @@ case class AESAttachParams(
   aespar: AESParams,
   controlWhere: TLBusWrapperLocation = uec.teehardware.CRYPTOBUS,
   blockerAddr: Option[BigInt] = None,
-  controlXType: ClockCrossingType = NoCrossing,
+  controlXType: ClockCrossingType = SynchronousCrossing(),
   intXType: ClockCrossingType = NoCrossing)
                           (implicit val p: Parameters) {
 

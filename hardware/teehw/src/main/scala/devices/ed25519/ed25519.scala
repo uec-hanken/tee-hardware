@@ -422,7 +422,7 @@ case class ed25519AttachParams(
   ed25519par: ed25519Params,
   controlWhere: TLBusWrapperLocation = uec.teehardware.CRYPTOBUS,
   blockerAddr: Option[BigInt] = None,
-  controlXType: ClockCrossingType = NoCrossing,
+  controlXType: ClockCrossingType = SynchronousCrossing(),
   intXType: ClockCrossingType = NoCrossing)
 (implicit val p: Parameters)  {
 
