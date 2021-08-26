@@ -149,6 +149,7 @@ uint64_t do_sbox(uint64_t a);
 int main(int argc, char** argv) {
   // Only execute everything in core 0
   int core = read_csr(mhartid);
+#if 1
   if (core != 0) {
 #ifdef SECURE_CORE
     if(core == SECURE_CORE) {
@@ -163,6 +164,7 @@ int main(int argc, char** argv) {
     printstr("\r\n");
     while(1);
   }
+#endif
 
   unsigned long start_mcycle;
   unsigned long delta_mcycle;

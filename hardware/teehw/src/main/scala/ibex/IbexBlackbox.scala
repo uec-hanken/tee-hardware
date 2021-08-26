@@ -115,6 +115,7 @@ class IbexBlackbox
   addResource("/prim_nopkg.preprocessed.sv")
   if(Synth) {
     addResource(s"/ibex_syn/IbexBlackbox.$SynthFlavor.v")
+    println(s"Ibex Synthesized with ${SynthFlavor} flavor")
   }
   else {
     addResource("/aaaa_pkgs.preprocessed.sv")
@@ -123,5 +124,6 @@ class IbexBlackbox
     addResource("/Ibex.preprocessed.sv")
     addResource("/Ibex.preprocessed.v")
     addResource("/IbexBlackbox.preprocessed.sv")
+    println(s"Ibex regular implemented")
   }
 }

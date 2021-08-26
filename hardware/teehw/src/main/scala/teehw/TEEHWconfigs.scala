@@ -366,7 +366,7 @@ class WExposeClk extends Config((site, here, up) => {
 })
 
 // *************** Board Config (BOARD) ***************
-class DE4Config extends Config((new WithIbexSynthesized).alter((site,here,up) => {
+class DE4Config extends Config((new WithIbexSynthesizedNoICache).alter((site,here,up) => {
   case FreqKeyMHz => 50.0
   case QSPICardMHz => 1.0
   case SDCardMHz => 5.0
@@ -379,7 +379,7 @@ class DE4Config extends Config((new WithIbexSynthesized).alter((site,here,up) =>
   case MemoryBusKey => up(MemoryBusKey).copy(blockBytes = 64)
 }))
 
-class TR4Config extends Config((new WithIbexSynthesized).alter((site,here,up) => {
+class TR4Config extends Config((new WithIbexSynthesizedNoICache).alter((site,here,up) => {
   case FreqKeyMHz => 50.0
   case QSPICardMHz => 1.0
   case SDCardMHz => 5.0
