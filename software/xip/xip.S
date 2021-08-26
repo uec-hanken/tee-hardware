@@ -81,5 +81,6 @@ boot_core_hart0:   // begin executing code at XIP_TARGET_ADDR
   jr t0
 #endif
 
+  .section .rodata
 _dtb:
 //  .incbin DEVICE_TREE
