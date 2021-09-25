@@ -10,6 +10,7 @@
 #include "devices/plic.h"
 #include "devices/spi.h"
 #include "devices/uart.h"
+#include "devices/sha3.h"
 
  // Some things missing from the official encoding.h
 #if __riscv_xlen == 32
@@ -50,6 +51,8 @@
 #define TEST_CTRL_SIZE _AC(0x1000,UL)
 #define UART_CTRL_ADDR _AC(0x64000000,UL)
 #define UART_CTRL_SIZE _AC(0x1000,UL)
+#define SHA3_CTRL_ADDR _AC(0x64003000,UL)
+#define SHA3_CTRL_SIZE _AC(0x1000,UL)
 
 // IOF masks
 
