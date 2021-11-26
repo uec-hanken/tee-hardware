@@ -99,7 +99,14 @@ class RocketMicro extends Config(
 class Micro extends Config ((site, here, up) => {
   case RocketTilesKey => up(RocketTilesKey, site) map { r =>
     r.copy( dcache = r.dcache map { d =>
-      d.copy(scratch = Some(0x80000000L))
+      d.copy(
+        nSets = 64, // 16Kb scratchpad
+        nWays = 1,
+        nTLBSets = 1,
+        nTLBWays = 4,
+        nMSHRs = 0,
+        scratch = Some(0x80000000L)
+      )
     })
   }
 })

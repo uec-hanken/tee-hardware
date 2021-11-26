@@ -768,7 +768,7 @@ trait WithFPGAArtyA7Connect {
     // SD IO
     IOBUF(ja_0, chip.sdio.sdio_dat_3)
     IOBUF(ja_1, chip.sdio.sdio_cmd)
-    IOBUF(ja_2, chip.sdio.sdio_dat_0)
+    chip.sdio.sdio_dat_0 := IOBUF(ja_2)
     IOBUF(ja_3, chip.sdio.sdio_clk)
 
     // USB phy connections
