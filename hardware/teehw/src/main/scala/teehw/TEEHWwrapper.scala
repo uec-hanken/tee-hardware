@@ -614,6 +614,180 @@ class FPGAVCU118(implicit p :Parameters) extends FPGAVCU118Shell()(p)
 }
 
 // ********************************************************************
+// FPGAArtyA7 - Demo on Arty A7 100 FPGA board
+// ********************************************************************
+class FPGAArtyA7Shell(implicit val p :Parameters) extends RawModule {
+  //-----------------------------------------------------------------------
+  // Interface
+  //-----------------------------------------------------------------------
+
+  // Clock & Reset
+  val CLK100MHZ    = IO(Input(Clock()))
+  val ck_rst       = IO(Input(Bool()))
+
+  // Green LEDs
+  val led_0        = IO(Analog(1.W))
+  val led_1        = IO(Analog(1.W))
+  val led_2        = IO(Analog(1.W))
+  val led_3        = IO(Analog(1.W))
+
+  // RGB LEDs, 3 pins each
+  val led0_r       = IO(Analog(1.W))
+  val led0_g       = IO(Analog(1.W))
+  val led0_b       = IO(Analog(1.W))
+
+  val led1_r       = IO(Analog(1.W))
+  val led1_g       = IO(Analog(1.W))
+  val led1_b       = IO(Analog(1.W))
+
+  val led2_r       = IO(Analog(1.W))
+  val led2_g       = IO(Analog(1.W))
+  val led2_b       = IO(Analog(1.W))
+
+  // Sliding switches
+  val sw_0         = IO(Analog(1.W))
+  val sw_1         = IO(Analog(1.W))
+  val sw_2         = IO(Analog(1.W))
+  val sw_3         = IO(Analog(1.W))
+
+  // Buttons. First 3 used as GPIO, the last is used as wakeup
+  val btn_0        = IO(Analog(1.W))
+  val btn_1        = IO(Analog(1.W))
+  val btn_2        = IO(Analog(1.W))
+  val btn_3        = IO(Analog(1.W))
+
+  // Dedicated QSPI interface
+  val qspi_cs      = IO(Analog(1.W))
+  val qspi_sck     = IO(Analog(1.W))
+  val qspi_dq      = IO(Vec(4, Analog(1.W)))
+
+  // UART0
+  val uart_rxd_out = IO(Analog(1.W))
+  val uart_txd_in  = IO(Analog(1.W))
+
+  // JA (Used for more generic GPIOs)
+  val ja_0         = IO(Analog(1.W))
+  val ja_1         = IO(Analog(1.W))
+  val ja_2         = IO(Analog(1.W))
+  val ja_3         = IO(Analog(1.W))
+  val ja_4         = IO(Analog(1.W))
+  val ja_5         = IO(Analog(1.W))
+  val ja_6         = IO(Analog(1.W))
+  val ja_7         = IO(Analog(1.W))
+
+  // JC (used for additional debug/trace connection)
+  val jc           = IO(Vec(8, Analog(1.W)))
+
+  // JD (used for JTAG connection)
+  val jd_0         = IO(Analog(1.W))  // TDO
+  val jd_1         = IO(Analog(1.W))  // TRST_n
+  val jd_2         = IO(Analog(1.W))  // TCK
+  val jd_4         = IO(Analog(1.W))  // TDI
+  val jd_5         = IO(Analog(1.W))  // TMS
+  val jd_6         = IO(Analog(1.W))  // SRST_n
+
+  // ChipKit Digital I/O Pins
+  val ck_io        = IO(Vec(20, Analog(1.W)))
+
+  // ChipKit SPI
+  val ck_miso      = IO(Analog(1.W))
+  val ck_mosi      = IO(Analog(1.W))
+  val ck_ss        = IO(Analog(1.W))
+  val ck_sck       = IO(Analog(1.W))
+
+  val clock = Wire(Clock())
+  val reset = Wire(Bool())
+}
+
+trait WithFPGAArtyA7Connect {
+  this: FPGAArtyA7Shell =>
+  val chip: WithTEEHWbaseShell with WithTEEHWbaseConnect
+
+  withClockAndReset(clock, reset) {
+    // PLL instance
+    val c = new PLLParameters(
+      name = "pll",
+      input = PLLInClockParameters(freqMHz = 100.0, feedback = true),
+      req = Seq(
+        PLLOutClockParameters(freqMHz = 48.0),
+        PLLOutClockParameters(freqMHz = 10.0),
+        PLLOutClockParameters(freqMHz = p(FreqKeyMHz))
+      )
+    )
+    val pll = Module(new Series7MMCM(c))
+    pll.io.clk_in1 := CLK100MHZ
+    pll.io.reset := !ck_rst
+
+    // TODO: DDR
+    chip.tlport
+    // NOTE: No Memory Serialized
+    chip.memser
+
+    // Main clock and reset assignments
+    clock := pll.io.clk_out3.get
+    reset := !pll.io.locked
+    chip.sys_clk := pll.io.clk_out3.get
+    chip.aclocks.foreach(_.foreach(_ := pll.io.clk_out3.get)) // Connecting all aclocks to the default sysclock.
+    chip.rst_n := pll.io.locked
+
+    // NOTE: No extser
+    chip.extser
+
+    // GPIO
+    IOBUF(led_0, chip.gpio_out(0))
+    IOBUF(led_1, chip.gpio_out(1))
+    IOBUF(led_2, chip.gpio_out(2))
+    IOBUF(led_3, chip.gpio_out(3))
+    chip.gpio_in := Cat(IOBUF(sw_3), IOBUF(sw_2), IOBUF(sw_1), IOBUF(sw_0))
+
+    // JTAG
+    chip.jtag.jtag_TCK := IBUFG(IOBUF(jd_2).asClock()).asBool()
+    chip.jtag.jtag_TDI := IOBUF(jd_4)
+    PULLUP(jd_4)
+    IOBUF(jd_0, chip.jtag.jtag_TDO)
+    chip.jtag.jtag_TMS := IOBUF(jd_5)
+    PULLUP(jd_5)
+    chip.jrst_n := IOBUF(jd_6)
+    PULLUP(jd_6)
+
+    // QSPI (assuming only one)
+    chip.qspi.foreach{ qspi =>
+      IOBUF(qspi_sck, qspi.qspi_sck)
+      IOBUF(qspi_cs,  qspi.qspi_cs(0))
+
+      IOBUF(qspi_dq(0), qspi.qspi_mosi)
+      qspi.qspi_miso := IOBUF(qspi_dq(1))
+      IOBUF(qspi_dq(2), qspi.qspi_wp)
+      IOBUF(qspi_dq(3), qspi.qspi_hold)
+    }
+
+    // UART
+    chip.uart_rxd := IOBUF(uart_rxd_out)	  // UART_TXD
+    IOBUF(uart_txd_in, chip.uart_txd) 	// UART_RXD
+
+    // SD IO
+    IOBUF(ja_0, chip.sdio.sdio_dat_3)
+    IOBUF(ja_1, chip.sdio.sdio_cmd)
+    IOBUF(ja_2, chip.sdio.sdio_dat_0)
+    IOBUF(ja_3, chip.sdio.sdio_clk)
+
+    // USB phy connections
+    chip.usb11hs.foreach{ chipport =>
+      //port.FullSpeed := chipport.USBFullSpeed
+      chipport.USBWireDataIn := 0.U // port.WireDataIn
+      //port.WireCtrlOut := chipport.USBWireCtrlOut
+      //port.WireDataOut := chipport.USBWireDataOut
+
+      chipport.usbClk := pll.io.clk_out1.getOrElse(false.B)
+    }
+  }
+}
+
+class FPGAArtyA7(implicit p :Parameters) extends FPGAArtyA7Shell()(p)
+  with HasTEEHWChip with WithFPGAArtyA7Connect {
+}
+
+// ********************************************************************
 // FPGADE4 - Demo on DE4 FPGA board
 // ********************************************************************
 

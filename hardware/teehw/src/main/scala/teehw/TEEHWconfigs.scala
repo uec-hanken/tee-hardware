@@ -96,6 +96,14 @@ class RocketMicro extends Config(
   })
 )
 
+class Micro extends Config ((site, here, up) => {
+  case RocketTilesKey => up(RocketTilesKey, site) map { r =>
+    r.copy( dcache = r.dcache map { d =>
+      d.copy(scratch = Some(0x80000000L))
+    })
+  }
+})
+
 // Non-secure Ibex (Without Isolation)
 class Ibex2RocketNonSecure extends Config(
     new WithNBigCores(2) ++
@@ -438,7 +446,19 @@ class VCU118Config extends Config((site,here,up) => {
   /* The DDR memory supports 256*8 transactions. This is to avoid modifying chipyard*/
   case MemoryBusKey => up(MemoryBusKey).copy(blockBytes = 256*8)
 })
-  
+
+class ArtyA7Config extends Config((site,here,up) => {
+  case FreqKeyMHz => 50.0
+  case PeripheryUSB11HSKey => List()
+  case PeripheryRandomKey => up(PeripheryRandomKey, site) map {r =>
+    r.copy(board = "Xilinx")
+  }
+
+  // Not supported
+  case ExtMem => None
+  case ExtSerMem => None
+  case ExtSerBus => None
+})
 
 // ***************** The simulation flag *****************
 class WithSimulation extends Config((site, here, up) => {
