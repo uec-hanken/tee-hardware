@@ -697,6 +697,25 @@ class FPGAArtyA7Shell(implicit val p :Parameters) extends RawModule {
 
   val clock = Wire(Clock())
   val reset = Wire(Bool())
+
+  //-----------------------------------------------------------------------
+  // Clock Generator
+  //-----------------------------------------------------------------------
+  // Mixed-mode clock generator
+  //val clock_8MHz     = Wire(Clock())
+  //val clock_32MHz    = Wire(Clock())
+  //val clock_65MHz    = Wire(Clock())
+  //val mmcm_locked    = Wire(Bool())
+  if(false) { // NOTE: Changed by using just a Series7 DDR
+    val ip_mmcm = Module(new mmcm())
+
+    ip_mmcm.io.clk_in1 := CLK100MHZ
+    //clock_8MHz         := ip_mmcm.io.clk_out1  // 8.388 MHz = 32.768 kHz * 256
+    //clock_65MHz        := ip_mmcm.io.clk_out2  // 65 Mhz
+    //clock_32MHz        := ip_mmcm.io.clk_out3  // 65/2 Mhz
+    ip_mmcm.io.resetn  := ck_rst
+    //mmcm_locked        := ip_mmcm.io.locked
+  }
 }
 
 trait WithFPGAArtyA7Connect {
@@ -762,8 +781,8 @@ trait WithFPGAArtyA7Connect {
     }
 
     // UART
-    chip.uart_rxd := IOBUF(uart_rxd_out)	  // UART_TXD
-    IOBUF(uart_txd_in, chip.uart_txd) 	// UART_RXD
+    chip.uart_rxd := IOBUF(uart_txd_in)	  // UART_TXD
+    IOBUF(uart_rxd_out, chip.uart_txd) 	  // UART_RXD
 
     // SD IO
     IOBUF(ja_0, chip.sdio.sdio_dat_3)

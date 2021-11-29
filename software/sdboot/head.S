@@ -11,7 +11,7 @@ _prog_start:
   li a1, NUM_CORES
 1:bge a0, a1, 1b     // If the hart ID is greater or equals the NUMCORES, that means is a ghost
   smp_pause(s1, s2)
-  li sp, (MEMORY_MEM_ADDR + MEMORY_MEM_SIZE - 0x1000)
+  li sp, (MEMORY_MEM_ADDR + MEMORY_MEM_SIZE)
   call main
   smp_resume(s1, s2)
   csrr a0, mhartid
