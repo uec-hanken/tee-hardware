@@ -460,10 +460,15 @@ class ArtyA7Config extends Config((site,here,up) => {
   case PeripheryRandomKey => up(PeripheryRandomKey, site) map {r =>
     r.copy(board = "Xilinx")
   }
+    // Transform all ExtMem and ExtSerMem into 256MB
+  case ExtMem => up(ExtMem).map{ mem =>
+    mem.copy(mem.master.copy(size = x"0_1000_0000"))
+  }
+  case ExtSerMem => up(ExtSerMem).map{ mem =>
+    mem.copy(mem.master.copy(size = x"0_1000_0000"))
+  }
 
   // Not supported
-  case ExtMem => None
-  case ExtSerMem => None
   case ExtSerBus => None
 })
 

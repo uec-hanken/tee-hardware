@@ -616,6 +616,8 @@ class FPGAVCU118(implicit p :Parameters) extends FPGAVCU118Shell()(p)
 // ********************************************************************
 // FPGAArtyA7 - Demo on Arty A7 100 FPGA board
 // ********************************************************************
+import sifive.fpgashells.ip.xilinx.arty100tmig._
+
 class FPGAArtyA7Shell(implicit val p :Parameters) extends RawModule {
   //-----------------------------------------------------------------------
   // Interface
@@ -686,6 +688,9 @@ class FPGAArtyA7Shell(implicit val p :Parameters) extends RawModule {
   val jd_5         = IO(Analog(1.W))  // TMS
   val jd_6         = IO(Analog(1.W))  // SRST_n
 
+  // DDR
+  var ddr: Option[Arty100TMIGIODDR] = None
+
   // ChipKit Digital I/O Pins
   val ck_io        = IO(Vec(20, Analog(1.W)))
 
@@ -728,26 +733,84 @@ trait WithFPGAArtyA7Connect {
       name = "pll",
       input = PLLInClockParameters(freqMHz = 100.0, feedback = true),
       req = Seq(
-        PLLOutClockParameters(freqMHz = 48.0),
-        PLLOutClockParameters(freqMHz = 10.0),
-        PLLOutClockParameters(freqMHz = p(FreqKeyMHz))
-      )
+        PLLOutClockParameters(freqMHz = p(FreqKeyMHz)),
+        PLLOutClockParameters(freqMHz = 166.666), // For sys_clk_i
+        PLLOutClockParameters(freqMHz = 200.0) // For ref_clk
+      ) ++ (if( p(DDRPortOther) ) Seq(PLLOutClockParameters(freqMHz = 10.0)) else Seq())
     )
     val pll = Module(new Series7MMCM(c))
     pll.io.clk_in1 := CLK100MHZ
     pll.io.reset := !ck_rst
 
-    // TODO: DDR
-    chip.tlport
-    // NOTE: No Memory Serialized
-    chip.memser
+    val reset_0 = IOBUF(sw_0)
+    val reset_1 = IOBUF(sw_1)
+    val reset_2 = !pll.io.locked
+    // The DDR port
+    val init_calib_complete_tl = chip.tlport.map{ case chiptl =>
+      val mod = Module(LazyModule(new TLULtoMIGArtyA7(chip.tlportw.get.params)).module)
+
+      // DDR port only
+      ddr = Some(IO(new Arty100TMIGIODDR(mod.depth)))
+      ddr.get <> mod.io.ddrport
+      // MIG connections, like resets and stuff
+      mod.io.ddrport.sys_clk_i := pll.io.clk_out2.get.asBool()
+      mod.io.ddrport.clk_ref_i := pll.io.clk_out3.get.asBool()
+      mod.io.ddrport.aresetn := !reset_0
+      mod.io.ddrport.sys_rst := reset_1
+
+      // TileLink Interface from platform
+      mod.io.tlport.a <> chiptl.a
+      chiptl.d <> mod.io.tlport.d
+
+      if(p(DDRPortOther)) {
+        chip.ChildClock.foreach(_ := pll.io.clk_out4.getOrElse(false.B))
+        chip.ChildReset.foreach(_ := reset_2)
+        mod.clock := pll.io.clk_out4.getOrElse(false.B)
+      }
+      else {
+        chip.ChildClock.foreach(_ := pll.io.clk_out1.getOrElse(false.B))
+        chip.ChildReset.foreach(_ := reset_2)
+        mod.clock := pll.io.clk_out1.getOrElse(false.B)
+      }
+
+      mod.io.ddrport.init_calib_complete
+    }
+    val init_calib_complete_ser = chip.memser.map { A =>
+      val mod = Module(LazyModule(new SertoMIGArtyA7(
+        A.w,
+        chip.system.sys.asInstanceOf[HasTEEHWSystemModule].serSourceBits.get
+      )).module)
+
+      // Serial port
+      mod.io.serport.flipConnect(A)
+
+      // DDR port only
+      ddr = Some(IO(new Arty100TMIGIODDR(mod.depth)))
+      ddr.get <> mod.io.ddrport
+      // MIG connections, like resets and stuff
+      mod.io.ddrport.sys_clk_i := pll.io.clk_out2.get.asBool()
+      mod.io.ddrport.clk_ref_i := pll.io.clk_out3.get.asBool()
+      mod.io.ddrport.aresetn := !reset_0
+      mod.io.ddrport.sys_rst := reset_1
+
+      p(SbusToMbusXTypeKey) match {
+        case _: AsynchronousCrossing =>
+          mod.clock := pll.io.clk_out4.getOrElse(false.B)
+        case _ =>
+          mod.clock := pll.io.clk_out1.getOrElse(false.B)
+      }
+
+      mod.io.ddrport.init_calib_complete
+    }
+
+    val init_calib_complete = init_calib_complete_tl.getOrElse(init_calib_complete_ser.getOrElse(false.B))
 
     // Main clock and reset assignments
-    clock := pll.io.clk_out3.get
-    reset := !pll.io.locked
-    chip.sys_clk := pll.io.clk_out3.get
-    chip.aclocks.foreach(_.foreach(_ := pll.io.clk_out3.get)) // Connecting all aclocks to the default sysclock.
-    chip.rst_n := pll.io.locked
+    clock := pll.io.clk_out1.get
+    reset := reset_2
+    chip.sys_clk := pll.io.clk_out1.get
+    chip.aclocks.foreach(_.foreach(_ := pll.io.clk_out1.get)) // Connecting all aclocks to the default sysclock.
+    chip.rst_n := !reset_2
 
     // NOTE: No extser
     chip.extser
@@ -756,8 +819,8 @@ trait WithFPGAArtyA7Connect {
     IOBUF(led_0, chip.gpio_out(0))
     IOBUF(led_1, chip.gpio_out(1))
     IOBUF(led_2, chip.gpio_out(2))
-    IOBUF(led_3, chip.gpio_out(3))
-    chip.gpio_in := Cat(IOBUF(sw_3), IOBUF(sw_2), IOBUF(sw_1), IOBUF(sw_0))
+    IOBUF(led_3, init_calib_complete)//chip.gpio_out(3))
+    chip.gpio_in := Cat(IOBUF(sw_3), IOBUF(sw_2))
 
     // JTAG
     chip.jtag.jtag_TCK := IBUFG(IOBUF(jd_2).asClock()).asBool()
@@ -797,7 +860,7 @@ trait WithFPGAArtyA7Connect {
       //port.WireCtrlOut := chipport.USBWireCtrlOut
       //port.WireDataOut := chipport.USBWireDataOut
 
-      chipport.usbClk := pll.io.clk_out1.getOrElse(false.B)
+      chipport.usbClk := pll.io.clk_out1.getOrElse(false.B) // TODO: Not possible to create the 48MHz
     }
   }
 }

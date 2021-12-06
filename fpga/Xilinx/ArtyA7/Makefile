@@ -14,13 +14,16 @@ SUB_PROJECT ?= FPGAArtyA7
 BOARD?=ArtyA7
 ISACONF?=RV32IMAC
 HYBRID?=Rocket1
+#PERIPHERALS?=TEEHWPeripherals
+PERIPHERALS=NoSecurityPeripherals
+MBUS?=MBus32
 
 # Not supported
-MBUS?=MBusNone
 BOOTSRC?=QSPI
 PCIE?=WoPCIe
 DDRCLK?=WoSepaDDRClk
 SEPARE?=Nothing
+BASE?=MCUConfig
 
 #########################################################################################
 # Common rules for FPGA

@@ -71,8 +71,8 @@ $(build_dir)/xip.hex:
 	make -C $(xip_dir) BUILD_DIR=$(build_dir) long_name=$(long_name) ISACONF=$(ISACONF) XIP_TARGET_ADDR=0x20000000 ADD_OPTS=-DSKIP_HANG hex
 
 $(build_dir)/sdboot.hex:
-	make -C $(sdboot_dir) BUILD_DIR=$(build_dir) long_name=$(long_name) ISACONF=$(ISACONF) SDBOOT_TARGET_ADDR=0x90000000UL clean
-	make -C $(sdboot_dir) BUILD_DIR=$(build_dir) long_name=$(long_name) ISACONF=$(ISACONF) SDBOOT_TARGET_ADDR=0x90000000UL hex
+	make -C $(sdboot_dir) BUILD_DIR=$(build_dir) long_name=$(long_name) ISACONF=$(ISACONF) SDBOOT_TARGET_ADDR=0x8C000000UL clean
+	make -C $(sdboot_dir) BUILD_DIR=$(build_dir) long_name=$(long_name) ISACONF=$(ISACONF) SDBOOT_TARGET_ADDR=0x8C000000UL hex
 
 $(ROM_FILE): $(ROMGEN) $(HEXFILE)
 	$(ROMGEN) $(ROM_CONF_FILE) $(HEXFILE) > $(ROM_FILE)
