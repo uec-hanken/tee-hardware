@@ -9,6 +9,23 @@ set_property -dict [list \
 	BITSTREAM.CONFIG.SPI_BUSWIDTH {4} \
 	] [current_design]
 
+set_clock_groups -asynchronous \
+  -group [list [get_clocks { \
+      sys_clk_pin \
+    }]] \
+  -group [list [get_clocks -of_objects [get_pins { \
+      pll/clk_out1 \
+    }]]] \
+  -group [list [get_clocks -of_objects [get_pins { \
+      pll/clk_out2 \
+    }]]] \
+  -group [list [get_clocks -of_objects [get_pins { \
+      pll/clk_out3 \
+    }]]] \
+  -group [list [get_clocks { \
+      JTCK \
+    }]]
+
 ## Clock signal
 
 set_property -dict { PACKAGE_PIN E3    IOSTANDARD LVCMOS33 } [get_ports { CLK100MHZ }]; #IO_L12P_T1_MRCC_35 Sch=gclk[100]

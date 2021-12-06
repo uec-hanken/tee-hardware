@@ -193,24 +193,61 @@ class MicroConfig extends Config(
       //case MaxHartIdBits => log2Up(site(BoomTilesKey).size + site(RocketTilesKey).size + site(IbexTilesKey).size)
     }))
 
+class WithMulticlockIncoherentBusTopology extends Config((site, here, up) => {
+  case TLNetworkTopologyLocated(InSubsystem) => List( // WithIncoherent, but with Clock Separation (TM)
+    JustOneBusTopologyParams(sbus = site(SystemBusKey)),
+    HierarchicalBusTopologyParams(
+      pbus = site(PeripheryBusKey),
+      fbus = site(FrontBusKey),
+      cbus = site(ControlBusKey),
+      xTypes = SubsystemCrossingParams(
+        sbusToCbusXType = site(SbusToCbusXTypeKey),
+        cbusToPbusXType = site(CbusToPbusXTypeKey),
+        fbusToSbusXType = site(FbusToSbusXTypeKey)),
+      driveClocksFromSBus = site(DriveClocksFromSBus)))
+})
+
+class MCUWithLinuxConfig extends Config(
+  new WithNExtTopInterrupts(0) ++
+    new TEEHWPeripherals ++
+    new WithJtagDTM ++
+    new WithNoSubsystemDrivenClocks ++
+    new WithDontDriveBusClocksFromSBus ++
+    new WithBufferlessBroadcastHub ++
+    new WithCoherentBusTopology ++
+    new BaseConfig().alter((site,here,up) => {
+      case BootROMLocated(InSubsystem) => None // No BootROM.
+      case SystemBusKey => up(SystemBusKey).copy(
+        errorDevice = Some(BuiltInErrorDeviceParams(DevNullParams(
+          Seq(AddressSet(0x4000, 0xfff)),
+          maxAtomic=site(XLen)/8,
+          maxTransfer=128,
+          region = RegionType.TRACKED))))
+      case PeripheryBusKey => up(PeripheryBusKey, site).copy(
+        dtsFrequency = Some(BigDecimal(site(FreqKeyMHz)*1000000).setScale(0, BigDecimal.RoundingMode.HALF_UP).toBigInt),
+        errorDevice = None)
+      case CryptoBusKey => CryptoBusParams(
+        beatBytes = site(XLen)/8,
+        blockBytes = site(CacheBlockBytes),
+        dtsFrequency = Some(BigDecimal(site(FreqKeyMHz)*1000000).setScale(0, BigDecimal.RoundingMode.HALF_UP).toBigInt))
+      case DTSTimebase => BigInt(1000000)
+      case JtagDTMKey => new JtagDTMConfig (
+        idcodeVersion = 2,      // 1 was legacy (FE310-G000, Acai).
+        idcodePartNum = 0x000,  // Decided to simplify.
+        idcodeManufId = 0x489,  // As Assigned by JEDEC to SiFive. Only used in wrappers / test harnesses.
+        debugIdleCycles = 5)    // Reasonable guess for synchronization
+      case FreqKeyMHz => 100.0
+      //case MaxHartIdBits => log2Up(site(BoomTilesKey).size + site(RocketTilesKey).size + site(IbexTilesKey).size)
+    }))
+
 class MCUConfig extends Config(
   new WithNExtTopInterrupts(0) ++
     new TEEHWPeripherals ++
     new WithJtagDTM ++
     new WithNoSubsystemDrivenClocks ++
     new WithDontDriveBusClocksFromSBus ++
+    new WithMulticlockIncoherentBusTopology ++
     new BaseConfig().alter((site,here,up) => {
-      case TLNetworkTopologyLocated(InSubsystem) => List( // WithIncoherent, but with Clock Separation (TM)
-        JustOneBusTopologyParams(sbus = site(SystemBusKey)),
-        HierarchicalBusTopologyParams(
-          pbus = site(PeripheryBusKey),
-          fbus = site(FrontBusKey),
-          cbus = site(ControlBusKey),
-          xTypes = SubsystemCrossingParams(
-            sbusToCbusXType = site(SbusToCbusXTypeKey),
-            cbusToPbusXType = site(CbusToPbusXTypeKey),
-            fbusToSbusXType = site(FbusToSbusXTypeKey)),
-          driveClocksFromSBus = site(DriveClocksFromSBus)))
       case BootROMLocated(InSubsystem) => None // No BootROM.
       case SystemBusKey => up(SystemBusKey).copy(
         errorDevice = Some(BuiltInErrorDeviceParams(DevNullParams(
