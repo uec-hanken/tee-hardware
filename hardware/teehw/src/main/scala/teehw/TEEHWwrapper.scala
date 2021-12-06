@@ -742,9 +742,9 @@ trait WithFPGAArtyA7Connect {
     pll.io.clk_in1 := CLK100MHZ
     pll.io.reset := !ck_rst
 
-    val reset_0 = IOBUF(sw_0)
-    val reset_1 = IOBUF(sw_1)
-    val reset_2 = !pll.io.locked
+    val aresetn = pll.io.locked // Reset that goes to the MMCM inside of the DDR MIG
+    val sys_rst = ResetCatchAndSync(pll.io.clk_out2.get, !pll.io.locked) // Catched system clock
+    val reset_2 = WireInit(!pll.io.locked) // If DDR is not present, this is the system reset
     // The DDR port
     val init_calib_complete_tl = chip.tlport.map{ case chiptl =>
       val mod = Module(LazyModule(new TLULtoMIGArtyA7(chip.tlportw.get.params)).module)
@@ -755,8 +755,9 @@ trait WithFPGAArtyA7Connect {
       // MIG connections, like resets and stuff
       mod.io.ddrport.sys_clk_i := pll.io.clk_out2.get.asBool()
       mod.io.ddrport.clk_ref_i := pll.io.clk_out3.get.asBool()
-      mod.io.ddrport.aresetn := !reset_0
-      mod.io.ddrport.sys_rst := reset_1
+      mod.io.ddrport.aresetn := aresetn
+      mod.io.ddrport.sys_rst := sys_rst
+      reset_2 := ResetCatchAndSync(pll.io.clk_out1.get, mod.io.ddrport.ui_clk_sync_rst)
 
       // TileLink Interface from platform
       mod.io.tlport.a <> chiptl.a
@@ -790,8 +791,9 @@ trait WithFPGAArtyA7Connect {
       // MIG connections, like resets and stuff
       mod.io.ddrport.sys_clk_i := pll.io.clk_out2.get.asBool()
       mod.io.ddrport.clk_ref_i := pll.io.clk_out3.get.asBool()
-      mod.io.ddrport.aresetn := !reset_0
-      mod.io.ddrport.sys_rst := reset_1
+      mod.io.ddrport.aresetn := aresetn
+      mod.io.ddrport.sys_rst := sys_rst
+      reset_2 := ResetCatchAndSync(pll.io.clk_out1.get, mod.io.ddrport.ui_clk_sync_rst)
 
       p(SbusToMbusXTypeKey) match {
         case _: AsynchronousCrossing =>
@@ -813,14 +815,14 @@ trait WithFPGAArtyA7Connect {
     chip.rst_n := !reset_2
 
     // NOTE: No extser
-    chip.extser
+    //chip.extser
 
     // GPIO
     IOBUF(led_0, chip.gpio_out(0))
     IOBUF(led_1, chip.gpio_out(1))
     IOBUF(led_2, chip.gpio_out(2))
     IOBUF(led_3, init_calib_complete)//chip.gpio_out(3))
-    chip.gpio_in := Cat(IOBUF(sw_3), IOBUF(sw_2))
+    chip.gpio_in := Cat(IOBUF(sw_3), IOBUF(sw_2), IOBUF(sw_1), IOBUF(sw_0))
 
     // JTAG
     chip.jtag.jtag_TCK := IBUFG(IOBUF(jd_2).asClock()).asBool()
@@ -854,14 +856,7 @@ trait WithFPGAArtyA7Connect {
     IOBUF(ja_3, chip.sdio.sdio_clk)
 
     // USB phy connections
-    chip.usb11hs.foreach{ chipport =>
-      //port.FullSpeed := chipport.USBFullSpeed
-      chipport.USBWireDataIn := 0.U // port.WireDataIn
-      //port.WireCtrlOut := chipport.USBWireCtrlOut
-      //port.WireDataOut := chipport.USBWireDataOut
-
-      chipport.usbClk := pll.io.clk_out1.getOrElse(false.B) // TODO: Not possible to create the 48MHz
-    }
+    // TODO: Not possible to create the 48MHz
   }
 }
 
