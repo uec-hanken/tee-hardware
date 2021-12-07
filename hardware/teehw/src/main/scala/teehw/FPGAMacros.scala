@@ -64,7 +64,7 @@ class SertoMIG(w: Int, idBits: Int = 6)(implicit p :Parameters) extends LazyModu
   }
 }
 
-class TLULtoMIG(cacheBlockBytes: Int, TLparams: TLBundleParameters)(implicit p :Parameters) extends LazyModule {
+class TLULtoMIG(TLparams: TLBundleParameters)(implicit p :Parameters) extends LazyModule {
   // Create the DDR
   val ddr = LazyModule(
     new XilinxVC707MIG(
@@ -167,7 +167,7 @@ class SertoMIGUltra(w: Int, idBits: Int = 6)(implicit p :Parameters) extends Laz
   }
 }
 
-class TLULtoMIGUltra(cacheBlockBytes: Int, TLparams: TLBundleParameters)(implicit p :Parameters) extends LazyModule {
+class TLULtoMIGUltra(TLparams: TLBundleParameters)(implicit p :Parameters) extends LazyModule {
   // Create the DDR
   val ddr = LazyModule(
     new XilinxVCU118MIG(
@@ -652,7 +652,6 @@ class QuartusIsland(c : Seq[AddressSet],
 }
 
 class QuartusPlatform(c : Seq[AddressSet],
-                      cacheBlockBytes: Int,
                       ddrc: QuartusDDRConfig = QuartusDDRConfig())(implicit p: Parameters) extends LazyModule {
   val ranges = AddressRange.fromSets(c)
   require (ranges.size == 1, "DDR range must be contiguous")
@@ -682,8 +681,7 @@ class QuartusPlatform(c : Seq[AddressSet],
 }
 
 
-class TLULtoQuartusPlatform( cacheBlockBytes: Int,
-                             TLparams: TLBundleParameters,
+class TLULtoQuartusPlatform( TLparams: TLBundleParameters,
                              ddrc: QuartusDDRConfig = QuartusDDRConfig()
                            )(implicit p :Parameters)
   extends LazyModule {
@@ -694,7 +692,6 @@ class TLULtoQuartusPlatform( cacheBlockBytes: Int,
           p(ExtMem).get.master.base,
           0x40000000L * 1 // 1GiB for the VC707DDR
       ),
-      cacheBlockBytes,
       ddrc = ddrc
     )
   )

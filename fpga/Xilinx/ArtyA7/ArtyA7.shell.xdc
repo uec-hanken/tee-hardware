@@ -24,7 +24,10 @@ set_clock_groups -asynchronous \
     }]]] \
   -group [list [get_clocks { \
       JTCK \
-    }]]
+    }]] \
+  -group [list [get_clocks -of_objects [get_pins { \
+      mod/ddr/island/blackbox/u_arty100tmig_mig/u_ddr3_infrastructure/plle2_i/CLKOUT3 \
+    }]]]
 
 ## Clock signal
 

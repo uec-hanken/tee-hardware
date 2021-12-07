@@ -67,49 +67,57 @@ class Rocket8 extends Config(
 class Ibex extends Config(
   new WithNIbexCores(1) )
 
-// Rocket Micro (For microcontrollers)
-class RocketMicro extends Config(
-  new WithNSmallCores(1).alter((site, here, up) => {
-    case RocketTilesKey => up(RocketTilesKey, site) map { r =>
-      r.copy(
-        btb = None,
-        dcache = r.dcache map {d =>
-          d.copy(
-            nSets = 64, // 16Kb scratchpad
-            nWays = 1,
-            nTLBSets = 1,
-            nTLBWays = 4,
-            nMSHRs = 0
-            //scratch = Some(0x80000000L) // TODO: Not possible to put the scratchpad here
-          )
-        },
-        icache = r.icache map {i =>
-          i.copy(
-            nSets = 64,
-            nWays = 1,
-            nTLBSets = 1,
-            nTLBWays = 4,
-          )
-        }
-      )
-    }
-  })
+// Rocket just for small configs
+class RocketSmall extends Config(
+  new WithNSmallCores(1, Some(0))
+)
+class RocketMicro extends With1TinyCore
+
+// Rocket Very Small Cache
+class MicroCached extends Config ((site, here, up) => {
+  case RocketTilesKey => up(RocketTilesKey, site) map { r =>
+    r.copy(
+      btb = None,
+      dcache = r.dcache map {d =>
+        d.copy(
+          nSets = 64, // 2Kb cache
+          nWays = 1,
+          nTLBSets = 1,
+          nTLBWays = 4,
+          nMSHRs = 0
+        )
+      },
+      icache = r.icache map {i =>
+        i.copy(
+          nSets = 64, // 2Kb cache
+          nWays = 1,
+          nTLBSets = 1,
+          nTLBWays = 4,
+        )})
+  }}
 )
 
+// Microcontroller with only scratchpad
 class Micro extends Config ((site, here, up) => {
   case RocketTilesKey => up(RocketTilesKey, site) map { r =>
     r.copy( dcache = r.dcache map { d =>
       d.copy(
-        nSets = 64, // 16Kb scratchpad
+        nSets = 64, // 4Kb scratchpad
         nWays = 1,
         nTLBSets = 1,
         nTLBWays = 4,
         nMSHRs = 0,
         scratch = Some(0x80000000L)
-      )
-    })
-  }
-})
+      )},
+      icache = r.icache map {i =>
+        i.copy(
+          nSets = 32, // 2Kb cache
+          nWays = 1,
+          nTLBSets = 1,
+          nTLBWays = 4,
+        )})
+  }}
+)
 
 // Non-secure Ibex (Without Isolation)
 class Ibex2RocketNonSecure extends Config(
