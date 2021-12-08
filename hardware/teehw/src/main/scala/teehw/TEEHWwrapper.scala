@@ -1421,11 +1421,11 @@ trait FPGATR4ChipShell {
   val FAN_CTRL = IO(Output(Bool()))
 
   //////////// HSMC_A //////////
-  val HSMA_CLKIN0 = IO(Analog(1.W))
-  val HSMA_CLKIN_n1 = IO(Analog(1.W))
-  val HSMA_CLKIN_n2 = IO(Analog(1.W))
-  val HSMA_CLKIN_p1 = IO(Analog(1.W))
-  val HSMA_CLKIN_p2 = IO(Analog(1.W))
+  val HSMA_CLKIN0 = IO(Input(Bool()))
+  val HSMA_CLKIN_n1 = IO(Input(Bool()))
+  val HSMA_CLKIN_n2 = IO(Input(Bool()))
+  val HSMA_CLKIN_p1 = IO(Input(Bool()))
+  val HSMA_CLKIN_p2 = IO(Input(Bool()))
   val HSMA_D = IO(Vec(4, Analog(1.W)))
   val HSMA_OUT0 = IO(Analog(1.W))
   val HSMA_OUT_n1 = IO(Analog(1.W))
@@ -1438,11 +1438,11 @@ trait FPGATR4ChipShell {
   val HSMA_TX_p = IO(Vec(17, Analog(1.W)))
 
   //////////// HSMC_B //////////
-  val HSMB_CLKIN0 = IO(Analog(1.W))
-  val HSMB_CLKIN_n1 = IO(Analog(1.W))
-  val HSMB_CLKIN_n2 = IO(Analog(1.W))
-  val HSMB_CLKIN_p1 = IO(Analog(1.W))
-  val HSMB_CLKIN_p2 = IO(Analog(1.W))
+  val HSMB_CLKIN0 = IO(Input(Bool()))
+  val HSMB_CLKIN_n1 = IO(Input(Bool()))
+  val HSMB_CLKIN_n2 = IO(Input(Bool()))
+  val HSMB_CLKIN_p1 = IO(Input(Bool()))
+  val HSMB_CLKIN_p2 = IO(Input(Bool()))
   val HSMB_D = IO(Vec(4, Analog(1.W)))
   val HSMB_OUT0 = IO(Analog(1.W))
   val HSMB_OUT_n1 = IO(Analog(1.W))
@@ -1459,11 +1459,11 @@ trait FPGATR4ChipShell {
   val GPIO1_D = IO(Vec(35+1, Analog(1.W)))
 
   //////////// HSMC_D //////////
-  val HSMD_CLKIN0 = IO(Analog(1.W))
-  val HSMD_CLKIN_n1 = IO(Analog(1.W))
-  val HSMD_CLKIN_n2 = IO(Analog(1.W))
-  val HSMD_CLKIN_p1 = IO(Analog(1.W))
-  val HSMD_CLKIN_p2 = IO(Analog(1.W))
+  val HSMD_CLKIN0 = IO(Input(Bool()))
+  val HSMD_CLKIN_n1 = IO(Input(Bool()))
+  val HSMD_CLKIN_n2 = IO(Input(Bool()))
+  val HSMD_CLKIN_p1 = IO(Input(Bool()))
+  val HSMD_CLKIN_p2 = IO(Input(Bool()))
   val HSMD_CLKOUT_n1 = IO(Analog(1.W))
   val HSMD_CLKOUT_p1 = IO(Analog(1.W))
   val HSMD_D = IO(Vec(4, Analog(1.W)))
@@ -1476,11 +1476,11 @@ trait FPGATR4ChipShell {
   val HSMD_TX_p = IO(Vec(17, Analog(1.W)))
 
   //////////// HSMC_E //////////
-  val HSME_CLKIN0 = IO(Analog(1.W))
-  val HSME_CLKIN_n1 = IO(Analog(1.W))
-  val HSME_CLKIN_n2 = IO(Analog(1.W))
-  val HSME_CLKIN_p1 = IO(Analog(1.W))
-  val HSME_CLKIN_p2 = IO(Analog(1.W))
+  val HSME_CLKIN0 = IO(Input(Bool()))
+  val HSME_CLKIN_n1 = IO(Input(Bool()))
+  val HSME_CLKIN_n2 = IO(Input(Bool()))
+  val HSME_CLKIN_p1 = IO(Input(Bool()))
+  val HSME_CLKIN_p2 = IO(Input(Bool()))
   val HSME_CLKOUT_n1 = IO(Analog(1.W))
   val HSME_CLKOUT_p1 = IO(Analog(1.W))
   val HSME_D = IO(Vec(4, Analog(1.W)))
@@ -1493,11 +1493,11 @@ trait FPGATR4ChipShell {
   val HSME_TX_p = IO(Vec(17, Analog(1.W)))
 
   //////////// HSMC_F //////////
-  val HSMF_CLKIN0 = IO(Analog(1.W))
-  val HSMF_CLKIN_n1 = IO(Analog(1.W))
-  val HSMF_CLKIN_n2 = IO(Analog(1.W))
-  val HSMF_CLKIN_p1 = IO(Analog(1.W))
-  val HSMF_CLKIN_p2 = IO(Analog(1.W))
+  val HSMF_CLKIN0 = IO(Input(Bool()))
+  val HSMF_CLKIN_n1 = IO(Input(Bool()))
+  val HSMF_CLKIN_n2 = IO(Input(Bool()))
+  val HSMF_CLKIN_p1 = IO(Input(Bool()))
+  val HSMF_CLKIN_p2 = IO(Input(Bool()))
   val HSMF_CLKOUT_n1 = IO(Analog(1.W))
   val HSMF_CLKOUT_p1 = IO(Analog(1.W))
   val HSMF_D = IO(Vec(4, Analog(1.W)))
@@ -1820,11 +1820,11 @@ trait WithFPGATR4ToChipConnect extends WithFPGATR4InternNoChipCreate with WithFP
   intern.extser.foreach{ a => a } // NOTHING
   // Memory port
   intern.tlport.foreach{ tlport =>
-    tlport.a.valid := ALT_IOBUF(HSMB_CLKIN_n2) // JP18 - J2 1 / HSMB_CLKIN_n2
+    tlport.a.valid := HSMB_CLKIN_n2 // JP18 - J2 1 / HSMB_CLKIN_n2
     ALT_IOBUF(HSMB_RX_p(16), tlport.a.ready) // JP18 - J2 4 / HSMB_RX_p(16)
     require(tlport.a.bits.opcode.getWidth == 3, s"${tlport.a.bits.opcode.getWidth}")
     tlport.a.bits.opcode := Cat(
-      ALT_IOBUF(HSMB_CLKIN_p2), // JP18 - J2 3 / HSMB_CLKIN_p2
+      HSMB_CLKIN_p2, // JP18 - J2 3 / HSMB_CLKIN_p2
       ALT_IOBUF(HSMB_TX_p(16)), // JP18 - J2 7 / HSMB_TX_p(16)
       ALT_IOBUF(HSMB_RX_p(15)), // JP18 - J2 8 / HSMB_RX_p(15)
     )
@@ -1868,9 +1868,9 @@ trait WithFPGATR4ToChipConnect extends WithFPGATR4InternNoChipCreate with WithFP
       ALT_IOBUF(HSMB_TX_p(10)), // [17] JP18 - J2 39 / HSMB_TX_p(10)
       ALT_IOBUF(HSMB_TX_p(9)), // [16] JP18 - J2 40 / HSMB_TX_p(9)
       
-      ALT_IOBUF(HSMB_CLKIN_n1), // [15] JP19 - J3 1 / HSMB_CLKIN_n1
+      HSMB_CLKIN_n1, // [15] JP19 - J3 1 / HSMB_CLKIN_n1
       ALT_IOBUF(HSMB_RX_n(7)), // [14] JP19 - J3 2 / HSMB_RX_n(7)
-      ALT_IOBUF(HSMB_CLKIN_p1), // [13] JP19 - J3 3 / HSMB_CLKIN_p1
+      HSMB_CLKIN_p1, // [13] JP19 - J3 3 / HSMB_CLKIN_p1
       ALT_IOBUF(HSMB_RX_p(7)), // [12] JP19 - J3 4 / HSMB_RX_p(7)
       ALT_IOBUF(HSMB_TX_n(7)), // [11] JP19 - J3 5 / HSMB_TX_n(7)
       ALT_IOBUF(HSMB_RX_n(6)), // [10] JP19 - J3 6 / HSMB_RX_n(6)
@@ -1918,9 +1918,9 @@ trait WithFPGATR4ToChipConnect extends WithFPGATR4InternNoChipCreate with WithFP
       ALT_IOBUF(HSMA_RX_n(15)), // [11] JP20 - J2 6 / HSMA_RX_n(15)
       ALT_IOBUF(HSMA_TX_n(16)), // [10] JP20 - J2 5 / HSMA_TX_n(16)
       ALT_IOBUF(HSMA_RX_p(16)), // [9] JP20 - J2 4 / HSMA_RX_p(16)
-      ALT_IOBUF(HSMA_CLKIN_p2), // [8] JP20 - J2 3 / HSMA_CLKIN_p2
+      HSMA_CLKIN_p2, // [8] JP20 - J2 3 / HSMA_CLKIN_p2
       ALT_IOBUF(HSMA_RX_n(16)), // [7] JP20 - J2 2 / HSMA_RX_n(16)
-      ALT_IOBUF(HSMA_CLKIN_n2), // [6] JP20 - J2 1 / HSMA_CLKIN_n2
+      HSMA_CLKIN_n2, // [6] JP20 - J2 1 / HSMA_CLKIN_n2
       
       ALT_IOBUF(HSMA_TX_p(15)), // [5] JP20 - J2 13 / HSMA_TX_p(15)
       ALT_IOBUF(HSMA_RX_p(14)), // [4] JP20 - J2 14 / HSMA_RX_p(14)
