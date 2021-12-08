@@ -1801,99 +1801,56 @@ trait WithFPGATR4ToChipConnect extends WithFPGATR4InternNoChipCreate with WithFP
   this: FPGATR4Shell =>
 
   // NOTES:
-  // JP18 -> J2 / JP19 -> J3 belongs to HSMB
+  // JP19 -> J2 / JP18 -> J3 belongs to HSMB
   // JP20 -> J2 / JP21 -> J3 belongs to HSMA
 
   // From intern = Clocks and resets
   intern.ChildClock.foreach{ a => 
-    ALT_IOBUF(HSMA_RX_n(7), a.asBool()) // JP21 -> J3 2 / HSMA_RX_n(7)
+    ALT_IOBUF(HSMA_RX_n(7), a.asBool()) // JP21 - J3 2 / HSMA_RX_n(7)
   }
   intern.ChildReset.foreach{ a =>
-    ALT_IOBUF(HSMB_TX_n(16), a) // JP18 -> J2 5 / HSMB_TX_n(16)
+    ALT_IOBUF(HSMB_TX_n(7), a) // JP19 - J3 5 / HSMB_TX_n(7)
   }
-  ALT_IOBUF(HSMA_RX_n(8), intern.sys_clk.asBool()) // JP21 -> J3 4 / HSMA_RX_p(7)
-  ALT_IOBUF(HSMB_RX_n(16), intern.rst_n) // JP18 -> J2 2 / HSMB_RX_n(16)
-  ALT_IOBUF(HSMB_RX_n(15), intern.jrst_n) // JP18 -> J2 6 / HSMB_RX_n(15)
+  ALT_IOBUF(HSMA_RX_n(8), intern.sys_clk.asBool()) // JP21 - J3 4 / HSMA_RX_n(8)
+  ALT_IOBUF(HSMB_RX_n(7), intern.rst_n) // JP19 - J3 2 / HSMB_RX_n(7)
+  ALT_IOBUF(HSMB_RX_n(6), intern.jrst_n) // JP19 - J3 6 / HSMB_RX_n(6)
   // Memory port serialized
   intern.memser.foreach{ a => a } // NOTHING
   // Ext port serialized
   intern.extser.foreach{ a => a } // NOTHING
   // Memory port
   intern.tlport.foreach{ tlport =>
-    tlport.a.valid := HSMB_CLKIN_n2 // JP18 - J2 1 / HSMB_CLKIN_n2
-    ALT_IOBUF(HSMB_RX_p(16), tlport.a.ready) // JP18 - J2 4 / HSMB_RX_p(16)
+    tlport.a.valid := HSMB_CLKIN_n1 // JP19 - J3 1 / HSMB_CLKIN_n1
+    ALT_IOBUF(HSMB_RX_p(7), tlport.a.ready) // JP19 - J3 4 / HSMB_RX_p(7)
     require(tlport.a.bits.opcode.getWidth == 3, s"${tlport.a.bits.opcode.getWidth}")
     tlport.a.bits.opcode := Cat(
-      HSMB_CLKIN_p2, // JP18 - J2 3 / HSMB_CLKIN_p2
-      ALT_IOBUF(HSMB_TX_p(16)), // JP18 - J2 7 / HSMB_TX_p(16)
-      ALT_IOBUF(HSMB_RX_p(15)), // JP18 - J2 8 / HSMB_RX_p(15)
+      HSMB_CLKIN_p1, // JP19 - J3 3 / HSMB_CLKIN_p1
+      ALT_IOBUF(HSMB_TX_p(7)), // JP19 - J3 7 / HSMB_TX_p(7)
+      ALT_IOBUF(HSMB_RX_p(6)), // JP19 - J3 8 / HSMB_RX_p(6)
     )
     require(tlport.a.bits.param.getWidth == 3, s"${tlport.a.bits.param.getWidth}")
     tlport.a.bits.param := Cat(
-      ALT_IOBUF(HSMB_TX_n(15)), // JP18 - J2 9 / HSMB_TX_n(15)
-      ALT_IOBUF(HSMB_RX_n(14)), // JP18 - J2 10 / HSMB_RX_n(14)
-      ALT_IOBUF(HSMB_TX_p(15)), // JP18 - J2 13 / HSMB_TX_p(15)
+      ALT_IOBUF(HSMB_TX_n(6)), // JP19 - J3 9 / HSMB_TX_n(6)
+      ALT_IOBUF(HSMB_RX_n(5)), // JP19 - J3 10 / HSMB_RX_n(5)
+      ALT_IOBUF(HSMB_TX_p(6)), // JP19 - J3 13 / HSMB_TX_p(6)
     )
     require(tlport.a.bits.size.getWidth == 3, s"${tlport.a.bits.size.getWidth}")
     tlport.a.bits.size := Cat(
-      ALT_IOBUF(HSMB_RX_p(14)), // JP18 - J2 14 / HSMB_RX_p(14)
-      ALT_IOBUF(HSMB_TX_n(14)), // JP18 - J2 15 / HSMB_TX_n(14)
-      ALT_IOBUF(HSMB_RX_n(13)), // JP18 - J2 16 / HSMB_RX_n(13)
+      ALT_IOBUF(HSMB_RX_p(5)), // JP19 - J3 14 / HSMB_RX_p(5)
+      ALT_IOBUF(HSMB_TX_n(5)), // JP19 - J3 15 / HSMB_TX_n(5)
+      ALT_IOBUF(HSMB_RX_n(4)), // JP19 - J3 16 / HSMB_RX_n(4)
     )
     require(tlport.a.bits.source.getWidth == 6, s"${tlport.a.bits.source.getWidth}")
     tlport.a.bits.source := Cat(
-      ALT_IOBUF(HSMB_TX_p(14)), // JP18 - J2 17 / HSMB_TX_p(14)
-      ALT_IOBUF(HSMB_RX_p(13)), // JP18 - J2 18 / HSMB_RX_p(13)
-      ALT_IOBUF(HSMB_OUT_n2), // JP18 - J2 19 / HSMB_OUT_n2
-      ALT_IOBUF(HSMB_RX_n(12)), // JP18 - J2 20 / HSMB_RX_n(12)
-      ALT_IOBUF(HSMB_OUT_p2), // JP18 - J2 21 / HSMB_OUT_p2
-      ALT_IOBUF(HSMB_RX_p(12)), // JP18 - J2 22 / HSMB_RX_p(12)
+      ALT_IOBUF(HSMB_TX_p(5)), // JP19 - J3 17 / HSMB_TX_p(5)
+      ALT_IOBUF(HSMB_RX_p(4)), // JP19 - J3 18 / HSMB_RX_p(4)
+      ALT_IOBUF(HSMB_OUT_n1), // JP19 - J3 19 / HSMB_OUT_n1
+      ALT_IOBUF(HSMB_RX_n(3)), // JP19 - J3 20 / HSMB_RX_n(3)
+      ALT_IOBUF(HSMB_OUT_p1), // JP19 - J3 21 / HSMB_OUT_p1
+      ALT_IOBUF(HSMB_RX_p(3)), // JP19 - J3 22 / HSMB_RX_p(3)
     )
     require(tlport.a.bits.address.getWidth == 32, s"${tlport.a.bits.address.getWidth}")
     tlport.a.bits.address := Cat(
-      ALT_IOBUF(HSMB_TX_n(13)), // [31] JP18 - J2 23 / HSMB_TX_n(13)
-      ALT_IOBUF(HSMB_RX_n(11)), // [30] JP18 - J2 24 / HSMB_RX_n(11)
-      ALT_IOBUF(HSMB_TX_p(13)), // [29] JP18 - J2 25 / HSMB_TX_p(13)
-      ALT_IOBUF(HSMB_RX_p(11)), // [28] JP18 - J2 26 / HSMB_RX_p(11)
-      ALT_IOBUF(HSMB_TX_n(12)), // [27] JP18 - J2 27 / HSMB_TX_n(12)
-      ALT_IOBUF(HSMB_RX_n(10)), // [26] JP18 - J2 28 / HSMB_RX_n(10)
-      ALT_IOBUF(HSMB_TX_p(12)), // [25] JP18 - J2 31 / HSMB_TX_p(12)
-      ALT_IOBUF(HSMB_RX_p(10)), // [24] JP18 - J2 32 / HSMB_RX_p(10)
-      ALT_IOBUF(HSMB_TX_n(11)), // [23] JP18 - J2 33 / HSMB_TX_n(11)
-      ALT_IOBUF(HSMB_RX_n(9)), // [22] JP18 - J2 34 / HSMB_RX_n(9)
-      ALT_IOBUF(HSMB_TX_p(11)), // [21] JP18 - J2 35 / HSMB_TX_p(11)
-      ALT_IOBUF(HSMB_RX_p(9)), // [20] JP18 - J2 36 / HSMB_RX_p(9)
-      ALT_IOBUF(HSMB_TX_n(10)), // [19] JP18 - J2 37 / HSMB_TX_n(10)
-      ALT_IOBUF(HSMB_TX_n(9)), // [18] JP18 - J2 38 / HSMB_TX_n(9)
-      ALT_IOBUF(HSMB_TX_p(10)), // [17] JP18 - J2 39 / HSMB_TX_p(10)
-      ALT_IOBUF(HSMB_TX_p(9)), // [16] JP18 - J2 40 / HSMB_TX_p(9)
-      
-      HSMB_CLKIN_n1, // [15] JP19 - J3 1 / HSMB_CLKIN_n1
-      ALT_IOBUF(HSMB_RX_n(7)), // [14] JP19 - J3 2 / HSMB_RX_n(7)
-      HSMB_CLKIN_p1, // [13] JP19 - J3 3 / HSMB_CLKIN_p1
-      ALT_IOBUF(HSMB_RX_p(7)), // [12] JP19 - J3 4 / HSMB_RX_p(7)
-      ALT_IOBUF(HSMB_TX_n(7)), // [11] JP19 - J3 5 / HSMB_TX_n(7)
-      ALT_IOBUF(HSMB_RX_n(6)), // [10] JP19 - J3 6 / HSMB_RX_n(6)
-      ALT_IOBUF(HSMB_TX_p(7)), // [9] JP19 - J3 7 / HSMB_TX_p(7)
-      ALT_IOBUF(HSMB_RX_p(6)), // [8] JP19 - J3 8 / HSMB_RX_p(6)
-      ALT_IOBUF(HSMB_TX_n(6)), // [7] JP19 - J3 9 / HSMB_TX_n(6)
-      ALT_IOBUF(HSMB_RX_n(5)), // [6] JP19 - J3 10 / HSMB_RX_n(5)
-      ALT_IOBUF(HSMB_TX_p(6)), // [5] JP19 - J3 13 / HSMB_TX_p(6)
-      ALT_IOBUF(HSMB_RX_p(5)), // [4] JP19 - J3 14 / HSMB_RX_p(5)
-      ALT_IOBUF(HSMB_TX_n(5)), // [3] JP19 - J3 15 / HSMB_TX_n(5)
-      ALT_IOBUF(HSMB_RX_n(4)), // [2] JP19 - J3 16 / HSMB_RX_n(4)
-      ALT_IOBUF(HSMB_TX_p(5)), // [1] JP19 - J3 17 / HSMB_TX_p(5)
-      ALT_IOBUF(HSMB_RX_p(4)), // [0] JP19 - J3 18 / HSMB_RX_p(4)
-    )
-    require(tlport.a.bits.mask.getWidth == 4, s"${tlport.a.bits.mask.getWidth}")
-    tlport.a.bits.mask := Cat(
-      ALT_IOBUF(HSMB_OUT_n1), // [3] JP19 - J3 19 / HSMB_OUT_n1
-      ALT_IOBUF(HSMB_RX_n(3)), // [2] JP19 - J3 20 / HSMB_RX_n(3)
-      ALT_IOBUF(HSMB_OUT_p1), // [1] JP19 - J3 21 / HSMB_OUT_p1
-      ALT_IOBUF(HSMB_RX_p(3)), // [0] JP19 - J3 22 / HSMB_RX_p(3)
-    )
-    require(tlport.a.bits.data.getWidth == 32, s"${tlport.a.bits.data.getWidth}")
-    tlport.a.bits.data := Cat(
       ALT_IOBUF(HSMB_TX_n(4)), // [31] JP19 - J3 23 / HSMB_TX_n(4)
       ALT_IOBUF(HSMB_RX_n(2)), // [30] JP19 - J3 24 / HSMB_RX_n(2)
       ALT_IOBUF(HSMB_TX_p(4)), // [29] JP19 - J3 25 / HSMB_TX_p(4)
@@ -1910,6 +1867,49 @@ trait WithFPGATR4ToChipConnect extends WithFPGATR4InternNoChipCreate with WithFP
       ALT_IOBUF(HSMB_TX_n(0)), // [18] JP19 - J3 38 / HSMB_TX_n(0)
       ALT_IOBUF(HSMB_TX_p(1)), // [17] JP19 - J3 39 / HSMB_TX_p(1)
       ALT_IOBUF(HSMB_TX_p(0)), // [16] JP19 - J3 40 / HSMB_TX_p(0)
+      
+      HSMB_CLKIN_n2, // [15] JP19 - J2 1 / HSMB_CLKIN_n2
+      ALT_IOBUF(HSMB_RX_n(16)), // [14] JP19 - J2 2 / HSMB_RX_n(16)
+      HSMB_CLKIN_p2, // [13] JP19 - J2 3 / HSMB_CLKIN_p2
+      ALT_IOBUF(HSMB_RX_p(16)), // [12] JP19 - J2 4 / HSMB_RX_p(16)
+      ALT_IOBUF(HSMB_TX_n(16)), // [11] JP19 - J2 5 / HSMB_TX_n(16)
+      ALT_IOBUF(HSMB_RX_n(15)), // [10] JP19 - J2 6 / HSMB_RX_n(15)
+      ALT_IOBUF(HSMB_TX_p(16)), // [9] JP19 - J2 7 / HSMB_TX_p(16)
+      ALT_IOBUF(HSMB_RX_p(15)), // [8] JP19 - J2 8 / HSMB_RX_p(15)
+      ALT_IOBUF(HSMB_TX_n(15)), // [7] JP19 - J2 9 / HSMB_TX_n(15)
+      ALT_IOBUF(HSMB_RX_n(14)), // [6] JP19 - J2 10 / HSMB_RX_n(14)
+      ALT_IOBUF(HSMB_TX_p(15)), // [5] JP19 - J2 13 / HSMB_TX_p(15)
+      ALT_IOBUF(HSMB_RX_p(14)), // [4] JP19 - J2 14 / HSMB_RX_p(14)
+      ALT_IOBUF(HSMB_TX_n(14)), // [3] JP19 - J2 15 / HSMB_TX_n(14)
+      ALT_IOBUF(HSMB_RX_n(13)), // [2] JP19 - J2 16 / HSMB_RX_n(13)
+      ALT_IOBUF(HSMB_TX_p(14)), // [1] JP19 - J2 17 / HSMB_TX_p(14)
+      ALT_IOBUF(HSMB_RX_p(13)), // [0] JP19 - J2 18 / HSMB_RX_p(13)
+    )
+    require(tlport.a.bits.mask.getWidth == 4, s"${tlport.a.bits.mask.getWidth}")
+    tlport.a.bits.mask := Cat(
+      ALT_IOBUF(HSMB_OUT_n2), // [3] JP19 - J2 19 / HSMB_OUT_n2
+      ALT_IOBUF(HSMB_RX_n(12)), // [2] JP19 - J2 20 / HSMB_RX_n(12)
+      ALT_IOBUF(HSMB_OUT_p2), // [1] JP19 - J2 21 / HSMB_OUT_p2
+      ALT_IOBUF(HSMB_RX_p(12)), // [0] JP19 - J2 22 / HSMB_RX_p(12)
+    )
+    require(tlport.a.bits.data.getWidth == 32, s"${tlport.a.bits.data.getWidth}")
+    tlport.a.bits.data := Cat(
+      ALT_IOBUF(HSMB_TX_n(13)), // [31] JP19 - J2 23 / HSMB_TX_n(13)
+      ALT_IOBUF(HSMB_RX_n(11)), // [30] JP19 - J2 24 / HSMB_RX_n(11)
+      ALT_IOBUF(HSMB_TX_p(13)), // [29] JP19 - J2 25 / HSMB_TX_p(13)
+      ALT_IOBUF(HSMB_RX_p(11)), // [28] JP19 - J2 26 / HSMB_RX_p(11)
+      ALT_IOBUF(HSMB_TX_n(12)), // [27] JP19 - J2 27 / HSMB_TX_n(12)
+      ALT_IOBUF(HSMB_RX_n(10)), // [26] JP19 - J2 28 / HSMB_RX_n(10)
+      ALT_IOBUF(HSMB_TX_p(12)), // [25] JP19 - J2 31 / HSMB_TX_p(12)
+      ALT_IOBUF(HSMB_RX_p(10)), // [24] JP19 - J2 32 / HSMB_RX_p(10)
+      ALT_IOBUF(HSMB_TX_n(11)), // [23] JP19 - J2 33 / HSMB_TX_n(11)
+      ALT_IOBUF(HSMB_RX_n(9)), // [22] JP19 - J2 34 / HSMB_RX_n(9)
+      ALT_IOBUF(HSMB_TX_p(11)), // [21] JP19 - J2 35 / HSMB_TX_p(11)
+      ALT_IOBUF(HSMB_RX_p(9)), // [20] JP19 - J2 36 / HSMB_RX_p(9)
+      ALT_IOBUF(HSMB_TX_n(10)), // [19] JP19 - J2 37 / HSMB_TX_n(10)
+      ALT_IOBUF(HSMB_TX_n(9)), // [18] JP19 - J2 38 / HSMB_TX_n(9)
+      ALT_IOBUF(HSMB_TX_p(10)), // [17] JP19 - J2 39 / HSMB_TX_p(10)
+      ALT_IOBUF(HSMB_TX_p(9)), // [16] JP19 - J2 40 / HSMB_TX_p(9)
 
       ALT_IOBUF(HSMA_RX_n(14)), // [15] JP20 - J2 10 / HSMA_RX_n(14)
       ALT_IOBUF(HSMA_TX_n(15)), // [14] JP20 - J2 9 / HSMA_TX_n(15)
