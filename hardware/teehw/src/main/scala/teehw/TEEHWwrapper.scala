@@ -1093,68 +1093,51 @@ trait FPGADE4ChipShell {
     val PCIE_WAKE_n = IO(Output(Bool()))  */
 
   ///////// GPIO /////////
-  //val GPIO0_D = IO(Output(Bits((35+1).W)))
-  //val GPIO1_D = IO(Analog((35+1).W))
-  val jtag = IO(new Bundle {
-    val jtag_TDI = (Input(Bool()))
-    val jtag_TMS = (Input(Bool()))
-    val jtag_TCK = (Input(Bool()))
-    val jtag_TDO = (Output(Bool()))
-  })
-
-  var qspi: Option[TEEHWQSPIBundle] = None
-
-  val USB = p(PeripheryUSB11HSKey).map { _ =>
-    IO(new Bundle {
-      val FullSpeed = Output(Bool()) // GPIO0_D[7]
-      val WireDataIn = Input(Bits(2.W)) // GPIO0_D[1:0]
-      val WireCtrlOut = Output(Bool()) // GPIO0_D[6]
-      val WireDataOut = Output(Bits(2.W)) // GPIO0_D[3:2]
-    })
-  }
+  val GPIO0_D = IO(Vec(35+1, Analog(1.W)))
+  val GPIO1_D = IO(Vec(35+1, Analog(1.W)))
 
   ///////////  EXT_IO /////////
   //val EXT_IO = IO(Analog(1.W))
 
   //////////// HSMC_A //////////
-  /*val HSMA_CLKIN_n1 = IO(Input(Bool()))
+  val HSMA_CLKIN_n1 = IO(Input(Bool()))
   val HSMA_CLKIN_n2 = IO(Input(Bool()))
   val HSMA_CLKIN_p1 = IO(Input(Bool()))
   val HSMA_CLKIN_p2 = IO(Input(Bool()))
   val HSMA_CLKIN0 = IO(Input(Bool()))
   val HSMA_CLKOUT_n2 = IO(Output(Bool()))
   val HSMA_CLKOUT_p2 = IO(Output(Bool()))
-  val HSMA_D = IO(Analog((3+1).W))
+  val HSMA_D = IO(Vec(4, Analog(1.W)))
   //val HSMA_GXB_RX_p = IO(Input(Bits((3+1).W)))
   //val HSMA_GXB_TX_p = IO(Output(Bits((3+1).W)))
   val HSMA_OUT_n1 = IO(Analog(1.W))
   val HSMA_OUT_p1 = IO(Analog(1.W))
   val HSMA_OUT0 = IO(Analog(1.W))
   //val HSMA_REFCLK_p = IO(Input(Bool()))
-  val HSMA_RX_n = IO(Analog((16+1).W))
-  val HSMA_RX_p = IO(Analog((16+1).W))
-  val HSMA_TX_n = IO(Analog((16+1).W))
-  val HSMA_TX_p = IO(Analog((16+1).W))*/
+  val HSMA_RX_n = IO(Vec(17, Analog(1.W)))
+  val HSMA_RX_p = IO(Vec(17, Analog(1.W)))
+  val HSMA_TX_n = IO(Vec(17, Analog(1.W)))
+  val HSMA_TX_p = IO(Vec(17, Analog(1.W)))
 
   //////////// HSMC_B //////////
-  /*val HSMB_CLKIN_n1 = IO(Input(Bool()))
+  val HSMB_CLKIN_n1 = IO(Input(Bool()))
   val HSMB_CLKIN_n2 = IO(Input(Bool()))
   val HSMB_CLKIN_p1 = IO(Input(Bool()))
   val HSMB_CLKIN_p2 = IO(Input(Bool()))
   val HSMB_CLKIN0 = IO(Input(Bool()))
   val HSMB_CLKOUT_n2 = IO(Output(Bool()))
   val HSMB_CLKOUT_p2 = IO(Output(Bool()))
-  val HSMB_D = IO(Analog((3+1).W))
+  val HSMB_D = IO(Vec(4, Analog(1.W)))
   //val HSMB_GXB_RX_p = IO(Input(Bits((7+1).W)))
   //val HSMB_GXB_TX_p = IO(Output(Bits((7+1).W)))
   val HSMB_OUT_n1 = IO(Analog(1.W))
   val HSMB_OUT_p1 = IO(Analog(1.W))
   val HSMB_OUT0 = IO(Analog(1.W))
   //val HSMB_REFCLK_p = IO(Input(Bool()))
-  val HSMB_RX_n = IO(Analog((16+1).W))
-  val HSMB_RX_p = IO(Analog((16+1).W))
-  val HSMB_TX_n = IO(Analog((16+1).W))
-  val HSMB_TX_p = IO(Analog((16+1).W))*/
+  val HSMB_RX_n = IO(Vec(17, Analog(1.W)))
+  val HSMB_RX_p = IO(Vec(17, Analog(1.W)))
+  val HSMB_TX_n = IO(Vec(17, Analog(1.W)))
+  val HSMB_TX_p = IO(Vec(17, Analog(1.W)))
 
   //////////// HSMC I2C //////////
   /*val HSMC_SCL = IO(Output(Bool()))
@@ -1299,6 +1282,7 @@ class FPGADE4Internal(val outer: WithTEEHWbaseShell with WithTEEHWbaseConnect)(i
       sys_clk := mod.io.ckrst.qsys_clk
       aclocks.foreach(_.foreach(_ := mod.io.ckrst.qsys_clk)) // TODO: Connect your clocks here
       rst_n := !reset_to_sys
+      jrst_n := !reset_to_sys
       usbClk.foreach(_ := mod.io.ckrst.usb_clk)
       if(p(DDRPortOther)) {
         ChildClock.foreach(_ := mod.io.ckrst.io_clk)
@@ -1355,7 +1339,19 @@ trait WithFPGADE4Connect {
   intern.M1_DDR2_oct_rup := M1_DDR2_oct_rup
 
   // From intern = Clocks and resets
-
+  (chip.ChildClock zip intern.ChildClock).foreach{ case (a, b) => a := b }
+  (chip.ChildReset zip intern.ChildReset).foreach{ case (a, b) => a := b }
+  chip.sys_clk := intern.sys_clk
+  chip.rst_n := intern.rst_n
+  chip.jrst_n := intern.jrst_n
+  // Memory port serialized
+  (chip.memser zip intern.memser).foreach{ case (a, b) => a <> b }
+  // Ext port serialized
+  (chip.extser zip intern.extser).foreach{ case (a, b) => a <> b }
+  // Memory port
+  (chip.tlport zip intern.tlport).foreach{ case (a, b) => b.a <> a.a; a.d <> b.d }
+  // Asyncrhonoys clocks
+  (chip.aclocks zip intern.aclocks).foreach{ case (a, b) => (a zip b).foreach{ case (c, d) => c := d} }
 
   // The rest of the platform connections
   val chipshell_led = chip.gpio_out 	// output [7:0]
@@ -1367,23 +1363,31 @@ trait WithFPGADE4Connect {
     chipshell_led(3,0)
   )
   chip.gpio_in := SW(7,0)			// input  [7:0]
-  jtag <> chip.jtag
-  qspi = chip.qspi.map(A => IO ( new TEEHWQSPIBundle(A.csWidth) ) )
-  (chip.qspi zip qspi).foreach { case (sysqspi, portspi) => portspi <> sysqspi}
+  chip.jtag.jtag_TDI := ALT_IOBUF(GPIO1_D(4))
+  chip.jtag.jtag_TMS := ALT_IOBUF(GPIO1_D(6))
+  chip.jtag.jtag_TCK := ALT_IOBUF(GPIO1_D(8))
+  ALT_IOBUF(GPIO1_D(10), chip.jtag.jtag_TDI)
+  chip.qspi.foreach{A =>
+    A.qspi_miso := ALT_IOBUF(GPIO1_D(1))
+    ALT_IOBUF(GPIO1_D(3), A.qspi_mosi)
+    ALT_IOBUF(GPIO1_D(5), A.qspi_cs(0))
+    ALT_IOBUF(GPIO1_D(7), A.qspi_sck)
+  }
   chip.uart_rxd := UART_RXD	// UART_TXD
   UART_TXD := chip.uart_txd 	// UART_RXD
   SD_CLK := chip.sdio.sdio_clk 	// output
   SD_MOSI := chip.sdio.sdio_cmd 	// output
   chip.sdio.sdio_dat_0 := SD_MISO 	// input
   SD_CS_N := chip.sdio.sdio_dat_3 	// output
-  chip.jrst_n := intern.jrst_n
 
   // USB phy connections
-  ((chip.usb11hs zip USB) zip intern.usbClk).foreach{ case ((chipport, port), uclk) =>
-    port.FullSpeed := chipport.USBFullSpeed
-    chipport.USBWireDataIn := port.WireDataIn
-    port.WireCtrlOut := chipport.USBWireCtrlOut
-    port.WireDataOut := chipport.USBWireDataOut
+  (chip.usb11hs zip intern.usbClk).foreach{ case (chipport, uclk) =>
+    ALT_IOBUF(GPIO1_D(17), chipport.USBFullSpeed)
+    chipport.USBWireDataIn := ALT_IOBUF(GPIO1_D(24))
+    ALT_IOBUF(GPIO1_D(24), chipport.USBWireCtrlOut(0))
+    ALT_IOBUF(GPIO1_D(26), chipport.USBWireCtrlOut(1))
+    ALT_IOBUF(GPIO1_D(16), chipport.USBWireDataOut(0))
+    ALT_IOBUF(GPIO1_D(18), chipport.USBWireDataOut(1))
 
     chipport.usbClk := uclk
   }
@@ -1411,96 +1415,96 @@ trait FPGATR4ChipShell {
   val FAN_CTRL = IO(Output(Bool()))
 
   //////////// HSMC_A //////////
-  /*val HSMA_CLKIN0 = IO(Input(Bool()))
+  val HSMA_CLKIN0 = IO(Input(Bool()))
   val HSMA_CLKIN_n1 = IO(Input(Bool()))
   val HSMA_CLKIN_n2 = IO(Input(Bool()))
   val HSMA_CLKIN_p1 = IO(Input(Bool()))
   val HSMA_CLKIN_p2 = IO(Input(Bool()))
-  val HSMA_D = IO(Analog((3+1).W))
+  val HSMA_D = IO(Vec(4, Analog(1.W)))
   val HSMA_OUT0 = IO(Analog(1.W))
   val HSMA_OUT_n1 = IO(Analog(1.W))
   val HSMA_OUT_n2 = IO(Analog(1.W))
   val HSMA_OUT_p1 = IO(Analog(1.W))
   val HSMA_OUT_p2 = IO(Analog(1.W))
-  val HSMA_RX_n = IO(Analog((16+1).W))
-  val HSMA_RX_p = IO(Analog((16+1).W))
-  val HSMA_TX_n = IO(Analog((16+1).W))
-  val HSMA_TX_p = IO(Analog((16+1).W))*/
+  val HSMA_RX_n = IO(Vec(17, Analog(1.W)))
+  val HSMA_RX_p = IO(Vec(17, Analog(1.W)))
+  val HSMA_TX_n = IO(Vec(17, Analog(1.W)))
+  val HSMA_TX_p = IO(Vec(17, Analog(1.W)))
 
   //////////// HSMC_B //////////
-  /*val HSMB_CLKIN0 = IO(Input(Bool()))
+  val HSMB_CLKIN0 = IO(Input(Bool()))
   val HSMB_CLKIN_n1 = IO(Input(Bool()))
   val HSMB_CLKIN_n2 = IO(Input(Bool()))
   val HSMB_CLKIN_p1 = IO(Input(Bool()))
   val HSMB_CLKIN_p2 = IO(Input(Bool()))
-  val HSMB_D = IO(Analog((3+1).W))
+  val HSMB_D = IO(Vec(4, Analog(1.W)))
   val HSMB_OUT0 = IO(Analog(1.W))
   val HSMB_OUT_n1 = IO(Analog(1.W))
   val HSMB_OUT_n2 = IO(Analog(1.W))
   val HSMB_OUT_p1 = IO(Analog(1.W))
   val HSMB_OUT_p2 = IO(Analog(1.W))
-  val HSMB_RX_n = IO(Analog((16+1).W))
-  val HSMB_RX_p = IO(Analog((16+1).W))
-  val HSMB_TX_n = IO(Analog((16+1).W))
-  val HSMB_TX_p = IO(Analog((16+1).W))*/
+  val HSMB_RX_n = IO(Vec(17, Analog(1.W)))
+  val HSMB_RX_p = IO(Vec(17, Analog(1.W)))
+  val HSMB_TX_n = IO(Vec(17, Analog(1.W)))
+  val HSMB_TX_p = IO(Vec(17, Analog(1.W)))
 
   //////////// HSMC_C //////////
-  //val GPIO0_D = IO(Output(Bits((35+1).W)))
-  //val GPIO1_D = IO(Analog((35+1).W))
+  val GPIO0_D = IO(Vec(35+1, Analog(1.W)))
+  val GPIO1_D = IO(Vec(35+1, Analog(1.W)))
 
   //////////// HSMC_D //////////
-  /*val HSMD_CLKIN0 = IO(Input(Bool()))
+  val HSMD_CLKIN0 = IO(Input(Bool()))
   val HSMD_CLKIN_n1 = IO(Input(Bool()))
   val HSMD_CLKIN_n2 = IO(Input(Bool()))
   val HSMD_CLKIN_p1 = IO(Input(Bool()))
   val HSMD_CLKIN_p2 = IO(Input(Bool()))
   val HSMD_CLKOUT_n1 = IO(Analog(1.W))
   val HSMD_CLKOUT_p1 = IO(Analog(1.W))
-  val HSMD_D = IO(Analog((3+1).W))
+  val HSMD_D = IO(Vec(4, Analog(1.W)))
   val HSMD_OUT0 = IO(Analog(1.W))
   val HSMD_OUT_n2 = IO(Analog(1.W))
   val HSMD_OUT_p2 = IO(Analog(1.W))
-  val HSMD_RX_n = IO(Analog((16+1).W))
-  val HSMD_RX_p = IO(Analog((16+1).W))
-  val HSMD_TX_n = IO(Analog((16+1).W))
-  val HSMD_TX_p = IO(Analog((16+1).W))*/
+  val HSMD_RX_n = IO(Vec(17, Analog(1.W)))
+  val HSMD_RX_p = IO(Vec(17, Analog(1.W)))
+  val HSMD_TX_n = IO(Vec(17, Analog(1.W)))
+  val HSMD_TX_p = IO(Vec(17, Analog(1.W)))
 
   //////////// HSMC_E //////////
-  /*val HSME_CLKIN0 = IO(Input(Bool()))
+  val HSME_CLKIN0 = IO(Input(Bool()))
   val HSME_CLKIN_n1 = IO(Input(Bool()))
   val HSME_CLKIN_n2 = IO(Input(Bool()))
   val HSME_CLKIN_p1 = IO(Input(Bool()))
   val HSME_CLKIN_p2 = IO(Input(Bool()))
   val HSME_CLKOUT_n1 = IO(Analog(1.W))
   val HSME_CLKOUT_p1 = IO(Analog(1.W))
-  val HSME_D = IO(Analog((3+1).W))
+  val HSME_D = IO(Vec(4, Analog(1.W)))
   val HSME_OUT0 = IO(Analog(1.W))
   val HSME_OUT_n2 = IO(Analog(1.W))
   val HSME_OUT_p2 = IO(Analog(1.W))
-  val HSME_RX_n = IO(Analog((16+1).W))
-  val HSME_RX_p = IO(Analog((16+1).W))
-  val HSME_TX_n = IO(Analog((16+1).W))
-  val HSME_TX_p = IO(Analog((16+1).W))*/
+  val HSME_RX_n = IO(Vec(17, Analog(1.W)))
+  val HSME_RX_p = IO(Vec(17, Analog(1.W)))
+  val HSME_TX_n = IO(Vec(17, Analog(1.W)))
+  val HSME_TX_p = IO(Vec(17, Analog(1.W)))
 
   //////////// HSMC_F //////////
-  /*val HSMF_CLKIN0 = IO(Input(Bool()))
+  val HSMF_CLKIN0 = IO(Input(Bool()))
   val HSMF_CLKIN_n1 = IO(Input(Bool()))
   val HSMF_CLKIN_n2 = IO(Input(Bool()))
   val HSMF_CLKIN_p1 = IO(Input(Bool()))
   val HSMF_CLKIN_p2 = IO(Input(Bool()))
   val HSMF_CLKOUT_n1 = IO(Analog(1.W))
   val HSMF_CLKOUT_p1 = IO(Analog(1.W))
-  val HSMF_D = IO(Analog((3+1).W))
+  val HSMF_D = IO(Vec(4, Analog(1.W)))
   val HSMF_OUT0 = IO(Analog(1.W))
   val HSMF_OUT_n2 = IO(Analog(1.W))
   val HSMF_OUT_p2 = IO(Analog(1.W))
-  val HSMF_RX_n = IO(Analog((16+1).W))
-  val HSMF_RX_p = IO(Analog((16+1).W))
-  val HSMF_TX_n = IO(Analog((16+1).W))
-  val HSMF_TX_p = IO(Analog((16+1).W))*/
+  val HSMF_RX_n = IO(Vec(17, Analog(1.W)))
+  val HSMF_RX_p = IO(Vec(17, Analog(1.W)))
+  val HSMF_TX_n = IO(Vec(17, Analog(1.W)))
+  val HSMF_TX_p = IO(Vec(17, Analog(1.W)))
 
   ///////// GPIO /////////
-  val jtag = IO(new Bundle {
+  /*val jtag = IO(new Bundle {
     val jtag_TDI = (Input(Bool()))  // PIN_AP27 / GPIO1_D4 / JP10 5
     val jtag_TMS = (Input(Bool()))  // PIN_AN27 / GPIO1_D6 / JP10 7
     val jtag_TCK = (Input(Bool()))  // PIN_AL25 / GPIO1_D8 / JP10 9
@@ -1529,7 +1533,7 @@ trait FPGATR4ChipShell {
   //////////// Uart //////////
   val UART_TXD = IO(Output(Bool())) // GPIO1_D34 / PIN_AG30 / JP10 39
   val UART_RXD = IO(Input(Bool())) // GPIO1_D35 / PIN_AD29 / JP10 40
-
+*/
   FAN_CTRL := true.B
 }
 
@@ -1640,6 +1644,7 @@ class FPGATR4Internal(val outer: WithTEEHWbaseShell with WithTEEHWbaseConnect)(i
       sys_clk := mod.io.ckrst.qsys_clk
       aclocks.foreach(_.foreach(_ := mod.io.ckrst.qsys_clk)) // TODO: Connect your clocks here
       rst_n := !reset_to_sys
+      jrst_n := !reset_to_sys
       usbClk.foreach(_ := mod.io.ckrst.usb_clk)
       if(p(DDRPortOther)) {
         ChildClock.foreach(_ := mod.io.ckrst.io_clk)
@@ -1717,19 +1722,31 @@ trait WithFPGATR4Connect {
     BUTTON(2)
   )
   chip.gpio_in := Cat(BUTTON(3), BUTTON(1,0), SW(1,0))
-  jtag <> chip.jtag
-  qspi = chip.qspi.map(A => IO ( new TEEHWQSPIBundle(A.csWidth) ) )
-  (chip.qspi zip qspi).foreach { case (sysqspi, portspi) => portspi <> sysqspi}
-  chip.uart_rxd := UART_RXD	// UART_TXD
-  UART_TXD := chip.uart_txd // UART_RXD
-  sdio <> chip.sdio
+  chip.jtag.jtag_TDI := ALT_IOBUF(GPIO1_D(4))
+  chip.jtag.jtag_TMS := ALT_IOBUF(GPIO1_D(6))
+  chip.jtag.jtag_TCK := ALT_IOBUF(GPIO1_D(8))
+  ALT_IOBUF(GPIO1_D(10), chip.jtag.jtag_TDI)
+  chip.qspi.foreach{A =>
+    A.qspi_miso := ALT_IOBUF(GPIO1_D(1))
+    ALT_IOBUF(GPIO1_D(3), A.qspi_mosi)
+    ALT_IOBUF(GPIO1_D(5), A.qspi_cs(0))
+    ALT_IOBUF(GPIO1_D(7), A.qspi_sck)
+  }
+  chip.uart_rxd := ALT_IOBUF(GPIO1_D(35))	// UART_TXD
+  ALT_IOBUF(GPIO1_D(34), chip.uart_txd) // UART_RXD
+  ALT_IOBUF(GPIO0_D(28), chip.sdio.sdio_clk)
+  ALT_IOBUF(GPIO0_D(30), chip.sdio.sdio_cmd)
+  chip.sdio.sdio_dat_0 := ALT_IOBUF(GPIO0_D(32))
+  ALT_IOBUF(GPIO0_D(34), chip.sdio.sdio_dat_3)
 
   // USB phy connections
-  ((chip.usb11hs zip USB) zip intern.usbClk).foreach{ case ((chipport, port), uclk) =>
-    port.FullSpeed := chipport.USBFullSpeed
-    chipport.USBWireDataIn := port.WireDataIn
-    port.WireCtrlOut := chipport.USBWireCtrlOut
-    port.WireDataOut := chipport.USBWireDataOut
+  (chip.usb11hs zip intern.usbClk).foreach{ case (chipport, uclk) =>
+    ALT_IOBUF(GPIO1_D(17), chipport.USBFullSpeed)
+    chipport.USBWireDataIn := ALT_IOBUF(GPIO1_D(24))
+    ALT_IOBUF(GPIO1_D(24), chipport.USBWireCtrlOut(0))
+    ALT_IOBUF(GPIO1_D(26), chipport.USBWireCtrlOut(1))
+    ALT_IOBUF(GPIO1_D(16), chipport.USBWireDataOut(0))
+    ALT_IOBUF(GPIO1_D(18), chipport.USBWireDataOut(1))
 
     chipport.usbClk := uclk
   }

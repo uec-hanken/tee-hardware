@@ -813,3 +813,116 @@ class ilaBuild(val conf : ilaConf)
     str
   }
 }
+
+//-------------------------------------------------------------------------
+// IO Lib for Altera boards
+//-------------------------------------------------------------------------
+
+class ALT_IOBUF extends BlackBox{
+  val io = IO(new Bundle{
+    val io = Analog(1.W)
+    val oe = Input(Bool())
+    val i = Input(Bool())
+    val o = Output(Bool())
+  })
+
+  def asInput() : Bool = {
+    io.oe := false.B
+    io.i := false.B
+    io.o
+  }
+
+  def asOutput(o: Bool) : Unit = {
+    io.oe := true.B
+    io.i := o
+  }
+
+  def fromBase(e: BasePin) : Unit = {
+    io.oe := e.o.oe
+    io.i := e.o.oval
+    e.i.ival := io.o
+  }
+
+  def attachTo(analog: Analog) : Unit = {
+    attach(analog, io.io)
+  }
+}
+
+object ALT_IOBUF {
+  def apply : ALT_IOBUF = {
+    Module(new ALT_IOBUF)
+  }
+
+  def apply(analog: Analog) : Bool = {
+    val m = Module(new ALT_IOBUF)
+    m.attachTo(analog)
+    m.asInput()
+  }
+
+  def apply(analog: Analog, i: Bool) : Unit = {
+    val m = Module(new ALT_IOBUF)
+    m.attachTo(analog)
+    m.asOutput(i)
+  }
+
+  def apply(analog: Analog, e: BasePin) : Unit = {
+    val m = Module(new ALT_IOBUF)
+    m.attachTo(analog)
+    m.fromBase(e)
+  }
+}
+
+//-------------------------------------------------------------------------
+// GET and PUT for interfacing analog
+//-------------------------------------------------------------------------
+
+class PUT extends BlackBox with HasBlackBoxInline{
+  val io = IO(new Bundle{
+    val I = Input(Bool())
+    val IO = Analog(1.W)
+  })
+
+  setInline("PUT.v",
+    s"""module PUT  (I, IO);
+       |	input I;
+       |	inout IO;
+       |
+       |assign IO = I;
+       |
+       |endmodule
+       |""".stripMargin)
+}
+
+object PUT {
+  def apply(i: Bool, o: Analog): Unit = {
+    val io = Module(new PUT).io
+    io.I := i
+    attach(o, io.IO)
+  }
+}
+
+class GET extends BlackBox with HasBlackBoxInline{
+  val io = IO(new Bundle{
+    val O = Output(Bool())
+    val IO = Analog(1.W)
+  })
+
+  setInline("GET.v",
+    s"""module GET  (O, IO);
+       |	output O;
+       |	inout IO;
+       |
+       |assign O = IO;
+       |
+       |endmodule
+       |""".stripMargin)
+}
+
+object GET {
+  def apply(o: Analog): Bool = {
+    val io = Module(new GET).io
+    attach(o, io.IO)
+    io.O
+  }
+}
+
