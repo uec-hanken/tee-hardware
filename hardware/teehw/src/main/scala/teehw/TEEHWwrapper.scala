@@ -1233,6 +1233,7 @@ class FPGADE4Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConnect]
   with FPGAInternals
   with FPGADE4ClockAndResetsAndDDR {
   def outer = chip
+  override def otherId: Option[Int] = Some(6)
 
   val mem_status_local_cal_fail = IO(Output(Bool()))
   val mem_status_local_cal_success = IO(Output(Bool()))
@@ -1589,6 +1590,7 @@ class FPGATR4Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConnect]
   with FPGAInternals
   with FPGATR4ClockAndResetsAndDDR {
   def outer = chip
+  override def otherId: Option[Int] = Some(6)
 
   val mem_status_local_cal_fail = IO(Output(Bool()))
   val mem_status_local_cal_success = IO(Output(Bool()))
