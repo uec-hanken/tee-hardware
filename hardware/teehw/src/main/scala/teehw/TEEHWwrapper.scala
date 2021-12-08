@@ -1913,7 +1913,7 @@ trait WithFPGATR4ToChipConnect extends WithFPGATR4InternNoChipCreate with WithFP
 
       ALT_IOBUF(HSMA_RX_n(14)), // [15] JP20 - J2 10 / HSMA_RX_n(14)
       ALT_IOBUF(HSMA_TX_n(15)), // [14] JP20 - J2 9 / HSMA_TX_n(15)
-      ALT_IOBUF(HSMA_RX_n(15)), // [13] JP20 - J2 8 / HSMA_RX_n(15)
+      ALT_IOBUF(HSMA_RX_p(15)), // [13] JP20 - J2 8 / HSMA_RX_p(15)
       ALT_IOBUF(HSMA_TX_p(16)), // [12] JP20 - J2 7 / HSMA_TX_p(16)
       ALT_IOBUF(HSMA_RX_n(15)), // [11] JP20 - J2 6 / HSMA_RX_n(15)
       ALT_IOBUF(HSMA_TX_n(16)), // [10] JP20 - J2 5 / HSMA_TX_n(16)
