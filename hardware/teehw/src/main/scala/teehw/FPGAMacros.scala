@@ -79,7 +79,7 @@ class TLULtoMIG(TLparams: TLBundleParameters)(implicit p :Parameters) extends La
     TLMasterPortParameters.v1(
       clients = Seq(TLMasterParameters.v1(
         name = "dummy",
-        sourceId = IdRange(0, 64) // CKDUR: The maximum ID possible goes here.
+        sourceId = IdRange(0, 1 << TLparams.sourceBits) // CKDUR: The maximum ID possible goes here.
       ))
     )
   })
@@ -182,7 +182,7 @@ class TLULtoMIGUltra(TLparams: TLBundleParameters)(implicit p :Parameters) exten
     TLMasterPortParameters.v1(
       clients = Seq(TLMasterParameters.v1(
         name = "dummy",
-        sourceId = IdRange(0, 64) // CKDUR: The maximum ID possible goes here.
+        sourceId = IdRange(0, 1 << TLparams.sourceBits) // CKDUR: The maximum ID possible goes here.
       ))
     )
   })
@@ -285,7 +285,7 @@ class TLULtoMIGArtyA7(TLparams: TLBundleParameters)(implicit p :Parameters) exte
     TLMasterPortParameters.v1(
       clients = Seq(TLMasterParameters.v1(
         name = "dummy",
-        sourceId = IdRange(0, 64) // CKDUR: The maximum ID possible goes here.
+        sourceId = IdRange(0, 1 << TLparams.sourceBits) // CKDUR: The maximum ID possible goes here.
       ))
     )
   })
@@ -346,7 +346,7 @@ class TLtoPCIe(cacheBlockBytes: Int,
     TLMasterPortParameters.v1(
       clients = Seq(TLMasterParameters.v1(
         name = "dummy",
-        sourceId = IdRange(0, 64), // CKDUR: The maximum ID possible goes here.
+        sourceId = IdRange(0, 1 << TLparamsMaster.sourceBits), // CKDUR: The maximum ID possible goes here.
       ))
     )
   })
@@ -701,7 +701,7 @@ class TLULtoQuartusPlatform( TLparams: TLBundleParameters,
     TLMasterPortParameters.v1(
       clients = Seq(TLMasterParameters.v1(
         name = "dummy",
-        sourceId = IdRange(0, 64), // CKDUR: The maximum ID possible goes here.
+        sourceId = IdRange(0, 1 << TLparams.sourceBits), // CKDUR: The maximum ID possible goes here.
       ))
     )
   })

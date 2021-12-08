@@ -5,8 +5,8 @@ import chisel3.util._
 import chisel3.experimental.{Analog, IO, attach}
 import freechips.rocketchip.config._
 import freechips.rocketchip.diplomacy._
-import freechips.rocketchip.subsystem.{BaseSubsystem, SbusToMbusXTypeKey}
-import freechips.rocketchip.tilelink.TLBundleParameters
+import freechips.rocketchip.subsystem.{BaseSubsystem, ExtMem, MemoryBusKey, SbusToMbusXTypeKey}
+import freechips.rocketchip.tilelink.{TLBundleD, TLBundleParameters}
 import freechips.rocketchip.util._
 import sifive.blocks.devices.pinctrl._
 import sifive.blocks.devices.gpio._
@@ -148,6 +148,12 @@ trait WithTEEHWbaseConnect {
     chip.a <> base.a
     base.d <> chip.d
   }
+  // A helper function for alterate the number of bits of the id
+  def tlparamsOtherId(n: Int) = {
+    tlparam.map{param =>
+      param.copy(sourceBits = n)
+    }
+  }
 
   // Clock and reset connection
   val aclkn = p(ExposeClocks).option(system.io.aclocks.size)
@@ -189,12 +195,14 @@ trait HasTEEHWChip {
 
 trait FPGAInternals {
   implicit val p: Parameters
-  val outer : WithTEEHWbaseShell with WithTEEHWbaseConnect
+  def outer : Option [WithTEEHWbaseShell with WithTEEHWbaseConnect]
+  def otherId : Option[Int] = None
   // Parameters that depends on the generated system (not only the config)
-  val tlparam = outer.tlparam
-  val aclkn = outer.aclkn
-  val memserSourceBits = outer.system.sys.asInstanceOf[HasTEEHWSystemModule].serSourceBits
-  val extserSourceBits = outer.system.sys.asInstanceOf[HasTEEHWSystemModule].extSourceBits
+  def tlparam: Option[TLBundleParameters] = otherId.map(outer.get.tlparamsOtherId).getOrElse(outer.get.tlparam)
+  def aclkn: Option[Int] = outer.get.aclkn
+  def memserSourceBits: Option[Int] = outer.get.system.sys.asInstanceOf[HasTEEHWSystemModule].serSourceBits
+  def extserSourceBits: Option[Int] = outer.get.system.sys.asInstanceOf[HasTEEHWSystemModule].extSourceBits
+  def namedclocks: Seq[String] = outer.get.system.sys.asInstanceOf[HasTEEHWSystemModule].namedclocks
   // Clocks and resets
   val ChildClock = p(DDRPortOther).option(IO(Output(Clock())))
   val ChildReset = p(DDRPortOther).option(IO(Output(Bool())))
@@ -273,10 +281,10 @@ class FPGAVC707Shell(implicit val p :Parameters) extends RawModule
   with FPGAVC707ClockAndResetsAndDDR {
 }
 
-class FPGAVC707Internal(val outer: WithTEEHWbaseShell with WithTEEHWbaseConnect)(implicit val p :Parameters) extends RawModule
+class FPGAVC707Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConnect])(implicit val p :Parameters) extends RawModule
   with FPGAInternals
   with FPGAVC707ClockAndResetsAndDDR {
-  val namedclocks = outer.system.sys.asInstanceOf[HasTEEHWSystemModule].namedclocks
+  def outer = chip
 
   val init_calib_complete = IO(Output(Bool()))
   var depth = BigInt(0)
@@ -430,7 +438,7 @@ class FPGAVC707Internal(val outer: WithTEEHWbaseShell with WithTEEHWbaseConnect)
 trait WithFPGAVC707Connect {
   this: FPGAVC707Shell =>
   val chip : WithTEEHWbaseShell with WithTEEHWbaseConnect
-  val intern = Module(new FPGAVC707Internal(chip))
+  val intern = Module(new FPGAVC707Internal(Some(chip)))
 
   // To intern = Clocks and resets
   intern.sys_clock_p := sys_clock_p
@@ -566,10 +574,10 @@ class FPGAVCU118Shell(implicit val p :Parameters) extends RawModule
   with FPGAVCU118ClockAndResetsAndDDR {
 }
 
-class FPGAVCU118Internal(val outer: WithTEEHWbaseShell with WithTEEHWbaseConnect)(implicit val p :Parameters) extends RawModule
+class FPGAVCU118Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConnect])(implicit val p :Parameters) extends RawModule
   with FPGAInternals
   with FPGAVCU118ClockAndResetsAndDDR {
-  val namedclocks = outer.system.sys.asInstanceOf[HasTEEHWSystemModule].namedclocks
+  def outer = chip
 
   val init_calib_complete = IO(Output(Bool()))
   var depth = BigInt(0)
@@ -675,7 +683,7 @@ class FPGAVCU118Internal(val outer: WithTEEHWbaseShell with WithTEEHWbaseConnect
 trait WithFPGAVCU118Connect {
   this: FPGAVCU118Shell =>
   val chip : WithTEEHWbaseShell with WithTEEHWbaseConnect
-  val intern = Module(new FPGAVCU118Internal(chip))
+  val intern = Module(new FPGAVCU118Internal(Some(chip)))
 
   // To intern = Clocks and resets
   intern.sys_clock_p := sys_clock_p
@@ -848,11 +856,10 @@ class FPGAArtyA7Shell(implicit val p :Parameters) extends RawModule
   with FPGAArtyA7ClockAndResetsAndDDR {
 }
 
-class FPGAArtyA7Internal(val outer: WithTEEHWbaseShell with WithTEEHWbaseConnect)(implicit val p :Parameters) extends RawModule
+class FPGAArtyA7Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConnect])(implicit val p :Parameters) extends RawModule
   with FPGAInternals
   with FPGAArtyA7ClockAndResetsAndDDR {
-
-  val namedclocks = outer.system.sys.asInstanceOf[HasTEEHWSystemModule].namedclocks
+  def outer = chip
 
   val init_calib_complete = IO(Output(Bool()))
   var depth = BigInt(0)
@@ -973,8 +980,8 @@ class FPGAArtyA7Internal(val outer: WithTEEHWbaseShell with WithTEEHWbaseConnect
 
 trait WithFPGAArtyA7Connect {
   this: FPGAArtyA7Shell =>
-  val chip: WithTEEHWbaseShell with WithTEEHWbaseConnect
-  val intern = Module(new FPGAArtyA7Internal(chip))
+  val chip : WithTEEHWbaseShell with WithTEEHWbaseConnect
+  val intern = Module(new FPGAArtyA7Internal(Some(chip)))
   // To intern = Clocks and resets
   intern.CLK100MHZ := CLK100MHZ
   intern.ck_rst := ck_rst
@@ -1222,11 +1229,10 @@ class FPGADE4Shell(implicit val p :Parameters) extends RawModule
   with FPGADE4ClockAndResetsAndDDR {
 }
 
-class FPGADE4Internal(val outer: WithTEEHWbaseShell with WithTEEHWbaseConnect)(implicit val p :Parameters) extends RawModule
+class FPGADE4Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConnect])(implicit val p :Parameters) extends RawModule
   with FPGAInternals
   with FPGADE4ClockAndResetsAndDDR {
-
-  val namedclocks = outer.system.sys.asInstanceOf[HasTEEHWSystemModule].namedclocks
+  def outer = chip
 
   val mem_status_local_cal_fail = IO(Output(Bool()))
   val mem_status_local_cal_success = IO(Output(Bool()))
@@ -1308,7 +1314,7 @@ class FPGADE4Internal(val outer: WithTEEHWbaseShell with WithTEEHWbaseConnect)(i
 trait WithFPGADE4Connect {
   this: FPGADE4Shell =>
   val chip : WithTEEHWbaseShell with WithTEEHWbaseConnect
-  val intern = Module(new FPGADE4Internal(chip))
+  val intern = Module(new FPGADE4Internal(Some(chip)))
 
   // To intern = Clocks and resets
   intern.OSC_50_BANK2 := OSC_50_BANK2
@@ -1579,11 +1585,10 @@ class FPGATR4Shell(implicit val p :Parameters) extends RawModule
   with FPGATR4ClockAndResetsAndDDR {
 }
 
-class FPGATR4Internal(val outer: WithTEEHWbaseShell with WithTEEHWbaseConnect)(implicit val p :Parameters) extends RawModule
+class FPGATR4Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConnect])(implicit val p :Parameters) extends RawModule
   with FPGAInternals
   with FPGATR4ClockAndResetsAndDDR {
-
-  val namedclocks = outer.system.sys.asInstanceOf[HasTEEHWSystemModule].namedclocks
+  def outer = chip
 
   val mem_status_local_cal_fail = IO(Output(Bool()))
   val mem_status_local_cal_success = IO(Output(Bool()))
@@ -1667,10 +1672,39 @@ class FPGATR4Internal(val outer: WithTEEHWbaseShell with WithTEEHWbaseConnect)(i
   }
 }
 
-trait WithFPGATR4InternConnect {
+class FPGATR4InternalNoChip()(implicit p :Parameters) extends FPGATR4Internal(None)(p) {
+  override def otherId = Some(6)
+  override def tlparam = p(ExtMem).map { A =>
+    TLBundleParameters(
+      32,
+      A.master.beatBytes * 8,
+      6,
+      1,
+      log2Up(log2Ceil(p(MemoryBusKey).blockBytes)+1),
+      Seq(),
+      Seq(),
+      Seq(),
+      false)}
+  override def aclkn: Option[Int] = None
+  override def memserSourceBits: Option[Int] = None
+  override def extserSourceBits: Option[Int] = None
+  override def namedclocks: Seq[String] = Seq()
+}
+
+trait WithFPGATR4InternCreate {
   this: FPGATR4Shell =>
   val chip : WithTEEHWbaseShell with WithTEEHWbaseConnect
-  val intern = Module(new FPGATR4Internal(chip))
+  val intern = Module(new FPGATR4Internal(Some(chip)))
+}
+
+trait WithFPGATR4InternNoChipCreate {
+  this: FPGATR4Shell =>
+  val intern = Module(new FPGATR4InternalNoChip)
+}
+
+trait WithFPGATR4InternConnect {
+  this: FPGATR4Shell =>
+  val intern: FPGATR4Internal
 
   // To intern = Clocks and resets
   intern.OSC_50_BANK1 := OSC_50_BANK1
@@ -1700,7 +1734,7 @@ trait WithFPGATR4InternConnect {
 
 }
 
-trait WithFPGATR4Connect extends WithFPGATR4InternConnect {
+trait WithFPGATR4Connect extends WithFPGATR4InternCreate with WithFPGATR4InternConnect {
   this: FPGATR4Shell =>
   val chip : WithTEEHWbaseShell with WithTEEHWbaseConnect
 
@@ -1763,9 +1797,8 @@ class FPGATR4(implicit p :Parameters) extends FPGATR4Shell()(p)
 }
 
 // Based on layout of the TR4.sch done by Duy
-trait WithFPGATR4ToChipConnect extends WithFPGATR4InternConnect {
+trait WithFPGATR4ToChipConnect extends WithFPGATR4InternNoChipCreate with WithFPGATR4InternConnect {
   this: FPGATR4Shell =>
-  val chip: WithTEEHWbaseShell with WithTEEHWbaseConnect
 
   // NOTES:
   // JP18 -> J2 / JP19 -> J3 belongs to HSMB
@@ -1789,25 +1822,25 @@ trait WithFPGATR4ToChipConnect extends WithFPGATR4InternConnect {
   intern.tlport.foreach{ tlport =>
     tlport.a.valid := ALT_IOBUF(HSMB_CLKIN_n2) // JP18 - J2 1 / HSMB_CLKIN_n2
     ALT_IOBUF(HSMB_RX_p(16), tlport.a.ready) // JP18 - J2 4 / HSMB_RX_p(16)
-    require(tlport.a.bits.opcode.getWidth == 3)
+    require(tlport.a.bits.opcode.getWidth == 3, s"${tlport.a.bits.opcode.getWidth}")
     tlport.a.bits.opcode := Cat(
       ALT_IOBUF(HSMB_CLKIN_p2), // JP18 - J2 3 / HSMB_CLKIN_p2
       ALT_IOBUF(HSMB_TX_p(16)), // JP18 - J2 7 / HSMB_TX_p(16)
       ALT_IOBUF(HSMB_RX_p(15)), // JP18 - J2 8 / HSMB_RX_p(15)
     )
-    require(tlport.a.bits.param.getWidth == 3)
+    require(tlport.a.bits.param.getWidth == 3, s"${tlport.a.bits.param.getWidth}")
     tlport.a.bits.param := Cat(
       ALT_IOBUF(HSMB_TX_n(15)), // JP18 - J2 9 / HSMB_TX_n(15)
       ALT_IOBUF(HSMB_RX_n(14)), // JP18 - J2 10 / HSMB_RX_n(14)
       ALT_IOBUF(HSMB_TX_p(15)), // JP18 - J2 13 / HSMB_TX_p(15)
     )
-    require(tlport.a.bits.size.getWidth == 3)
+    require(tlport.a.bits.size.getWidth == 3, s"${tlport.a.bits.size.getWidth}")
     tlport.a.bits.size := Cat(
       ALT_IOBUF(HSMB_RX_p(14)), // JP18 - J2 14 / HSMB_RX_p(14)
       ALT_IOBUF(HSMB_TX_n(14)), // JP18 - J2 15 / HSMB_TX_n(14)
       ALT_IOBUF(HSMB_RX_n(13)), // JP18 - J2 16 / HSMB_RX_n(13)
     )
-    require(tlport.a.bits.source.getWidth == 6)
+    require(tlport.a.bits.source.getWidth == 6, s"${tlport.a.bits.source.getWidth}")
     tlport.a.bits.source := Cat(
       ALT_IOBUF(HSMB_TX_p(14)), // JP18 - J2 17 / HSMB_TX_p(14)
       ALT_IOBUF(HSMB_RX_p(13)), // JP18 - J2 18 / HSMB_RX_p(13)
@@ -1816,7 +1849,7 @@ trait WithFPGATR4ToChipConnect extends WithFPGATR4InternConnect {
       ALT_IOBUF(HSMB_OUT_p2), // JP18 - J2 21 / HSMB_OUT_p2
       ALT_IOBUF(HSMB_RX_p(12)), // JP18 - J2 22 / HSMB_RX_p(12)
     )
-    require(tlport.a.bits.address.getWidth == 32)
+    require(tlport.a.bits.address.getWidth == 32, s"${tlport.a.bits.address.getWidth}")
     tlport.a.bits.address := Cat(
       ALT_IOBUF(HSMB_TX_n(13)), // [31] JP18 - J2 23 / HSMB_TX_n(13)
       ALT_IOBUF(HSMB_RX_n(11)), // [30] JP18 - J2 24 / HSMB_RX_n(11)
@@ -1852,14 +1885,14 @@ trait WithFPGATR4ToChipConnect extends WithFPGATR4InternConnect {
       ALT_IOBUF(HSMB_TX_p(5)), // [1] JP19 - J3 17 / HSMB_TX_p(5)
       ALT_IOBUF(HSMB_RX_p(4)), // [0] JP19 - J3 18 / HSMB_RX_p(4)
     )
-    require(tlport.a.bits.mask.getWidth == 4)
-    tlport.a.bits.source := Cat(
+    require(tlport.a.bits.mask.getWidth == 4, s"${tlport.a.bits.mask.getWidth}")
+    tlport.a.bits.mask := Cat(
       ALT_IOBUF(HSMB_OUT_n1), // [3] JP19 - J3 19 / HSMB_OUT_n1
       ALT_IOBUF(HSMB_RX_n(3)), // [2] JP19 - J3 20 / HSMB_RX_n(3)
       ALT_IOBUF(HSMB_OUT_p1), // [1] JP19 - J3 21 / HSMB_OUT_p1
       ALT_IOBUF(HSMB_RX_p(3)), // [0] JP19 - J3 22 / HSMB_RX_p(3)
     )
-    require(tlport.a.bits.data.getWidth == 32)
+    require(tlport.a.bits.data.getWidth == 32, s"${tlport.a.bits.data.getWidth}")
     tlport.a.bits.data := Cat(
       ALT_IOBUF(HSMB_TX_n(4)), // [31] JP19 - J3 23 / HSMB_TX_n(4)
       ALT_IOBUF(HSMB_RX_n(2)), // [30] JP19 - J3 24 / HSMB_RX_n(2)
@@ -1885,7 +1918,7 @@ trait WithFPGATR4ToChipConnect extends WithFPGATR4InternConnect {
       ALT_IOBUF(HSMA_RX_n(15)), // [11] JP20 - J2 6 / HSMA_RX_n(15)
       ALT_IOBUF(HSMA_TX_n(16)), // [10] JP20 - J2 5 / HSMA_TX_n(16)
       ALT_IOBUF(HSMA_RX_p(16)), // [9] JP20 - J2 4 / HSMA_RX_p(16)
-      ALT_IOBUF(HSMA_CLKIN_n2), // [8] JP20 - J2 3 / HSMA_CLKIN_n2
+      ALT_IOBUF(HSMA_CLKIN_p2), // [8] JP20 - J2 3 / HSMA_CLKIN_p2
       ALT_IOBUF(HSMA_RX_n(16)), // [7] JP20 - J2 2 / HSMA_RX_n(16)
       ALT_IOBUF(HSMA_CLKIN_n2), // [6] JP20 - J2 1 / HSMA_CLKIN_n2
       
@@ -1901,21 +1934,21 @@ trait WithFPGATR4ToChipConnect extends WithFPGATR4InternConnect {
     tlport.d.ready := ALT_IOBUF(HSMA_RX_n(12)) // JP20 - J2 20 / HSMA_RX_n(12)
     ALT_IOBUF(HSMA_OUT_p2, tlport.d.valid) // JP20 - J2 21 / HSMA_OUT_p2
 
-    require(tlport.d.bits.opcode.getWidth == 3)
+    require(tlport.d.bits.opcode.getWidth == 3, s"${tlport.d.bits.opcode.getWidth}")
     ALT_IOBUF(HSMA_RX_p(12), tlport.d.bits.opcode(2)) // JP20 - J2 22 / HSMA_RX_p(12)
     ALT_IOBUF(HSMA_TX_n(13), tlport.d.bits.opcode(1)) // JP20 - J2 23 / HSMA_TX_n(13)
     ALT_IOBUF(HSMA_RX_n(11), tlport.d.bits.opcode(0)) // JP20 - J2 24 / HSMA_RX_n(11)
 
-    require(tlport.d.bits.param.getWidth == 2)
+    require(tlport.d.bits.param.getWidth == 2, s"${tlport.d.bits.param.getWidth}")
     ALT_IOBUF(HSMA_TX_p(13), tlport.d.bits.param(1)) // JP20 - J2 25 / HSMA_TX_p(13)
     ALT_IOBUF(HSMA_RX_p(11), tlport.d.bits.param(0)) // JP20 - J2 26 / HSMA_RX_p(11)
 
-    require(tlport.d.bits.size.getWidth == 3)
+    require(tlport.d.bits.size.getWidth == 3, s"${tlport.d.bits.size.getWidth}")
     ALT_IOBUF(HSMA_TX_n(12), tlport.d.bits.size(2)) // JP20 - J2 27 / HSMA_TX_n(12)
     ALT_IOBUF(HSMA_RX_n(10), tlport.d.bits.size(1)) // JP20 - J2 28 / HSMA_RX_n(10)
     ALT_IOBUF(HSMA_TX_p(12), tlport.d.bits.size(0)) // JP20 - J2 31 / HSMA_TX_p(12)
 
-    require(tlport.d.bits.source.getWidth == 6)
+    require(tlport.d.bits.source.getWidth == 6, s"${tlport.d.bits.source.getWidth}")
     ALT_IOBUF(HSMA_RX_p(10), tlport.d.bits.source(5)) // JP20 - J2 32 / HSMA_RX_p(10)
     ALT_IOBUF(HSMA_TX_n(11), tlport.d.bits.source(4)) // JP20 - J2 33 / HSMA_TX_n(11)
     ALT_IOBUF(HSMA_RX_n(9), tlport.d.bits.source(3)) // JP20 - J2 34 / HSMA_RX_n(9)
@@ -1923,12 +1956,12 @@ trait WithFPGATR4ToChipConnect extends WithFPGATR4InternConnect {
     ALT_IOBUF(HSMA_RX_p(9), tlport.d.bits.source(1)) // JP20 - J2 36 / HSMA_RX_p(9)
     ALT_IOBUF(HSMA_TX_n(10), tlport.d.bits.source(0)) // JP20 - J2 37 / HSMA_TX_n(10)
 
-    require(tlport.d.bits.sink.getWidth == 1)
+    require(tlport.d.bits.sink.getWidth == 1, s"${tlport.d.bits.sink.getWidth}")
     ALT_IOBUF(HSMA_TX_n(9), tlport.d.bits.sink(0)) // JP20 - J2 38 / HSMA_TX_n(9)
     ALT_IOBUF(HSMA_TX_p(10), tlport.d.bits.denied) // JP20 - J2 39 / HSMA_TX_p(10)
     ALT_IOBUF(HSMA_TX_p(9), tlport.d.bits.corrupt) // JP20 - J2 40 / HSMA_TX_p(9)
 
-    require(tlport.d.bits.data.getWidth == 32)
+    require(tlport.d.bits.data.getWidth == 32, s"${tlport.d.bits.data.getWidth}")
     ALT_IOBUF(HSMA_TX_n(7), tlport.d.bits.data(31)) // JP21 - J3 5 / HSMA_TX_n(7)
     ALT_IOBUF(HSMA_RX_n(6), tlport.d.bits.data(30)) // JP21 - J3 6 / HSMA_RX_n(6)
     ALT_IOBUF(HSMA_TX_p(7), tlport.d.bits.data(29)) // JP21 - J3 7 / HSMA_TX_p(7)
@@ -1964,8 +1997,16 @@ trait WithFPGATR4ToChipConnect extends WithFPGATR4InternConnect {
   }
   // Asyncrhonoys clocks
   intern.aclocks.foreach{ a => a } // NOTHING
+
+  // LEDs
+  LED := Cat(
+    intern.mem_status_local_cal_fail,
+    intern.mem_status_local_cal_success,
+    intern.mem_status_local_init_done,
+    BUTTON(2)
+  )
 }
 
 class FPGATR4ToChip(implicit p :Parameters) extends FPGATR4Shell()(p)
-  with HasTEEHWChip with WithFPGATR4ToChipConnect {
+  with WithFPGATR4ToChipConnect {
 }
