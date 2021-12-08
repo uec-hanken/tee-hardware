@@ -196,15 +196,15 @@ set_location_assignment PIN_AL16 -to FSM_WE_n
 #============================================================
 # HSMA
 #============================================================
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_CLKIN0
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_CLKIN_n1
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_CLKIN_n2
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_CLKIN_p1
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_CLKIN_p2
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_D_0
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_D_1
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_D_2
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_D_3
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_CLKIN0
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_CLKIN_n1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_CLKIN_n2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_CLKIN_p1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_CLKIN_p2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_D_0
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_D_1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_D_2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_D_3
 set_instance_assignment -name IO_STANDARD "1.4-V PCML" -to HSMA_GXB_RX_p[0]
 set_instance_assignment -name IO_STANDARD "1.4-V PCML" -to HSMA_GXB_RX_p[1]
 set_instance_assignment -name IO_STANDARD "1.4-V PCML" -to HSMA_GXB_RX_p[2]
@@ -221,80 +221,80 @@ set_instance_assignment -name IO_STANDARD "1.4-V PCML" -to HSMA_GXB_TX_p[4]
 set_instance_assignment -name IO_STANDARD "1.4-V PCML" -to HSMA_GXB_TX_p[5]
 set_instance_assignment -name IO_STANDARD "1.4-V PCML" -to HSMA_GXB_TX_p[6]
 set_instance_assignment -name IO_STANDARD "1.4-V PCML" -to HSMA_GXB_TX_p[7]
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_OUT0
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_OUT_n1
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_OUT_n2
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_OUT_p1
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_OUT_p2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_OUT0
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_OUT_n1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_OUT_n2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_OUT_p1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_OUT_p2
 set_instance_assignment -name IO_STANDARD "1.4-V PCML" -to HSMA_REFCLK_p
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_RX_n_0
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_RX_n_1
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_RX_n_2
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_RX_n_3
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_RX_n_4
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_RX_n_5
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_RX_n_6
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_RX_n_7
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_RX_n_8
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_RX_n_9
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_RX_n_10
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_RX_n_11
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_RX_n_12
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_RX_n_13
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_RX_n_14
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_RX_n_15
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_RX_n_16
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_RX_p_0
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_RX_p_1
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_RX_p_2
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_RX_p_3
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_RX_p_4
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_RX_p_5
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_RX_p_6
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_RX_p_7
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_RX_p_8
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_RX_p_9
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_RX_p_10
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_RX_p_11
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_RX_p_12
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_RX_p_13
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_RX_p_14
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_RX_p_15
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_RX_p_16
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_TX_n_0
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_TX_n_1
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_TX_n_2
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_TX_n_3
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_TX_n_4
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_TX_n_5
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_TX_n_6
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_TX_n_7
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_TX_n_8
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_TX_n_9
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_TX_n_10
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_TX_n_11
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_TX_n_12
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_TX_n_13
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_TX_n_14
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_TX_n_15
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_TX_n_16
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_TX_p_0
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_TX_p_1
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_TX_p_2
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_TX_p_3
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_TX_p_4
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_TX_p_5
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_TX_p_6
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_TX_p_7
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_TX_p_8
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_TX_p_9
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_TX_p_10
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_TX_p_11
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_TX_p_12
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_TX_p_13
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_TX_p_14
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_TX_p_15
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMA_TX_p_16
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_n_0
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_n_1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_n_2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_n_3
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_n_4
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_n_5
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_n_6
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_n_7
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_n_8
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_n_9
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_n_10
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_n_11
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_n_12
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_n_13
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_n_14
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_n_15
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_n_16
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_p_0
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_p_1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_p_2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_p_3
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_p_4
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_p_5
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_p_6
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_p_7
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_p_8
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_p_9
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_p_10
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_p_11
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_p_12
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_p_13
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_p_14
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_p_15
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_p_16
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_n_0
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_n_1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_n_2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_n_3
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_n_4
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_n_5
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_n_6
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_n_7
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_n_8
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_n_9
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_n_10
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_n_11
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_n_12
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_n_13
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_n_14
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_n_15
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_n_16
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_p_0
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_p_1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_p_2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_p_3
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_p_4
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_p_5
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_p_6
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_p_7
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_p_8
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_p_9
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_p_10
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_p_11
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_p_12
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_p_13
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_p_14
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_p_15
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_p_16
 set_location_assignment PIN_C10 -to HSMA_CLKIN0
 set_location_assignment PIN_AE5 -to HSMA_CLKIN_n1
 set_location_assignment PIN_AC5 -to HSMA_CLKIN_n2
@@ -397,90 +397,90 @@ set_location_assignment PIN_K10 -to HSMA_TX_p_16
 #============================================================
 # HSMB
 #============================================================
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_CLKIN0
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_CLKIN_n1
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_CLKIN_n2
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_CLKIN_p1
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_CLKIN_p2
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_D_0
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_D_1
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_D_2
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_D_3
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_OUT0
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_OUT_n1
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_OUT_n2
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_OUT_p1
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_OUT_p2
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_RX_n_0
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_RX_n_1
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_RX_n_2
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_RX_n_3
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_RX_n_4
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_RX_n_5
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_RX_n_6
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_RX_n_7
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_RX_n_8
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_RX_n_9
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_RX_n_10
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_RX_n_11
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_RX_n_12
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_RX_n_13
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_RX_n_14
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_RX_n_15
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_RX_n_16
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_RX_p_0
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_RX_p_1
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_RX_p_2
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_RX_p_3
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_RX_p_4
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_RX_p_5
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_RX_p_6
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_RX_p_7
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_RX_p_8
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_RX_p_9
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_RX_p_10
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_RX_p_11
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_RX_p_12
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_RX_p_13
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_RX_p_14
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_RX_p_15
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_RX_p_16
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_SCL
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_SDA
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_TX_n_0
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_TX_n_1
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_TX_n_2
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_TX_n_3
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_TX_n_4
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_TX_n_5
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_TX_n_6
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_TX_n_7
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_TX_n_8
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_TX_n_9
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_TX_n_10
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_TX_n_11
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_TX_n_12
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_TX_n_13
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_TX_n_14
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_TX_n_15
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_TX_n_16
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_TX_p_0
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_TX_p_1
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_TX_p_2
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_TX_p_3
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_TX_p_4
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_TX_p_5
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_TX_p_6
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_TX_p_7
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_TX_p_8
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_TX_p_9
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_TX_p_10
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_TX_p_11
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_TX_p_12
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_TX_p_13
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_TX_p_14
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_TX_p_15
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMB_TX_p_16
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_CLKIN0
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_CLKIN_n1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_CLKIN_n2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_CLKIN_p1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_CLKIN_p2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_D_0
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_D_1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_D_2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_D_3
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_OUT0
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_OUT_n1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_OUT_n2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_OUT_p1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_OUT_p2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_n_0
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_n_1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_n_2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_n_3
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_n_4
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_n_5
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_n_6
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_n_7
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_n_8
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_n_9
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_n_10
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_n_11
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_n_12
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_n_13
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_n_14
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_n_15
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_n_16
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_p_0
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_p_1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_p_2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_p_3
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_p_4
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_p_5
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_p_6
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_p_7
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_p_8
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_p_9
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_p_10
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_p_11
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_p_12
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_p_13
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_p_14
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_p_15
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_p_16
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_SCL
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_SDA
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_n_0
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_n_1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_n_2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_n_3
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_n_4
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_n_5
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_n_6
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_n_7
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_n_8
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_n_9
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_n_10
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_n_11
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_n_12
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_n_13
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_n_14
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_n_15
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_n_16
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_p_0
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_p_1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_p_2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_p_3
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_p_4
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_p_5
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_p_6
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_p_7
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_p_8
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_p_9
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_p_10
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_p_11
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_p_12
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_p_13
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_p_14
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_p_15
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_p_16
 set_location_assignment PIN_AP15 -to HSMB_CLKIN0
 set_location_assignment PIN_AU7 -to HSMB_CLKIN_n1
 set_location_assignment PIN_AW14 -to HSMB_CLKIN_n2
@@ -716,90 +716,90 @@ set_location_assignment PIN_AD29 -to GPIO1_35
 #============================================================
 # HSMD
 #============================================================
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_CLKIN0
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_CLKIN_n1
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_CLKIN_n2
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_CLKIN_p1
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_CLKIN_p2
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_CLKOUT_n1
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_CLKOUT_p1
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_D_0
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_D_1
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_D_2
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_D_3
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_CLKIN0
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_CLKIN_n1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_CLKIN_n2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_CLKIN_p1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_CLKIN_p2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_CLKOUT_n1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_CLKOUT_p1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_D_0
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_D_1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_D_2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_D_3
 set_instance_assignment -name IO_STANDARD 1.5V -to HSMD_OUT0
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_OUT_n2
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_OUT_p2
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_RX_n_0
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_RX_n_1
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_RX_n_2
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_RX_n_3
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_RX_n_4
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_RX_n_5
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_RX_n_6
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_RX_n_7
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_RX_n_8
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_RX_n_9
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_RX_n_10
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_RX_n_11
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_RX_n_12
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_RX_n_13
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_RX_n_14
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_RX_n_15
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_RX_n_16
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_RX_p_0
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_RX_p_1
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_RX_p_2
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_RX_p_3
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_RX_p_4
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_RX_p_5
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_RX_p_6
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_RX_p_7
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_RX_p_8
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_RX_p_9
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_RX_p_10
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_RX_p_11
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_RX_p_12
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_RX_p_13
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_RX_p_14
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_RX_p_15
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_RX_p_16
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_OUT_n2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_OUT_p2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_n_0
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_n_1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_n_2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_n_3
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_n_4
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_n_5
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_n_6
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_n_7
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_n_8
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_n_9
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_n_10
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_n_11
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_n_12
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_n_13
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_n_14
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_n_15
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_n_16
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_p_0
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_p_1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_p_2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_p_3
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_p_4
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_p_5
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_p_6
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_p_7
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_p_8
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_p_9
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_p_10
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_p_11
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_p_12
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_p_13
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_p_14
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_p_15
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_p_16
 set_instance_assignment -name IO_STANDARD 1.5V -to HSMD_SCL
 set_instance_assignment -name IO_STANDARD 1.5V -to HSMD_SDA
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_TX_n_0
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_TX_n_1
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_TX_n_2
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_TX_n_3
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_TX_n_4
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_TX_n_5
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_TX_n_6
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_TX_n_7
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_TX_n_8
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_TX_n_9
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_TX_n_10
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_TX_n_11
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_TX_n_12
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_TX_n_13
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_TX_n_14
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_TX_n_15
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_TX_n_16
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_TX_p_0
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_TX_p_1
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_TX_p_2
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_TX_p_3
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_TX_p_4
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_TX_p_5
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_TX_p_6
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_TX_p_7
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_TX_p_8
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_TX_p_9
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_TX_p_10
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_TX_p_11
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_TX_p_12
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_TX_p_13
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_TX_p_14
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_TX_p_15
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMD_TX_p_16
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_n_0
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_n_1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_n_2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_n_3
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_n_4
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_n_5
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_n_6
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_n_7
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_n_8
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_n_9
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_n_10
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_n_11
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_n_12
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_n_13
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_n_14
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_n_15
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_n_16
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_p_0
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_p_1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_p_2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_p_3
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_p_4
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_p_5
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_p_6
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_p_7
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_p_8
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_p_9
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_p_10
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_p_11
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_p_12
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_p_13
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_p_14
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_p_15
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_p_16
 set_location_assignment PIN_AA35 -to HSMD_CLKIN0
 set_location_assignment PIN_W35 -to HSMD_CLKIN_n1
 set_location_assignment PIN_J35 -to HSMD_CLKIN_n2
@@ -887,17 +887,17 @@ set_location_assignment PIN_AK31 -to HSMD_TX_p_16
 #============================================================
 # HSME
 #============================================================
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_CLKIN0
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_CLKIN_n1
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_CLKIN_n2
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_CLKIN_p1
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_CLKIN_p2
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_CLKOUT_n1
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_CLKOUT_p1
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_D_0
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_D_1
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_D_2
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_D_3
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_CLKIN0
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_CLKIN_n1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_CLKIN_n2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_CLKIN_p1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_CLKIN_p2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_CLKOUT_n1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_CLKOUT_p1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_D_0
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_D_1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_D_2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_D_3
 set_instance_assignment -name IO_STANDARD "1.4-V PCML" -to HSME_GXB_RX_p[0]
 set_instance_assignment -name IO_STANDARD "1.4-V PCML" -to HSME_GXB_RX_p[1]
 set_instance_assignment -name IO_STANDARD "1.4-V PCML" -to HSME_GXB_RX_p[2]
@@ -914,78 +914,78 @@ set_instance_assignment -name IO_STANDARD "1.4-V PCML" -to HSME_GXB_TX_p[4]
 set_instance_assignment -name IO_STANDARD "1.4-V PCML" -to HSME_GXB_TX_p[5]
 set_instance_assignment -name IO_STANDARD "1.4-V PCML" -to HSME_GXB_TX_p[6]
 set_instance_assignment -name IO_STANDARD "1.4-V PCML" -to HSME_GXB_TX_p[7]
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_OUT0
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_OUT_n2
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_OUT_p2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_OUT0
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_OUT_n2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_OUT_p2
 set_instance_assignment -name IO_STANDARD "1.4-V PCML" -to HSME_REFCLK_p
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_RX_n_0
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_RX_n_1
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_RX_n_2
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_RX_n_3
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_RX_n_4
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_RX_n_5
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_RX_n_6
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_RX_n_7
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_RX_n_8
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_RX_n_9
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_RX_n_10
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_RX_n_11
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_RX_n_12
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_RX_n_13
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_RX_n_14
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_RX_n_15
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_RX_n_16
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_RX_p_0
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_RX_p_1
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_RX_p_2
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_RX_p_3
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_RX_p_4
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_RX_p_5
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_RX_p_6
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_RX_p_7
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_RX_p_8
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_RX_p_9
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_RX_p_10
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_RX_p_11
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_RX_p_12
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_RX_p_13
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_RX_p_14
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_RX_p_15
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_RX_p_16
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_TX_n_0
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_TX_n_1
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_TX_n_2
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_TX_n_3
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_TX_n_4
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_TX_n_5
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_TX_n_6
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_TX_n_7
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_TX_n_8
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_TX_n_9
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_TX_n_10
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_TX_n_11
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_TX_n_12
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_TX_n_13
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_TX_n_14
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_TX_n_15
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_TX_n_16
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_TX_p_0
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_TX_p_1
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_TX_p_2
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_TX_p_3
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_TX_p_4
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_TX_p_5
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_TX_p_6
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_TX_p_7
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_TX_p_8
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_TX_p_9
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_TX_p_10
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_TX_p_11
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_TX_p_12
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_TX_p_13
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_TX_p_14
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_TX_p_15
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSME_TX_p_16
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_n_0
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_n_1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_n_2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_n_3
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_n_4
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_n_5
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_n_6
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_n_7
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_n_8
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_n_9
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_n_10
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_n_11
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_n_12
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_n_13
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_n_14
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_n_15
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_n_16
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_p_0
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_p_1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_p_2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_p_3
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_p_4
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_p_5
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_p_6
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_p_7
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_p_8
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_p_9
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_p_10
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_p_11
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_p_12
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_p_13
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_p_14
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_p_15
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_p_16
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_n_0
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_n_1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_n_2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_n_3
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_n_4
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_n_5
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_n_6
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_n_7
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_n_8
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_n_9
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_n_10
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_n_11
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_n_12
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_n_13
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_n_14
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_n_15
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_n_16
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_p_0
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_p_1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_p_2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_p_3
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_p_4
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_p_5
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_p_6
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_p_7
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_p_8
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_p_9
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_p_10
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_p_11
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_p_12
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_p_13
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_p_14
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_p_15
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_p_16
 set_location_assignment PIN_C13 -to HSME_CLKIN0
 set_location_assignment PIN_W5 -to HSME_CLKIN_n1
 set_location_assignment PIN_AA5 -to HSME_CLKIN_n2
@@ -1088,88 +1088,88 @@ set_location_assignment PIN_K15 -to HSME_TX_p_16
 #============================================================
 # HSMF
 #============================================================
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_CLKIN0
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_CLKIN_n1
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_CLKIN_n2
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_CLKIN_p1
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_CLKIN_p2
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_CLKOUT_n1
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_CLKOUT_n2
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_CLKOUT_p1
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_CLKOUT_p2
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_D_0
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_D_1
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_D_2
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_D_3
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_OUT0
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_RX_n_0
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_RX_n_1
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_RX_n_2
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_RX_n_3
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_RX_n_4
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_RX_n_5
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_RX_n_6
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_RX_n_7
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_RX_n_8
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_RX_n_9
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_RX_n_10
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_RX_n_11
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_RX_n_12
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_RX_n_13
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_RX_n_14
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_RX_n_15
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_RX_n_16
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_RX_p_0
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_RX_p_1
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_RX_p_2
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_RX_p_3
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_RX_p_4
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_RX_p_5
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_RX_p_6
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_RX_p_7
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_RX_p_8
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_RX_p_9
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_RX_p_10
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_RX_p_11
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_RX_p_12
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_RX_p_13
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_RX_p_14
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_RX_p_15
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_RX_p_16
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_TX_n_0
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_TX_n_1
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_TX_n_2
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_TX_n_3
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_TX_n_4
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_TX_n_5
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_TX_n_6
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_TX_n_7
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_TX_n_8
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_TX_n_9
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_TX_n_10
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_TX_n_11
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_TX_n_12
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_TX_n_13
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_TX_n_14
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_TX_n_15
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_TX_n_16
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_TX_p_0
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_TX_p_1
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_TX_p_2
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_TX_p_3
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_TX_p_4
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_TX_p_5
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_TX_p_6
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_TX_p_7
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_TX_p_8
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_TX_p_9
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_TX_p_10
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_TX_p_11
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_TX_p_12
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_TX_p_13
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_TX_p_14
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_TX_p_15
-set_instance_assignment -name IO_STANDARD "1.8 V" -to HSMF_TX_p_16
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_CLKIN0
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_CLKIN_n1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_CLKIN_n2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_CLKIN_p1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_CLKIN_p2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_CLKOUT_n1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_CLKOUT_n2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_CLKOUT_p1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_CLKOUT_p2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_D_0
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_D_1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_D_2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_D_3
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_OUT0
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_n_0
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_n_1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_n_2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_n_3
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_n_4
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_n_5
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_n_6
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_n_7
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_n_8
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_n_9
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_n_10
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_n_11
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_n_12
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_n_13
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_n_14
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_n_15
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_n_16
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_p_0
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_p_1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_p_2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_p_3
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_p_4
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_p_5
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_p_6
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_p_7
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_p_8
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_p_9
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_p_10
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_p_11
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_p_12
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_p_13
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_p_14
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_p_15
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_p_16
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_n_0
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_n_1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_n_2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_n_3
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_n_4
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_n_5
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_n_6
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_n_7
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_n_8
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_n_9
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_n_10
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_n_11
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_n_12
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_n_13
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_n_14
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_n_15
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_n_16
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_p_0
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_p_1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_p_2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_p_3
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_p_4
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_p_5
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_p_6
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_p_7
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_p_8
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_p_9
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_p_10
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_p_11
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_p_12
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_p_13
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_p_14
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_p_15
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_p_16
 set_location_assignment PIN_AV22 -to HSMF_CLKIN0
 set_location_assignment PIN_AW21 -to HSMF_CLKIN_n1
 set_location_assignment PIN_AT21 -to HSMF_CLKIN_n2
