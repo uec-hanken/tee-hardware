@@ -568,150 +568,150 @@ set_location_assignment PIN_AN7 -to HSMB_TX_p_16
 #============================================================
 # HSMC
 #============================================================
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_0
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_1
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_2
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_3
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_4
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_5
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_6
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_7
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_8
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_9
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_10
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_11
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_12
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_13
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_14
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_15
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_16
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_17
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_18
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_19
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_20
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_21
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_22
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_23
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_24
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_25
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_26
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_27
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_28
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_29
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_30
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_31
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_32
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_33
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_34
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_35
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_0
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_1
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_2
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_3
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_4
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_5
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_6
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_7
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_8
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_9
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_10
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_11
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_12
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_13
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_14
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_15
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_16
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_17
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_18
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_19
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_20
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_21
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_22
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_23
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_24
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_25
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_26
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_27
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_28
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_29
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_30
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_31
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_32
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_33
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_34
-set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_35
-set_location_assignment PIN_AF34 -to GPIO0_0
-set_location_assignment PIN_AG34 -to GPIO0_1
-set_location_assignment PIN_AE35 -to GPIO0_2
-set_location_assignment PIN_AG35 -to GPIO0_3
-set_location_assignment PIN_AC31 -to GPIO0_4
-set_location_assignment PIN_AH32 -to GPIO0_5
-set_location_assignment PIN_AC32 -to GPIO0_6
-set_location_assignment PIN_AH33 -to GPIO0_7
-set_location_assignment PIN_AH34 -to GPIO0_8
-set_location_assignment PIN_AJ34 -to GPIO0_9
-set_location_assignment PIN_AH35 -to GPIO0_10
-set_location_assignment PIN_AJ35 -to GPIO0_11
-set_location_assignment PIN_AK34 -to GPIO0_12
-set_location_assignment PIN_AL34 -to GPIO0_13
-set_location_assignment PIN_AK35 -to GPIO0_14
-set_location_assignment PIN_AL35 -to GPIO0_15
-set_location_assignment PIN_AM34 -to GPIO0_16
-set_location_assignment PIN_AN34 -to GPIO0_17
-set_location_assignment PIN_AM35 -to GPIO0_18
-set_location_assignment PIN_AN35 -to GPIO0_19
-set_location_assignment PIN_AJ32 -to GPIO0_20
-set_location_assignment PIN_AJ26 -to GPIO0_21
-set_location_assignment PIN_AK33 -to GPIO0_22
-set_location_assignment PIN_AK26 -to GPIO0_23
-set_location_assignment PIN_AF25 -to GPIO0_24
-set_location_assignment PIN_AV29 -to GPIO0_25
-set_location_assignment PIN_AG25 -to GPIO0_26
-set_location_assignment PIN_AW30 -to GPIO0_27
-set_location_assignment PIN_AV32 -to GPIO0_28
-set_location_assignment PIN_AT28 -to GPIO0_29
-set_location_assignment PIN_AW32 -to GPIO0_30
-set_location_assignment PIN_AU28 -to GPIO0_31
-set_location_assignment PIN_AV28 -to GPIO0_32
-set_location_assignment PIN_AP28 -to GPIO0_33
-set_location_assignment PIN_AW29 -to GPIO0_34
-set_location_assignment PIN_AR28 -to GPIO0_35
-set_location_assignment PIN_AB27 -to GPIO1_0
-set_location_assignment PIN_AE25 -to GPIO1_1
-set_location_assignment PIN_AB28 -to GPIO1_2
-set_location_assignment PIN_AD25 -to GPIO1_3
-set_location_assignment PIN_AP27 -to GPIO1_4
-set_location_assignment PIN_AU29 -to GPIO1_5
-set_location_assignment PIN_AN27 -to GPIO1_6
-set_location_assignment PIN_AT29 -to GPIO1_7
-set_location_assignment PIN_AL25 -to GPIO1_8
-set_location_assignment PIN_AW33 -to GPIO1_9
-set_location_assignment PIN_AP26 -to GPIO1_10
-set_location_assignment PIN_AW34 -to GPIO1_11
-set_location_assignment PIN_AW31 -to GPIO1_12
-set_location_assignment PIN_AH24 -to GPIO1_13
-set_location_assignment PIN_AV31 -to GPIO1_14
-set_location_assignment PIN_AG24 -to GPIO1_15
-set_location_assignment PIN_AL27 -to GPIO1_16
-set_location_assignment PIN_AW27 -to GPIO1_17
-set_location_assignment PIN_AH26 -to GPIO1_18
-set_location_assignment PIN_AW28 -to GPIO1_19
-set_location_assignment PIN_AK27 -to GPIO1_20
-set_location_assignment PIN_AD30 -to GPIO1_21
-set_location_assignment PIN_AE24 -to GPIO1_22
-set_location_assignment PIN_AD31 -to GPIO1_23
-set_location_assignment PIN_AB30 -to GPIO1_24
-set_location_assignment PIN_AE30 -to GPIO1_25
-set_location_assignment PIN_AB31 -to GPIO1_26
-set_location_assignment PIN_AE31 -to GPIO1_27
-set_location_assignment PIN_AG31 -to GPIO1_28
-set_location_assignment PIN_AE28 -to GPIO1_29
-set_location_assignment PIN_AG32 -to GPIO1_30
-set_location_assignment PIN_AE29 -to GPIO1_31
-set_location_assignment PIN_AF29 -to GPIO1_32
-set_location_assignment PIN_AD28 -to GPIO1_33
-set_location_assignment PIN_AG30 -to GPIO1_34
-set_location_assignment PIN_AD29 -to GPIO1_35
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_0
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_1
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_2
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_3
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_4
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_5
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_6
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_7
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_8
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_9
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_10
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_11
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_12
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_13
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_14
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_15
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_16
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_17
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_18
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_19
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_20
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_21
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_22
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_23
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_24
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_25
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_26
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_27
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_28
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_29
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_30
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_31
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_32
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_33
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_34
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_35
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_0
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_1
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_2
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_3
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_4
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_5
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_6
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_7
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_8
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_9
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_10
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_11
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_12
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_13
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_14
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_15
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_16
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_17
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_18
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_19
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_20
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_21
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_22
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_23
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_24
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_25
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_26
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_27
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_28
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_29
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_30
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_31
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_32
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_33
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_34
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_35
+set_location_assignment PIN_AF34 -to GPIO0_D_0
+set_location_assignment PIN_AG34 -to GPIO0_D_1
+set_location_assignment PIN_AE35 -to GPIO0_D_2
+set_location_assignment PIN_AG35 -to GPIO0_D_3
+set_location_assignment PIN_AC31 -to GPIO0_D_4
+set_location_assignment PIN_AH32 -to GPIO0_D_5
+set_location_assignment PIN_AC32 -to GPIO0_D_6
+set_location_assignment PIN_AH33 -to GPIO0_D_7
+set_location_assignment PIN_AH34 -to GPIO0_D_8
+set_location_assignment PIN_AJ34 -to GPIO0_D_9
+set_location_assignment PIN_AH35 -to GPIO0_D_10
+set_location_assignment PIN_AJ35 -to GPIO0_D_11
+set_location_assignment PIN_AK34 -to GPIO0_D_12
+set_location_assignment PIN_AL34 -to GPIO0_D_13
+set_location_assignment PIN_AK35 -to GPIO0_D_14
+set_location_assignment PIN_AL35 -to GPIO0_D_15
+set_location_assignment PIN_AM34 -to GPIO0_D_16
+set_location_assignment PIN_AN34 -to GPIO0_D_17
+set_location_assignment PIN_AM35 -to GPIO0_D_18
+set_location_assignment PIN_AN35 -to GPIO0_D_19
+set_location_assignment PIN_AJ32 -to GPIO0_D_20
+set_location_assignment PIN_AJ26 -to GPIO0_D_21
+set_location_assignment PIN_AK33 -to GPIO0_D_22
+set_location_assignment PIN_AK26 -to GPIO0_D_23
+set_location_assignment PIN_AF25 -to GPIO0_D_24
+set_location_assignment PIN_AV29 -to GPIO0_D_25
+set_location_assignment PIN_AG25 -to GPIO0_D_26
+set_location_assignment PIN_AW30 -to GPIO0_D_27
+set_location_assignment PIN_AV32 -to GPIO0_D_28
+set_location_assignment PIN_AT28 -to GPIO0_D_29
+set_location_assignment PIN_AW32 -to GPIO0_D_30
+set_location_assignment PIN_AU28 -to GPIO0_D_31
+set_location_assignment PIN_AV28 -to GPIO0_D_32
+set_location_assignment PIN_AP28 -to GPIO0_D_33
+set_location_assignment PIN_AW29 -to GPIO0_D_34
+set_location_assignment PIN_AR28 -to GPIO0_D_35
+set_location_assignment PIN_AB27 -to GPIO1_D_0
+set_location_assignment PIN_AE25 -to GPIO1_D_1
+set_location_assignment PIN_AB28 -to GPIO1_D_2
+set_location_assignment PIN_AD25 -to GPIO1_D_3
+set_location_assignment PIN_AP27 -to GPIO1_D_4
+set_location_assignment PIN_AU29 -to GPIO1_D_5
+set_location_assignment PIN_AN27 -to GPIO1_D_6
+set_location_assignment PIN_AT29 -to GPIO1_D_7
+set_location_assignment PIN_AL25 -to GPIO1_D_8
+set_location_assignment PIN_AW33 -to GPIO1_D_9
+set_location_assignment PIN_AP26 -to GPIO1_D_10
+set_location_assignment PIN_AW34 -to GPIO1_D_11
+set_location_assignment PIN_AW31 -to GPIO1_D_12
+set_location_assignment PIN_AH24 -to GPIO1_D_13
+set_location_assignment PIN_AV31 -to GPIO1_D_14
+set_location_assignment PIN_AG24 -to GPIO1_D_15
+set_location_assignment PIN_AL27 -to GPIO1_D_16
+set_location_assignment PIN_AW27 -to GPIO1_D_17
+set_location_assignment PIN_AH26 -to GPIO1_D_18
+set_location_assignment PIN_AW28 -to GPIO1_D_19
+set_location_assignment PIN_AK27 -to GPIO1_D_20
+set_location_assignment PIN_AD30 -to GPIO1_D_21
+set_location_assignment PIN_AE24 -to GPIO1_D_22
+set_location_assignment PIN_AD31 -to GPIO1_D_23
+set_location_assignment PIN_AB30 -to GPIO1_D_24
+set_location_assignment PIN_AE30 -to GPIO1_D_25
+set_location_assignment PIN_AB31 -to GPIO1_D_26
+set_location_assignment PIN_AE31 -to GPIO1_D_27
+set_location_assignment PIN_AG31 -to GPIO1_D_28
+set_location_assignment PIN_AE28 -to GPIO1_D_29
+set_location_assignment PIN_AG32 -to GPIO1_D_30
+set_location_assignment PIN_AE29 -to GPIO1_D_31
+set_location_assignment PIN_AF29 -to GPIO1_D_32
+set_location_assignment PIN_AD28 -to GPIO1_D_33
+set_location_assignment PIN_AG30 -to GPIO1_D_34
+set_location_assignment PIN_AD29 -to GPIO1_D_35
 
 #============================================================
 # HSMD

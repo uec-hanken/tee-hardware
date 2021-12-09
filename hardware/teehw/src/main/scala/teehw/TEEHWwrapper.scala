@@ -1738,7 +1738,6 @@ trait WithFPGATR4InternConnect {
 
 trait WithFPGATR4Connect extends WithFPGATR4InternCreate with WithFPGATR4InternConnect {
   this: FPGATR4Shell =>
-  val chip : WithTEEHWbaseShell with WithTEEHWbaseConnect
 
   // From intern = Clocks and resets
   (chip.ChildClock zip intern.ChildClock).foreach{ case (a, b) => a := b }
@@ -1767,7 +1766,7 @@ trait WithFPGATR4Connect extends WithFPGATR4InternCreate with WithFPGATR4InternC
   chip.jtag.jtag_TDI := ALT_IOBUF(GPIO1_D(4))
   chip.jtag.jtag_TMS := ALT_IOBUF(GPIO1_D(6))
   chip.jtag.jtag_TCK := ALT_IOBUF(GPIO1_D(8))
-  ALT_IOBUF(GPIO1_D(10), chip.jtag.jtag_TDI)
+  ALT_IOBUF(GPIO1_D(10), chip.jtag.jtag_TDO)
   chip.qspi.foreach{A =>
     A.qspi_miso := ALT_IOBUF(GPIO1_D(1))
     ALT_IOBUF(GPIO1_D(3), A.qspi_mosi)
