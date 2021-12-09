@@ -1554,6 +1554,10 @@ trait FPGATR4ClockAndResetsAndDDR {
   val OSC_50_BANK4 = IO(Input(Clock()))
   val OSC_50_BANK7 = IO(Input(Clock()))
   val OSC_50_BANK8 = IO(Input(Clock()))
+  val SMA_CLKIN = IO(Input(Clock()))
+  val SMA_CLKOUT = IO(Analog(1.W))
+  val SMA_CLKOUT_n = IO(Analog(1.W))
+  val SMA_CLKOUT_p = IO(Analog(1.W))
 
   ///////// BUTTON /////////
   val BUTTON = IO(Input(Bits((3 + 1).W)))
@@ -1715,6 +1719,10 @@ trait WithFPGATR4InternConnect {
   intern.OSC_50_BANK7 := OSC_50_BANK7
   intern.OSC_50_BANK8 := OSC_50_BANK8
   intern.BUTTON := BUTTON
+  intern.SMA_CLKIN := SMA_CLKIN
+  attach(SMA_CLKOUT, intern.SMA_CLKOUT)
+  attach(SMA_CLKOUT_n, intern.SMA_CLKOUT_n)
+  attach(SMA_CLKOUT_p, intern.SMA_CLKOUT_p)
 
   mem_a := intern.mem_a
   mem_ba := intern.mem_ba
@@ -2006,6 +2014,10 @@ trait WithFPGATR4ToChipConnect extends WithFPGATR4InternNoChipCreate with WithFP
     intern.mem_status_local_init_done,
     BUTTON(2)
   )
+  // Clocks to the outside
+  ALT_IOBUF(SMA_CLKOUT, intern.sys_clk.asBool())
+  intern.ChildClock.foreach(A => ALT_IOBUF(SMA_CLKOUT_p, A.asBool()))
+  intern.usbClk.foreach(A => ALT_IOBUF(SMA_CLKOUT_n, A.asBool()))
 }
 
 class FPGATR4ToChip(implicit p :Parameters) extends FPGATR4Shell()(p)
