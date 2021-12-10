@@ -72,7 +72,7 @@ trait FPGATR5ChipShell {
   val SW = IO(Input(Bits(4.W)))
 
   ///////// LED /////////
-  val LED = IO(Input(Bits(4.W)))
+  val LED = IO(Output(Bits(4.W)))
 
   ///////// FAN /////////
   val FAN_ALERT_n = IO(Input(Bool()))
@@ -202,20 +202,20 @@ class FPGATR5Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConnect]
       DDR3_RESET_n := mod_io_qport.memory_mem_reset_n.getOrElse(true.B)
       mod_io_qport.oct.rzqin.foreach(_ := RZQ_DDR3)
     }
-    
+
+    val ddrcfg = QuartusDDRConfig(
+      size_ck = 2,
+      is_reset = true,
+      size_cke = 2,
+      size_csn = 2,
+      size_odt = 2,
+      addrbit = 15,
+      octmode = 1,
+      size = 0x80000000L)
+
     tlport.foreach { chiptl =>
       // Instance our converter, and connect everything
-      val mod = Module(LazyModule(new TLULtoQuartusPlatform(
-        chiptl.params,
-        QuartusDDRConfig(
-          size_ck = 2, 
-          is_reset = true, 
-          size_cke = 2, 
-          size_csn = 2, 
-          size_odt = 2, 
-          addrbit = 15, 
-          octmode = 1)
-      )).module)
+      val mod = Module(LazyModule(new TLULtoQuartusPlatform(chiptl.params, ddrcfg)).module)
 
       // Quartus Platform connections
       ConnectDDRUtil(mod.io.qport, mod.io.ckrst)
@@ -234,15 +234,7 @@ class FPGATR5Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConnect]
     }
     (memser zip memserSourceBits).foreach { case(ms, sourceBits) =>
       // Instance our converter, and connect everything
-      val mod = Module(LazyModule(new SertoQuartusPlatform(ms.w, sourceBits,
-        QuartusDDRConfig(
-          size_ck = 2,
-          is_reset = true,
-          size_cke = 2,
-          size_csn = 2,
-          size_odt = 2,
-          addrbit = 15,
-          octmode = 1))).module)
+      val mod = Module(LazyModule(new SertoQuartusPlatform(ms.w, sourceBits, ddrcfg)).module)
 
       // Serial port
       mod.io.serport.flipConnect(ms)
@@ -314,6 +306,8 @@ trait WithFPGATR5InternConnect {
   intern.SMA_CLKIN_p := SMA_CLKIN_p
   attach(SMA_CLKOUT_p, intern.SMA_CLKOUT_p)
 
+  intern.DDR3_REFCLK_p := DDR3_REFCLK_p // TODO: Not actually used
+  intern.DDR3_EVENT_n := DDR3_EVENT_n // TODO: Not actually used
   DDR3_A := intern.DDR3_A
   DDR3_BA := intern.DDR3_BA
   DDR3_CK := intern.DDR3_CK

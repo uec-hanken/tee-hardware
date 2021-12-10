@@ -176,13 +176,12 @@ class FPGATR4Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConnect]
       mod_io_qport.oct.rdn.foreach(_ := mem_oct_rdn)
       mod_io_qport.oct.rup.foreach(_ := mem_oct_rup)
     }
+
+    val ddrcfg = QuartusDDRConfig(size_ck = 1, is_reset = true)
     
     tlport.foreach { chiptl =>
       // Instance our converter, and connect everything
-      val mod = Module(LazyModule(new TLULtoQuartusPlatform(
-        chiptl.params,
-        QuartusDDRConfig(size_ck = 1, is_reset = true)
-      )).module)
+      val mod = Module(LazyModule(new TLULtoQuartusPlatform(chiptl.params, ddrcfg)).module)
 
       // Quartus Platform connections
       ConnectDDRUtil(mod.io.qport, mod.io.ckrst)
@@ -201,8 +200,7 @@ class FPGATR4Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConnect]
     }
     (memser zip memserSourceBits).foreach { case(ms, sourceBits) =>
       // Instance our converter, and connect everything
-      val mod = Module(LazyModule(new SertoQuartusPlatform(ms.w, sourceBits,
-        QuartusDDRConfig(size_ck = 1, is_reset = true))).module)
+      val mod = Module(LazyModule(new SertoQuartusPlatform(ms.w, sourceBits, ddrcfg)).module)
 
       // Serial port
       mod.io.serport.flipConnect(ms)

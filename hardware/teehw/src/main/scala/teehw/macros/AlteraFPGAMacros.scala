@@ -23,7 +23,8 @@ case class QuartusDDRConfig
   size_odt: Int = 2,
   addrbit: Int = 14,
   octmode: Int = 0,
-  is_reset: Boolean = false)
+  is_reset: Boolean = false,
+  size: BigInt = BigInt(0x40000000L))
 
 class OCTBundle(val mode: Int = 0) extends Bundle {
   val rdn = (mode == 0).option(Input(Bool()))
@@ -127,7 +128,6 @@ class QuartusIsland(c : Seq[AddressSet],
   require (ranges.size == 1, "DDR range must be contiguous")
   val offset = ranges.head.base
   val depth = ranges.head.size
-  require((depth<=0x100000000L),"QuartusIsland supports upto 4GB depth configuraton")
 
   val device = new MemoryDevice
   val node = AXI4SlaveNode(Seq(AXI4SlavePortParameters(
@@ -280,7 +280,7 @@ class SertoQuartusPlatform(w: Int, idBits: Int = 6,
     new QuartusPlatform(
       AddressSet.misaligned(
         p(ExtMem).get.master.base,
-        0x40000000L * 1 // 1GiB for the VC707DDR
+        ddrc.size
       ),
       ddrc = ddrc
     ))
@@ -327,7 +327,7 @@ class TLULtoQuartusPlatform( TLparams: TLBundleParameters,
     new QuartusPlatform(
       AddressSet.misaligned(
         p(ExtMem).get.master.base,
-        0x40000000L * 1 // 1GiB for the VC707DDR
+        ddrc.size
       ),
       ddrc = ddrc
     )

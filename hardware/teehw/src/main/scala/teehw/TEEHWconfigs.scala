@@ -426,6 +426,8 @@ class TR5Config extends Config((new WithIbexSynthesizedNoICache).alter((site,her
   }
   /* The DDR memory supports 64 transactions. This is to avoid modifying chipyard*/
   case MemoryBusKey => up(MemoryBusKey).copy(blockBytes = 64)
+  case ExtMem => up(ExtMem).map{ext => ext.copy(master = ext.master.copy(size = x"0_8000_0000"))}
+  case ExtSerMem => up(ExtSerMem).map{ext => ext.copy(master = ext.master.copy(size = x"0_8000_0000"))}
 }))
 
 class VC707Config extends Config((site,here,up) => {
