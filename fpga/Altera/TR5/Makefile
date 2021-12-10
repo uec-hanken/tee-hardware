@@ -1,5 +1,5 @@
 #########################################################################################
-# TR4 FPGA build
+# TR5 FPGA build
 #########################################################################################
 
 #########################################################################################
@@ -10,15 +10,15 @@ base_dir=$(teehw_dir)
 sim_dir=$(abspath .)
 build_dir=$(sim_dir)/generated_src
 
-SUB_PROJECT ?= FPGATR4
-BOARD?=TR4
+SUB_PROJECT ?= FPGATR5
+BOARD?=TR5
 ISACONF?=RV64GC
 MBUS?=MBus64
 BOOTSRC?=BOOTROM
 PCIE?=WoPCIe
 DDRCLK?=WoSepaDDRClk
 HYBRID?=Rocket
-SEPARE?=BoomTile,RocketTile,TLAES,TLed25519,TLSHA3
+SEPARE?=Nothing
 
 #########################################################################################
 # Common rules for FPGA
@@ -30,8 +30,8 @@ include $(base_dir)/fpga/common.mk
 #########################################################################################
 BUILD_DIR=$(build_dir)
 FPGA_DIR=$(base_dir)/hardware/fpga-shells/altera
-export FPGA_BOARD=TR4
-TCL_SHELL=$(sim_dir)/TR4.shell.quartus.tcl
+export FPGA_BOARD=TR5
+TCL_SHELL=$(sim_dir)/TR5.shell.quartus.tcl
 TCL_QSYS_MAIN=$(sim_dir)/main.qsys
 SDC_FILE=$(sim_dir)/constraints.sdc
 include $(base_dir)/fpga/Altera/common.mk

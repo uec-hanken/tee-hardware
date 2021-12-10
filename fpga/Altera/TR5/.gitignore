@@ -1,6 +1,6 @@
 *
 !.gitignore
 !Makefile
-!TR4.shell.quartus.tcl
-!TR4.qsys.main.tcl
+!TR5.shell.quartus.tcl
+!TR5.qsys.main.tcl
 !main.qsys

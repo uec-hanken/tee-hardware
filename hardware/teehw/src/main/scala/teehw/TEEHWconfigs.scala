@@ -411,7 +411,20 @@ class TR4Config extends Config((new WithIbexSynthesizedNoICache).alter((site,her
   case PeripheryRandomKey => up(PeripheryRandomKey, site) map {r =>
     r.copy(board = "Altera", impl = 0)
   }
-  /* The DDR memory supports 128 transactions. This is to avoid modifying chipyard*/
+  /* The DDR memory supports 64 transactions. This is to avoid modifying chipyard*/
+  case MemoryBusKey => up(MemoryBusKey).copy(blockBytes = 64)
+}))
+
+class TR5Config extends Config((new WithIbexSynthesizedNoICache).alter((site,here,up) => {
+  case FreqKeyMHz => 50.0
+  case QSPICardMHz => 1.0
+  case SDCardMHz => 5.0
+  /* TR4 is not support PCIe (yet) */
+  case IncludePCIe => false
+  case PeripheryRandomKey => up(PeripheryRandomKey, site) map {r =>
+    r.copy(board = "Altera", impl = 0)
+  }
+  /* The DDR memory supports 64 transactions. This is to avoid modifying chipyard*/
   case MemoryBusKey => up(MemoryBusKey).copy(blockBytes = 64)
 }))
 
