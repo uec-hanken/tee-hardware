@@ -120,7 +120,7 @@
    dir="end" />
  <interface name="usb" internal="QSys_PLL.outclk1" type="clock" dir="start" />
  <module name="AXI_Bridge" kind="altera_axi_bridge" version="20.1" enabled="1">
-  <parameter name="ADDR_WIDTH" value="30" />
+  <parameter name="ADDR_WIDTH" value="33" />
   <parameter name="AXI_VERSION" value="AXI4" />
   <parameter name="COMBINED_ACCEPTANCE_CAPABILITY" value="16" />
   <parameter name="COMBINED_ISSUING_CAPABILITY" value="16" />

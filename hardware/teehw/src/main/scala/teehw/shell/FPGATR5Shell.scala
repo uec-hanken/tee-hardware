@@ -54,7 +54,7 @@ trait FPGATR5ChipShell {
   implicit val p: Parameters
 
   //////////// GPIO //////////
-  val GPIO = IO(Vec(35+1, Analog(1.W)))
+  val GPIO = IO(Vec(36, Analog(1.W)))
 
   //////////// FMCA //////////
   val FMCA = IO(new FMCTR5(ext = true))
@@ -69,13 +69,22 @@ trait FPGATR5ChipShell {
   val FMCD = IO(new FMCTR5(ext = true))
 
   ///////// SW /////////
-  val SW = IO(Input(Bits((3 + 1).W)))
+  val SW = IO(Input(Bits(4.W)))
 
   ///////// LED /////////
-  val LED = IO(Input(Bits((3 + 1).W)))
+  val LED = IO(Input(Bits(4.W)))
 
   ///////// FAN /////////
   val FAN_ALERT_n = IO(Input(Bool()))
+
+  //////////// SD Card //////////
+  val SD_CLK = IO(Output(Bool()))
+  val SD_DATA = IO(Vec(4, Analog(1.W)))
+  val SD_CMD = IO(Analog(1.W))
+
+  //////////// Uart to USB //////////
+  val UART_RX = IO(Analog(1.W))
+  val UART_TX = IO(Analog(1.W))
 }
 
 trait FPGATR5ClockAndResetsAndDDR {
@@ -347,7 +356,7 @@ trait WithFPGATR5Connect extends WithFPGATR5InternCreate with WithFPGATR5InternC
     intern.mem_status_local_cal_fail,
     intern.mem_status_local_cal_success,
     intern.mem_status_local_init_done,
-    BUTTON(2)
+    CPU_RESET_n
   )
   chip.gpio_in := Cat(BUTTON(3), BUTTON(1,0), SW(1,0))
   chip.jtag.jtag_TDI := ALT_IOBUF(GPIO(4))
@@ -360,12 +369,12 @@ trait WithFPGATR5Connect extends WithFPGATR5InternCreate with WithFPGATR5InternC
     ALT_IOBUF(GPIO(5), A.qspi_cs(0))
     ALT_IOBUF(GPIO(7), A.qspi_sck)
   }
-  chip.uart_rxd := ALT_IOBUF(GPIO(35))	// UART_TXD
-  ALT_IOBUF(GPIO(34), chip.uart_txd) // UART_RXD
-  ALT_IOBUF(GPIO(28), chip.sdio.sdio_clk)
-  ALT_IOBUF(GPIO(30), chip.sdio.sdio_cmd)
-  chip.sdio.sdio_dat_0 := ALT_IOBUF(GPIO(32))
-  ALT_IOBUF(GPIO(34), chip.sdio.sdio_dat_3)
+  chip.uart_rxd := ALT_IOBUF(UART_RX)
+  ALT_IOBUF(UART_TX, chip.uart_txd) // UART_RXD
+  SD_CLK := chip.sdio.sdio_clk
+  chip.sdio.sdio_dat_0 := ALT_IOBUF(SD_DATA(0))
+  ALT_IOBUF(SD_DATA(3), chip.sdio.sdio_dat_3)
+  ALT_IOBUF(SD_CMD, chip.sdio.sdio_cmd)
 
   // USB phy connections
   (chip.usb11hs zip intern.usbClk).foreach{ case (chipport, uclk) =>
