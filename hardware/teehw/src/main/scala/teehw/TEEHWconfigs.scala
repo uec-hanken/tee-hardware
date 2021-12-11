@@ -384,6 +384,11 @@ class WoSepaDDRClk extends Config((site, here, up) => {
   case DDRPortOther => false
 })
 
+class WSepaMBusClk extends Config((site, here, up) => {
+  case DDRPortOther => false // Just for measure
+  case SbusToMbusXTypeKey => AsynchronousCrossing() // The MBus clock will be separated
+})
+
 class WExposeClk extends Config((site, here, up) => {
   case ExposeClocks => true
 })

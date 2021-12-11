@@ -138,7 +138,7 @@ trait HasTEEHWSystem
       serdes.module.clock := clkNode.in.head._1.clock
       serdes.module.reset := clkNode.in.head._1.reset
     }
-    // TODO: The clock separation for this is obviously not done
+    // The clock separation for memser is done through the aclocks
     serdes
   }
 

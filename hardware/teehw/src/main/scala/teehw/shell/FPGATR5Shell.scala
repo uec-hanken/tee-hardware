@@ -181,7 +181,7 @@ class FPGATR5Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConnect]
 
       mod_io_ckrst.ddr_ref_clk := OSC_50_B3B.asUInt()
       mod_io_ckrst.qsys_ref_clk := OSC_50_B4A.asUInt() // TODO: This is okay?
-      mod_io_ckrst.system_reset_n := CPU_RESET_n
+      mod_io_ckrst.system_reset_n := BUTTON(2)
     }
 
     // Helper function to connect the DDR from the Quartus Platform
@@ -351,7 +351,7 @@ trait WithFPGATR5Connect extends WithFPGATR5InternCreate with WithFPGATR5InternC
     intern.mem_status_local_cal_fail,
     intern.mem_status_local_cal_success,
     intern.mem_status_local_init_done,
-    CPU_RESET_n
+    BUTTON(2)
   )
   chip.gpio_in := Cat(BUTTON(3), BUTTON(1,0), SW(1,0))
   chip.jtag.jtag_TDI := ALT_IOBUF(GPIO(4))
@@ -385,7 +385,13 @@ trait WithFPGATR5Connect extends WithFPGATR5InternCreate with WithFPGATR5InternC
 }
 
 object ConnectFMCGPIO {
-  def apply (n: Int, p: Int, c: Bool, get: Boolean, FMC: FMCTR5) = {
+  def apply (n: Int, pu: Int, c: Bool, get: Boolean, FMC: FMCTR5) = {
+    val p:Int = pu match {
+      case it if 1 to 10 contains it => p - 1
+      case it if 13 until 18 contains it => p - 3
+      case it if 31 until 40 contains it => p - 5
+      case _ => throw new RuntimeException(s"J${n}_${pu} is a VDD or a GND")
+    }
     n match {
       case 0 =>
         p match {
@@ -753,7 +759,7 @@ trait WithFPGATR5ToChipConnect extends WithFPGATR5InternNoChipCreate with WithFP
     intern.mem_status_local_cal_fail,
     intern.mem_status_local_cal_success,
     intern.mem_status_local_init_done,
-    CPU_RESET_n
+    BUTTON(2)
   )
   // Clocks to the outside
   ALT_IOBUF(SMA_CLKOUT_p, intern.sys_clk.asBool())
