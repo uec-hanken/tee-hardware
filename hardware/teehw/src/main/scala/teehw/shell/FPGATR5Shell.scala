@@ -387,9 +387,9 @@ trait WithFPGATR5Connect extends WithFPGATR5InternCreate with WithFPGATR5InternC
 object ConnectFMCGPIO {
   def apply (n: Int, pu: Int, c: Bool, get: Boolean, FMC: FMCTR5) = {
     val p:Int = pu match {
-      case it if 1 to 10 contains it => p - 1
-      case it if 13 until 18 contains it => p - 3
-      case it if 31 until 40 contains it => p - 5
+      case it if 1 to 10 contains it => pu - 1
+      case it if 13 until 18 contains it => pu - 3
+      case it if 31 until 40 contains it => pu - 5
       case _ => throw new RuntimeException(s"J${n}_${pu} is a VDD or a GND")
     }
     n match {
