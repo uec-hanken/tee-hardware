@@ -617,8 +617,8 @@ set_instance_assignment -name OUTPUT_TERMINATION "SERIES 50 OHM WITH CALIBRATION
 set_instance_assignment -name INPUT_TERMINATION "PARALLEL 50 OHM WITH CALIBRATION" -to DDR3_DQS_n[7] -tag __main_DDR3_IP_p0
 set_instance_assignment -name OUTPUT_TERMINATION "SERIES 50 OHM WITH CALIBRATION" -to DDR3_DQS_n[7] -tag __main_DDR3_IP_p0
 set_instance_assignment -name OUTPUT_TERMINATION "SERIES 50 OHM WITH CALIBRATION" -to DDR3_CK[0] -tag __main_DDR3_IP_p0
-set_instance_assignment -name TERMINATION_CONTROL_BLOCK "main:intern|mod|main_DDR3_IP:DDR3_IP|altera_mem_if_oct_stratixv:oct0|sd1a_0" -to DDR3_CK[0] -tag __main_DDR3_IP_p0
-set_instance_assignment -name TERMINATION_CONTROL_BLOCK "main:intern|mod|main_DDR3_IP:DDR3_IP|altera_mem_if_oct_stratixv:oct0|sd1a_0" -to DDR3_CK_n[0] -tag __main_DDR3_IP_p0
+#set_instance_assignment -name TERMINATION_CONTROL_BLOCK "intern|mod|ddr|island|blackbox|DDR3_IP|oct0|sd1a_0" -to DDR3_CK[0] -tag __main_DDR3_IP_p0
+#set_instance_assignment -name TERMINATION_CONTROL_BLOCK "intern|mod|ddr|island|blackbox|DDR3_IP|oct0|sd1a_0" -to DDR3_CK_n[0] -tag __main_DDR3_IP_p0
 set_instance_assignment -name OUTPUT_TERMINATION "SERIES 50 OHM WITH CALIBRATION" -to DDR3_CK_n[0] -tag __main_DDR3_IP_p0
 set_instance_assignment -name CURRENT_STRENGTH_NEW "MAXIMUM CURRENT" -to DDR3_A[0] -tag __main_DDR3_IP_p0
 set_instance_assignment -name CURRENT_STRENGTH_NEW "MAXIMUM CURRENT" -to DDR3_A[10] -tag __main_DDR3_IP_p0
@@ -766,25 +766,25 @@ set_instance_assignment -name PACKAGE_SKEW_COMPENSATION ON -to DDR3_ODT[0] -tag 
 set_instance_assignment -name PACKAGE_SKEW_COMPENSATION ON -to DDR3_RESET_n -tag __main_DDR3_IP_p0
 set_instance_assignment -name PACKAGE_SKEW_COMPENSATION ON -to DDR3_CK[0] -tag __main_DDR3_IP_p0
 set_instance_assignment -name PACKAGE_SKEW_COMPENSATION ON -to DDR3_CK_n[0] -tag __main_DDR3_IP_p0
-set_instance_assignment -name GLOBAL_SIGNAL "DUAL-REGIONAL CLOCK" -to intern|mod|DDR3_IP|pll0|pll_avl_clk -tag __main_DDR3_IP_p0
-set_instance_assignment -name GLOBAL_SIGNAL "DUAL-REGIONAL CLOCK" -to intern|mod|DDR3_IP|pll0|pll_config_clk -tag __main_DDR3_IP_p0
-set_instance_assignment -name GLOBAL_SIGNAL "GLOBAL CLOCK" -to intern|mod|DDR3_IP|pll0|afi_clk -tag __main_DDR3_IP_p0
-set_instance_assignment -name GLOBAL_SIGNAL "DUAL-REGIONAL CLOCK" -to intern|mod|DDR3_IP|pll0|pll_hr_clk -tag __main_DDR3_IP_p0
-set_instance_assignment -name GLOBAL_SIGNAL "GLOBAL CLOCK" -to intern|mod|DDR3_IP|pll0|pll_p2c_read_clk -tag __main_DDR3_IP_p0
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to intern|mod|DDR3_IP|p0|umemphy|ureset|phy_reset_n -tag __main_DDR3_IP_p0
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to intern|mod|DDR3_IP|s0|sequencer_rw_mgr_inst|rw_mgr_inst|rw_mgr_core_inst|rw_soft_reset_n -tag __main_DDR3_IP_p0
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to intern|mod|DDR3_IP|p0|umemphy|uread_datapath|reset_n_fifo_wraddress[0] -tag __main_DDR3_IP_p0
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to intern|mod|DDR3_IP|p0|umemphy|uread_datapath|reset_n_fifo_wraddress[1] -tag __main_DDR3_IP_p0
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to intern|mod|DDR3_IP|p0|umemphy|uread_datapath|reset_n_fifo_wraddress[2] -tag __main_DDR3_IP_p0
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to intern|mod|DDR3_IP|p0|umemphy|uread_datapath|reset_n_fifo_wraddress[3] -tag __main_DDR3_IP_p0
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to intern|mod|DDR3_IP|p0|umemphy|uread_datapath|reset_n_fifo_wraddress[4] -tag __main_DDR3_IP_p0
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to intern|mod|DDR3_IP|p0|umemphy|uread_datapath|reset_n_fifo_wraddress[5] -tag __main_DDR3_IP_p0
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to intern|mod|DDR3_IP|p0|umemphy|uread_datapath|reset_n_fifo_wraddress[6] -tag __main_DDR3_IP_p0
-set_instance_assignment -name GLOBAL_SIGNAL OFF -to intern|mod|DDR3_IP|p0|umemphy|uread_datapath|reset_n_fifo_wraddress[7] -tag __main_DDR3_IP_p0
-set_instance_assignment -name ENABLE_BENEFICIAL_SKEW_OPTIMIZATION_FOR_NON_GLOBAL_CLOCKS ON -to intern|mod|DDR3_IP -tag __main_DDR3_IP_p0
-set_instance_assignment -name PLL_COMPENSATION_MODE DIRECT -to intern|mod|DDR3_IP|pll0|fbout -tag __main_DDR3_IP_p0
-set_instance_assignment -name MAX_FANOUT 4 -to intern|mod|DDR3_IP|p0|umemphy|uio_pads|wrdata_en_qr_to_hr|dataout_r[*][*] -tag __main_DDR3_IP_p0
-set_instance_assignment -name FORM_DDR_CLUSTERING_CLIQUE ON -to intern|mod|DDR3_IP|p0|umemphy|*qr_to_hr* -tag __main_DDR3_IP_p0
+set_instance_assignment -name GLOBAL_SIGNAL "DUAL-REGIONAL CLOCK" -to intern|mod|ddr|island|blackbox|DDR3_IP|pll0|pll_avl_clk -tag __main_DDR3_IP_p0
+set_instance_assignment -name GLOBAL_SIGNAL "DUAL-REGIONAL CLOCK" -to intern|mod|ddr|island|blackbox|DDR3_IP|pll0|pll_config_clk -tag __main_DDR3_IP_p0
+set_instance_assignment -name GLOBAL_SIGNAL "GLOBAL CLOCK" -to intern|mod|ddr|island|blackbox|DDR3_IP|pll0|afi_clk -tag __main_DDR3_IP_p0
+set_instance_assignment -name GLOBAL_SIGNAL "DUAL-REGIONAL CLOCK" -to intern|mod|ddr|island|blackbox|DDR3_IP|pll0|pll_hr_clk -tag __main_DDR3_IP_p0
+set_instance_assignment -name GLOBAL_SIGNAL "GLOBAL CLOCK" -to intern|mod|ddr|island|blackbox|DDR3_IP|pll0|pll_p2c_read_clk -tag __main_DDR3_IP_p0
+set_instance_assignment -name GLOBAL_SIGNAL OFF -to intern|mod|ddr|island|blackbox|DDR3_IP|p0|umemphy|ureset|phy_reset_n -tag __main_DDR3_IP_p0
+set_instance_assignment -name GLOBAL_SIGNAL OFF -to intern|mod|ddr|island|blackbox|DDR3_IP|s0|sequencer_rw_mgr_inst|rw_mgr_inst|rw_mgr_core_inst|rw_soft_reset_n -tag __main_DDR3_IP_p0
+set_instance_assignment -name GLOBAL_SIGNAL OFF -to intern|mod|ddr|island|blackbox|DDR3_IP|p0|umemphy|uread_datapath|reset_n_fifo_wraddress[0] -tag __main_DDR3_IP_p0
+set_instance_assignment -name GLOBAL_SIGNAL OFF -to intern|mod|ddr|island|blackbox|DDR3_IP|p0|umemphy|uread_datapath|reset_n_fifo_wraddress[1] -tag __main_DDR3_IP_p0
+set_instance_assignment -name GLOBAL_SIGNAL OFF -to intern|mod|ddr|island|blackbox|DDR3_IP|p0|umemphy|uread_datapath|reset_n_fifo_wraddress[2] -tag __main_DDR3_IP_p0
+set_instance_assignment -name GLOBAL_SIGNAL OFF -to intern|mod|ddr|island|blackbox|DDR3_IP|p0|umemphy|uread_datapath|reset_n_fifo_wraddress[3] -tag __main_DDR3_IP_p0
+set_instance_assignment -name GLOBAL_SIGNAL OFF -to intern|mod|ddr|island|blackbox|DDR3_IP|p0|umemphy|uread_datapath|reset_n_fifo_wraddress[4] -tag __main_DDR3_IP_p0
+set_instance_assignment -name GLOBAL_SIGNAL OFF -to intern|mod|ddr|island|blackbox|DDR3_IP|p0|umemphy|uread_datapath|reset_n_fifo_wraddress[5] -tag __main_DDR3_IP_p0
+set_instance_assignment -name GLOBAL_SIGNAL OFF -to intern|mod|ddr|island|blackbox|DDR3_IP|p0|umemphy|uread_datapath|reset_n_fifo_wraddress[6] -tag __main_DDR3_IP_p0
+set_instance_assignment -name GLOBAL_SIGNAL OFF -to intern|mod|ddr|island|blackbox|DDR3_IP|p0|umemphy|uread_datapath|reset_n_fifo_wraddress[7] -tag __main_DDR3_IP_p0
+set_instance_assignment -name ENABLE_BENEFICIAL_SKEW_OPTIMIZATION_FOR_NON_GLOBAL_CLOCKS ON -to intern|mod|ddr|island|blackbox|DDR3_IP -tag __main_DDR3_IP_p0
+set_instance_assignment -name PLL_COMPENSATION_MODE DIRECT -to intern|mod|ddr|island|blackbox|DDR3_IP|pll0|fbout -tag __main_DDR3_IP_p0
+set_instance_assignment -name MAX_FANOUT 4 -to intern|mod|ddr|island|blackbox|DDR3_IP|p0|umemphy|uio_pads|wrdata_en_qr_to_hr|dataout_r[*][*] -tag __main_DDR3_IP_p0
+set_instance_assignment -name FORM_DDR_CLUSTERING_CLIQUE ON -to intern|mod|ddr|island|blackbox|DDR3_IP|p0|umemphy|*qr_to_hr* -tag __main_DDR3_IP_p0
 
 #============================================================
 # RZQ

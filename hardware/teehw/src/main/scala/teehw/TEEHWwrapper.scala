@@ -266,3 +266,7 @@ class FPGATR4ToChip(implicit p :Parameters) extends FPGATR4Shell()(p)
 class FPGATR5(implicit p :Parameters) extends FPGATR5Shell()(p)
   with HasTEEHWChip with WithFPGATR5Connect {
 }
+
+class FPGATR5ToChip(implicit p :Parameters) extends FPGATR5Shell()(p)
+  with WithFPGATR5ToChipConnect {
+}
