@@ -172,6 +172,7 @@ class FPGATR4Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConnect]
 
       // Legacy ChildClock
       if(p(DDRPortOther)) {
+        println("[Legacy] Quartus Island and Child Clock connected to io_clk")
         ChildClock.foreach(_ := mod_io_ckrst.io_clk)
         ChildReset.foreach(_ := reset_to_child)
         mod_clock := mod_io_ckrst.io_clk

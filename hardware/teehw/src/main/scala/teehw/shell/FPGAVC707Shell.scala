@@ -113,6 +113,7 @@ class FPGAVC707Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConnec
     val aresetn = !reset_0 // Reset that goes to the MMCM inside of the DDR MIG
     val sys_rst = ResetCatchAndSync(pll.io.clk_out3.get, !pll.io.locked) // Catched system clock
     val reset_2 = WireInit(!pll.io.locked) // If DDR is not present, this is the system reset
+    val child_rst = WireInit(!pll.io.locked) // If DDR is not present, this is the system reset
 
     // The DDR port
     init_calib_complete := false.B
@@ -122,25 +123,28 @@ class FPGAVC707Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConnec
       // DDR port only
       ddr = Some(IO(new VC707MIGIODDR(mod.depth)))
       ddr.get <> mod.io.ddrport
+
       // MIG connections, like resets and stuff
       mod.io.ddrport.sys_clk_i := sys_clk_i.asUInt()
       mod.io.ddrport.aresetn := aresetn
       mod.io.ddrport.sys_rst := sys_rst
       reset_2 := ResetCatchAndSync(pll.io.clk_out3.get, mod.io.ddrport.ui_clk_sync_rst)
+      ChildClock.foreach(_ := pll.io.clk_out3.getOrElse(false.B))
+      ChildReset.foreach(_ := reset_2)
+      mod.clock := pll.io.clk_out3.getOrElse(false.B)
+      child_rst := ResetCatchAndSync(pll.io.clk_out2.get, mod.io.ddrport.ui_clk_sync_rst)
 
       // TileLink Interface from platform
       mod.io.tlport.a <> chiptl.a
       chiptl.d <> mod.io.tlport.d
 
+      // Legacy ChildClock
       if(p(DDRPortOther)) {
+        println("[Legacy] Quartus Island and Child Clock connected to clk_out2")
         ChildClock.foreach(_ := pll.io.clk_out2.getOrElse(false.B))
         ChildReset.foreach(_ := reset_2)
         mod.clock := pll.io.clk_out2.getOrElse(false.B)
-      }
-      else {
-        ChildClock.foreach(_ := pll.io.clk_out3.getOrElse(false.B))
-        ChildReset.foreach(_ := reset_2)
-        mod.clock := pll.io.clk_out3.getOrElse(false.B)
+        mod.reset := child_rst
       }
 
       init_calib_complete := mod.io.ddrport.init_calib_complete
@@ -160,10 +164,13 @@ class FPGAVC707Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConnec
       mod.io.ddrport.aresetn := aresetn
       mod.io.ddrport.sys_rst := sys_rst
       reset_2 := ResetCatchAndSync(pll.io.clk_out3.get, mod.io.ddrport.ui_clk_sync_rst)
+      child_rst := ResetCatchAndSync(pll.io.clk_out2.get, mod.io.ddrport.ui_clk_sync_rst)
 
       p(SbusToMbusXTypeKey) match {
         case _: AsynchronousCrossing =>
+          println("[Legacy] Quartus Island connected to clk_out2")
           mod.clock := pll.io.clk_out2.getOrElse(false.B)
+          mod.reset := child_rst
         case _ =>
           mod.clock := pll.io.clk_out3.getOrElse(false.B)
       }
@@ -176,10 +183,30 @@ class FPGAVC707Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConnec
     clock := pll.io.clk_out3.get
     reset := reset_2
     sys_clk := pll.io.clk_out3.get
-    aclocks.foreach(_.foreach(_ := pll.io.clk_out3.get)) // Connecting all aclocks to the default sysclock.
     rst_n := !reset_2
     jrst_n := !reset_2
     usbClk.foreach(_ := pll.io.clk_out1.getOrElse(false.B))
+
+    aclocks.foreach { aclocks =>
+      println(s"Connecting async clocks by default =>")
+      (aclocks zip namedclocks).foreach { case (aclk, nam) =>
+        println(s"  Detected clock ${nam}")
+        if(nam.contains("mbus")) {
+          p(SbusToMbusXTypeKey) match {
+            case _: AsynchronousCrossing =>
+              aclk := pll.io.clk_out2.get
+              println("    Connected to io_clk")
+            case _ =>
+              aclk := pll.io.clk_out3.get
+              println("    Connected to qsys_clk")
+          }
+        }
+        else {
+          aclk := pll.io.clk_out3.get
+          println("    Connected to qsys_clk")
+        }
+      }
+    }
 
     // Clock controller
     (extser zip extserSourceBits).foreach { case(es, sourceBits) =>
