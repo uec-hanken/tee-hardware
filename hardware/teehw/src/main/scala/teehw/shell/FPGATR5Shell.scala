@@ -167,6 +167,10 @@ class FPGATR5Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConnect]
       ChildClock.foreach(_ := mod_io_ckrst.qsys_clk)
       ChildReset.foreach(_ := reset_to_sys)
       mod_clock := mod_io_ckrst.qsys_clk
+      mod_reset := reset_to_sys
+      rst_n := !reset_to_sys
+      jrst_n := !reset_to_sys
+      usbClk.foreach(_ := mod_io_ckrst.usb_clk)
 
       // Async clock connections
       aclocks.foreach { aclocks =>
@@ -200,10 +204,6 @@ class FPGATR5Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConnect]
         mod_clock := mod_io_ckrst.io_clk
         mod_reset := reset_to_child
       }
-
-      rst_n := !reset_to_sys
-      jrst_n := !reset_to_sys
-      usbClk.foreach(_ := mod_io_ckrst.usb_clk)
 
       mod_io_ckrst.ddr_ref_clk := OSC_50_B3B.asUInt()
       mod_io_ckrst.qsys_ref_clk := OSC_50_B4A.asUInt() // TODO: This is okay?

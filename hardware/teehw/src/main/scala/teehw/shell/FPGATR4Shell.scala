@@ -3,7 +3,7 @@ package uec.teehardware.shell
 import chisel3._
 import chisel3.util._
 import chisel3.experimental.{Analog, IO, attach}
-import freechips.rocketchip.diplomacy.LazyModule
+import freechips.rocketchip.diplomacy.{AsynchronousCrossing, LazyModule}
 import freechips.rocketchip.util.ResetCatchAndSync
 import chipsalliance.rocketchip.config.Parameters
 import freechips.rocketchip.subsystem._
@@ -129,7 +129,7 @@ class FPGATR4Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConnect]
     mem_status_local_init_done := false.B
 
     // Helper function to connect clocks from the Quartus Platform
-    def ConnectClockUtil(mod_clock: Clock, mod_io_qport: QuartusIO, mod_io_ckrst: Bundle with QuartusClocksReset) = {
+    def ConnectClockUtil(mod_clock: Clock, mod_reset: Reset, mod_io_qport: QuartusIO, mod_io_ckrst: Bundle with QuartusClocksReset) = {
       val reset_to_sys = ResetCatchAndSync(mod_io_ckrst.qsys_clk, !mod_io_qport.mem_status_local_init_done)
       val reset_to_child = ResetCatchAndSync(mod_io_ckrst.io_clk, !mod_io_qport.mem_status_local_init_done)
 
@@ -137,27 +137,54 @@ class FPGATR4Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConnect]
       clock := mod_io_ckrst.qsys_clk
       reset := reset_to_sys
       sys_clk := mod_io_ckrst.qsys_clk
-      aclocks.foreach(_.foreach(_ := mod_io_ckrst.qsys_clk)) // TODO: Connect your clocks here
+      ChildClock.foreach(_ := mod_io_ckrst.qsys_clk)
+      ChildReset.foreach(_ := reset_to_sys)
+      mod_clock := mod_io_ckrst.qsys_clk
+      mod_reset := reset_to_sys
       rst_n := !reset_to_sys
       jrst_n := !reset_to_sys
       usbClk.foreach(_ := mod_io_ckrst.usb_clk)
+
+      // Async clock connections
+      aclocks.foreach { aclocks =>
+        println(s"Connecting async clocks by default =>")
+        (aclocks zip namedclocks).foreach { case (aclk, nam) =>
+          println(s"  Detected clock ${nam}")
+          if(nam.contains("mbus")) {
+            p(SbusToMbusXTypeKey) match {
+              case _: AsynchronousCrossing =>
+                aclk := mod_io_ckrst.io_clk
+                println("    Connected to io_clk")
+                mod_clock := mod_io_ckrst.io_clk
+                mod_reset := reset_to_child
+                println("    Quartus Island clock also connected to io_clk")
+              case _ =>
+                aclk := mod_io_ckrst.qsys_clk
+                println("    Connected to qsys_clk")
+            }
+          }
+          else {
+            aclk := mod_io_ckrst.qsys_clk
+            println("    Connected to qsys_clk")
+          }
+        }
+      }
+
+      // Legacy ChildClock
       if(p(DDRPortOther)) {
         ChildClock.foreach(_ := mod_io_ckrst.io_clk)
         ChildReset.foreach(_ := reset_to_child)
         mod_clock := mod_io_ckrst.io_clk
+        mod_reset := reset_to_child
       }
-      else {
-        ChildClock.foreach(_ := mod_io_ckrst.qsys_clk)
-        ChildReset.foreach(_ := reset_to_sys)
-        mod_clock := mod_io_ckrst.qsys_clk
-      }
+
       mod_io_ckrst.ddr_ref_clk := OSC_50_BANK1.asUInt()
       mod_io_ckrst.qsys_ref_clk := OSC_50_BANK4.asUInt() // TODO: This is okay?
       mod_io_ckrst.system_reset_n := BUTTON(2)
     }
 
     // Helper function to connect the DDR from the Quartus Platform
-    def ConnectDDRUtil(mod_io_qport: QuartusIO, mod_io_ckrst: Bundle with QuartusClocksReset) = {
+    def ConnectDDRUtil(mod_io_qport: QuartusIO) = {
       mem_a := mod_io_qport.memory_mem_a
       mem_ba := mod_io_qport.memory_mem_ba
       mem_ck := mod_io_qport.memory_mem_ck(0) // Force only 1 line (although the config forces 1 line)
@@ -184,7 +211,7 @@ class FPGATR4Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConnect]
       val mod = Module(LazyModule(new TLULtoQuartusPlatform(chiptl.params, ddrcfg)).module)
 
       // Quartus Platform connections
-      ConnectDDRUtil(mod.io.qport, mod.io.ckrst)
+      ConnectDDRUtil(mod.io.qport)
 
       // TileLink Interface from platform
       // TODO: Make the DDR optional. Need to stop using the Quartus Platform
@@ -196,7 +223,7 @@ class FPGATR4Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConnect]
       mem_status_local_init_done := mod.io.qport.mem_status_local_init_done
 
       // Clock and reset (for TL stuff)
-      ConnectClockUtil(mod.clock, mod.io.qport, mod.io.ckrst)
+      ConnectClockUtil(mod.clock, mod.reset, mod.io.qport, mod.io.ckrst)
     }
     (memser zip memserSourceBits).foreach { case(ms, sourceBits) =>
       // Instance our converter, and connect everything
@@ -206,14 +233,14 @@ class FPGATR4Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConnect]
       mod.io.serport.flipConnect(ms)
 
       // Quartus Platform connections
-      ConnectDDRUtil(mod.io.qport, mod.io.ckrst)
+      ConnectDDRUtil(mod.io.qport)
 
       mem_status_local_cal_fail := mod.io.qport.mem_status_local_cal_fail
       mem_status_local_cal_success := mod.io.qport.mem_status_local_cal_success
       mem_status_local_init_done := mod.io.qport.mem_status_local_init_done
 
       // Clock and reset (for TL stuff)
-      ConnectClockUtil(mod.clock, mod.io.qport, mod.io.ckrst)
+      ConnectClockUtil(mod.clock, mod.reset, mod.io.qport, mod.io.ckrst)
     }
     // The external bus (TODO: Doing nothing)
     (extser zip extserSourceBits).foreach { case (es, sourceBits) =>
