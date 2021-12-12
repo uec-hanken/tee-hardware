@@ -3,7 +3,7 @@ package uec.teehardware.shell
 import chisel3._
 import chisel3.util._
 import chisel3.experimental.{Analog, IO, attach}
-import freechips.rocketchip.diplomacy.LazyModule
+import freechips.rocketchip.diplomacy.{AsynchronousCrossing, LazyModule}
 import freechips.rocketchip.util._
 import chipsalliance.rocketchip.config.Parameters
 import freechips.rocketchip.subsystem._
@@ -14,12 +14,12 @@ import uec.teehardware._
 class FMCTR5(val ext: Boolean = false, val xcvr: Boolean = false) extends Bundle {
   val CLK_M2C_p = Vec(2, Input(Bool()))
   val CLK_M2C_n = Vec(2, Input(Bool()))
-  val HA_RX_CLK_p = ext.option(Input(Bool()))
-  val HA_RX_CLK_n = ext.option(Input(Bool()))
-  val HB_RX_CLK_p = ext.option(Input(Bool()))
-  val HB_RX_CLK_n = ext.option(Input(Bool()))
-  val LA_RX_CLK_p = Input(Bool())
-  val LA_RX_CLK_n = Input(Bool())
+  val HA_RX_CLK_p = ext.option(Analog(1.W))
+  val HA_RX_CLK_n = ext.option(Analog(1.W))
+  val HB_RX_CLK_p = ext.option(Analog(1.W))
+  val HB_RX_CLK_n = ext.option(Analog(1.W))
+  val LA_RX_CLK_p = Analog(1.W)
+  val LA_RX_CLK_n = Analog(1.W)
   val HA_TX_CLK_p = ext.option(Analog(1.W))
   val HA_TX_CLK_n = ext.option(Analog(1.W))
   val HB_TX_CLK_p = ext.option(Analog(1.W))
@@ -34,10 +34,10 @@ class FMCTR5(val ext: Boolean = false, val xcvr: Boolean = false) extends Bundle
   val HB_TX_n = ext.option(Vec(11, Analog(1.W)))
   val HB_RX_p = ext.option(Vec(11, Analog(1.W)))
   val HB_RX_n = ext.option(Vec(11, Analog(1.W)))
-  val LA_TX_p = Vec(11, Analog(1.W))
-  val LA_TX_n = Vec(11, Analog(1.W))
-  val LA_RX_p = Vec(11, Analog(1.W))
-  val LA_RX_n = Vec(11, Analog(1.W))
+  val LA_TX_p = Vec(17, Analog(1.W))
+  val LA_TX_n = Vec(17, Analog(1.W))
+  val LA_RX_p = Vec(15, Analog(1.W))
+  val LA_RX_n = Vec(15, Analog(1.W))
 
   val GBTCLK_M2C_p = xcvr.option(Vec(2, Input(Bool())))
   val ONBOARD_REFCLK_p = xcvr.option(Vec(2, Input(Bool())))
@@ -164,7 +164,26 @@ class FPGATR5Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConnect]
       clock := mod_io_ckrst.qsys_clk
       reset := reset_to_sys
       sys_clk := mod_io_ckrst.qsys_clk
-      aclocks.foreach(_.foreach(_ := mod_io_ckrst.qsys_clk)) // TODO: Connect your clocks here
+      aclocks.foreach { aclocks =>
+        println(s"Connecting async clocks by default =>")
+        (aclocks zip namedclocks).foreach { case (aclk, nam) =>
+          println(s"  Detected clock ${nam}")
+          if(nam.contains("mbus")) {
+            p(SbusToMbusXTypeKey) match {
+              case _: AsynchronousCrossing =>
+                aclk := mod_io_ckrst.io_clk
+                println("    Connected to io_clk")
+              case _ =>
+                aclk := mod_io_ckrst.qsys_clk
+                println("    Connected to qsys_clk")
+            }
+          }
+          else {
+            aclk := mod_io_ckrst.qsys_clk
+            println("    Connected to qsys_clk")
+          }
+        }
+      }
       rst_n := !reset_to_sys
       jrst_n := !reset_to_sys
       usbClk.foreach(_ := mod_io_ckrst.usb_clk)
@@ -388,8 +407,8 @@ object ConnectFMCGPIO {
   def apply (n: Int, pu: Int, c: Bool, get: Boolean, FMC: FMCTR5) = {
     val p:Int = pu match {
       case it if 1 to 10 contains it => pu - 1
-      case it if 13 until 18 contains it => pu - 3
-      case it if 31 until 40 contains it => pu - 5
+      case it if 13 to 28 contains it => pu - 3
+      case it if 31 to 40 contains it => pu - 5
       case _ => throw new RuntimeException(s"J${n}_${pu} is a VDD or a GND")
     }
     n match {
@@ -397,8 +416,8 @@ object ConnectFMCGPIO {
         p match {
           case 0 => if(get) c := FMC.CLK_M2C_p(0) else throw new RuntimeException(s"GPIO${n}_${p} can only be input")
           case 1 => if(get) c := FMC.CLK_M2C_n(0) else throw new RuntimeException(s"GPIO${n}_${p} can only be input")
-          case 2 => if(get) c := FMC.LA_TX_CLK_p else throw new RuntimeException(s"GPIO${n}_${p} can only be input")
-          case 3 => if(get) c := FMC.LA_TX_CLK_n else throw new RuntimeException(s"GPIO${n}_${p} can only be input")
+          case 2 => if(get) c := ALT_IOBUF(FMC.LA_TX_CLK_p) else ALT_IOBUF(FMC.LA_TX_CLK_p, c) // throw new RuntimeException(s"GPIO${n}_${p} can only be input")
+          case 3 => if(get) c := ALT_IOBUF(FMC.LA_TX_CLK_n) else ALT_IOBUF(FMC.LA_TX_CLK_n, c) // throw new RuntimeException(s"GPIO${n}_${p} can only be input")
           case 4 => if(get) c := ALT_IOBUF(FMC.LA_TX_p(5)) else ALT_IOBUF(FMC.LA_TX_p(5), c)
           case 5 => if(get) c := ALT_IOBUF(FMC.LA_TX_n(5)) else ALT_IOBUF(FMC.LA_TX_n(5), c)
           case 6 => if(get) c := ALT_IOBUF(FMC.LA_TX_p(7)) else ALT_IOBUF(FMC.LA_TX_p(7), c)
@@ -437,8 +456,8 @@ object ConnectFMCGPIO {
         p match {
           case 0 => if(get) c := ALT_IOBUF(FMC.LA_RX_p(4)) else ALT_IOBUF(FMC.LA_RX_p(4), c)
           case 1 => if(get) c := ALT_IOBUF(FMC.LA_RX_n(4)) else ALT_IOBUF(FMC.LA_RX_n(4), c)
-          case 2 => if(get) c := FMC.LA_RX_CLK_p else throw new RuntimeException(s"GPIO${n}_${p} can only be input")
-          case 3 => if(get) c := FMC.LA_RX_CLK_n else throw new RuntimeException(s"GPIO${n}_${p} can only be input")
+          case 2 => if(get) c := ALT_IOBUF(FMC.LA_RX_CLK_p) else ALT_IOBUF(FMC.LA_RX_CLK_p, c) //throw new RuntimeException(s"GPIO${n}_${p} can only be input")
+          case 3 => if(get) c := ALT_IOBUF(FMC.LA_RX_CLK_n) else ALT_IOBUF(FMC.LA_RX_CLK_n, c) //throw new RuntimeException(s"GPIO${n}_${p} can only be input")
           case 4 => if(get) c := ALT_IOBUF(FMC.LA_RX_p(2)) else ALT_IOBUF(FMC.LA_RX_p(2), c)
           case 5 => if(get) c := ALT_IOBUF(FMC.LA_RX_n(2)) else ALT_IOBUF(FMC.LA_RX_n(2), c)
           case 6 => if(get) c := ALT_IOBUF(FMC.LA_RX_p(0)) else ALT_IOBUF(FMC.LA_RX_p(0), c)
@@ -475,10 +494,10 @@ object ConnectFMCGPIO {
         }
       case 2 =>
         p match {
-          case 0 => if(get) c := FMC.HA_RX_CLK_p.get else throw new RuntimeException(s"GPIO${n}_${p} can only be input")
-          case 1 => if(get) c := FMC.HA_RX_CLK_n.get else throw new RuntimeException(s"GPIO${n}_${p} can only be input")
-          case 2 => if(get) c := FMC.HA_TX_CLK_p.get else throw new RuntimeException(s"GPIO${n}_${p} can only be input")
-          case 3 => if(get) c := FMC.HA_TX_CLK_n.get else throw new RuntimeException(s"GPIO${n}_${p} can only be input")
+          case 0 => if(get) c := ALT_IOBUF(FMC.HA_RX_CLK_p.get) else ALT_IOBUF(FMC.HA_RX_CLK_p.get, c) // throw new RuntimeException(s"GPIO${n}_${p} can only be input")
+          case 1 => if(get) c := ALT_IOBUF(FMC.HA_RX_CLK_n.get) else ALT_IOBUF(FMC.HA_RX_CLK_n.get, c) // throw new RuntimeException(s"GPIO${n}_${p} can only be input")
+          case 2 => if(get) c := ALT_IOBUF(FMC.HA_TX_CLK_p.get) else ALT_IOBUF(FMC.HA_TX_CLK_p.get, c) // throw new RuntimeException(s"GPIO${n}_${p} can only be input")
+          case 3 => if(get) c := ALT_IOBUF(FMC.HA_TX_CLK_n.get) else ALT_IOBUF(FMC.HA_TX_CLK_n.get, c) // throw new RuntimeException(s"GPIO${n}_${p} can only be input")
           case 4 => if(get) c := ALT_IOBUF(FMC.HA_RX_p.get(0)) else ALT_IOBUF(FMC.HA_RX_p.get(0), c)
           case 5 => if(get) c := ALT_IOBUF(FMC.HA_RX_n.get(0)) else ALT_IOBUF(FMC.HA_RX_n.get(0), c)
           case 6 => if(get) c := ALT_IOBUF(FMC.HA_RX_p.get(1)) else ALT_IOBUF(FMC.HA_RX_p.get(1), c)
@@ -515,10 +534,10 @@ object ConnectFMCGPIO {
         }
       case 3 =>
         p match {
-          case 0 => if(get) c := FMC.HB_RX_CLK_p.get else throw new RuntimeException(s"GPIO${n}_${p} can only be input")
-          case 1 => if(get) c := FMC.HB_RX_CLK_n.get else throw new RuntimeException(s"GPIO${n}_${p} can only be input")
-          case 2 => if(get) c := FMC.HB_TX_CLK_p.get else throw new RuntimeException(s"GPIO${n}_${p} can only be input")
-          case 3 => if(get) c := FMC.HB_TX_CLK_n.get else throw new RuntimeException(s"GPIO${n}_${p} can only be input")
+          case 0 => if(get) c := ALT_IOBUF(FMC.HB_RX_CLK_p.get) else ALT_IOBUF(FMC.HB_RX_CLK_p.get, c) // throw new RuntimeException(s"GPIO${n}_${p} can only be input")
+          case 1 => if(get) c := ALT_IOBUF(FMC.HB_RX_CLK_n.get) else ALT_IOBUF(FMC.HB_RX_CLK_n.get, c) // throw new RuntimeException(s"GPIO${n}_${p} can only be input")
+          case 2 => if(get) c := ALT_IOBUF(FMC.HB_TX_CLK_p.get) else ALT_IOBUF(FMC.HB_TX_CLK_p.get, c) // throw new RuntimeException(s"GPIO${n}_${p} can only be input")
+          case 3 => if(get) c := ALT_IOBUF(FMC.HB_TX_CLK_n.get) else ALT_IOBUF(FMC.HB_TX_CLK_n.get, c) // throw new RuntimeException(s"GPIO${n}_${p} can only be input")
           case 4 => if(get) c := ALT_IOBUF(FMC.HB_RX_p.get(0)) else ALT_IOBUF(FMC.HB_RX_p.get(0), c)
           case 5 => if(get) c := ALT_IOBUF(FMC.HB_RX_n.get(0)) else ALT_IOBUF(FMC.HB_RX_n.get(0), c)
           case 6 => if(get) c := ALT_IOBUF(FMC.HB_RX_p.get(1)) else ALT_IOBUF(FMC.HB_RX_p.get(1), c)
@@ -564,20 +583,20 @@ trait WithFPGATR5ToChipConnect extends WithFPGATR5InternNoChipCreate with WithFP
   
   // NOTES:
   // JP18 -> JP1 
-  def JP18 = 0 // GPIO0
-  def JP19 = 1 // GPIO1
+  def JP18 = 1 // GPIO0
+  def JP19 = 0 // GPIO1
   def JP20 = 2 // GPIO2
   def JP21 = 3 // GPIO3
   def FMC = FMCA
 
   // From intern = Clocks and resets
   intern.ChildClock.foreach{ a =>
-    ConnectFMCGPIO(JP21, 2, a.asBool(), false, FMC)
+    //ConnectFMCGPIO(JP21, 2, a.asBool(), false, FMC) // Is useless anyway
   }
   intern.ChildReset.foreach{ a =>
     ConnectFMCGPIO(JP18, 5, a, false, FMC)
   }
-  ConnectFMCGPIO(JP21, 4, intern.sys_clk.asBool(), false, FMC)
+  //ConnectFMCGPIO(JP21, 4, intern.sys_clk.asBool(), false, FMC)
   ConnectFMCGPIO(JP18, 2, intern.rst_n, false, FMC)
   ConnectFMCGPIO(JP18, 6, intern.jrst_n, false, FMC)
   // Memory port serialized
@@ -589,25 +608,25 @@ trait WithFPGATR5ToChipConnect extends WithFPGATR5InternNoChipCreate with WithFP
     ConnectFMCGPIO(JP18, 1, tlport.a.valid, true, FMC)
     ConnectFMCGPIO(JP18, 4, tlport.a.ready, false, FMC)
     require(tlport.a.bits.opcode.getWidth == 3, s"${tlport.a.bits.opcode.getWidth}")
-    val a_opcode = Vec(3, Wire(Bool()))
+    val a_opcode = Wire(Vec(3, Bool()))
     ConnectFMCGPIO(JP18, 3, a_opcode(2), true, FMC)
     ConnectFMCGPIO(JP18, 7, a_opcode(1), true, FMC)
     ConnectFMCGPIO(JP18, 8, a_opcode(0), true, FMC)
     tlport.a.bits.opcode := a_opcode.asUInt()
     require(tlport.a.bits.param.getWidth == 3, s"${tlport.a.bits.param.getWidth}")
-    val a_param = Vec(3, Wire(Bool()))
+    val a_param = Wire(Vec(3, Bool()))
     ConnectFMCGPIO(JP18, 9, a_param(2), true, FMC)
     ConnectFMCGPIO(JP18, 10, a_param(1), true, FMC)
     ConnectFMCGPIO(JP18, 13, a_param(0), true, FMC)
     tlport.a.bits.param := a_param.asUInt()
-    val a_size = Vec(3, Wire(Bool()))
+    val a_size = Wire(Vec(3, Bool()))
     require(tlport.a.bits.size.getWidth == 3, s"${tlport.a.bits.size.getWidth}")
     ConnectFMCGPIO(JP18, 14, a_size(2), true, FMC)
     ConnectFMCGPIO(JP18, 15, a_size(1), true, FMC)
     ConnectFMCGPIO(JP18, 16, a_size(0), true, FMC)
     tlport.a.bits.size := a_size.asUInt()
     require(tlport.a.bits.source.getWidth == 6, s"${tlport.a.bits.source.getWidth}")
-    val a_source = Vec(6, Wire(Bool()))
+    val a_source = Wire(Vec(6, Bool()))
     ConnectFMCGPIO(JP18, 17, a_source(5), true, FMC)
     ConnectFMCGPIO(JP18, 18, a_source(4), true, FMC)
     ConnectFMCGPIO(JP18, 19, a_source(3), true, FMC)
@@ -616,7 +635,7 @@ trait WithFPGATR5ToChipConnect extends WithFPGATR5InternNoChipCreate with WithFP
     ConnectFMCGPIO(JP18, 22, a_source(0), true, FMC)
     tlport.a.bits.source := a_source.asUInt()
     require(tlport.a.bits.address.getWidth == 32, s"${tlport.a.bits.address.getWidth}")
-    val a_address = Vec(32, Wire(Bool()))
+    val a_address = Wire(Vec(32, Bool()))
     ConnectFMCGPIO(JP18, 23, a_address(31), true, FMC)
     ConnectFMCGPIO(JP18, 24, a_address(30), true, FMC)
     ConnectFMCGPIO(JP18, 25, a_address(29), true, FMC)
@@ -651,14 +670,14 @@ trait WithFPGATR5ToChipConnect extends WithFPGATR5InternNoChipCreate with WithFP
     ConnectFMCGPIO(JP19, 18, a_address( 0), true, FMC)
     tlport.a.bits.address := a_address.asUInt()
     require(tlport.a.bits.mask.getWidth == 4, s"${tlport.a.bits.mask.getWidth}")
-    val a_mask = Vec(4, Wire(Bool()))
+    val a_mask = Wire(Vec(4, Bool()))
     ConnectFMCGPIO(JP19, 19, a_mask(3), true, FMC)
     ConnectFMCGPIO(JP19, 20, a_mask(2), true, FMC)
     ConnectFMCGPIO(JP19, 21, a_mask(1), true, FMC)
     ConnectFMCGPIO(JP19, 22, a_mask(0), true, FMC)
     tlport.a.bits.mask := a_mask.asUInt()
     require(tlport.a.bits.data.getWidth == 32, s"${tlport.a.bits.data.getWidth}")
-    val a_data = Vec(32, Wire(Bool()))
+    val a_data = Wire(Vec(32, Bool()))
     ConnectFMCGPIO(JP19, 23, a_data(31), true, FMC)
     ConnectFMCGPIO(JP19, 24, a_data(30), true, FMC)
     ConnectFMCGPIO(JP19, 25, a_data(29), true, FMC)
@@ -763,5 +782,6 @@ trait WithFPGATR5ToChipConnect extends WithFPGATR5InternNoChipCreate with WithFP
   )
   // Clocks to the outside
   ALT_IOBUF(SMA_CLKOUT_p, intern.sys_clk.asBool())
-  //TODO intern.ChildClock.foreach(A => ALT_IOBUF(SMA_CLKOUT_p, A.asBool()))
+  intern.ChildClock.foreach(A => ALT_IOBUF(GPIO(1), A.asBool()))
+  SD_CLK := false.B
 }

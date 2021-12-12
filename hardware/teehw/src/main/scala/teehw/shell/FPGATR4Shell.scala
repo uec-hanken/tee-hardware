@@ -352,8 +352,8 @@ object ConnectHSMCGPIO {
   def apply (n: Int, pu: Int, c: Bool, get: Boolean, HSMC: HSMCTR4) = {
     val p:Int = pu match {
       case it if 1 to 10 contains it => pu - 1
-      case it if 13 until 18 contains it => pu - 3
-      case it if 31 until 40 contains it => pu - 5
+      case it if 13 to 28 contains it => pu - 3
+      case it if 31 to 40 contains it => pu - 5
       case _ => throw new RuntimeException(s"J${n}_${pu} is a VDD or a GND")
     }
     n match {
@@ -476,25 +476,25 @@ trait WithFPGATR4ToChipConnect extends WithFPGATR4InternNoChipCreate with WithFP
     ConnectHSMCGPIO(JP18, 1, tlport.a.valid, true, HSMC_JP19_18)
     ConnectHSMCGPIO(JP18, 4, tlport.a.ready, false, HSMC_JP19_18)
     require(tlport.a.bits.opcode.getWidth == 3, s"${tlport.a.bits.opcode.getWidth}")
-    val a_opcode = Vec(3, Wire(Bool()))
+    val a_opcode = Wire(Vec(3, Bool()))
     ConnectHSMCGPIO(JP18, 3, a_opcode(2), true, HSMC_JP19_18)
     ConnectHSMCGPIO(JP18, 7, a_opcode(1), true, HSMC_JP19_18)
     ConnectHSMCGPIO(JP18, 8, a_opcode(0), true, HSMC_JP19_18)
     tlport.a.bits.opcode := a_opcode.asUInt()
     require(tlport.a.bits.param.getWidth == 3, s"${tlport.a.bits.param.getWidth}")
-    val a_param = Vec(3, Wire(Bool()))
+    val a_param = Wire(Vec(3, Bool()))
     ConnectHSMCGPIO(JP18, 9, a_param(2), true, HSMC_JP19_18)
     ConnectHSMCGPIO(JP18, 10, a_param(1), true, HSMC_JP19_18)
     ConnectHSMCGPIO(JP18, 13, a_param(0), true, HSMC_JP19_18)
     tlport.a.bits.param := a_param.asUInt()
-    val a_size = Vec(3, Wire(Bool()))
+    val a_size = Wire(Vec(3, Bool()))
     require(tlport.a.bits.size.getWidth == 3, s"${tlport.a.bits.size.getWidth}")
     ConnectHSMCGPIO(JP18, 14, a_size(2), true, HSMC_JP19_18)
     ConnectHSMCGPIO(JP18, 15, a_size(1), true, HSMC_JP19_18)
     ConnectHSMCGPIO(JP18, 16, a_size(0), true, HSMC_JP19_18)
     tlport.a.bits.size := a_size.asUInt()
     require(tlport.a.bits.source.getWidth == 6, s"${tlport.a.bits.source.getWidth}")
-    val a_source = Vec(6, Wire(Bool()))
+    val a_source = Wire(Vec(6, Bool()))
     ConnectHSMCGPIO(JP18, 17, a_source(5), true, HSMC_JP19_18)
     ConnectHSMCGPIO(JP18, 18, a_source(4), true, HSMC_JP19_18)
     ConnectHSMCGPIO(JP18, 19, a_source(3), true, HSMC_JP19_18)
@@ -503,7 +503,7 @@ trait WithFPGATR4ToChipConnect extends WithFPGATR4InternNoChipCreate with WithFP
     ConnectHSMCGPIO(JP18, 22, a_source(0), true, HSMC_JP19_18)
     tlport.a.bits.source := a_source.asUInt()
     require(tlport.a.bits.address.getWidth == 32, s"${tlport.a.bits.address.getWidth}")
-    val a_address = Vec(32, Wire(Bool()))
+    val a_address = Wire(Vec(32, Bool()))
     ConnectHSMCGPIO(JP18, 23, a_address(31), true, HSMC_JP19_18)
     ConnectHSMCGPIO(JP18, 24, a_address(30), true, HSMC_JP19_18)
     ConnectHSMCGPIO(JP18, 25, a_address(29), true, HSMC_JP19_18)
@@ -538,14 +538,14 @@ trait WithFPGATR4ToChipConnect extends WithFPGATR4InternNoChipCreate with WithFP
     ConnectHSMCGPIO(JP19, 18, a_address( 0), true, HSMC_JP19_18)
     tlport.a.bits.address := a_address.asUInt()
     require(tlport.a.bits.mask.getWidth == 4, s"${tlport.a.bits.mask.getWidth}")
-    val a_mask = Vec(4, Wire(Bool()))
+    val a_mask = Wire(Vec(4, Bool()))
     ConnectHSMCGPIO(JP19, 19, a_mask(3), true, HSMC_JP19_18)
     ConnectHSMCGPIO(JP19, 20, a_mask(2), true, HSMC_JP19_18)
     ConnectHSMCGPIO(JP19, 21, a_mask(1), true, HSMC_JP19_18)
     ConnectHSMCGPIO(JP19, 22, a_mask(0), true, HSMC_JP19_18)
     tlport.a.bits.mask := a_mask.asUInt()
     require(tlport.a.bits.data.getWidth == 32, s"${tlport.a.bits.data.getWidth}")
-    val a_data = Vec(32, Wire(Bool()))
+    val a_data = Wire(Vec(32, Bool()))
     ConnectHSMCGPIO(JP19, 23, a_data(31), true, HSMC_JP19_18)
     ConnectHSMCGPIO(JP19, 24, a_data(30), true, HSMC_JP19_18)
     ConnectHSMCGPIO(JP19, 25, a_data(29), true, HSMC_JP19_18)

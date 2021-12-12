@@ -279,7 +279,7 @@ class SertoQuartusPlatform(w: Int, idBits: Int = 6,
   val ddr = LazyModule(
     new QuartusPlatform(
       AddressSet.misaligned(
-        p(ExtMem).get.master.base,
+        p(ExtSerMem).get.master.base,
         ddrc.size
       ),
       ddrc = ddrc
@@ -352,7 +352,7 @@ class TLULtoQuartusPlatform( TLparams: TLBundleParameters,
   lazy val module = new LazyModuleImp(this) {
     val io = IO(new Bundle {
       val tlport = Flipped(new TLUL(TLparams))
-      var qport = new QuartusIO(ddrc)
+      val qport = new QuartusIO(ddrc)
       val ckrst = new Bundle with QuartusClocksReset
     })
 
