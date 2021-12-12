@@ -13,6 +13,7 @@ import sifive.fpgashells.ip.xilinx._
 import sifive.fpgashells.ip.xilinx.arty100tmig._
 import uec.teehardware.macros._
 import uec.teehardware._
+import uec.teehardware.devices.clockctrl.ClockCtrlPortIO
 
 trait FPGAArtyA7ChipShell {
   // This trait only contains the connections that are supposed to be handled by the chip
@@ -139,6 +140,11 @@ class FPGAArtyA7Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConne
     //mmcm_locked        := ip_mmcm.io.locked
   }
 
+  val isOtherClk = p(DDRPortOther) || (p(SbusToMbusXTypeKey) match {
+    case _: AsynchronousCrossing => true
+    case _ => false
+  })
+
   withClockAndReset(clock, reset) {
     // PLL instance
     val c = new PLLParameters(
@@ -148,7 +154,7 @@ class FPGAArtyA7Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConne
         PLLOutClockParameters(freqMHz = p(FreqKeyMHz)),
         PLLOutClockParameters(freqMHz = 166.666), // For sys_clk_i
         PLLOutClockParameters(freqMHz = 200.0) // For ref_clk
-      ) ++ (if (p(DDRPortOther)) Seq(PLLOutClockParameters(freqMHz = 10.0)) else Seq())
+      ) ++ (if (isOtherClk) Seq(PLLOutClockParameters(freqMHz = 10.0)) else Seq())
     )
     val pll = Module(new Series7MMCM(c))
     pll.io.clk_in1 := CLK100MHZ
@@ -157,6 +163,7 @@ class FPGAArtyA7Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConne
     val aresetn = pll.io.locked // Reset that goes to the MMCM inside of the DDR MIG
     val sys_rst = ResetCatchAndSync(pll.io.clk_out2.get, !pll.io.locked) // Catched system clock
     val reset_2 = WireInit(!pll.io.locked) // If DDR is not present, this is the system reset
+    val child_rst = WireInit(!pll.io.locked) // If DDR is not present, this is the child reset
     // The DDR port
     tlport.foreach{ chiptl =>
       val mod = Module(LazyModule(new TLULtoMIGArtyA7(chiptl.params)).module)
@@ -170,20 +177,22 @@ class FPGAArtyA7Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConne
       mod.io.ddrport.aresetn := aresetn
       mod.io.ddrport.sys_rst := sys_rst
       reset_2 := ResetCatchAndSync(pll.io.clk_out1.get, mod.io.ddrport.ui_clk_sync_rst)
+      ChildClock.foreach(_ := pll.io.clk_out1.getOrElse(false.B))
+      ChildReset.foreach(_ := reset_2)
+      mod.clock := pll.io.clk_out1.getOrElse(false.B)
+      pll.io.clk_out4.foreach(child_rst := ResetCatchAndSync(_, mod.io.ddrport.ui_clk_sync_rst))
 
       // TileLink Interface from platform
       mod.io.tlport.a <> chiptl.a
       chiptl.d <> mod.io.tlport.d
 
+      // Legacy ChildClock
       if (p(DDRPortOther)) {
+        println("[Legacy] Quartus Island and Child Clock connected to clk_out4")
         ChildClock.foreach(_ := pll.io.clk_out4.getOrElse(false.B))
         ChildReset.foreach(_ := reset_2)
         mod.clock := pll.io.clk_out4.getOrElse(false.B)
-      }
-      else {
-        ChildClock.foreach(_ := pll.io.clk_out1.getOrElse(false.B))
-        ChildReset.foreach(_ := reset_2)
-        mod.clock := pll.io.clk_out1.getOrElse(false.B)
+        mod.reset := child_rst
       }
 
       init_calib_complete := mod.io.ddrport.init_calib_complete
@@ -204,10 +213,13 @@ class FPGAArtyA7Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConne
       mod.io.ddrport.aresetn := aresetn
       mod.io.ddrport.sys_rst := sys_rst
       reset_2 := ResetCatchAndSync(pll.io.clk_out1.get, mod.io.ddrport.ui_clk_sync_rst)
+      pll.io.clk_out4.foreach(child_rst := ResetCatchAndSync(_, mod.io.ddrport.ui_clk_sync_rst))
 
       p(SbusToMbusXTypeKey) match {
         case _: AsynchronousCrossing =>
+          println("[Legacy] Quartus Island connected to clk_out4 (10MHz)")
           mod.clock := pll.io.clk_out4.getOrElse(false.B)
+          mod.reset := child_rst
         case _ =>
           mod.clock := pll.io.clk_out1.getOrElse(false.B)
       }
@@ -220,13 +232,57 @@ class FPGAArtyA7Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConne
     clock := pll.io.clk_out1.get
     reset := reset_2
     sys_clk := pll.io.clk_out1.get
-    aclocks.foreach(_.foreach(_ := pll.io.clk_out1.get)) // Connecting all aclocks to the default sysclock.
     rst_n := !reset_2
     jrst_n := !reset_2
     usbClk.foreach(_ := false.B.asClock())
 
-    // NOTE: No extser
-    //chip.extser
+    aclocks.foreach { aclocks =>
+      println(s"Connecting async clocks by default =>")
+      (aclocks zip namedclocks).foreach { case (aclk, nam) =>
+        println(s"  Detected clock ${nam}")
+        if(nam.contains("mbus")) {
+          p(SbusToMbusXTypeKey) match {
+            case _: AsynchronousCrossing =>
+              aclk := pll.io.clk_out2.get
+              println("    Connected to clk_out2 (10 MHz)")
+            case _ =>
+              aclk := pll.io.clk_out3.get
+              println("    Connected to clk_out3")
+          }
+        }
+        else {
+          aclk := pll.io.clk_out3.get
+          println("    Connected to qsys_clk")
+        }
+      }
+    }
+
+    // Clock controller
+    (extser zip extserSourceBits).foreach { case(es, sourceBits) =>
+      val mod = Module(LazyModule(new FPGAMiniSystem(sourceBits)).module)
+
+      // Serial port
+      mod.serport.flipConnect(es)
+
+      aclocks.foreach{ aclocks =>
+        println(s"Connecting clock for CryptoBus from clock controller =>")
+        (aclocks zip namedclocks).foreach{ case (aclk, nam) =>
+          println(s"  Detected clock ${nam}")
+          if(nam.contains("cryptobus") && mod.clockctrl.size >= 1) {
+            aclk := mod.clockctrl(0).asInstanceOf[ClockCtrlPortIO].clko
+            println("    Connected to first clock control")
+          }
+          if(nam.contains("tile_0") && mod.clockctrl.size >= 2) {
+            aclk := mod.clockctrl(1).asInstanceOf[ClockCtrlPortIO].clko
+            println("    Connected to second clock control")
+          }
+          if(nam.contains("tile_1") && mod.clockctrl.size >= 3) {
+            aclk := mod.clockctrl(2).asInstanceOf[ClockCtrlPortIO].clko
+            println("    Connected to third clock control")
+          }
+        }
+      }
+    }
   }
 }
 
