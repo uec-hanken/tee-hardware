@@ -107,7 +107,7 @@ class Micro extends Config ((site, here, up) => {
         nTLBSets = 1,
         nTLBWays = 4,
         nMSHRs = 0,
-        scratch = Some(0x80000000L)
+        scratch = Some(0x40000000L)
       )},
       icache = r.icache map {i =>
         i.copy(
@@ -321,6 +321,15 @@ class MBus64 extends Config((site, here, up) => {
     beatBytes = 8,
     idBits = 4), 1))
   case ExtSerMem => None
+})
+
+class SBus4 extends Config((site, here, up) => {
+  case ExtMem => None
+  case ExtSerMem => Some(MemorySerialPortParams(MasterPortParams(
+    base = x"0_8000_0000",
+    size = x"0_4000_0000",
+    beatBytes = 4,
+    idBits = 4), 1, 4))
 })
 
 class SBus8 extends Config((site, here, up) => {

@@ -115,6 +115,7 @@ class FPGAArtyA7Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConne
   def outer = chip
 
   val init_calib_complete = IO(Output(Bool()))
+  init_calib_complete := false.B
   var depth = BigInt(0)
 
   // Some connections for having the clocks
@@ -162,8 +163,8 @@ class FPGAArtyA7Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConne
 
     val aresetn = pll.io.locked // Reset that goes to the MMCM inside of the DDR MIG
     val sys_rst = ResetCatchAndSync(pll.io.clk_out2.get, !pll.io.locked) // Catched system clock
-    val reset_2 = WireInit(!pll.io.locked) // If DDR is not present, this is the system reset
-    val child_rst = WireInit(!pll.io.locked) // If DDR is not present, this is the child reset
+    val reset_to_sys = WireInit(!pll.io.locked) // If DDR is not present, this is the system reset
+    val reset_to_child = WireInit(!pll.io.locked) // If DDR is not present, this is the child reset
     // The DDR port
     tlport.foreach{ chiptl =>
       val mod = Module(LazyModule(new TLULtoMIGArtyA7(chiptl.params)).module)
@@ -176,11 +177,12 @@ class FPGAArtyA7Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConne
       mod.io.ddrport.clk_ref_i := pll.io.clk_out3.get.asBool()
       mod.io.ddrport.aresetn := aresetn
       mod.io.ddrport.sys_rst := sys_rst
-      reset_2 := ResetCatchAndSync(pll.io.clk_out1.get, mod.io.ddrport.ui_clk_sync_rst)
+      reset_to_sys := ResetCatchAndSync(pll.io.clk_out1.get, mod.io.ddrport.ui_clk_sync_rst)
       ChildClock.foreach(_ := pll.io.clk_out1.getOrElse(false.B))
-      ChildReset.foreach(_ := reset_2)
+      ChildReset.foreach(_ := reset_to_sys)
       mod.clock := pll.io.clk_out1.getOrElse(false.B)
-      pll.io.clk_out4.foreach(child_rst := ResetCatchAndSync(_, mod.io.ddrport.ui_clk_sync_rst))
+      mod.reset := reset_to_sys
+      pll.io.clk_out4.foreach(reset_to_child := ResetCatchAndSync(_, !pll.io.locked))
 
       // TileLink Interface from platform
       mod.io.tlport.a <> chiptl.a
@@ -188,11 +190,11 @@ class FPGAArtyA7Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConne
 
       // Legacy ChildClock
       if (p(DDRPortOther)) {
-        println("[Legacy] Quartus Island and Child Clock connected to clk_out4")
+        println("[Legacy] Quartus Island and Child Clock connected to clk_out4 (10MHz)")
         ChildClock.foreach(_ := pll.io.clk_out4.getOrElse(false.B))
-        ChildReset.foreach(_ := reset_2)
+        ChildReset.foreach(_ := reset_to_child)
         mod.clock := pll.io.clk_out4.getOrElse(false.B)
-        mod.reset := child_rst
+        mod.reset := reset_to_child
       }
 
       init_calib_complete := mod.io.ddrport.init_calib_complete
@@ -212,14 +214,14 @@ class FPGAArtyA7Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConne
       mod.io.ddrport.clk_ref_i := pll.io.clk_out3.get.asBool()
       mod.io.ddrport.aresetn := aresetn
       mod.io.ddrport.sys_rst := sys_rst
-      reset_2 := ResetCatchAndSync(pll.io.clk_out1.get, mod.io.ddrport.ui_clk_sync_rst)
-      pll.io.clk_out4.foreach(child_rst := ResetCatchAndSync(_, mod.io.ddrport.ui_clk_sync_rst))
+      reset_to_sys := ResetCatchAndSync(pll.io.clk_out1.get, mod.io.ddrport.ui_clk_sync_rst)
+      pll.io.clk_out4.foreach(reset_to_child := ResetCatchAndSync(_, !pll.io.locked))
 
       p(SbusToMbusXTypeKey) match {
         case _: AsynchronousCrossing =>
           println("[Legacy] Quartus Island connected to clk_out4 (10MHz)")
           mod.clock := pll.io.clk_out4.getOrElse(false.B)
-          mod.reset := child_rst
+          mod.reset := reset_to_child
         case _ =>
           mod.clock := pll.io.clk_out1.getOrElse(false.B)
       }
@@ -230,10 +232,10 @@ class FPGAArtyA7Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConne
 
     // Main clock and reset assignments
     clock := pll.io.clk_out1.get
-    reset := reset_2
+    reset := reset_to_sys
     sys_clk := pll.io.clk_out1.get
-    rst_n := !reset_2
-    jrst_n := !reset_2
+    rst_n := !reset_to_sys
+    jrst_n := !reset_to_sys
     usbClk.foreach(_ := false.B.asClock())
 
     aclocks.foreach { aclocks =>
@@ -243,8 +245,8 @@ class FPGAArtyA7Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConne
         if(nam.contains("mbus")) {
           p(SbusToMbusXTypeKey) match {
             case _: AsynchronousCrossing =>
-              aclk := pll.io.clk_out2.get
-              println("    Connected to clk_out2 (10 MHz)")
+              aclk := pll.io.clk_out4.get
+              println("    Connected to clk_out4 (10 MHz)")
             case _ =>
               aclk := pll.io.clk_out3.get
               println("    Connected to clk_out3")
@@ -252,7 +254,7 @@ class FPGAArtyA7Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConne
         }
         else {
           aclk := pll.io.clk_out3.get
-          println("    Connected to qsys_clk")
+          println("    Connected to clk_out3")
         }
       }
     }

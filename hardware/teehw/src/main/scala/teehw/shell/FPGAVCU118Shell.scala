@@ -111,8 +111,8 @@ class FPGAVCU118Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConne
 
     val aresetn = !reset_0 // Reset that goes to the MMCM inside of the DDR MIG
     val sys_rst = ResetCatchAndSync(pll.io.clk_out3.get, !pll.io.locked) // Catched system clock
-    val reset_2 = WireInit(!pll.io.locked) // If DDR is not present, this is the system reset
-    val child_rst = WireInit(!pll.io.locked) // If DDR is not present, this is the child reset
+    val reset_to_sys = WireInit(!pll.io.locked) // If DDR is not present, this is the system reset
+    val reset_to_child = WireInit(!pll.io.locked) // If DDR is not present, this is the child reset
 
     // The DDR port
     tlport.foreach { chiptl =>
@@ -126,11 +126,12 @@ class FPGAVCU118Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConne
       mod.io.ddrport.c0_sys_clk_i := sys_clk_i.asUInt()
       mod.io.ddrport.c0_ddr4_aresetn := aresetn
       mod.io.ddrport.sys_rst := sys_rst
-      reset_2 := ResetCatchAndSync(pll.io.clk_out3.get, mod.io.ddrport.c0_ddr4_ui_clk_sync_rst)
+      reset_to_sys := ResetCatchAndSync(pll.io.clk_out3.get, mod.io.ddrport.c0_ddr4_ui_clk_sync_rst)
       ChildClock.foreach(_ := pll.io.clk_out3.getOrElse(false.B))
-      ChildReset.foreach(_ := reset_2)
+      ChildReset.foreach(_ := reset_to_sys)
       mod.clock := pll.io.clk_out3.getOrElse(false.B)
-      child_rst := ResetCatchAndSync(pll.io.clk_out2.get, mod.io.ddrport.c0_ddr4_ui_clk_sync_rst)
+      mod.reset := reset_to_sys
+      reset_to_child := ResetCatchAndSync(pll.io.clk_out2.get, !pll.io.locked)
 
       // TileLink Interface from platform
       mod.io.tlport.a <> chiptl.a
@@ -140,9 +141,9 @@ class FPGAVCU118Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConne
       if(p(DDRPortOther)) {
         println("[Legacy] Quartus Island and Child Clock connected to clk_out2")
         ChildClock.foreach(_ := pll.io.clk_out2.getOrElse(false.B))
-        ChildReset.foreach(_ := reset_2)
+        ChildReset.foreach(_ := reset_to_sys)
         mod.clock := pll.io.clk_out2.getOrElse(false.B)
-        mod.reset := child_rst
+        mod.reset := reset_to_child
       }
 
       init_calib_complete := mod.io.ddrport.c0_init_calib_complete
@@ -162,14 +163,14 @@ class FPGAVCU118Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConne
       mod.io.ddrport.c0_sys_clk_i := sys_clk_i.asUInt()
       mod.io.ddrport.c0_ddr4_aresetn := aresetn
       mod.io.ddrport.sys_rst := sys_rst
-      reset_2 := ResetCatchAndSync(pll.io.clk_out3.get, mod.io.ddrport.c0_ddr4_ui_clk_sync_rst)
-      child_rst := ResetCatchAndSync(pll.io.clk_out2.get, mod.io.ddrport.c0_ddr4_ui_clk_sync_rst)
+      reset_to_sys := ResetCatchAndSync(pll.io.clk_out3.get, mod.io.ddrport.c0_ddr4_ui_clk_sync_rst)
+      reset_to_child := ResetCatchAndSync(pll.io.clk_out2.get, !pll.io.locked)
 
       p(SbusToMbusXTypeKey) match {
         case _: AsynchronousCrossing =>
           println("[Legacy] Quartus Island connected to clk_out2 (10MHz)")
           mod.clock := pll.io.clk_out2.getOrElse(false.B)
-          mod.reset := child_rst
+          mod.reset := reset_to_child
         case _ =>
           mod.clock := pll.io.clk_out3.getOrElse(false.B)
       }
@@ -180,10 +181,10 @@ class FPGAVCU118Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConne
 
     // Main clock and reset assignments
     clock := pll.io.clk_out3.get
-    reset := reset_2
+    reset := reset_to_sys
     sys_clk := pll.io.clk_out3.get
-    rst_n := !reset_2
-    jrst_n := !reset_2
+    rst_n := !reset_to_sys
+    jrst_n := !reset_to_sys
     usbClk.foreach(_ := pll.io.clk_out1.getOrElse(false.B))
 
     aclocks.foreach { aclocks =>
@@ -202,7 +203,7 @@ class FPGAVCU118Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConne
         }
         else {
           aclk := pll.io.clk_out3.get
-          println("    Connected to qsys_clk")
+          println("    Connected to clk_out3")
         }
       }
     }
