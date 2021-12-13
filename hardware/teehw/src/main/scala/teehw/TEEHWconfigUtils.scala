@@ -249,12 +249,8 @@ class MCUConfig extends Config(
     new WithMulticlockIncoherentBusTopology ++
     new BaseConfig().alter((site,here,up) => {
       case BootROMLocated(InSubsystem) => None // No BootROM.
-      case SystemBusKey => up(SystemBusKey).copy(
-        errorDevice = Some(BuiltInErrorDeviceParams(DevNullParams(
-          Seq(AddressSet(0x4000, 0xfff)),
-          maxAtomic=site(XLen)/8,
-          maxTransfer=128,
-          region = RegionType.TRACKED))))
+      case SystemBusKey => up(SystemBusKey).copy(errorDevice = None)
+      case ControlBusKey => up(ControlBusKey).copy(errorDevice = None)
       case PeripheryBusKey => up(PeripheryBusKey, site).copy(
         dtsFrequency = Some(BigDecimal(site(FreqKeyMHz)*1000000).setScale(0, BigDecimal.RoundingMode.HALF_UP).toBigInt),
         errorDevice = None)
