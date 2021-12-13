@@ -317,9 +317,9 @@ trait WithFPGAArtyA7Connect {
   (chip.aclocks zip intern.aclocks).foreach{ case (a, b) => (a zip b).foreach{ case (c, d) => c := d} }
 
   // GPIO
-  IOBUF(led_0, chip.gpio_out(0))
-  IOBUF(led_1, chip.gpio_out(1))
-  IOBUF(led_2, chip.gpio_out(2))
+  if(chip.gpio_out.getWidth >= 1) IOBUF(led_0, chip.gpio_out(0))
+  if(chip.gpio_out.getWidth >= 2) IOBUF(led_1, chip.gpio_out(1))
+  if(chip.gpio_out.getWidth >= 3) IOBUF(led_2, chip.gpio_out(2))
   IOBUF(led_3, intern.init_calib_complete) //chip.gpio_out(3)
   chip.gpio_in := Cat(IOBUF(sw_3), IOBUF(sw_2), IOBUF(sw_1), IOBUF(sw_0))
 

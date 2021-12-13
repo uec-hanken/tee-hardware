@@ -99,16 +99,46 @@ class MicroCached extends Config ((site, here, up) => {
 
 // Microcontroller with only scratchpad
 class Micro extends Config ((site, here, up) => {
+  case TilesLocated(InSubsystem) => up(TilesLocated(InSubsystem), site) map {
+    case i: IbexTileAttachParams => i.copy(
+      tileParams = i.tileParams.copy(
+        core = i.tileParams.core.copy(),
+        icache = None,
+        dcache = i.tileParams.dcache map { d =>
+          d.copy(
+            nSets = 64, // 4Kb scratchpad
+            nWays = 1,
+            nTLBSets = 1,
+            nTLBWays = 4,
+            nMSHRs = 0,
+            scratch = Some(0x40000000L)
+          )},
+      ))
+    case other => other
+  }
   case RocketTilesKey => up(RocketTilesKey, site) map { r =>
-    r.copy( dcache = r.dcache map { d =>
-      d.copy(
-        nSets = 64, // 4Kb scratchpad
-        nWays = 1,
-        nTLBSets = 1,
-        nTLBWays = 4,
-        nMSHRs = 0,
-        scratch = Some(0x40000000L)
-      )},
+    r.copy(
+      core = RocketCoreParams(
+        useVM = false,
+        useUser = false,
+        useSupervisor = false,
+        useAtomics = false,
+        useCompressed = true,
+        useRVE = false,
+        nPMPs = 0,
+        fastLoadWord = false,
+        fpu = None,
+        mulDiv = Some(MulDivParams(mulUnroll = 8))),
+      btb = None,
+      dcache = r.dcache map { d =>
+        d.copy(
+          nSets = 64, // 4Kb scratchpad
+          nWays = 1,
+          nTLBSets = 1,
+          nTLBWays = 4,
+          nMSHRs = 0,
+          scratch = Some(0x40000000L)
+        )},
       icache = r.icache map {i =>
         i.copy(
           nSets = 32, // 2Kb cache
