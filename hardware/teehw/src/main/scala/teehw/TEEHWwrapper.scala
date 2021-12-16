@@ -219,6 +219,22 @@ trait FPGAInternals {
   var tlport = tlparam.map(A => IO(Flipped(new TLUL(A))))
   // Asyncrhonoys clocks
   var aclocks = aclkn.map(A => IO(Vec(A, Output(Clock()))))
+
+  def connectChipInternals(chip: WithTEEHWbaseShell with WithTEEHWbaseConnect) = {
+    (chip.ChildClock zip ChildClock).foreach{ case (a, b) => a := b }
+    (chip.ChildReset zip ChildReset).foreach{ case (a, b) => a := b }
+    chip.sys_clk := sys_clk
+    chip.rst_n := rst_n
+    chip.jrst_n := jrst_n
+    // Memory port serialized
+    (chip.memser zip memser).foreach{ case (a, b) => a <> b }
+    // Ext port serialized
+    (chip.extser zip extser).foreach{ case (a, b) => a <> b }
+    // Memory port
+    (chip.tlport zip tlport).foreach{ case (a, b) => b.a <> a.a; a.d <> b.d }
+    // Asyncrhonoys clocks
+    (chip.aclocks zip aclocks).foreach{ case (a, b) => (a zip b).foreach{ case (c, d) => c := d} }
+  }
 }
 
 // ********************************************************************
@@ -226,6 +242,14 @@ trait FPGAInternals {
 // ********************************************************************
 class FPGAVC707(implicit p :Parameters) extends FPGAVC707Shell()(p)
   with HasTEEHWChip with WithFPGAVC707Connect {
+}
+
+class FPGAVC707ToChip(implicit p :Parameters) extends FPGAVC707Shell()(p)
+  with WithFPGAVC707ToChipConnect {
+}
+
+class FPGAVC707FromChip(implicit p :Parameters) extends FPGAVC707Shell()(p)
+  with HasTEEHWChip with WithFPGAVC707FromChipConnect {
 }
 
 // ********************************************************************

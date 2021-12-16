@@ -315,19 +315,7 @@ trait WithFPGADE4Connect {
   intern.M1_DDR2_oct_rup := M1_DDR2_oct_rup
 
   // From intern = Clocks and resets
-  (chip.ChildClock zip intern.ChildClock).foreach{ case (a, b) => a := b }
-  (chip.ChildReset zip intern.ChildReset).foreach{ case (a, b) => a := b }
-  chip.sys_clk := intern.sys_clk
-  chip.rst_n := intern.rst_n
-  chip.jrst_n := intern.jrst_n
-  // Memory port serialized
-  (chip.memser zip intern.memser).foreach{ case (a, b) => a <> b }
-  // Ext port serialized
-  (chip.extser zip intern.extser).foreach{ case (a, b) => a <> b }
-  // Memory port
-  (chip.tlport zip intern.tlport).foreach{ case (a, b) => b.a <> a.a; a.d <> b.d }
-  // Asyncrhonoys clocks
-  (chip.aclocks zip intern.aclocks).foreach{ case (a, b) => (a zip b).foreach{ case (c, d) => c := d} }
+  intern.connectChipInternals(chip)
 
   // The rest of the platform connections
   val chipshell_led = chip.gpio_out 	// output [7:0]

@@ -287,23 +287,28 @@ class FPGATR5Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConnect]
   }
 }
 
-class FPGATR5InternalNoChip()(implicit p :Parameters) extends FPGATR5Internal(None)(p) {
-  override def otherId = Some(6)
+class FPGATR5InternalNoChip
+(
+  val idBits: Int = 4,
+  val widthBits: Int = 32,
+  val sinkBits: Int = 1
+)(implicit p :Parameters) extends FPGATR5Internal(None)(p) {
+  override def otherId = Some(idBits)
   override def tlparam = p(ExtMem).map { A =>
     TLBundleParameters(
-      32,
+      widthBits,
       A.master.beatBytes * 8,
-      6,
-      1,
+      idBits,
+      sinkBits,
       log2Up(log2Ceil(p(MemoryBusKey).blockBytes)+1),
       Seq(),
       Seq(),
       Seq(),
       false)}
-  override def aclkn: Option[Int] = None
-  override def memserSourceBits: Option[Int] = None
-  override def extserSourceBits: Option[Int] = None
-  override def namedclocks: Seq[String] = Seq()
+  override def aclkn: Option[Int] = p(ExposeClocks).option(3)
+  override def memserSourceBits: Option[Int] = p(ExtSerMem).map( A => idBits )
+  override def extserSourceBits: Option[Int] = p(ExtSerBus).map( A => idBits )
+  override def namedclocks: Seq[String] = if(p(ExposeClocks)) Seq("cryptobus", "tile_0", "tile_1") else Seq()
 }
 
 trait WithFPGATR5InternCreate {
@@ -314,7 +319,10 @@ trait WithFPGATR5InternCreate {
 
 trait WithFPGATR5InternNoChipCreate {
   this: FPGATR5Shell =>
-  val intern = Module(new FPGATR5InternalNoChip)
+  def idBits = 4
+  def widthBits = 32
+  def sinkBits = 1
+  val intern = Module(new FPGATR5InternalNoChip(idBits, widthBits, sinkBits))
 }
 
 trait WithFPGATR5InternConnect {
@@ -358,19 +366,7 @@ trait WithFPGATR5Connect extends WithFPGATR5InternCreate with WithFPGATR5InternC
   this: FPGATR5Shell =>
 
   // From intern = Clocks and resets
-  (chip.ChildClock zip intern.ChildClock).foreach{ case (a, b) => a := b }
-  (chip.ChildReset zip intern.ChildReset).foreach{ case (a, b) => a := b }
-  chip.sys_clk := intern.sys_clk
-  chip.rst_n := intern.rst_n
-  chip.jrst_n := intern.jrst_n
-  // Memory port serialized
-  (chip.memser zip intern.memser).foreach{ case (a, b) => a <> b }
-  // Ext port serialized
-  (chip.extser zip intern.extser).foreach{ case (a, b) => a <> b }
-  // Memory port
-  (chip.tlport zip intern.tlport).foreach{ case (a, b) => b.a <> a.a; a.d <> b.d }
-  // Asyncrhonoys clocks
-  (chip.aclocks zip intern.aclocks).foreach{ case (a, b) => (a zip b).foreach{ case (c, d) => c := d} }
+  intern.connectChipInternals(chip)
 
   // The rest of the platform connections
   val chipshell_led = chip.gpio_out 	// TODO: Not used! LED [3:0]
