@@ -1321,4 +1321,5 @@ trait WithFPGAVC707FromChipConnect extends WithFPGAVC707PureConnect {
   }
 
   // ******** Misc part ********
+  ElaborationArtefacts.add("false.xci", "")
 }
