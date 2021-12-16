@@ -689,7 +689,7 @@ trait WithFPGAVC707PureConnect {
   // This trait connects the chip to all essentials. This assumes no DDR is connected yet
 
   def PCIPORT = FMC1_HPC
-  def MISCPORT = FMC2_HPC
+  def MISCPORT = FMC1_HPC
   
   gpio_out := chip.gpio_out
   chip.gpio_in := gpio_in
