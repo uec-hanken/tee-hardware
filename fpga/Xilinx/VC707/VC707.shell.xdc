@@ -169,6 +169,10 @@ set_property IOSTANDARD LVCMOS18 [get_ports USER_SMA_CLOCK_N]
 # FMC Connectors
 ################################################################################
 
+# This is here to avoid this error. No way to put the constraints of MGT without an IP
+set_property SEVERITY {Warning} [get_drc_checks UCIO-1]
+set_property SEVERITY {Warning} [get_drc_checks NSTD-1]
+
 # FMC1
 set_property PACKAGE_PIN H40 [get_ports FMC1_HPC_LA_P_4]
 set_property IOSTANDARD LVCMOS18 [get_ports FMC1_HPC_LA_P_4]

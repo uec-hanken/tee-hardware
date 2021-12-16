@@ -703,21 +703,21 @@ trait WithFPGAVC707PureConnect {
   chip.usb11hs.foreach{ case chipport =>
     val USBWireDataIn = Wire(Vec(2, Bool()))
     ConnectFMCXilinxGPIO.debug(1, 1, USBWireDataIn(0), true, MISCPORT)
-    ConnectFMCXilinxGPIO(1, 2, USBWireDataIn(1), true, MISCPORT)
+    ConnectFMCXilinxGPIO.debug(1, 2, USBWireDataIn(1), true, MISCPORT)
     chipport.USBWireDataIn := USBWireDataIn.asUInt()
-    ConnectFMCXilinxGPIO(1, 3, chipport.USBWireDataOut(0), false, MISCPORT)
-    ConnectFMCXilinxGPIO(1, 4, chipport.USBWireDataOut(1), false, MISCPORT)
-    ConnectFMCXilinxGPIO(1, 5, chipport.USBWireCtrlOut, false, MISCPORT)
-    ConnectFMCXilinxGPIO(1, 6, chipport.USBFullSpeed, false, MISCPORT)
+    ConnectFMCXilinxGPIO.debug(1, 3, chipport.USBWireDataOut(0), false, MISCPORT)
+    ConnectFMCXilinxGPIO.debug(1, 4, chipport.USBWireDataOut(1), false, MISCPORT)
+    ConnectFMCXilinxGPIO.debug(1, 5, chipport.USBWireCtrlOut, false, MISCPORT)
+    ConnectFMCXilinxGPIO.debug(1, 6, chipport.USBFullSpeed, false, MISCPORT)
   }
 
   chip.qspi.foreach { case qspi =>
-    ConnectFMCXilinxGPIO(1, 7, qspi.qspi_cs(0), false, MISCPORT)
-    ConnectFMCXilinxGPIO(1, 8, qspi.qspi_sck, false, MISCPORT)
-    ConnectFMCXilinxGPIO(1, 9, qspi.qspi_miso, true, MISCPORT)
-    ConnectFMCXilinxGPIO(1, 10, qspi.qspi_mosi, false, MISCPORT)
-    ConnectFMCXilinxGPIO(1, 11, qspi.qspi_wp, false, MISCPORT)
-    ConnectFMCXilinxGPIO(1, 12, qspi.qspi_hold, false, MISCPORT)
+    ConnectFMCXilinxGPIO.debug(1, 7, qspi.qspi_cs(0), false, MISCPORT)
+    ConnectFMCXilinxGPIO.debug(1, 8, qspi.qspi_sck, false, MISCPORT)
+    ConnectFMCXilinxGPIO.debug(1, 9, qspi.qspi_miso, true, MISCPORT)
+    ConnectFMCXilinxGPIO.debug(1, 10, qspi.qspi_mosi, false, MISCPORT)
+    ConnectFMCXilinxGPIO.debug(1, 11, qspi.qspi_wp, false, MISCPORT)
+    ConnectFMCXilinxGPIO.debug(1, 12, qspi.qspi_hold, false, MISCPORT)
   }
 }
 
@@ -952,6 +952,7 @@ trait WithFPGAVC707ToChipConnect extends WithFPGAVC707InternNoChipCreate with Wi
   def FMCDAO = FMC2_HPC
   ConnectFMCXilinxGPIO(0, 1, intern.sys_clk.asBool(), false, FMCDAO)
   intern.ChildClock.foreach{ a => PUT(a.asBool(), FMCDAO.CLK_M2C_N(1))}
+  intern.usbClk.foreach{ a => PUT(a.asBool(), FMCDAO.CLK_M2C_N(1))}
   ConnectFMCXilinxGPIO(0, 27, intern.jrst_n, false, FMC)
   ConnectFMCXilinxGPIO(1, 15, intern.rst_n, false, FMCDAO)
   intern.aclocks.foreach{ aclocks =>
@@ -1068,19 +1069,19 @@ trait WithFPGAVC707FromChipConnect extends WithFPGAVC707PureConnect {
     ConnectFMCXilinxGPIO(JP18, 3, a_opcode(2),  false, FMC)
     ConnectFMCXilinxGPIO(JP18, 7, a_opcode(1),  false, FMC)
     ConnectFMCXilinxGPIO(JP18, 8, a_opcode(0),  false, FMC)
-    a_opcode := tlport.a.bits.opcode.toBools()
+    a_opcode := tlport.a.bits.opcode.asBools()
     require(tlport.a.bits.param.getWidth == 3, s"${tlport.a.bits.param.getWidth}")
     val a_param = Wire(Vec(3, Bool()))
     ConnectFMCXilinxGPIO(JP18, 9, a_param(2),  false, FMC)
     ConnectFMCXilinxGPIO(JP18, 10, a_param(1),  false, FMC)
     ConnectFMCXilinxGPIO(JP18, 13, a_param(0),  false, FMC)
-    a_param := tlport.a.bits.param.toBools()
+    a_param := tlport.a.bits.param.asBools()
     val a_size = Wire(Vec(3, Bool()))
     require(tlport.a.bits.size.getWidth == 3, s"${tlport.a.bits.size.getWidth}")
     ConnectFMCXilinxGPIO(JP18, 14, a_size(2),  false, FMC)
     ConnectFMCXilinxGPIO(JP18, 15, a_size(1),  false, FMC)
     ConnectFMCXilinxGPIO(JP18, 16, a_size(0),  false, FMC)
-    a_size := tlport.a.bits.size.toBools()
+    a_size := tlport.a.bits.size.asBools()
     require(tlport.a.bits.source.getWidth == 6, s"${tlport.a.bits.source.getWidth}")
     val a_source = Wire(Vec(6, Bool()))
     ConnectFMCXilinxGPIO(JP18, 17, a_source(5),  false, FMC)
@@ -1089,7 +1090,7 @@ trait WithFPGAVC707FromChipConnect extends WithFPGAVC707PureConnect {
     ConnectFMCXilinxGPIO(JP18, 20, a_source(2),  false, FMC)
     ConnectFMCXilinxGPIO(JP18, 21, a_source(1),  false, FMC)
     ConnectFMCXilinxGPIO(JP18, 22, a_source(0),  false, FMC)
-    a_source := tlport.a.bits.source.toBools()
+    a_source := tlport.a.bits.source.asBools()
     require(tlport.a.bits.address.getWidth == 32, s"${tlport.a.bits.address.getWidth}")
     val a_address = Wire(Vec(32, Bool()))
     ConnectFMCXilinxGPIO(JP18, 23, a_address(31),  false, FMC)
@@ -1124,14 +1125,14 @@ trait WithFPGAVC707FromChipConnect extends WithFPGAVC707PureConnect {
     ConnectFMCXilinxGPIO(JP19, 16, a_address( 2),  false, FMC)
     ConnectFMCXilinxGPIO(JP19, 17, a_address( 1),  false, FMC)
     ConnectFMCXilinxGPIO(JP19, 18, a_address( 0),  false, FMC)
-    a_address := tlport.a.bits.address.toBools()
+    a_address := tlport.a.bits.address.asBools()
     require(tlport.a.bits.mask.getWidth == 4, s"${tlport.a.bits.mask.getWidth}")
     val a_mask = Wire(Vec(4, Bool()))
     ConnectFMCXilinxGPIO(JP19, 19, a_mask(3),  false, FMC)
     ConnectFMCXilinxGPIO(JP19, 20, a_mask(2),  false, FMC)
     ConnectFMCXilinxGPIO(JP19, 21, a_mask(1),  false, FMC)
     ConnectFMCXilinxGPIO(JP19, 22, a_mask(0),  false, FMC)
-    a_mask := tlport.a.bits.mask.toBools()
+    a_mask := tlport.a.bits.mask.asBools()
     require(tlport.a.bits.data.getWidth == 32, s"${tlport.a.bits.data.getWidth}")
     val a_data = Wire(Vec(32, Bool()))
     ConnectFMCXilinxGPIO(JP19, 23, a_data(31),  false, FMC)
@@ -1166,7 +1167,7 @@ trait WithFPGAVC707FromChipConnect extends WithFPGAVC707PureConnect {
     ConnectFMCXilinxGPIO(JP20, 16, a_data( 2),  false, FMC)
     ConnectFMCXilinxGPIO(JP20, 17, a_data( 1),  false, FMC)
     ConnectFMCXilinxGPIO(JP20, 18, a_data( 0),  false, FMC)
-    a_data := tlport.a.bits.data.toBools()
+    a_data := tlport.a.bits.data.asBools()
     ConnectFMCXilinxGPIO(JP20, 19, tlport.a.bits.corrupt,  false, FMC)
     ConnectFMCXilinxGPIO(JP20, 20, tlport.d.ready,  false, FMC)
     ConnectFMCXilinxGPIO(JP20, 21, tlport.d.valid,  true, FMC)
@@ -1244,7 +1245,8 @@ trait WithFPGAVC707FromChipConnect extends WithFPGAVC707PureConnect {
   val sysclk = Wire(Bool())
   ConnectFMCXilinxGPIO(0, 1, sysclk,  true, FMCDAO)
   chip.sys_clk := sysclk.asClock()
-  chip.ChildClock.foreach{ a => a := GET(FMCDAO.CLK_M2C_N(1))}
+  chip.ChildClock.foreach{ a => a := GET(FMCDAO.CLK_M2C_N(1)).asClock()} // TODO: The child clock and the usb clock are the same
+  chip.usb11hs.foreach{ a => a.usbClk := GET(FMCDAO.CLK_M2C_N(1)).asClock()}
   ConnectFMCXilinxGPIO(0, 27, chip.jrst_n,  true, FMCDAO)
   ConnectFMCXilinxGPIO(1, 15, chip.rst_n,  true, FMCDAO)
   chip.aclocks.foreach{ aclocks =>
