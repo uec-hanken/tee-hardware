@@ -173,6 +173,45 @@ set_property IOSTANDARD LVCMOS18 [get_ports USER_SMA_CLOCK_N]
 set_property SEVERITY {Warning} [get_drc_checks UCIO-1]
 set_property SEVERITY {Warning} [get_drc_checks NSTD-1]
 
+# This is for avoiding the DRC errors when implementing the clocks as not-dedicated routes
+# Example: Using both N and P as different single-ended independent signals
+set_property CLOCK_DEDICATED_ROUTE FALSE [get_nets {FMC2_HPC_CLK_M2C_N_1_IBUF}]
+set_property CLOCK_DEDICATED_ROUTE FALSE [get_nets {USER_SMA_CLOCK_N_IBUF}]
+
+# This clocking is for FromChip
+create_clock -name FMC2_HPC_CLK_M2C_N_0_CLK -period 5.0 [get_ports FMC2_HPC_CLK_M2C_N_0]
+set_input_jitter [get_clocks -of_objects [get_ports FMC2_HPC_CLK_M2C_N_0]] 0.5
+create_clock -name FMC2_HPC_CLK_M2C_P_0_CLK -period 5.0 [get_ports FMC2_HPC_CLK_M2C_P_0]
+set_input_jitter [get_clocks -of_objects [get_ports FMC2_HPC_CLK_M2C_P_0]] 0.5
+create_clock -name FMC2_HPC_CLK_M2C_N_1_CLK -period 5.0 [get_ports FMC2_HPC_CLK_M2C_N_1]
+set_input_jitter [get_clocks -of_objects [get_ports FMC2_HPC_CLK_M2C_N_1]] 0.5
+create_clock -name FMC2_HPC_CLK_M2C_P_1_CLK -period 5.0 [get_ports FMC2_HPC_CLK_M2C_P_1]
+set_input_jitter [get_clocks -of_objects [get_ports FMC2_HPC_CLK_M2C_P_1]] 0.5
+create_clock -name USER_SMA_CLOCK_P_CLK -period 5.0 [get_ports USER_SMA_CLOCK_P]
+set_input_jitter [get_clocks -of_objects [get_ports USER_SMA_CLOCK_P]] 0.5
+create_clock -name USER_SMA_CLOCK_N_CLK -period 5.0 [get_ports USER_SMA_CLOCK_N]
+set_input_jitter [get_clocks -of_objects [get_ports USER_SMA_CLOCK_N]] 0.5
+
+set_clock_groups -asynchronous \
+  -group [list [get_clocks { \
+      FMC2_HPC_CLK_M2C_N_0_CLK \
+    }]] \
+  -group [list [get_clocks { \
+      FMC2_HPC_CLK_M2C_P_0_CLK \
+    }]] \
+  -group [list [get_clocks { \
+      FMC2_HPC_CLK_M2C_N_1_CLK \
+    }]] \
+  -group [list [get_clocks { \
+      FMC2_HPC_CLK_M2C_P_1_CLK \
+    }]] \
+  -group [list [get_clocks { \
+      USER_SMA_CLOCK_P_CLK \
+    }]] \
+  -group [list [get_clocks { \
+      USER_SMA_CLOCK_N_CLK \
+    }]]
+
 # FMC1
 set_property PACKAGE_PIN H40 [get_ports FMC1_HPC_LA_P_4]
 set_property IOSTANDARD LVCMOS18 [get_ports FMC1_HPC_LA_P_4]
