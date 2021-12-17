@@ -12,8 +12,8 @@ import uec.teehardware.macros._
 import uec.teehardware._
 
 class FMCTR5(val ext: Boolean = false, val xcvr: Boolean = false) extends Bundle {
-  val CLK_M2C_p = Vec(2, Input(Bool()))
-  val CLK_M2C_n = Vec(2, Input(Bool()))
+  val CLK_M2C_p = Vec(2, Analog(1.W))
+  val CLK_M2C_n = Vec(2, Analog(1.W))
   val HA_RX_CLK_p = ext.option(Analog(1.W))
   val HA_RX_CLK_n = ext.option(Analog(1.W))
   val HB_RX_CLK_p = ext.option(Analog(1.W))
@@ -289,7 +289,7 @@ class FPGATR5Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConnect]
 
 class FPGATR5InternalNoChip
 (
-  val idBits: Int = 4,
+  val idBits: Int = 6,
   val widthBits: Int = 32,
   val sinkBits: Int = 1
 )(implicit p :Parameters) extends FPGATR5Internal(None)(p) {
@@ -319,7 +319,7 @@ trait WithFPGATR5InternCreate {
 
 trait WithFPGATR5InternNoChipCreate {
   this: FPGATR5Shell =>
-  def idBits = 4
+  def idBits = 6
   def widthBits = 32
   def sinkBits = 1
   val intern = Module(new FPGATR5InternalNoChip(idBits, widthBits, sinkBits))
@@ -418,8 +418,8 @@ object ConnectFMCGPIO {
     n match {
       case 0 =>
         p match {
-          case 0 => if(get) c := FMC.CLK_M2C_p(0) else throw new RuntimeException(s"GPIO${n}_${p} can only be input")
-          case 1 => if(get) c := FMC.CLK_M2C_n(0) else throw new RuntimeException(s"GPIO${n}_${p} can only be input")
+          case 0 => if(get) c := GET(FMC.CLK_M2C_p(0)) else PUT(c, FMC.CLK_M2C_p(0)) // throw new RuntimeException(s"GPIO${n}_${p} can only be input")
+          case 1 => if(get) c := GET(FMC.CLK_M2C_n(0)) else PUT(c, FMC.CLK_M2C_n(0)) // throw new RuntimeException(s"GPIO${n}_${p} can only be input")
           case 2 => if(get) c := ALT_IOBUF(FMC.LA_TX_CLK_p) else ALT_IOBUF(FMC.LA_TX_CLK_p, c) // throw new RuntimeException(s"GPIO${n}_${p} can only be input")
           case 3 => if(get) c := ALT_IOBUF(FMC.LA_TX_CLK_n) else ALT_IOBUF(FMC.LA_TX_CLK_n, c) // throw new RuntimeException(s"GPIO${n}_${p} can only be input")
           case 4 => if(get) c := ALT_IOBUF(FMC.LA_TX_p(5)) else ALT_IOBUF(FMC.LA_TX_p(5), c)
@@ -587,10 +587,10 @@ trait WithFPGATR5ToChipConnect extends WithFPGATR5InternNoChipCreate with WithFP
   
   // NOTES:
   // JP18 -> JP1 
-  def JP18 = 1 // GPIO0
-  def JP19 = 0 // GPIO1
-  def JP20 = 2 // GPIO2
-  def JP21 = 3 // GPIO3
+  def JP18 = 2
+  def JP19 = 0
+  def JP20 = 3
+  def JP21 = 1
   def FMC = FMCA
 
   // From intern = Clocks and resets
@@ -774,8 +774,8 @@ trait WithFPGATR5ToChipConnect extends WithFPGATR5InternNoChipCreate with WithFP
   // ******* Ahn-Dao section ******
   def FMCDAO = FMCD
   ConnectFMCGPIO(0, 1, intern.sys_clk.asBool(), false, FMCDAO)
-  intern.ChildClock.foreach{ a => FMCDAO.CLK_M2C_n(1) := a.asBool()}
-  intern.usbClk.foreach{ a => FMCDAO.CLK_M2C_n(1) := a.asBool()}
+  intern.ChildClock.foreach{ a => PUT(a.asBool(), FMCDAO.CLK_M2C_n(1)) }
+  intern.usbClk.foreach{ a => PUT(a.asBool(), FMCDAO.CLK_M2C_n(1)) }
   ConnectFMCGPIO(0, 27, intern.jrst_n, false, FMC)
   ConnectFMCGPIO(1, 15, intern.rst_n, false, FMCDAO)
   intern.aclocks.foreach{ aclocks =>
@@ -785,7 +785,7 @@ trait WithFPGATR5ToChipConnect extends WithFPGATR5InternNoChipCreate with WithFP
       println(s"  Detected clock ${nam}")
       if(nam.contains("cryptobus")) {
         println("    Connected to CLK_M2C_P(1) or SMA_CLK_P")
-        FMCDAO.CLK_M2C_n(1) := aclk.asBool()
+        PUT(aclk.asBool(), FMCDAO.CLK_M2C_p(1))
       }
       if(nam.contains("tile_0")) {
         println("    Warning: Not connected")
