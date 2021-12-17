@@ -776,7 +776,7 @@ trait WithFPGATR5ToChipConnect extends WithFPGATR5InternNoChipCreate with WithFP
   ConnectFMCGPIO(0, 1, intern.sys_clk.asBool(), false, FMCDAO)
   intern.ChildClock.foreach{ a => PUT(a.asBool(), FMCDAO.CLK_M2C_n(1)) }
   intern.usbClk.foreach{ a => PUT(a.asBool(), FMCDAO.CLK_M2C_n(1)) }
-  ConnectFMCGPIO(0, 27, intern.jrst_n, false, FMC)
+  ConnectFMCGPIO(0, 27, intern.jrst_n, false, FMCDAO)
   ConnectFMCGPIO(1, 15, intern.rst_n, false, FMCDAO)
   intern.aclocks.foreach{ aclocks =>
     // Only some of the aclocks are actually connected.
