@@ -2054,9 +2054,13 @@ set_location_assignment PIN_B20 -to FMCD_SDA
 # SMA
 #============================================================
 set_instance_assignment -name IO_STANDARD "1.5 V" -to SMA_CLKIN_p
+set_instance_assignment -name IO_STANDARD "1.5 V" -to SMA_CLKIN_n
 set_instance_assignment -name IO_STANDARD "1.5 V" -to SMA_CLKOUT_p
+set_instance_assignment -name IO_STANDARD "1.5 V" -to SMA_CLKOUT_n
 set_location_assignment PIN_BC8 -to SMA_CLKIN_p
+set_location_assignment PIN_BD8 -to SMA_CLKIN_n
 set_location_assignment PIN_AV8 -to SMA_CLKOUT_p
+set_location_assignment PIN_AW9 -to SMA_CLKOUT_n
 
 #============================================================
 # PCIE

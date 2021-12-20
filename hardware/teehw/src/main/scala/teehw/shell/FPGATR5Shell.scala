@@ -128,7 +128,9 @@ trait FPGATR5ClockAndResetsAndDDR {
   val RZQ_DDR3 = IO(Input(Bool()))
 
   val SMA_CLKIN_p = IO(Input(Clock()))
+  val SMA_CLKIN_n = IO(Input(Clock()))
   val SMA_CLKOUT_p = IO(Analog(1.W))
+  val SMA_CLKOUT_n = IO(Analog(1.W))
 }
 
 class FPGATR5Shell(implicit val p :Parameters) extends RawModule
@@ -340,7 +342,9 @@ trait WithFPGATR5InternConnect {
   intern.CPU_RESET_n := CPU_RESET_n
   intern.BUTTON := BUTTON
   intern.SMA_CLKIN_p := SMA_CLKIN_p
+  intern.SMA_CLKIN_n := SMA_CLKIN_n
   attach(SMA_CLKOUT_p, intern.SMA_CLKOUT_p)
+  attach(SMA_CLKOUT_n, intern.SMA_CLKOUT_n)
 
   intern.DDR3_REFCLK_p := DDR3_REFCLK_p // TODO: Not actually used
   intern.DDR3_EVENT_n := DDR3_EVENT_n // TODO: Not actually used
@@ -856,6 +860,6 @@ trait WithFPGATR5ToChipConnect extends WithFPGATR5InternNoChipCreate with WithFP
   )
   // Clocks to the outside
   ALT_IOBUF(SMA_CLKOUT_p, intern.sys_clk.asBool())
-  intern.ChildClock.foreach(A => ALT_IOBUF(GPIO(1), A.asBool()))
+  intern.ChildClock.foreach(A => ALT_IOBUF(SMA_CLKOUT_n, A.asBool()))
   SD_CLK := false.B
 }
