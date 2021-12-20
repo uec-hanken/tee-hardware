@@ -155,9 +155,9 @@ set_property IOSTANDARD {LVCMOS18} [get_ports {rst_3}]
 
 # User Clock
 set_property PACKAGE_PIN AK34 [get_ports USER_CLOCK_P]
-set_property IOSTANDARD LVDS [get_ports USER_CLOCK_P]
+set_property IOSTANDARD LVCMOS18 [get_ports USER_CLOCK_P]
 set_property PACKAGE_PIN AL34 [get_ports USER_CLOCK_N]
-set_property IOSTANDARD LVDS [get_ports USER_CLOCK_N]
+set_property IOSTANDARD LVCMOS18 [get_ports USER_CLOCK_N]
 
 # User SMA Clock
 set_property PACKAGE_PIN AJ32 [get_ports USER_SMA_CLOCK_P]
