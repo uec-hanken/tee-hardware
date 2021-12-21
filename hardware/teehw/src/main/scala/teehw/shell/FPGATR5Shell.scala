@@ -281,7 +281,7 @@ class FPGATR5Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConnect]
     }
     // The external bus (TODO: Doing nothing)
     (extser zip extserSourceBits).foreach { case (es, sourceBits) =>
-      val mod = Module(LazyModule(new FPGAMiniSystem(sourceBits)).module)
+      val mod = Module(LazyModule(new FPGAMiniSystemDummy(sourceBits)).module)
 
       // Serial port
       mod.serport.flipConnect(es)
@@ -366,31 +366,18 @@ trait WithFPGATR5InternConnect {
   intern.RZQ_DDR3 := RZQ_DDR3
 }
 
-trait WithFPGATR5Connect extends WithFPGATR5InternCreate with WithFPGATR5InternConnect {
+trait WithFPGATR5PureConnect {
   this: FPGATR5Shell =>
+  val chip: WithTEEHWbaseShell with WithTEEHWbaseConnect
 
-  // From intern = Clocks and resets
-  intern.connectChipInternals(chip)
-
-  // The rest of the platform connections
-  val chipshell_led = chip.gpio_out 	// TODO: Not used! LED [3:0]
-  LED := Cat(
-    intern.mem_status_local_cal_fail,
-    intern.mem_status_local_cal_success,
-    intern.mem_status_local_init_done,
-    BUTTON(2)
-  )
+  def namedclocks: Seq[String] = chip.system.sys.asInstanceOf[HasTEEHWSystemModule].namedclocks
+  // This trait connects the chip to all essentials. This assumes no DDR is connected yet
+  LED := Cat(chip.gpio_out, BUTTON(2))
   chip.gpio_in := Cat(BUTTON(3), BUTTON(1,0), SW(1,0))
   chip.jtag.jtag_TDI := ALT_IOBUF(GPIO(4))
   chip.jtag.jtag_TMS := ALT_IOBUF(GPIO(6))
   chip.jtag.jtag_TCK := ALT_IOBUF(GPIO(8))
   ALT_IOBUF(GPIO(10), chip.jtag.jtag_TDO)
-  chip.qspi.foreach{A =>
-    A.qspi_miso := ALT_IOBUF(GPIO(1))
-    ALT_IOBUF(GPIO(3), A.qspi_mosi)
-    ALT_IOBUF(GPIO(5), A.qspi_cs(0))
-    ALT_IOBUF(GPIO(7), A.qspi_sck)
-  }
   chip.uart_rxd := ALT_IOBUF(UART_RX)
   ALT_IOBUF(UART_TX, chip.uart_txd) // UART_RXD
   SD_CLK := chip.sdio.sdio_clk
@@ -399,16 +386,37 @@ trait WithFPGATR5Connect extends WithFPGATR5InternCreate with WithFPGATR5InternC
   ALT_IOBUF(SD_CMD, chip.sdio.sdio_cmd)
 
   // USB phy connections
-  (chip.usb11hs zip intern.usbClk).foreach{ case (chipport, uclk) =>
+  chip.usb11hs.foreach{ case chipport =>
     ALT_IOBUF(GPIO(17), chipport.USBFullSpeed)
-    chipport.USBWireDataIn := ALT_IOBUF(GPIO(24))
-    ALT_IOBUF(GPIO(24), chipport.USBWireCtrlOut(0))
-    ALT_IOBUF(GPIO(26), chipport.USBWireCtrlOut(1))
+    chipport.USBWireDataIn := Cat(ALT_IOBUF(GPIO(24)), ALT_IOBUF(GPIO(26)))
+    ALT_IOBUF(GPIO(28), chipport.USBWireCtrlOut)
     ALT_IOBUF(GPIO(16), chipport.USBWireDataOut(0))
     ALT_IOBUF(GPIO(18), chipport.USBWireDataOut(1))
-
-    chipport.usbClk := uclk
   }
+  
+  chip.qspi.foreach{A =>
+    A.qspi_miso := ALT_IOBUF(GPIO(1))
+    ALT_IOBUF(GPIO(3), A.qspi_mosi)
+    ALT_IOBUF(GPIO(5), A.qspi_cs(0))
+    ALT_IOBUF(GPIO(7), A.qspi_sck)
+  }
+}
+
+trait WithFPGATR5Connect extends WithFPGATR5PureConnect 
+  with WithFPGATR5InternCreate 
+  with WithFPGATR5InternConnect {
+  this: FPGATR5Shell =>
+
+  // From intern = Clocks and resets
+  intern.connectChipInternals(chip)
+
+  // The rest of the platform connections
+  LED := Cat(
+    intern.mem_status_local_cal_fail,
+    intern.mem_status_local_cal_success,
+    intern.mem_status_local_init_done,
+    BUTTON(2)
+  )
 }
 
 object ConnectFMCGPIO {
@@ -588,9 +596,9 @@ object ConnectFMCGPIO {
 // Based on layout of the TR5.sch done by Duy
 trait WithFPGATR5ToChipConnect extends WithFPGATR5InternNoChipCreate with WithFPGATR5InternConnect {
   this: FPGATR5Shell =>
-  
+
+  // ******* Duy section ******
   // NOTES:
-  // JP18 -> JP1 
   def JP18 = 2
   def JP19 = 0
   def JP20 = 3
@@ -776,77 +784,167 @@ trait WithFPGATR5ToChipConnect extends WithFPGATR5InternNoChipCreate with WithFP
   }
 
   // ******* Ahn-Dao section ******
-  def FMCDAO = FMCD
-  ConnectFMCGPIO(0, 1, intern.sys_clk.asBool(), false, FMCDAO)
-  intern.ChildClock.foreach{ a => PUT(a.asBool(), FMCDAO.CLK_M2C_n(1)) }
-  intern.usbClk.foreach{ a => PUT(a.asBool(), FMCDAO.CLK_M2C_n(1)) }
-  ConnectFMCGPIO(0, 27, intern.jrst_n, false, FMCDAO)
-  ConnectFMCGPIO(1, 15, intern.rst_n, false, FMCDAO)
-  intern.aclocks.foreach{ aclocks =>
-    // Only some of the aclocks are actually connected.
-    println("Connecting orphan clocks =>")
-    (aclocks zip intern.namedclocks).foreach{ case (aclk, nam) =>
-      println(s"  Detected clock ${nam}")
-      if(nam.contains("cryptobus")) {
-        println("    Connected to CLK_M2C_P(1) or SMA_CLK_P")
-        PUT(aclk.asBool(), FMCDAO.CLK_M2C_p(1))
+  def FMCSER = FMCD
+  def versionSer = 1
+  versionSer match {
+    case 1 =>
+      val MEMSER_GPIO = 0
+      val EXTSER_GPIO = 1
+      ConnectFMCGPIO(MEMSER_GPIO, 1, intern.sys_clk.asBool(), false, FMCSER)
+      intern.ChildClock.foreach{ a => ConnectFMCGPIO(MEMSER_GPIO, 2, a.asBool(), false, FMCSER) }
+      intern.usbClk.foreach{ a => ConnectFMCGPIO(MEMSER_GPIO, 3, a.asBool(), false, FMCSER) }
+      ConnectFMCGPIO(MEMSER_GPIO, 4, intern.jrst_n, false, FMCSER)
+      ConnectFMCGPIO(MEMSER_GPIO, 5, intern.rst_n, false, FMCSER)
+      intern.aclocks.foreach{ aclocks =>
+        // Only some of the aclocks are actually connected.
+        println("Connecting orphan clocks =>")
+        (aclocks zip intern.namedclocks).foreach{ case (aclk, nam) =>
+          println(s"  Detected clock ${nam}")
+          if(nam.contains("cryptobus")) {
+            println(s"    Connected to GPIO${MEMSER_GPIO} - 6")
+            ConnectFMCGPIO(MEMSER_GPIO, 6, aclk.asBool(), false, FMCSER)
+          }
+          if(nam.contains("tile_0")) {
+            println(s"    Connected to GPIO${MEMSER_GPIO} - 7")
+            ConnectFMCGPIO(MEMSER_GPIO, 7, aclk.asBool(), false, FMCSER)
+          }
+          if(nam.contains("tile_1")) {
+            println(s"    Connected to GPIO${MEMSER_GPIO} - 8")
+            ConnectFMCGPIO(MEMSER_GPIO, 8, aclk.asBool(), false, FMCSER)
+          }
+        }
       }
-      if(nam.contains("tile_0")) {
-        println("    Warning: Not connected")
+      // ExtSerMem
+      intern.memser.foreach { memser =>
+        val in_bits = Wire(Vec(8, Bool()))
+        ConnectFMCGPIO(MEMSER_GPIO, 9, in_bits(7), false, FMCSER)
+        ConnectFMCGPIO(MEMSER_GPIO, 10, in_bits(6), false, FMCSER)
+        ConnectFMCGPIO(MEMSER_GPIO, 13, in_bits(5), false, FMCSER)
+        ConnectFMCGPIO(MEMSER_GPIO, 14, in_bits(4), false, FMCSER)
+        ConnectFMCGPIO(MEMSER_GPIO, 15, in_bits(3), false, FMCSER)
+        ConnectFMCGPIO(MEMSER_GPIO, 16, in_bits(2), false, FMCSER)
+        ConnectFMCGPIO(MEMSER_GPIO, 17, in_bits(1), false, FMCSER)
+        ConnectFMCGPIO(MEMSER_GPIO, 18, in_bits(0), false, FMCSER)
+        in_bits := memser.in.bits.asBools()
+        ConnectFMCGPIO(MEMSER_GPIO, 19, memser.in.valid, false, FMCSER)
+        ConnectFMCGPIO(MEMSER_GPIO, 20, memser.out.ready, false, FMCSER)
+        ConnectFMCGPIO(MEMSER_GPIO, 21, memser.in.ready, true, FMCSER)
+        val out_bits = Wire(Vec(8, Bool()))
+        ConnectFMCGPIO(MEMSER_GPIO, 22, out_bits(7), true, FMCSER)
+        ConnectFMCGPIO(MEMSER_GPIO, 23, out_bits(6), true, FMCSER)
+        ConnectFMCGPIO(MEMSER_GPIO, 24, out_bits(5), true, FMCSER)
+        ConnectFMCGPIO(MEMSER_GPIO, 25, out_bits(4), true, FMCSER)
+        ConnectFMCGPIO(MEMSER_GPIO, 26, out_bits(3), true, FMCSER)
+        ConnectFMCGPIO(MEMSER_GPIO, 27, out_bits(2), true, FMCSER)
+        ConnectFMCGPIO(MEMSER_GPIO, 28, out_bits(1), true, FMCSER)
+        ConnectFMCGPIO(MEMSER_GPIO, 31, out_bits(0), true, FMCSER)
+        memser.out.bits := out_bits.asUInt()
+        ConnectFMCGPIO(MEMSER_GPIO, 32, memser.out.valid, true, FMCSER)
       }
-      if(nam.contains("tile_1")) {
-        println("    Warning: Not connected")
+      // ExtSerBus
+      intern.extser.foreach{ extser =>
+        val in_bits = Wire(Vec(8, Bool()))
+        ConnectFMCGPIO(EXTSER_GPIO, 9, in_bits(7), false, FMCSER)
+        ConnectFMCGPIO(EXTSER_GPIO, 10, in_bits(6), false, FMCSER)
+        ConnectFMCGPIO(EXTSER_GPIO, 13, in_bits(5), false, FMCSER)
+        ConnectFMCGPIO(EXTSER_GPIO, 14, in_bits(4), false, FMCSER)
+        ConnectFMCGPIO(EXTSER_GPIO, 15, in_bits(3), false, FMCSER)
+        ConnectFMCGPIO(EXTSER_GPIO, 16, in_bits(2), false, FMCSER)
+        ConnectFMCGPIO(EXTSER_GPIO, 17, in_bits(1), false, FMCSER)
+        ConnectFMCGPIO(EXTSER_GPIO, 18, in_bits(0), false, FMCSER)
+        in_bits := extser.in.bits.asBools()
+        ConnectFMCGPIO(EXTSER_GPIO, 19, extser.in.valid, false, FMCSER)
+        ConnectFMCGPIO(EXTSER_GPIO, 20, extser.out.ready, false, FMCSER)
+        ConnectFMCGPIO(EXTSER_GPIO, 21, extser.in.ready, true, FMCSER)
+        val out_bits = Wire(Vec(8, Bool()))
+        ConnectFMCGPIO(EXTSER_GPIO, 22, out_bits(7), true, FMCSER)
+        ConnectFMCGPIO(EXTSER_GPIO, 23, out_bits(6), true, FMCSER)
+        ConnectFMCGPIO(EXTSER_GPIO, 24, out_bits(5), true, FMCSER)
+        ConnectFMCGPIO(EXTSER_GPIO, 25, out_bits(4), true, FMCSER)
+        ConnectFMCGPIO(EXTSER_GPIO, 26, out_bits(3), true, FMCSER)
+        ConnectFMCGPIO(EXTSER_GPIO, 27, out_bits(2), true, FMCSER)
+        ConnectFMCGPIO(EXTSER_GPIO, 28, out_bits(1), true, FMCSER)
+        ConnectFMCGPIO(EXTSER_GPIO, 31, out_bits(0), true, FMCSER)
+        extser.out.bits := out_bits.asUInt()
+        ConnectFMCGPIO(EXTSER_GPIO, 32, extser.out.valid, true, FMCSER)
       }
-    }
-  }// ExtSerMem
-  intern.memser.foreach { memser =>
-    ConnectFMCGPIO(0, 31, memser.in.bits(7), false, FMCDAO)
-    ConnectFMCGPIO(0, 33, memser.in.bits(6), false, FMCDAO)
-    ConnectFMCGPIO(0, 35, memser.in.bits(5), false, FMCDAO)
-    ConnectFMCGPIO(0, 37, memser.in.bits(4), false, FMCDAO)
-    ConnectFMCGPIO(0, 39, memser.in.bits(3), false, FMCDAO)
-    ConnectFMCGPIO(1, 1, memser.in.bits(2), false, FMCDAO)
-    ConnectFMCGPIO(1, 5, memser.in.bits(1), false, FMCDAO)
-    ConnectFMCGPIO(1, 7, memser.in.bits(0), false, FMCDAO)
-    ConnectFMCGPIO(1, 9, memser.in.valid, false, FMCDAO)
-    ConnectFMCGPIO(1, 13, memser.out.ready, false, FMCDAO)
-    ConnectFMCGPIO(2, 5, memser.in.ready, true, FMCDAO)
-    val out_bits = Wire(Vec(8, Bool()))
-    ConnectFMCGPIO(2, 7, out_bits(7), true, FMCDAO)
-    ConnectFMCGPIO(2, 9, out_bits(6), true, FMCDAO)
-    ConnectFMCGPIO(2, 13, out_bits(5), true, FMCDAO)
-    ConnectFMCGPIO(2, 15, out_bits(4), true, FMCDAO)
-    ConnectFMCGPIO(2, 17, out_bits(3), true, FMCDAO)
-    ConnectFMCGPIO(2, 19, out_bits(2), true, FMCDAO)
-    ConnectFMCGPIO(2, 21, out_bits(1), true, FMCDAO)
-    ConnectFMCGPIO(2, 23, out_bits(0), true, FMCDAO)
-    memser.out.bits := out_bits.asUInt()
-    ConnectFMCGPIO(2, 25, memser.out.valid, true, FMCDAO)
-  }
-  // ExtSerBus
-  intern.extser.foreach{ extser =>
-    ConnectFMCGPIO(0, 5, extser.in.bits(7), false, FMCDAO)
-    ConnectFMCGPIO(0, 7, extser.in.bits(6), false, FMCDAO)
-    ConnectFMCGPIO(0, 9, extser.in.bits(5), false, FMCDAO)
-    ConnectFMCGPIO(0, 13, extser.in.bits(4), false, FMCDAO)
-    ConnectFMCGPIO(0, 15, extser.in.bits(3), false, FMCDAO)
-    ConnectFMCGPIO(0, 17, extser.in.bits(2), false, FMCDAO)
-    ConnectFMCGPIO(0, 19, extser.in.bits(1), false, FMCDAO)
-    ConnectFMCGPIO(0, 21, extser.in.bits(0), false, FMCDAO)
-    ConnectFMCGPIO(0, 23, extser.in.valid, false, FMCDAO)
-    ConnectFMCGPIO(0, 25, extser.out.ready, false, FMCDAO)
-    ConnectFMCGPIO(1, 17, extser.in.ready, true, FMCDAO)
-    val out_bits = Wire(Vec(8, Bool()))
-    ConnectFMCGPIO(1, 19, out_bits(7), true, FMCDAO)
-    ConnectFMCGPIO(1, 21, out_bits(6), true, FMCDAO)
-    ConnectFMCGPIO(1, 25, out_bits(5), true, FMCDAO)
-    ConnectFMCGPIO(1, 27, out_bits(4), true, FMCDAO)
-    ConnectFMCGPIO(1, 31, out_bits(3), true, FMCDAO)
-    ConnectFMCGPIO(1, 33, out_bits(2), true, FMCDAO)
-    ConnectFMCGPIO(1, 35, out_bits(1), true, FMCDAO)
-    ConnectFMCGPIO(1, 37, out_bits(0), true, FMCDAO)
-    extser.out.bits := out_bits.asUInt()
-    ConnectFMCGPIO(1, 39, extser.out.valid, true, FMCDAO)
+    case _ =>
+      ConnectFMCGPIO(0, 1, intern.sys_clk.asBool(), false, FMCSER)
+      intern.ChildClock.foreach{ a => PUT(a.asBool(), FMCSER.CLK_M2C_n(1)) }
+      intern.usbClk.foreach{ a => PUT(a.asBool(), FMCSER.CLK_M2C_n(1)) }
+      ConnectFMCGPIO(0, 27, intern.jrst_n, false, FMCSER)
+      ConnectFMCGPIO(1, 15, intern.rst_n, false, FMCSER)
+      intern.aclocks.foreach{ aclocks =>
+        // Only some of the aclocks are actually connected.
+        println("Connecting orphan clocks =>")
+        (aclocks zip intern.namedclocks).foreach{ case (aclk, nam) =>
+          println(s"  Detected clock ${nam}")
+          if(nam.contains("cryptobus")) {
+            println("    Connected to CLK_M2C_P(1) or SMA_CLK_P")
+            PUT(aclk.asBool(), FMCSER.CLK_M2C_p(1))
+          }
+          if(nam.contains("tile_0")) {
+            println("    Warning: Not connected")
+          }
+          if(nam.contains("tile_1")) {
+            println("    Warning: Not connected")
+          }
+        }
+      }
+      // ExtSerMem
+      intern.memser.foreach { memser =>
+        val in_bits = Wire(Vec(8, Bool()))
+        ConnectFMCGPIO(0, 31, in_bits(7), false, FMCSER)
+        ConnectFMCGPIO(0, 33, in_bits(6), false, FMCSER)
+        ConnectFMCGPIO(0, 35, in_bits(5), false, FMCSER)
+        ConnectFMCGPIO(0, 37, in_bits(4), false, FMCSER)
+        ConnectFMCGPIO(0, 39, in_bits(3), false, FMCSER)
+        ConnectFMCGPIO(1, 1, in_bits(2), false, FMCSER)
+        ConnectFMCGPIO(1, 5, in_bits(1), false, FMCSER)
+        ConnectFMCGPIO(1, 7, in_bits(0), false, FMCSER)
+        in_bits := memser.in.bits.asBools()
+        ConnectFMCGPIO(1, 9, memser.in.valid, false, FMCSER)
+        ConnectFMCGPIO(1, 13, memser.out.ready, false, FMCSER)
+        ConnectFMCGPIO(2, 5, memser.in.ready, true, FMCSER)
+        val out_bits = Wire(Vec(8, Bool()))
+        ConnectFMCGPIO(2, 7, out_bits(7), true, FMCSER)
+        ConnectFMCGPIO(2, 9, out_bits(6), true, FMCSER)
+        ConnectFMCGPIO(2, 13, out_bits(5), true, FMCSER)
+        ConnectFMCGPIO(2, 15, out_bits(4), true, FMCSER)
+        ConnectFMCGPIO(2, 17, out_bits(3), true, FMCSER)
+        ConnectFMCGPIO(2, 19, out_bits(2), true, FMCSER)
+        ConnectFMCGPIO(2, 21, out_bits(1), true, FMCSER)
+        ConnectFMCGPIO(2, 23, out_bits(0), true, FMCSER)
+        memser.out.bits := out_bits.asUInt()
+        ConnectFMCGPIO(2, 25, memser.out.valid, true, FMCSER)
+      }
+      // ExtSerBus
+      intern.extser.foreach{ extser =>
+        val in_bits = Wire(Vec(8, Bool()))
+        ConnectFMCGPIO(0, 5, in_bits(7), false, FMCSER)
+        ConnectFMCGPIO(0, 7, in_bits(6), false, FMCSER)
+        ConnectFMCGPIO(0, 9, in_bits(5), false, FMCSER)
+        ConnectFMCGPIO(0, 13, in_bits(4), false, FMCSER)
+        ConnectFMCGPIO(0, 15, in_bits(3), false, FMCSER)
+        ConnectFMCGPIO(0, 17, in_bits(2), false, FMCSER)
+        ConnectFMCGPIO(0, 19, in_bits(1), false, FMCSER)
+        ConnectFMCGPIO(0, 21, in_bits(0), false, FMCSER)
+        in_bits := extser.in.bits.asBools()
+        ConnectFMCGPIO(0, 23, extser.in.valid, false, FMCSER)
+        ConnectFMCGPIO(0, 25, extser.out.ready, false, FMCSER)
+        ConnectFMCGPIO(1, 17, extser.in.ready, true, FMCSER)
+        val out_bits = Wire(Vec(8, Bool()))
+        ConnectFMCGPIO(1, 19, out_bits(7), true, FMCSER)
+        ConnectFMCGPIO(1, 21, out_bits(6), true, FMCSER)
+        ConnectFMCGPIO(1, 25, out_bits(5), true, FMCSER)
+        ConnectFMCGPIO(1, 27, out_bits(4), true, FMCSER)
+        ConnectFMCGPIO(1, 31, out_bits(3), true, FMCSER)
+        ConnectFMCGPIO(1, 33, out_bits(2), true, FMCSER)
+        ConnectFMCGPIO(1, 35, out_bits(1), true, FMCSER)
+        ConnectFMCGPIO(1, 37, out_bits(0), true, FMCSER)
+        extser.out.bits := out_bits.asUInt()
+        ConnectFMCGPIO(1, 39, extser.out.valid, true, FMCSER)
+      }
   }
 
   // ******** Misc part ********
@@ -862,4 +960,205 @@ trait WithFPGATR5ToChipConnect extends WithFPGATR5InternNoChipCreate with WithFP
   ALT_IOBUF(SMA_CLKOUT_p, intern.sys_clk.asBool())
   intern.ChildClock.foreach(A => ALT_IOBUF(SMA_CLKOUT_n, A.asBool()))
   SD_CLK := false.B
+}
+
+// Trait which connects the FPGA the chip
+trait WithFPGATR5FromChipConnect extends WithFPGATR5PureConnect {
+  this: FPGATR5Shell =>
+  
+  // ******* Ahn-Dao section ******
+  def FMCSER = FMCD
+  def versionSer = 1
+  versionSer match {
+    case 1 =>
+      val MEMSER_GPIO = 0
+      val EXTSER_GPIO = 1
+      val sysclk = Wire(Bool())
+      ConnectFMCGPIO(MEMSER_GPIO, 1, sysclk,  true, FMCSER)
+      chip.sys_clk := sysclk.asClock()
+      chip.ChildClock.foreach{ a => ConnectFMCGPIO(MEMSER_GPIO, 2, a.asBool(),  true, FMCSER) }
+      chip.ChildClock.foreach{ a =>
+        val clkwire = Wire(Bool())
+        ConnectFMCGPIO(MEMSER_GPIO, 2, clkwire,  true, FMCSER)
+        a := clkwire.asClock()
+      }
+      chip.usb11hs.foreach{ a =>
+        val clkwire = Wire(Bool())
+        ConnectFMCGPIO(MEMSER_GPIO, 3, clkwire,  true, FMCSER)
+        a.usbClk := clkwire.asClock()
+      }
+      ConnectFMCGPIO(MEMSER_GPIO, 4, chip.jrst_n,  true, FMCSER)
+      ConnectFMCGPIO(MEMSER_GPIO, 5, chip.rst_n,  true, FMCSER)
+      chip.aclocks.foreach{ aclocks =>
+        // Only some of the aclocks are actually connected.
+        println("Connecting orphan clocks =>")
+        (aclocks zip namedclocks).foreach{ case (aclk, nam) =>
+          println(s"  Detected clock ${nam}")
+          aclk := sysclk.asClock()
+          if(nam.contains("cryptobus")) {
+            println(s"    Connected to GPIO${MEMSER_GPIO} - 6")
+            val clkwire = Wire(Bool())
+            ConnectFMCGPIO(MEMSER_GPIO, 6, clkwire,  true, FMCSER)
+            aclk := clkwire.asClock()
+          }
+          if(nam.contains("tile_0")) {
+            println(s"    Connected to GPIO${MEMSER_GPIO} - 7")
+            val clkwire = Wire(Bool())
+            ConnectFMCGPIO(MEMSER_GPIO, 7, clkwire,  true, FMCSER)
+          }
+          if(nam.contains("tile_1")) {
+            println(s"    Connected to GPIO${MEMSER_GPIO} - 8")
+            val clkwire = Wire(Bool())
+            ConnectFMCGPIO(MEMSER_GPIO, 8, clkwire,  true, FMCSER)
+            aclk := clkwire.asClock()
+          }
+        }
+      }
+      // ExtSerMem
+      chip.memser.foreach { memser =>
+        val in_bits = Wire(Vec(8, Bool()))
+        ConnectFMCGPIO(MEMSER_GPIO, 9, in_bits(7),  true, FMCSER)
+        ConnectFMCGPIO(MEMSER_GPIO, 10, in_bits(6),  true, FMCSER)
+        ConnectFMCGPIO(MEMSER_GPIO, 13, in_bits(5),  true, FMCSER)
+        ConnectFMCGPIO(MEMSER_GPIO, 14, in_bits(4),  true, FMCSER)
+        ConnectFMCGPIO(MEMSER_GPIO, 15, in_bits(3),  true, FMCSER)
+        ConnectFMCGPIO(MEMSER_GPIO, 16, in_bits(2),  true, FMCSER)
+        ConnectFMCGPIO(MEMSER_GPIO, 17, in_bits(1),  true, FMCSER)
+        ConnectFMCGPIO(MEMSER_GPIO, 18, in_bits(0),  true, FMCSER)
+        in_bits := memser.in.bits.asBools()
+        ConnectFMCGPIO(MEMSER_GPIO, 19, memser.in.valid,  true, FMCSER)
+        ConnectFMCGPIO(MEMSER_GPIO, 20, memser.out.ready,  true, FMCSER)
+        ConnectFMCGPIO(MEMSER_GPIO, 21, memser.in.ready,  false, FMCSER)
+        val out_bits = Wire(Vec(8, Bool()))
+        ConnectFMCGPIO(MEMSER_GPIO, 22, out_bits(7),  false, FMCSER)
+        ConnectFMCGPIO(MEMSER_GPIO, 23, out_bits(6),  false, FMCSER)
+        ConnectFMCGPIO(MEMSER_GPIO, 24, out_bits(5),  false, FMCSER)
+        ConnectFMCGPIO(MEMSER_GPIO, 25, out_bits(4),  false, FMCSER)
+        ConnectFMCGPIO(MEMSER_GPIO, 26, out_bits(3),  false, FMCSER)
+        ConnectFMCGPIO(MEMSER_GPIO, 27, out_bits(2),  false, FMCSER)
+        ConnectFMCGPIO(MEMSER_GPIO, 28, out_bits(1),  false, FMCSER)
+        ConnectFMCGPIO(MEMSER_GPIO, 31, out_bits(0),  false, FMCSER)
+        memser.out.bits := out_bits.asUInt()
+        ConnectFMCGPIO(MEMSER_GPIO, 32, memser.out.valid,  false, FMCSER)
+      }
+      // ExtSerBus
+      chip.extser.foreach{ extser =>
+        val in_bits = Wire(Vec(8, Bool()))
+        ConnectFMCGPIO(EXTSER_GPIO, 9, in_bits(7),  true, FMCSER)
+        ConnectFMCGPIO(EXTSER_GPIO, 10, in_bits(6),  true, FMCSER)
+        ConnectFMCGPIO(EXTSER_GPIO, 13, in_bits(5),  true, FMCSER)
+        ConnectFMCGPIO(EXTSER_GPIO, 14, in_bits(4),  true, FMCSER)
+        ConnectFMCGPIO(EXTSER_GPIO, 15, in_bits(3),  true, FMCSER)
+        ConnectFMCGPIO(EXTSER_GPIO, 16, in_bits(2),  true, FMCSER)
+        ConnectFMCGPIO(EXTSER_GPIO, 17, in_bits(1),  true, FMCSER)
+        ConnectFMCGPIO(EXTSER_GPIO, 18, in_bits(0),  true, FMCSER)
+        in_bits := extser.in.bits.asBools()
+        ConnectFMCGPIO(EXTSER_GPIO, 19, extser.in.valid,  true, FMCSER)
+        ConnectFMCGPIO(EXTSER_GPIO, 20, extser.out.ready,  true, FMCSER)
+        ConnectFMCGPIO(EXTSER_GPIO, 21, extser.in.ready,  false, FMCSER)
+        val out_bits = Wire(Vec(8, Bool()))
+        ConnectFMCGPIO(EXTSER_GPIO, 22, out_bits(7),  false, FMCSER)
+        ConnectFMCGPIO(EXTSER_GPIO, 23, out_bits(6),  false, FMCSER)
+        ConnectFMCGPIO(EXTSER_GPIO, 24, out_bits(5),  false, FMCSER)
+        ConnectFMCGPIO(EXTSER_GPIO, 25, out_bits(4),  false, FMCSER)
+        ConnectFMCGPIO(EXTSER_GPIO, 26, out_bits(3),  false, FMCSER)
+        ConnectFMCGPIO(EXTSER_GPIO, 27, out_bits(2),  false, FMCSER)
+        ConnectFMCGPIO(EXTSER_GPIO, 28, out_bits(1),  false, FMCSER)
+        ConnectFMCGPIO(EXTSER_GPIO, 31, out_bits(0),  false, FMCSER)
+        extser.out.bits := out_bits.asUInt()
+        ConnectFMCGPIO(EXTSER_GPIO, 32, extser.out.valid,  false, FMCSER)
+      }
+    case _ =>
+      val sysclk = Wire(Bool())
+      ConnectFMCGPIO(0, 1, sysclk,  true, FMCSER)
+      chip.sys_clk := sysclk.asClock()
+      chip.ChildClock.foreach{ a => a := GET(FMCSER.CLK_M2C_n(1)).asClock() }
+      chip.usb11hs.foreach{ a => a.usbClk := GET(FMCSER.CLK_M2C_n(1)).asClock() }
+      ConnectFMCGPIO(0, 27, chip.jrst_n,  true, FMCSER)
+      ConnectFMCGPIO(1, 15, chip.rst_n,  true, FMCSER)
+      chip.aclocks.foreach{ aclocks =>
+        // Only some of the aclocks are actually connected.
+        println("Connecting orphan clocks =>")
+        (aclocks zip namedclocks).foreach{ case (aclk, nam) =>
+          println(s"  Detected clock ${nam}")
+          aclk := sysclk.asClock()
+          if(nam.contains("cryptobus")) {
+            println("    Connected to CLK_M2C_P(1) or SMA_CLK_P")
+            aclk := GET(FMCSER.CLK_M2C_p(1)).asClock()
+          }
+          if(nam.contains("tile_0")) {
+            println("    Warning: Not connected")
+          }
+          if(nam.contains("tile_1")) {
+            println("    Warning: Not connected")
+          }
+        }
+      }
+      // ExtSerMem
+      chip.memser.foreach { memser =>
+        val in_bits = Wire(Vec(8, Bool()))
+        ConnectFMCGPIO(0, 31, in_bits(7),  true, FMCSER)
+        ConnectFMCGPIO(0, 33, in_bits(6),  true, FMCSER)
+        ConnectFMCGPIO(0, 35, in_bits(5),  true, FMCSER)
+        ConnectFMCGPIO(0, 37, in_bits(4),  true, FMCSER)
+        ConnectFMCGPIO(0, 39, in_bits(3),  true, FMCSER)
+        ConnectFMCGPIO(1, 1, in_bits(2),  true, FMCSER)
+        ConnectFMCGPIO(1, 5, in_bits(1),  true, FMCSER)
+        ConnectFMCGPIO(1, 7, in_bits(0),  true, FMCSER)
+        in_bits := memser.in.bits.asBools()
+        ConnectFMCGPIO(1, 9, memser.in.valid,  true, FMCSER)
+        ConnectFMCGPIO(1, 13, memser.out.ready,  true, FMCSER)
+        ConnectFMCGPIO(2, 5, memser.in.ready,  false, FMCSER)
+        val out_bits = Wire(Vec(8, Bool()))
+        ConnectFMCGPIO(2, 7, out_bits(7),  false, FMCSER)
+        ConnectFMCGPIO(2, 9, out_bits(6),  false, FMCSER)
+        ConnectFMCGPIO(2, 13, out_bits(5),  false, FMCSER)
+        ConnectFMCGPIO(2, 15, out_bits(4),  false, FMCSER)
+        ConnectFMCGPIO(2, 17, out_bits(3),  false, FMCSER)
+        ConnectFMCGPIO(2, 19, out_bits(2),  false, FMCSER)
+        ConnectFMCGPIO(2, 21, out_bits(1),  false, FMCSER)
+        ConnectFMCGPIO(2, 23, out_bits(0),  false, FMCSER)
+        memser.out.bits := out_bits.asUInt()
+        ConnectFMCGPIO(2, 25, memser.out.valid,  false, FMCSER)
+      }
+      // ExtSerBus
+      chip.extser.foreach{ extser =>
+        val in_bits = Wire(Vec(8, Bool()))
+        ConnectFMCGPIO(0, 5, in_bits(7),  true, FMCSER)
+        ConnectFMCGPIO(0, 7, in_bits(6),  true, FMCSER)
+        ConnectFMCGPIO(0, 9, in_bits(5),  true, FMCSER)
+        ConnectFMCGPIO(0, 13, in_bits(4),  true, FMCSER)
+        ConnectFMCGPIO(0, 15, in_bits(3),  true, FMCSER)
+        ConnectFMCGPIO(0, 17, in_bits(2),  true, FMCSER)
+        ConnectFMCGPIO(0, 19, in_bits(1),  true, FMCSER)
+        ConnectFMCGPIO(0, 21, in_bits(0),  true, FMCSER)
+        in_bits := extser.in.bits.asBools()
+        ConnectFMCGPIO(0, 23, extser.in.valid,  true, FMCSER)
+        ConnectFMCGPIO(0, 25, extser.out.ready,  true, FMCSER)
+        ConnectFMCGPIO(1, 17, extser.in.ready,  false, FMCSER)
+        val out_bits = Wire(Vec(8, Bool()))
+        ConnectFMCGPIO(1, 19, out_bits(7),  false, FMCSER)
+        ConnectFMCGPIO(1, 21, out_bits(6),  false, FMCSER)
+        ConnectFMCGPIO(1, 25, out_bits(5),  false, FMCSER)
+        ConnectFMCGPIO(1, 27, out_bits(4),  false, FMCSER)
+        ConnectFMCGPIO(1, 31, out_bits(3),  false, FMCSER)
+        ConnectFMCGPIO(1, 33, out_bits(2),  false, FMCSER)
+        ConnectFMCGPIO(1, 35, out_bits(1),  false, FMCSER)
+        ConnectFMCGPIO(1, 37, out_bits(0),  false, FMCSER)
+        extser.out.bits := out_bits.asUInt()
+        ConnectFMCGPIO(1, 39, extser.out.valid,  false, FMCSER)
+      }
+  }
+  DDR3_A := 0.U
+  DDR3_BA := 0.U
+  DDR3_CK := 0.U
+  DDR3_CK_n := 0.U
+  DDR3_CKE := 0.U
+  DDR3_CS_n := 0.U
+  DDR3_DM := 0.U
+  DDR3_RAS_n := 0.U
+  DDR3_CAS_n := 0.U
+  DDR3_WE_n := 0.U
+  DDR3_ODT := 0.U
+  DDR3_RESET_n := 0.U
 }

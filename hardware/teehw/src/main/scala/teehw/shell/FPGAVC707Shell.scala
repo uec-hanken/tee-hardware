@@ -731,9 +731,6 @@ trait WithFPGAVC707Connect extends WithFPGAVC707PureConnect
 
   // Platform connections (override)
   gpio_out := Cat(chip.gpio_out(chip.gpio_out.getWidth-1, 1), intern.init_calib_complete)
-  (chip.usb11hs zip intern.usbClk).foreach { case (chipport, uclk) =>
-    chipport.usbClk := uclk
-  }
 
   // PCIe (if available)
   chip.pciePorts.foreach{ case chipport =>

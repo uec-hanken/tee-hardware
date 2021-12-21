@@ -234,6 +234,10 @@ trait FPGAInternals {
     (chip.tlport zip tlport).foreach{ case (a, b) => b.a <> a.a; a.d <> b.d }
     // Asyncrhonoys clocks
     (chip.aclocks zip aclocks).foreach{ case (a, b) => (a zip b).foreach{ case (c, d) => c := d} }
+    // USB clock
+    (chip.usb11hs zip usbClk).foreach { case (chipport, uclk) =>
+      chipport.usbClk := uclk
+    }
   }
 }
 
@@ -284,6 +288,10 @@ class FPGATR4ToChip(implicit p :Parameters) extends FPGATR4Shell()(p)
   with WithFPGATR4ToChipConnect {
 }
 
+class FPGATR4FromChip(implicit p :Parameters) extends FPGATR4Shell()(p)
+  with HasTEEHWChip with WithFPGATR4FromChipConnect {
+}
+
 // ********************************************************************
 // FPGATR5 - Demo on TR5 FPGA board
 // ********************************************************************
@@ -293,4 +301,8 @@ class FPGATR5(implicit p :Parameters) extends FPGATR5Shell()(p)
 
 class FPGATR5ToChip(implicit p :Parameters) extends FPGATR5Shell()(p)
   with WithFPGATR5ToChipConnect {
+}
+
+class FPGATR5FromChip(implicit p :Parameters) extends FPGATR5Shell()(p)
+  with HasTEEHWChip with WithFPGATR5FromChipConnect {
 }

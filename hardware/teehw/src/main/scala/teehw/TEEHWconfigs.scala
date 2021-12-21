@@ -202,8 +202,7 @@ class TEEHWPeripherals extends Config((site, here, up) => {
 //    USB11HSParams(address = BigInt(0x64008000L)))
   case PeripheryRandomKey => List(
     RandomParams(address = BigInt(0x64009000L), impl = 1))
-  case PeripheryClockCtrlKey => List(
-    ClockCtrlParams(address = BigInt(0x64010000L)))
+  case PeripheryClockCtrlKey => List()
   // OpenTitan devices
   case PeripheryAESOTKey => List()
   case PeripheryHMACKey => List()

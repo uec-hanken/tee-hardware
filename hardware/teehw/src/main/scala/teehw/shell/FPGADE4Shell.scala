@@ -273,7 +273,7 @@ class FPGADE4Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConnect]
     }
     // The external bus (TODO: Doing nothing)
     (extser zip extserSourceBits).foreach { case (es, sourceBits) =>
-      val mod = Module(LazyModule(new FPGAMiniSystem(sourceBits)).module)
+      val mod = Module(LazyModule(new FPGAMiniSystemDummy(sourceBits)).module)
 
       // Serial port
       mod.serport.flipConnect(es)
@@ -347,9 +347,8 @@ trait WithFPGADE4Connect {
   // USB phy connections
   (chip.usb11hs zip intern.usbClk).foreach{ case (chipport, uclk) =>
     ALT_IOBUF(GPIO1_D(17), chipport.USBFullSpeed)
-    chipport.USBWireDataIn := ALT_IOBUF(GPIO1_D(24))
-    ALT_IOBUF(GPIO1_D(24), chipport.USBWireCtrlOut(0))
-    ALT_IOBUF(GPIO1_D(26), chipport.USBWireCtrlOut(1))
+    chipport.USBWireDataIn := Cat(ALT_IOBUF(GPIO1_D(24)), ALT_IOBUF(GPIO1_D(26)))
+    ALT_IOBUF(GPIO1_D(28), chipport.USBWireCtrlOut)
     ALT_IOBUF(GPIO1_D(16), chipport.USBWireDataOut(0))
     ALT_IOBUF(GPIO1_D(18), chipport.USBWireDataOut(1))
 
