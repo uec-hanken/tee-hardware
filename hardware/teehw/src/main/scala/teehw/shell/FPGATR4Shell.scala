@@ -3,15 +3,15 @@ package uec.teehardware.shell
 import chisel3._
 import chisel3.util._
 import chisel3.experimental.{Analog, IO, attach}
-import freechips.rocketchip.diplomacy.{AsynchronousCrossing, LazyModule}
-import freechips.rocketchip.util.ResetCatchAndSync
+import freechips.rocketchip.diplomacy._
+import freechips.rocketchip.util._
 import chipsalliance.rocketchip.config.Parameters
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.tilelink._
 import uec.teehardware.macros._
 import uec.teehardware._
 
-class HSMCTR4 extends Bundle {
+class HSMCTR4(val on1: Boolean = true, val on2: Boolean = true) extends Bundle {
   val CLKIN0 = Input(Bool())
   val CLKIN_n1 = Input(Bool())
   val CLKIN_n2 = Input(Bool())
@@ -19,10 +19,10 @@ class HSMCTR4 extends Bundle {
   val CLKIN_p2 = Input(Bool())
   val D = Vec(4, Analog(1.W))
   val OUT0 = Analog(1.W)
-  val OUT_n1 = Analog(1.W)
-  val OUT_n2 = Analog(1.W)
-  val OUT_p1 = Analog(1.W)
-  val OUT_p2 = Analog(1.W)
+  val OUT_n1 = on1.option(Analog(1.W))
+  val OUT_p1 = on1.option(Analog(1.W))
+  val OUT_n2 = on2.option(Analog(1.W))
+  val OUT_p2 = on2.option(Analog(1.W))
   val RX_n = Vec(17, Analog(1.W))
   val RX_p = Vec(17, Analog(1.W))
   val TX_n = Vec(17, Analog(1.W))
@@ -54,13 +54,13 @@ trait FPGATR4ChipShell {
   val GPIO1_D = IO(Vec(35+1, Analog(1.W)))
 
   //////////// HSMC_D //////////
-  val HSMD = IO(new HSMCTR4)
+  val HSMD = IO(new HSMCTR4(on1 = false))
 
   //////////// HSMC_E //////////
-  val HSME = IO(new HSMCTR4)
+  val HSME = IO(new HSMCTR4(on1 = false))
 
   //////////// HSMC_F //////////
-  val HSMF = IO(new HSMCTR4)
+  val HSMF = IO(new HSMCTR4(on1 = false, on2 = false))
 }
 
 trait FPGATR4ClockAndResetsAndDDR {
@@ -82,23 +82,24 @@ trait FPGATR4ClockAndResetsAndDDR {
   val BUTTON = IO(Input(Bits((3 + 1).W)))
 
   //////////// mem //////////
-  val mem_a = IO(Output(Bits((15 + 1).W)))
-  val mem_ba = IO(Output(Bits((2 + 1).W)))
-  val mem_cas_n = IO(Output(Bool()))
-  val mem_cke = IO(Output(Bits((1 + 1).W)))
-  val mem_ck = IO(Output(Bits((0 + 1).W))) // NOTE: Is impossible to do [0:0]
-  val mem_ck_n = IO(Output(Bits((0 + 1).W))) // NOTE: Is impossible to do [0:0]
-  val mem_cs_n = IO(Output(Bits((1 + 1).W)))
-  val mem_dm = IO(Output(Bits((7 + 1).W)))
-  val mem_dq = IO(Analog((63 + 1).W))
-  val mem_dqs = IO(Analog((7 + 1).W))
-  val mem_dqs_n = IO(Analog((7 + 1).W))
-  val mem_odt = IO(Output(Bits((1 + 1).W)))
-  val mem_ras_n = IO(Output(Bool()))
-  val mem_reset_n = IO(Output(Bool()))
-  val mem_we_n = IO(Output(Bool()))
-  val mem_oct_rdn = IO(Input(Bool()))
-  val mem_oct_rup = IO(Input(Bool()))
+  def memEnable: Boolean = true
+  val mem_a = memEnable.option(IO(Output(Bits((15 + 1).W))))
+  val mem_ba = memEnable.option(IO(Output(Bits((2 + 1).W))))
+  val mem_cas_n = memEnable.option(IO(Output(Bool())))
+  val mem_cke = memEnable.option(IO(Output(Bits((1 + 1).W))))
+  val mem_ck = memEnable.option(IO(Output(Bits((0 + 1).W)))) // NOTE: Is impossible to do [0:0]
+  val mem_ck_n = memEnable.option(IO(Output(Bits((0 + 1).W)))) // NOTE: Is impossible to do [0:0]
+  val mem_cs_n = memEnable.option(IO(Output(Bits((1 + 1).W))))
+  val mem_dm = memEnable.option(IO(Output(Bits((7 + 1).W))))
+  val mem_dq = memEnable.option(IO(Analog((63 + 1).W)))
+  val mem_dqs = memEnable.option(IO(Analog((7 + 1).W)))
+  val mem_dqs_n = memEnable.option(IO(Analog((7 + 1).W)))
+  val mem_odt = memEnable.option(IO(Output(Bits((1 + 1).W))))
+  val mem_ras_n = memEnable.option(IO(Output(Bool())))
+  val mem_reset_n = memEnable.option(IO(Output(Bool())))
+  val mem_we_n = memEnable.option(IO(Output(Bool())))
+  val mem_oct_rdn = memEnable.option(IO(Input(Bool())))
+  val mem_oct_rup = memEnable.option(IO(Input(Bool())))
   //val mem_scl = IO(Output(Bool()))
   //val mem_sda = IO(Analog(1.W))
   //val mem_event_n = IO(Input(Bool())) // NOTE: This also appeared, but is not used
@@ -186,23 +187,23 @@ class FPGATR4Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConnect]
 
     // Helper function to connect the DDR from the Quartus Platform
     def ConnectDDRUtil(mod_io_qport: QuartusIO) = {
-      mem_a := mod_io_qport.memory_mem_a
-      mem_ba := mod_io_qport.memory_mem_ba
-      mem_ck := mod_io_qport.memory_mem_ck(0) // Force only 1 line (although the config forces 1 line)
-      mem_ck_n := mod_io_qport.memory_mem_ck_n(0) // Force only 1 line (although the config forces 1 line)
-      mem_cke := mod_io_qport.memory_mem_cke
-      mem_cs_n := mod_io_qport.memory_mem_cs_n
-      mem_dm := mod_io_qport.memory_mem_dm
-      mem_ras_n := mod_io_qport.memory_mem_ras_n
-      mem_cas_n := mod_io_qport.memory_mem_cas_n
-      mem_we_n := mod_io_qport.memory_mem_we_n
-      attach(mem_dq, mod_io_qport.memory_mem_dq)
-      attach(mem_dqs, mod_io_qport.memory_mem_dqs)
-      attach(mem_dqs_n, mod_io_qport.memory_mem_dqs_n)
-      mem_odt := mod_io_qport.memory_mem_odt
-      mem_reset_n := mod_io_qport.memory_mem_reset_n.getOrElse(true.B)
-      mod_io_qport.oct.rdn.foreach(_ := mem_oct_rdn)
-      mod_io_qport.oct.rup.foreach(_ := mem_oct_rup)
+      mem_a.foreach(_ := mod_io_qport.memory_mem_a)
+      mem_ba.foreach(_ := mod_io_qport.memory_mem_ba)
+      mem_ck.foreach(_ := mod_io_qport.memory_mem_ck(0)) // Force only 1 line (although the config forces 1 line)
+      mem_ck_n.foreach(_ := mod_io_qport.memory_mem_ck_n(0)) // Force only 1 line (although the config forces 1 line)
+      mem_cke.foreach(_ := mod_io_qport.memory_mem_cke)
+      mem_cs_n.foreach(_ := mod_io_qport.memory_mem_cs_n)
+      mem_dm.foreach(_ := mod_io_qport.memory_mem_dm)
+      mem_ras_n.foreach(_ := mod_io_qport.memory_mem_ras_n)
+      mem_cas_n.foreach(_ := mod_io_qport.memory_mem_cas_n)
+      mem_we_n.foreach(_ := mod_io_qport.memory_mem_we_n)
+      mem_dq.foreach(attach(_, mod_io_qport.memory_mem_dq))
+      mem_dqs.foreach(attach(_, mod_io_qport.memory_mem_dqs))
+      mem_dqs_n.foreach( attach(_, mod_io_qport.memory_mem_dqs_n))
+      mem_odt.foreach(_ := mod_io_qport.memory_mem_odt)
+      mem_reset_n.foreach(_ := mod_io_qport.memory_mem_reset_n.getOrElse(true.B))
+      (mod_io_qport.oct.rdn zip mem_oct_rdn).foreach{case(a,b) => a := b}
+      (mod_io_qport.oct.rup zip mem_oct_rup).foreach{case(a,b) => a := b}
     }
 
     val ddrcfg = QuartusDDRConfig(size_ck = 1, is_reset = true)
@@ -299,23 +300,23 @@ trait WithFPGATR4InternConnect {
   attach(SMA_CLKOUT_n, intern.SMA_CLKOUT_n)
   attach(SMA_CLKOUT_p, intern.SMA_CLKOUT_p)
 
-  mem_a := intern.mem_a
-  mem_ba := intern.mem_ba
-  mem_ck := intern.mem_ck
-  mem_ck_n := intern.mem_ck_n
-  mem_cke := intern.mem_cke
-  mem_cs_n := intern.mem_cs_n
-  mem_dm := intern.mem_dm
-  mem_ras_n := intern.mem_ras_n
-  mem_cas_n := intern.mem_cas_n
-  mem_we_n := intern.mem_we_n
-  attach(mem_dq, intern.mem_dq)
-  attach(mem_dqs, intern.mem_dqs)
-  attach(mem_dqs_n, intern.mem_dqs_n)
-  mem_odt := intern.mem_odt
-  mem_reset_n := intern.mem_reset_n
-  intern.mem_oct_rdn := mem_oct_rdn
-  intern.mem_oct_rup := mem_oct_rup
+  (mem_a zip intern.mem_a).foreach{case (a,b) => a := b}
+  (mem_ba zip intern.mem_ba).foreach{case (a,b) => a := b}
+  (mem_ck zip intern.mem_ck).foreach{case (a,b) => a := b}
+  (mem_ck_n zip intern.mem_ck_n).foreach{case (a,b) => a := b}
+  (mem_cke zip intern.mem_cke).foreach{case (a,b) => a := b}
+  (mem_cs_n zip intern.mem_cs_n).foreach{case (a,b) => a := b}
+  (mem_dm zip intern.mem_dm).foreach{case (a,b) => a := b}
+  (mem_ras_n zip intern.mem_ras_n).foreach{case (a,b) => a := b}
+  (mem_cas_n zip intern.mem_cas_n).foreach{case (a,b) => a := b}
+  (mem_we_n zip intern.mem_we_n).foreach{case (a,b) => a := b}
+  (mem_dq zip intern.mem_dq).foreach{case (a,b) => attach(a,b)}
+  (mem_dqs zip intern.mem_dqs).foreach{case (a,b) => attach(a,b)}
+  (mem_dqs_n zip intern.mem_dqs_n).foreach{case (a,b) => attach(a,b)}
+  (mem_odt zip intern.mem_odt).foreach{case (a,b) => a := b}
+  (mem_reset_n zip intern.mem_reset_n).foreach{case (a,b) => a := b}
+  (mem_oct_rdn zip intern.mem_oct_rdn).foreach{case (a,b) => b := a}
+  (mem_oct_rup zip intern.mem_oct_rup).foreach{case (a,b) => b := a}
 }
 
 trait WithFPGATR4PureConnect {
@@ -398,9 +399,9 @@ object ConnectHSMCGPIO {
           case 13 => if(get) c := ALT_IOBUF(HSMC.RX_n(13)) else ALT_IOBUF(HSMC.RX_n(13), c)
           case 14 => if(get) c := ALT_IOBUF(HSMC.TX_p(14)) else ALT_IOBUF(HSMC.TX_p(14), c)
           case 15 => if(get) c := ALT_IOBUF(HSMC.RX_p(13)) else ALT_IOBUF(HSMC.RX_p(13), c)
-          case 16 => if(get) c := ALT_IOBUF(HSMC.OUT_n2) else ALT_IOBUF(HSMC.OUT_n2, c)
+          case 16 => if(get) c := ALT_IOBUF(HSMC.OUT_n2.get) else ALT_IOBUF(HSMC.OUT_n2.get, c)
           case 17 => if(get) c := ALT_IOBUF(HSMC.RX_n(12)) else ALT_IOBUF(HSMC.RX_n(12), c)
-          case 18 => if(get) c := ALT_IOBUF(HSMC.OUT_p2) else ALT_IOBUF(HSMC.OUT_p2, c)
+          case 18 => if(get) c := ALT_IOBUF(HSMC.OUT_p2.get) else ALT_IOBUF(HSMC.OUT_p2.get, c)
           case 19 => if(get) c := ALT_IOBUF(HSMC.RX_p(12)) else ALT_IOBUF(HSMC.RX_p(12), c)
           case 20 => if(get) c := ALT_IOBUF(HSMC.TX_n(13)) else ALT_IOBUF(HSMC.TX_n(13), c)
           case 21 => if(get) c := ALT_IOBUF(HSMC.RX_n(11)) else ALT_IOBUF(HSMC.RX_n(11), c)
@@ -438,9 +439,9 @@ object ConnectHSMCGPIO {
           case 13 => if(get) c := ALT_IOBUF(HSMC.RX_n(4)) else ALT_IOBUF(HSMC.RX_n(4), c)
           case 14 => if(get) c := ALT_IOBUF(HSMC.TX_p(5)) else ALT_IOBUF(HSMC.TX_p(5), c)
           case 15 => if(get) c := ALT_IOBUF(HSMC.RX_p(4)) else ALT_IOBUF(HSMC.RX_p(4), c)
-          case 16 => if(get) c := ALT_IOBUF(HSMC.OUT_n1) else ALT_IOBUF(HSMC.OUT_n1, c)
+          case 16 => if(get) c := ALT_IOBUF(HSMC.OUT_n1.get) else ALT_IOBUF(HSMC.OUT_n1.get, c)
           case 17 => if(get) c := ALT_IOBUF(HSMC.RX_n(3)) else ALT_IOBUF(HSMC.RX_n(3), c)
-          case 18 => if(get) c := ALT_IOBUF(HSMC.OUT_p1) else ALT_IOBUF(HSMC.OUT_p1, c)
+          case 18 => if(get) c := ALT_IOBUF(HSMC.OUT_p1.get) else ALT_IOBUF(HSMC.OUT_p1.get, c)
           case 19 => if(get) c := ALT_IOBUF(HSMC.RX_p(3)) else ALT_IOBUF(HSMC.RX_p(3), c)
           case 20 => if(get) c := ALT_IOBUF(HSMC.TX_n(4)) else ALT_IOBUF(HSMC.TX_n(4), c)
           case 21 => if(get) c := ALT_IOBUF(HSMC.RX_n(2)) else ALT_IOBUF(HSMC.RX_n(2), c)
@@ -769,6 +770,8 @@ trait WithFPGATR4ToChipConnect extends WithFPGATR4InternNoChipCreate with WithFP
 trait WithFPGATR4FromChipConnect extends WithFPGATR4PureConnect {
   this: FPGATR4Shell =>
 
+  override def memEnable = false // No memory interface in this version
+
   // ******* Ahn-Dao section ******
   def HSMCSER = HSMA
   def versionSer = 1
@@ -871,16 +874,4 @@ trait WithFPGATR4FromChipConnect extends WithFPGATR4PureConnect {
         ConnectHSMCGPIO(EXTSER_GPIO, 32, extser.out.valid,  false, HSMCSER)
       }
   }
-  mem_a := 0.U
-  mem_ba := 0.U
-  mem_cas_n := false.B
-  mem_cke := 0.U
-  mem_ck := 0.U
-  mem_ck_n := 0.U
-  mem_cs_n := 0.U
-  mem_dm := 0.U
-  mem_odt := 0.U
-  mem_ras_n := 0.U
-  mem_reset_n := 0.U
-  mem_we_n := 0.U
 }

@@ -106,26 +106,27 @@ trait FPGATR5ClockAndResetsAndDDR {
   val BUTTON = IO(Input(Bits((3 + 1).W)))
 
   //////////// DDR3 //////////
-  val DDR3_REFCLK_p = IO(Input(Clock()))
-  val DDR3_A = IO(Output(Bits((15 + 1).W)))
-  val DDR3_BA = IO(Output(Bits((2 + 1).W)))
-  val DDR3_CK = IO(Output(Bits((1 + 1).W)))
-  val DDR3_CK_n = IO(Output(Bits((1 + 1).W)))
-  val DDR3_CKE = IO(Output(Bits((1 + 1).W)))
-  val DDR3_DQS = IO(Analog((7 + 1).W))
-  val DDR3_DQS_n = IO(Analog((7 + 1).W))
-  val DDR3_DQ = IO(Analog((63 + 1).W))
-  val DDR3_DM = IO(Output(Bits((7 + 1).W)))
-  val DDR3_CS_n = IO(Output(Bits((1 + 1).W)))
-  val DDR3_WE_n = IO(Output(Bool()))
-  val DDR3_RAS_n = IO(Output(Bool()))
-  val DDR3_CAS_n = IO(Output(Bool()))
-  val DDR3_RESET_n = IO(Output(Bool()))
-  val DDR3_ODT = IO(Output(Bits((1 + 1).W)))
-  val DDR3_EVENT_n = IO(Input(Bool()))
-  //val DDR3_SCL = IO(Analog(1.W))
-  //val DDR3_SDA_n = IO(Analog(1.W))
-  val RZQ_DDR3 = IO(Input(Bool()))
+  def memEnable: Boolean = true
+  val DDR3_REFCLK_p = memEnable.option(IO(Input(Clock())))
+  val DDR3_A = memEnable.option(IO(Output(Bits((15 + 1).W))))
+  val DDR3_BA = memEnable.option(IO(Output(Bits((2 + 1).W))))
+  val DDR3_CK = memEnable.option(IO(Output(Bits((1 + 1).W))))
+  val DDR3_CK_n = memEnable.option(IO(Output(Bits((1 + 1).W))))
+  val DDR3_CKE = memEnable.option(IO(Output(Bits((1 + 1).W))))
+  val DDR3_DQS = memEnable.option(IO(Analog((7 + 1).W)))
+  val DDR3_DQS_n = memEnable.option(IO(Analog((7 + 1).W)))
+  val DDR3_DQ = memEnable.option(IO(Analog((63 + 1).W)))
+  val DDR3_DM = memEnable.option(IO(Output(Bits((7 + 1).W))))
+  val DDR3_CS_n = memEnable.option(IO(Output(Bits((1 + 1).W))))
+  val DDR3_WE_n = memEnable.option(IO(Output(Bool())))
+  val DDR3_RAS_n = memEnable.option(IO(Output(Bool())))
+  val DDR3_CAS_n = memEnable.option(IO(Output(Bool())))
+  val DDR3_RESET_n = memEnable.option(IO(Output(Bool())))
+  val DDR3_ODT = memEnable.option(IO(Output(Bits((1 + 1).W))))
+  val DDR3_EVENT_n = memEnable.option(IO(Input(Bool())))
+  //val DDR3_SCL = memEnable.option(IO(Analog(1.W)))
+  //val DDR3_SDA_n = memEnable.option(IO(Analog(1.W)))
+  val RZQ_DDR3 = memEnable.option(IO(Input(Bool())))
 
   val SMA_CLKIN_p = IO(Input(Clock()))
   val SMA_CLKIN_n = IO(Input(Clock()))
@@ -215,22 +216,22 @@ class FPGATR5Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConnect]
 
     // Helper function to connect the DDR from the Quartus Platform
     def ConnectDDRUtil(mod_io_qport: QuartusIO) = {
-      DDR3_A := mod_io_qport.memory_mem_a
-      DDR3_BA := mod_io_qport.memory_mem_ba
-      DDR3_CK := mod_io_qport.memory_mem_ck
-      DDR3_CK_n := mod_io_qport.memory_mem_ck_n
-      DDR3_CKE := mod_io_qport.memory_mem_cke
-      DDR3_CS_n := mod_io_qport.memory_mem_cs_n
-      DDR3_DM := mod_io_qport.memory_mem_dm
-      DDR3_RAS_n := mod_io_qport.memory_mem_ras_n
-      DDR3_CAS_n := mod_io_qport.memory_mem_cas_n
-      DDR3_WE_n := mod_io_qport.memory_mem_we_n
-      attach(DDR3_DQ, mod_io_qport.memory_mem_dq)
-      attach(DDR3_DQS, mod_io_qport.memory_mem_dqs)
-      attach(DDR3_DQS_n, mod_io_qport.memory_mem_dqs_n)
-      DDR3_ODT := mod_io_qport.memory_mem_odt
-      DDR3_RESET_n := mod_io_qport.memory_mem_reset_n.getOrElse(true.B)
-      mod_io_qport.oct.rzqin.foreach(_ := RZQ_DDR3)
+      DDR3_A.foreach(_ := mod_io_qport.memory_mem_a)
+      DDR3_BA.foreach(_ := mod_io_qport.memory_mem_ba)
+      DDR3_CK.foreach(_ := mod_io_qport.memory_mem_ck)
+      DDR3_CK_n.foreach(_ := mod_io_qport.memory_mem_ck_n)
+      DDR3_CKE.foreach(_ := mod_io_qport.memory_mem_cke)
+      DDR3_CS_n.foreach(_ := mod_io_qport.memory_mem_cs_n)
+      DDR3_DM.foreach(_ := mod_io_qport.memory_mem_dm)
+      DDR3_RAS_n.foreach(_ := mod_io_qport.memory_mem_ras_n)
+      DDR3_CAS_n.foreach(_ := mod_io_qport.memory_mem_cas_n)
+      DDR3_WE_n.foreach(_ := mod_io_qport.memory_mem_we_n)
+      DDR3_DQ.foreach(attach(_, mod_io_qport.memory_mem_dq))
+      DDR3_DQS.foreach(attach(_, mod_io_qport.memory_mem_dqs))
+      DDR3_DQS_n.foreach(attach(_, mod_io_qport.memory_mem_dqs_n))
+      DDR3_ODT.foreach(_ := mod_io_qport.memory_mem_odt)
+      DDR3_RESET_n.foreach(_ := mod_io_qport.memory_mem_reset_n.getOrElse(true.B))
+      (mod_io_qport.oct.rzqin zip RZQ_DDR3).foreach{case (a,b) => a := b}
     }
 
     val ddrcfg = QuartusDDRConfig(
@@ -346,24 +347,24 @@ trait WithFPGATR5InternConnect {
   attach(SMA_CLKOUT_p, intern.SMA_CLKOUT_p)
   attach(SMA_CLKOUT_n, intern.SMA_CLKOUT_n)
 
-  intern.DDR3_REFCLK_p := DDR3_REFCLK_p // TODO: Not actually used
-  intern.DDR3_EVENT_n := DDR3_EVENT_n // TODO: Not actually used
-  DDR3_A := intern.DDR3_A
-  DDR3_BA := intern.DDR3_BA
-  DDR3_CK := intern.DDR3_CK
-  DDR3_CK_n := intern.DDR3_CK_n
-  DDR3_CKE := intern.DDR3_CKE
-  DDR3_CS_n := intern.DDR3_CS_n
-  DDR3_DM := intern.DDR3_DM
-  DDR3_RAS_n := intern.DDR3_RAS_n
-  DDR3_CAS_n := intern.DDR3_CAS_n
-  DDR3_WE_n := intern.DDR3_WE_n
-  attach(DDR3_DQ, intern.DDR3_DQ)
-  attach(DDR3_DQS, intern.DDR3_DQS)
-  attach(DDR3_DQS_n, intern.DDR3_DQS_n)
-  DDR3_ODT := intern.DDR3_ODT
-  DDR3_RESET_n := intern.DDR3_RESET_n
-  intern.RZQ_DDR3 := RZQ_DDR3
+  (DDR3_REFCLK_p zip intern.DDR3_REFCLK_p).foreach{case (a,b) => b := a} // TODO: Not actually used
+  (DDR3_EVENT_n zip intern.DDR3_EVENT_n).foreach{case (a,b) => b := a} // TODO: Not actually used
+  (DDR3_A zip intern.DDR3_A).foreach{case (a,b) => a := b}
+  (DDR3_BA zip intern.DDR3_BA).foreach{case (a,b) => a := b}
+  (DDR3_CK zip intern.DDR3_CK).foreach{case (a,b) => a := b}
+  (DDR3_CK_n zip intern.DDR3_CK_n).foreach{case (a,b) => a := b}
+  (DDR3_CKE zip intern.DDR3_CKE).foreach{case (a,b) => a := b}
+  (DDR3_CS_n zip intern.DDR3_CS_n).foreach{case (a,b) => a := b}
+  (DDR3_DM zip intern.DDR3_DM).foreach{case (a,b) => a := b}
+  (DDR3_RAS_n zip intern.DDR3_RAS_n).foreach{case (a,b) => a := b}
+  (DDR3_CAS_n zip intern.DDR3_CAS_n).foreach{case (a,b) => a := b}
+  (DDR3_WE_n zip intern.DDR3_WE_n).foreach{case (a,b) => a := b}
+  (DDR3_DQ zip intern.DDR3_DQ).foreach{case (a,b) => attach(a,b)}
+  (DDR3_DQS zip intern.DDR3_DQS).foreach{case (a,b) => attach(a,b)}
+  (DDR3_DQS_n zip intern.DDR3_DQS_n).foreach{case (a,b) => attach(a,b)}
+  (DDR3_ODT zip intern.DDR3_ODT).foreach{case (a,b) => a := b}
+  (DDR3_RESET_n zip intern.DDR3_RESET_n).foreach{case (a,b) => a := b}
+  (RZQ_DDR3 zip intern.RZQ_DDR3).foreach{case (a,b) => b := a}
 }
 
 trait WithFPGATR5PureConnect {
@@ -784,7 +785,7 @@ trait WithFPGATR5ToChipConnect extends WithFPGATR5InternNoChipCreate with WithFP
   }
 
   // ******* Ahn-Dao section ******
-  def FMCSER = FMCD
+  def FMCSER = FMCA
   def versionSer = 1
   versionSer match {
     case 1 =>
@@ -967,7 +968,7 @@ trait WithFPGATR5FromChipConnect extends WithFPGATR5PureConnect {
   this: FPGATR5Shell =>
   
   // ******* Ahn-Dao section ******
-  def FMCSER = FMCD
+  def FMCSER = FMCA
   def versionSer = 1
   versionSer match {
     case 1 =>
@@ -1149,16 +1150,4 @@ trait WithFPGATR5FromChipConnect extends WithFPGATR5PureConnect {
         ConnectFMCGPIO(1, 39, extser.out.valid,  false, FMCSER)
       }
   }
-  DDR3_A := 0.U
-  DDR3_BA := 0.U
-  DDR3_CK := 0.U
-  DDR3_CK_n := 0.U
-  DDR3_CKE := 0.U
-  DDR3_CS_n := 0.U
-  DDR3_DM := 0.U
-  DDR3_RAS_n := 0.U
-  DDR3_CAS_n := 0.U
-  DDR3_WE_n := 0.U
-  DDR3_ODT := 0.U
-  DDR3_RESET_n := 0.U
 }
