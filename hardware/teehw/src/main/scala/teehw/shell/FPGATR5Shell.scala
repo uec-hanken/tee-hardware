@@ -791,30 +791,12 @@ trait WithFPGATR5ToChipConnect extends WithFPGATR5InternNoChipCreate with WithFP
     case 1 =>
       val MEMSER_GPIO = 0
       val EXTSER_GPIO = 1
-      ConnectFMCGPIO(MEMSER_GPIO, 1, intern.sys_clk.asBool(), false, FMCSER)
-      intern.ChildClock.foreach{ a => ConnectFMCGPIO(MEMSER_GPIO, 2, a.asBool(), false, FMCSER) }
-      intern.usbClk.foreach{ a => ConnectFMCGPIO(MEMSER_GPIO, 3, a.asBool(), false, FMCSER) }
+      PUT(intern.sys_clk.asBool(), FMCSER.CLK_M2C_p(1))
+      //ConnectFMCGPIO(MEMSER_GPIO, 1, intern.sys_clk.asBool(), false, FMCSER) //
+      //intern.ChildClock.foreach{ a => ConnectFMCGPIO(MEMSER_GPIO, 2, a.asBool(), false, FMCSER) }
+      //intern.usbClk.foreach{ a => ConnectFMCGPIO(MEMSER_GPIO, 3, a.asBool(), false, FMCSER) }
       ConnectFMCGPIO(MEMSER_GPIO, 4, intern.jrst_n, false, FMCSER)
       ConnectFMCGPIO(MEMSER_GPIO, 5, intern.rst_n, false, FMCSER)
-      intern.aclocks.foreach{ aclocks =>
-        // Only some of the aclocks are actually connected.
-        println("Connecting orphan clocks =>")
-        (aclocks zip intern.namedclocks).foreach{ case (aclk, nam) =>
-          println(s"  Detected clock ${nam}")
-          if(nam.contains("cryptobus")) {
-            println(s"    Connected to GPIO${MEMSER_GPIO} - 6")
-            ConnectFMCGPIO(MEMSER_GPIO, 6, aclk.asBool(), false, FMCSER)
-          }
-          if(nam.contains("tile_0")) {
-            println(s"    Connected to GPIO${MEMSER_GPIO} - 7")
-            ConnectFMCGPIO(MEMSER_GPIO, 7, aclk.asBool(), false, FMCSER)
-          }
-          if(nam.contains("tile_1")) {
-            println(s"    Connected to GPIO${MEMSER_GPIO} - 8")
-            ConnectFMCGPIO(MEMSER_GPIO, 8, aclk.asBool(), false, FMCSER)
-          }
-        }
-      }
       // ExtSerMem
       intern.memser.foreach { memser =>
         val in_bits = Wire(Vec(8, Bool()))
@@ -875,23 +857,6 @@ trait WithFPGATR5ToChipConnect extends WithFPGATR5InternNoChipCreate with WithFP
       intern.usbClk.foreach{ a => PUT(a.asBool(), FMCSER.CLK_M2C_n(1)) }
       ConnectFMCGPIO(0, 27, intern.jrst_n, false, FMCSER)
       ConnectFMCGPIO(1, 15, intern.rst_n, false, FMCSER)
-      intern.aclocks.foreach{ aclocks =>
-        // Only some of the aclocks are actually connected.
-        println("Connecting orphan clocks =>")
-        (aclocks zip intern.namedclocks).foreach{ case (aclk, nam) =>
-          println(s"  Detected clock ${nam}")
-          if(nam.contains("cryptobus")) {
-            println("    Connected to CLK_M2C_P(1) or SMA_CLK_P")
-            PUT(aclk.asBool(), FMCSER.CLK_M2C_p(1))
-          }
-          if(nam.contains("tile_0")) {
-            println("    Warning: Not connected")
-          }
-          if(nam.contains("tile_1")) {
-            println("    Warning: Not connected")
-          }
-        }
-      }
       // ExtSerMem
       intern.memser.foreach { memser =>
         val in_bits = Wire(Vec(8, Bool()))
@@ -959,7 +924,9 @@ trait WithFPGATR5ToChipConnect extends WithFPGATR5InternNoChipCreate with WithFP
   )
   // Clocks to the outside
   ALT_IOBUF(SMA_CLKOUT_p, intern.sys_clk.asBool())
+  // NOTE: ChildClock and usbClk cannot exist at the same time
   intern.ChildClock.foreach(A => ALT_IOBUF(SMA_CLKOUT_n, A.asBool()))
+  intern.usbClk.foreach(A => ALT_IOBUF(SMA_CLKOUT_n, A.asBool()))
   SD_CLK := false.B
 }
 
@@ -975,46 +942,20 @@ trait WithFPGATR5FromChipConnect extends WithFPGATR5PureConnect {
       val MEMSER_GPIO = 0
       val EXTSER_GPIO = 1
       val sysclk = Wire(Bool())
-      ConnectFMCGPIO(MEMSER_GPIO, 1, sysclk,  true, FMCSER)
+      sysclk := ALT_IOBUF(SMA_CLKOUT_p) // ConnectFMCGPIO(MEMSER_GPIO, 1, sysclk,  true, FMCSER)
       chip.sys_clk := sysclk.asClock()
-      chip.ChildClock.foreach{ a => ConnectFMCGPIO(MEMSER_GPIO, 2, a.asBool(),  true, FMCSER) }
       chip.ChildClock.foreach{ a =>
         val clkwire = Wire(Bool())
-        ConnectFMCGPIO(MEMSER_GPIO, 2, clkwire,  true, FMCSER)
+        clkwire := ALT_IOBUF(SMA_CLKOUT_n) // ConnectFMCGPIO(MEMSER_GPIO, 2, clkwire,  true, FMCSER)
         a := clkwire.asClock()
       }
       chip.usb11hs.foreach{ a =>
         val clkwire = Wire(Bool())
-        ConnectFMCGPIO(MEMSER_GPIO, 3, clkwire,  true, FMCSER)
+        clkwire := ALT_IOBUF(SMA_CLKOUT_n) // ConnectFMCGPIO(MEMSER_GPIO, 3, clkwire,  true, FMCSER)
         a.usbClk := clkwire.asClock()
       }
       ConnectFMCGPIO(MEMSER_GPIO, 4, chip.jrst_n,  true, FMCSER)
       ConnectFMCGPIO(MEMSER_GPIO, 5, chip.rst_n,  true, FMCSER)
-      chip.aclocks.foreach{ aclocks =>
-        // Only some of the aclocks are actually connected.
-        println("Connecting orphan clocks =>")
-        (aclocks zip namedclocks).foreach{ case (aclk, nam) =>
-          println(s"  Detected clock ${nam}")
-          aclk := sysclk.asClock()
-          if(nam.contains("cryptobus")) {
-            println(s"    Connected to GPIO${MEMSER_GPIO} - 6")
-            val clkwire = Wire(Bool())
-            ConnectFMCGPIO(MEMSER_GPIO, 6, clkwire,  true, FMCSER)
-            aclk := clkwire.asClock()
-          }
-          if(nam.contains("tile_0")) {
-            println(s"    Connected to GPIO${MEMSER_GPIO} - 7")
-            val clkwire = Wire(Bool())
-            ConnectFMCGPIO(MEMSER_GPIO, 7, clkwire,  true, FMCSER)
-          }
-          if(nam.contains("tile_1")) {
-            println(s"    Connected to GPIO${MEMSER_GPIO} - 8")
-            val clkwire = Wire(Bool())
-            ConnectFMCGPIO(MEMSER_GPIO, 8, clkwire,  true, FMCSER)
-            aclk := clkwire.asClock()
-          }
-        }
-      }
       // ExtSerMem
       chip.memser.foreach { memser =>
         val in_bits = Wire(Vec(8, Bool()))
@@ -1077,24 +1018,6 @@ trait WithFPGATR5FromChipConnect extends WithFPGATR5PureConnect {
       chip.usb11hs.foreach{ a => a.usbClk := GET(FMCSER.CLK_M2C_n(1)).asClock() }
       ConnectFMCGPIO(0, 27, chip.jrst_n,  true, FMCSER)
       ConnectFMCGPIO(1, 15, chip.rst_n,  true, FMCSER)
-      chip.aclocks.foreach{ aclocks =>
-        // Only some of the aclocks are actually connected.
-        println("Connecting orphan clocks =>")
-        (aclocks zip namedclocks).foreach{ case (aclk, nam) =>
-          println(s"  Detected clock ${nam}")
-          aclk := sysclk.asClock()
-          if(nam.contains("cryptobus")) {
-            println("    Connected to CLK_M2C_P(1) or SMA_CLK_P")
-            aclk := GET(FMCSER.CLK_M2C_p(1)).asClock()
-          }
-          if(nam.contains("tile_0")) {
-            println("    Warning: Not connected")
-          }
-          if(nam.contains("tile_1")) {
-            println("    Warning: Not connected")
-          }
-        }
-      }
       // ExtSerMem
       chip.memser.foreach { memser =>
         val in_bits = Wire(Vec(8, Bool()))
