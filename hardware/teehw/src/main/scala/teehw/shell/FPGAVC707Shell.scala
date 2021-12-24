@@ -628,6 +628,7 @@ object ConnectFMCXilinxGPIO {
 class FPGAVC707InternalNoChip
 (
   val idBits: Int = 4,
+  val idExtBits: Int = 3,
   val widthBits: Int = 32,
   val sinkBits: Int = 1
 )(implicit p :Parameters) extends FPGAVC707Internal(None)(p) {
@@ -646,7 +647,7 @@ class FPGAVC707InternalNoChip
       false)}
   override def aclkn: Option[Int] = p(ExposeClocks).option(3)
   override def memserSourceBits: Option[Int] = p(ExtSerMem).map( A => idBits )
-  override def extserSourceBits: Option[Int] = p(ExtSerBus).map( A => idBits )
+  override def extserSourceBits: Option[Int] = p(ExtSerBus).map( A => idExtBits )
   override def namedclocks: Seq[String] = if(p(ExposeClocks)) Seq("cryptobus", "tile_0", "tile_1") else Seq()
 }
 
@@ -659,9 +660,10 @@ trait WithFPGAVC707InternCreate {
 trait WithFPGAVC707InternNoChipCreate {
   this: FPGAVC707Shell =>
   def idBits = 4
+  def idExtBits = 4
   def widthBits = 32
   def sinkBits = 1
-  val intern = Module(new FPGAVC707InternalNoChip(idBits, widthBits, sinkBits))
+  val intern = Module(new FPGAVC707InternalNoChip(idBits, idExtBits, widthBits, sinkBits))
 }
 
 trait WithFPGAVC707InternConnect {

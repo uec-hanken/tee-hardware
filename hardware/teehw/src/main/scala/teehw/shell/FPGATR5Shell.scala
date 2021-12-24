@@ -293,6 +293,7 @@ class FPGATR5Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConnect]
 class FPGATR5InternalNoChip
 (
   val idBits: Int = 6,
+  val idExtBits: Int = 6,
   val widthBits: Int = 32,
   val sinkBits: Int = 1
 )(implicit p :Parameters) extends FPGATR5Internal(None)(p) {
@@ -310,7 +311,7 @@ class FPGATR5InternalNoChip
       false)}
   override def aclkn: Option[Int] = p(ExposeClocks).option(3)
   override def memserSourceBits: Option[Int] = p(ExtSerMem).map( A => idBits )
-  override def extserSourceBits: Option[Int] = p(ExtSerBus).map( A => idBits )
+  override def extserSourceBits: Option[Int] = p(ExtSerBus).map( A => idExtBits )
   override def namedclocks: Seq[String] = if(p(ExposeClocks)) Seq("cryptobus", "tile_0", "tile_1") else Seq()
 }
 
@@ -323,9 +324,10 @@ trait WithFPGATR5InternCreate {
 trait WithFPGATR5InternNoChipCreate {
   this: FPGATR5Shell =>
   def idBits = 6
+  def idExtBits = 6
   def widthBits = 32
   def sinkBits = 1
-  val intern = Module(new FPGATR5InternalNoChip(idBits, widthBits, sinkBits))
+  val intern = Module(new FPGATR5InternalNoChip(idBits, idExtBits, widthBits, sinkBits))
 }
 
 trait WithFPGATR5InternConnect {
@@ -787,6 +789,8 @@ trait WithFPGATR5ToChipConnect extends WithFPGATR5InternNoChipCreate with WithFP
   // ******* Ahn-Dao section ******
   def FMCSER = FMCA
   def versionSer = 1
+  override def idBits: Int = 5
+  override def idExtBits: Int = 3 // TODO: Make it depend on configs
   versionSer match {
     case 1 =>
       val MEMSER_GPIO = 0

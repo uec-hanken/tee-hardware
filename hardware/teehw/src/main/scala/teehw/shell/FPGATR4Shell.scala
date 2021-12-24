@@ -254,7 +254,13 @@ class FPGATR4Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConnect]
   }
 }
 
-class FPGATR4InternalNoChip()(implicit p :Parameters) extends FPGATR4Internal(None)(p) {
+class FPGATR4InternalNoChip
+(
+  val idBits: Int = 6,
+  val idExtBits: Int = 6,
+  val widthBits: Int = 32,
+  val sinkBits: Int = 1
+)(implicit p :Parameters) extends FPGATR4Internal(None)(p) {
   override def otherId = Some(6)
   override def tlparam = p(ExtMem).map { A =>
     TLBundleParameters(
@@ -268,8 +274,8 @@ class FPGATR4InternalNoChip()(implicit p :Parameters) extends FPGATR4Internal(No
       Seq(),
       false)}
   override def aclkn: Option[Int] = None
-  override def memserSourceBits: Option[Int] = None
-  override def extserSourceBits: Option[Int] = None
+  override def memserSourceBits: Option[Int] = p(ExtSerMem).map( A => idBits )
+  override def extserSourceBits: Option[Int] = p(ExtSerBus).map( A => idExtBits )
   override def namedclocks: Seq[String] = Seq()
 }
 
