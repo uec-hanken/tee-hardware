@@ -1238,7 +1238,7 @@ set_location_assignment PIN_M23 -to FMCA_LA_TX_p_1
 set_location_assignment PIN_W29 -to FMCA_LA_TX_p_2
 set_location_assignment PIN_K28 -to FMCA_LA_TX_p_3
 set_location_assignment PIN_V27 -to FMCA_LA_TX_p_4
-set_location_assignment PIN_K31 -to FMCA_LA_TX_p_5
+set_location_assignment PIN_H29 -to FMCA_LA_TX_p_5
 set_location_assignment PIN_P28 -to FMCA_LA_TX_p_6
 set_location_assignment PIN_G31 -to FMCA_LA_TX_p_7
 set_location_assignment PIN_N29 -to FMCA_LA_TX_p_8
@@ -1255,7 +1255,7 @@ set_location_assignment PIN_L24 -to FMCA_LA_TX_n_1
 set_location_assignment PIN_V30 -to FMCA_LA_TX_n_2
 set_location_assignment PIN_J28 -to FMCA_LA_TX_n_3
 set_location_assignment PIN_V26 -to FMCA_LA_TX_n_4
-set_location_assignment PIN_J31 -to FMCA_LA_TX_n_5
+set_location_assignment PIN_H28 -to FMCA_LA_TX_n_5
 set_location_assignment PIN_P29 -to FMCA_LA_TX_n_6
 set_location_assignment PIN_F31 -to FMCA_LA_TX_n_7
 set_location_assignment PIN_M30 -to FMCA_LA_TX_n_8
@@ -1321,7 +1321,7 @@ set_location_assignment PIN_H43 -to FMCA_DP_M2C_p_6
 set_location_assignment PIN_F43 -to FMCA_DP_M2C_p_7
 set_location_assignment PIN_D43 -to FMCA_DP_M2C_p_8
 set_location_assignment PIN_C41 -to FMCA_DP_M2C_p_9
-set_location_assignment PIN_H29 -to FMCA_GA_0
+set_location_assignment PIN_H18 -to FMCA_GA_0
 set_location_assignment PIN_T23 -to FMCA_GA_1
 set_location_assignment PIN_F29 -to FMCA_SCL
 set_location_assignment PIN_F28 -to FMCA_SDA
@@ -2054,9 +2054,13 @@ set_location_assignment PIN_B20 -to FMCD_SDA
 # SMA
 #============================================================
 set_instance_assignment -name IO_STANDARD "1.5 V" -to SMA_CLKIN_p
+set_instance_assignment -name IO_STANDARD "1.5 V" -to SMA_CLKIN_n
 set_instance_assignment -name IO_STANDARD "1.5 V" -to SMA_CLKOUT_p
+set_instance_assignment -name IO_STANDARD "1.5 V" -to SMA_CLKOUT_n
 set_location_assignment PIN_BC8 -to SMA_CLKIN_p
+set_location_assignment PIN_BD8 -to SMA_CLKIN_n
 set_location_assignment PIN_AV8 -to SMA_CLKOUT_p
+set_location_assignment PIN_AW9 -to SMA_CLKOUT_n
 
 #============================================================
 # PCIE

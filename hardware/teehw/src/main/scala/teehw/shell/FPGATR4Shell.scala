@@ -3,15 +3,15 @@ package uec.teehardware.shell
 import chisel3._
 import chisel3.util._
 import chisel3.experimental.{Analog, IO, attach}
-import freechips.rocketchip.diplomacy.{AsynchronousCrossing, LazyModule}
-import freechips.rocketchip.util.ResetCatchAndSync
+import freechips.rocketchip.diplomacy._
+import freechips.rocketchip.util._
 import chipsalliance.rocketchip.config.Parameters
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.tilelink._
 import uec.teehardware.macros._
 import uec.teehardware._
 
-class HSMCTR4 extends Bundle {
+class HSMCTR4(val on1: Boolean = true, val on2: Boolean = true) extends Bundle {
   val CLKIN0 = Input(Bool())
   val CLKIN_n1 = Input(Bool())
   val CLKIN_n2 = Input(Bool())
@@ -19,10 +19,10 @@ class HSMCTR4 extends Bundle {
   val CLKIN_p2 = Input(Bool())
   val D = Vec(4, Analog(1.W))
   val OUT0 = Analog(1.W)
-  val OUT_n1 = Analog(1.W)
-  val OUT_n2 = Analog(1.W)
-  val OUT_p1 = Analog(1.W)
-  val OUT_p2 = Analog(1.W)
+  val OUT_n1 = on1.option(Analog(1.W))
+  val OUT_p1 = on1.option(Analog(1.W))
+  val OUT_n2 = on2.option(Analog(1.W))
+  val OUT_p2 = on2.option(Analog(1.W))
   val RX_n = Vec(17, Analog(1.W))
   val RX_p = Vec(17, Analog(1.W))
   val TX_n = Vec(17, Analog(1.W))
@@ -54,13 +54,13 @@ trait FPGATR4ChipShell {
   val GPIO1_D = IO(Vec(35+1, Analog(1.W)))
 
   //////////// HSMC_D //////////
-  val HSMD = IO(new HSMCTR4)
+  val HSMD = IO(new HSMCTR4(on1 = false))
 
   //////////// HSMC_E //////////
-  val HSME = IO(new HSMCTR4)
+  val HSME = IO(new HSMCTR4(on1 = false))
 
   //////////// HSMC_F //////////
-  val HSMF = IO(new HSMCTR4)
+  val HSMF = IO(new HSMCTR4(on1 = false, on2 = false))
 }
 
 trait FPGATR4ClockAndResetsAndDDR {
@@ -82,23 +82,24 @@ trait FPGATR4ClockAndResetsAndDDR {
   val BUTTON = IO(Input(Bits((3 + 1).W)))
 
   //////////// mem //////////
-  val mem_a = IO(Output(Bits((15 + 1).W)))
-  val mem_ba = IO(Output(Bits((2 + 1).W)))
-  val mem_cas_n = IO(Output(Bool()))
-  val mem_cke = IO(Output(Bits((1 + 1).W)))
-  val mem_ck = IO(Output(Bits((0 + 1).W))) // NOTE: Is impossible to do [0:0]
-  val mem_ck_n = IO(Output(Bits((0 + 1).W))) // NOTE: Is impossible to do [0:0]
-  val mem_cs_n = IO(Output(Bits((1 + 1).W)))
-  val mem_dm = IO(Output(Bits((7 + 1).W)))
-  val mem_dq = IO(Analog((63 + 1).W))
-  val mem_dqs = IO(Analog((7 + 1).W))
-  val mem_dqs_n = IO(Analog((7 + 1).W))
-  val mem_odt = IO(Output(Bits((1 + 1).W)))
-  val mem_ras_n = IO(Output(Bool()))
-  val mem_reset_n = IO(Output(Bool()))
-  val mem_we_n = IO(Output(Bool()))
-  val mem_oct_rdn = IO(Input(Bool()))
-  val mem_oct_rup = IO(Input(Bool()))
+  def memEnable: Boolean = true
+  val mem_a = memEnable.option(IO(Output(Bits((15 + 1).W))))
+  val mem_ba = memEnable.option(IO(Output(Bits((2 + 1).W))))
+  val mem_cas_n = memEnable.option(IO(Output(Bool())))
+  val mem_cke = memEnable.option(IO(Output(Bits((1 + 1).W))))
+  val mem_ck = memEnable.option(IO(Output(Bits((0 + 1).W)))) // NOTE: Is impossible to do [0:0]
+  val mem_ck_n = memEnable.option(IO(Output(Bits((0 + 1).W)))) // NOTE: Is impossible to do [0:0]
+  val mem_cs_n = memEnable.option(IO(Output(Bits((1 + 1).W))))
+  val mem_dm = memEnable.option(IO(Output(Bits((7 + 1).W))))
+  val mem_dq = memEnable.option(IO(Analog((63 + 1).W)))
+  val mem_dqs = memEnable.option(IO(Analog((7 + 1).W)))
+  val mem_dqs_n = memEnable.option(IO(Analog((7 + 1).W)))
+  val mem_odt = memEnable.option(IO(Output(Bits((1 + 1).W))))
+  val mem_ras_n = memEnable.option(IO(Output(Bool())))
+  val mem_reset_n = memEnable.option(IO(Output(Bool())))
+  val mem_we_n = memEnable.option(IO(Output(Bool())))
+  val mem_oct_rdn = memEnable.option(IO(Input(Bool())))
+  val mem_oct_rup = memEnable.option(IO(Input(Bool())))
   //val mem_scl = IO(Output(Bool()))
   //val mem_sda = IO(Analog(1.W))
   //val mem_event_n = IO(Input(Bool())) // NOTE: This also appeared, but is not used
@@ -186,23 +187,23 @@ class FPGATR4Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConnect]
 
     // Helper function to connect the DDR from the Quartus Platform
     def ConnectDDRUtil(mod_io_qport: QuartusIO) = {
-      mem_a := mod_io_qport.memory_mem_a
-      mem_ba := mod_io_qport.memory_mem_ba
-      mem_ck := mod_io_qport.memory_mem_ck(0) // Force only 1 line (although the config forces 1 line)
-      mem_ck_n := mod_io_qport.memory_mem_ck_n(0) // Force only 1 line (although the config forces 1 line)
-      mem_cke := mod_io_qport.memory_mem_cke
-      mem_cs_n := mod_io_qport.memory_mem_cs_n
-      mem_dm := mod_io_qport.memory_mem_dm
-      mem_ras_n := mod_io_qport.memory_mem_ras_n
-      mem_cas_n := mod_io_qport.memory_mem_cas_n
-      mem_we_n := mod_io_qport.memory_mem_we_n
-      attach(mem_dq, mod_io_qport.memory_mem_dq)
-      attach(mem_dqs, mod_io_qport.memory_mem_dqs)
-      attach(mem_dqs_n, mod_io_qport.memory_mem_dqs_n)
-      mem_odt := mod_io_qport.memory_mem_odt
-      mem_reset_n := mod_io_qport.memory_mem_reset_n.getOrElse(true.B)
-      mod_io_qport.oct.rdn.foreach(_ := mem_oct_rdn)
-      mod_io_qport.oct.rup.foreach(_ := mem_oct_rup)
+      mem_a.foreach(_ := mod_io_qport.memory_mem_a)
+      mem_ba.foreach(_ := mod_io_qport.memory_mem_ba)
+      mem_ck.foreach(_ := mod_io_qport.memory_mem_ck(0)) // Force only 1 line (although the config forces 1 line)
+      mem_ck_n.foreach(_ := mod_io_qport.memory_mem_ck_n(0)) // Force only 1 line (although the config forces 1 line)
+      mem_cke.foreach(_ := mod_io_qport.memory_mem_cke)
+      mem_cs_n.foreach(_ := mod_io_qport.memory_mem_cs_n)
+      mem_dm.foreach(_ := mod_io_qport.memory_mem_dm)
+      mem_ras_n.foreach(_ := mod_io_qport.memory_mem_ras_n)
+      mem_cas_n.foreach(_ := mod_io_qport.memory_mem_cas_n)
+      mem_we_n.foreach(_ := mod_io_qport.memory_mem_we_n)
+      mem_dq.foreach(attach(_, mod_io_qport.memory_mem_dq))
+      mem_dqs.foreach(attach(_, mod_io_qport.memory_mem_dqs))
+      mem_dqs_n.foreach( attach(_, mod_io_qport.memory_mem_dqs_n))
+      mem_odt.foreach(_ := mod_io_qport.memory_mem_odt)
+      mem_reset_n.foreach(_ := mod_io_qport.memory_mem_reset_n.getOrElse(true.B))
+      (mod_io_qport.oct.rdn zip mem_oct_rdn).foreach{case(a,b) => a := b}
+      (mod_io_qport.oct.rup zip mem_oct_rup).foreach{case(a,b) => a := b}
     }
 
     val ddrcfg = QuartusDDRConfig(size_ck = 1, is_reset = true)
@@ -245,7 +246,7 @@ class FPGATR4Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConnect]
     }
     // The external bus (TODO: Doing nothing)
     (extser zip extserSourceBits).foreach { case (es, sourceBits) =>
-      val mod = Module(LazyModule(new FPGAMiniSystem(sourceBits)).module)
+      val mod = Module(LazyModule(new FPGAMiniSystemDummy(sourceBits)).module)
 
       // Serial port
       mod.serport.flipConnect(es)
@@ -253,7 +254,13 @@ class FPGATR4Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConnect]
   }
 }
 
-class FPGATR4InternalNoChip()(implicit p :Parameters) extends FPGATR4Internal(None)(p) {
+class FPGATR4InternalNoChip
+(
+  val idBits: Int = 6,
+  val idExtBits: Int = 6,
+  val widthBits: Int = 32,
+  val sinkBits: Int = 1
+)(implicit p :Parameters) extends FPGATR4Internal(None)(p) {
   override def otherId = Some(6)
   override def tlparam = p(ExtMem).map { A =>
     TLBundleParameters(
@@ -267,8 +274,8 @@ class FPGATR4InternalNoChip()(implicit p :Parameters) extends FPGATR4Internal(No
       Seq(),
       false)}
   override def aclkn: Option[Int] = None
-  override def memserSourceBits: Option[Int] = None
-  override def extserSourceBits: Option[Int] = None
+  override def memserSourceBits: Option[Int] = p(ExtSerMem).map( A => idBits )
+  override def extserSourceBits: Option[Int] = p(ExtSerBus).map( A => idExtBits )
   override def namedclocks: Seq[String] = Seq()
 }
 
@@ -299,69 +306,76 @@ trait WithFPGATR4InternConnect {
   attach(SMA_CLKOUT_n, intern.SMA_CLKOUT_n)
   attach(SMA_CLKOUT_p, intern.SMA_CLKOUT_p)
 
-  mem_a := intern.mem_a
-  mem_ba := intern.mem_ba
-  mem_ck := intern.mem_ck
-  mem_ck_n := intern.mem_ck_n
-  mem_cke := intern.mem_cke
-  mem_cs_n := intern.mem_cs_n
-  mem_dm := intern.mem_dm
-  mem_ras_n := intern.mem_ras_n
-  mem_cas_n := intern.mem_cas_n
-  mem_we_n := intern.mem_we_n
-  attach(mem_dq, intern.mem_dq)
-  attach(mem_dqs, intern.mem_dqs)
-  attach(mem_dqs_n, intern.mem_dqs_n)
-  mem_odt := intern.mem_odt
-  mem_reset_n := intern.mem_reset_n
-  intern.mem_oct_rdn := mem_oct_rdn
-  intern.mem_oct_rup := mem_oct_rup
-
+  (mem_a zip intern.mem_a).foreach{case (a,b) => a := b}
+  (mem_ba zip intern.mem_ba).foreach{case (a,b) => a := b}
+  (mem_ck zip intern.mem_ck).foreach{case (a,b) => a := b}
+  (mem_ck_n zip intern.mem_ck_n).foreach{case (a,b) => a := b}
+  (mem_cke zip intern.mem_cke).foreach{case (a,b) => a := b}
+  (mem_cs_n zip intern.mem_cs_n).foreach{case (a,b) => a := b}
+  (mem_dm zip intern.mem_dm).foreach{case (a,b) => a := b}
+  (mem_ras_n zip intern.mem_ras_n).foreach{case (a,b) => a := b}
+  (mem_cas_n zip intern.mem_cas_n).foreach{case (a,b) => a := b}
+  (mem_we_n zip intern.mem_we_n).foreach{case (a,b) => a := b}
+  (mem_dq zip intern.mem_dq).foreach{case (a,b) => attach(a,b)}
+  (mem_dqs zip intern.mem_dqs).foreach{case (a,b) => attach(a,b)}
+  (mem_dqs_n zip intern.mem_dqs_n).foreach{case (a,b) => attach(a,b)}
+  (mem_odt zip intern.mem_odt).foreach{case (a,b) => a := b}
+  (mem_reset_n zip intern.mem_reset_n).foreach{case (a,b) => a := b}
+  (mem_oct_rdn zip intern.mem_oct_rdn).foreach{case (a,b) => b := a}
+  (mem_oct_rup zip intern.mem_oct_rup).foreach{case (a,b) => b := a}
 }
 
-trait WithFPGATR4Connect extends WithFPGATR4InternCreate with WithFPGATR4InternConnect {
+trait WithFPGATR4PureConnect {
   this: FPGATR4Shell =>
-
-  // From intern = Clocks and resets
-  intern.connectChipInternals(chip)
-
-  // The rest of the platform connections
-  val chipshell_led = chip.gpio_out 	// TODO: Not used! LED [3:0]
-  LED := Cat(
-    intern.mem_status_local_cal_fail,
-    intern.mem_status_local_cal_success,
-    intern.mem_status_local_init_done,
-    BUTTON(2)
-  )
+  val chip : WithTEEHWbaseShell with WithTEEHWbaseConnect
+  
+  def namedclocks: Seq[String] = chip.system.sys.asInstanceOf[HasTEEHWSystemModule].namedclocks
+  // This trait connects the chip to all essentials. This assumes no DDR is connected yet
+  LED := Cat(chip.gpio_out, BUTTON(2))
   chip.gpio_in := Cat(BUTTON(3), BUTTON(1,0), SW(1,0))
   chip.jtag.jtag_TDI := ALT_IOBUF(GPIO1_D(4))
   chip.jtag.jtag_TMS := ALT_IOBUF(GPIO1_D(6))
   chip.jtag.jtag_TCK := ALT_IOBUF(GPIO1_D(8))
   ALT_IOBUF(GPIO1_D(10), chip.jtag.jtag_TDO)
-  chip.qspi.foreach{A =>
-    A.qspi_miso := ALT_IOBUF(GPIO1_D(1))
-    ALT_IOBUF(GPIO1_D(3), A.qspi_mosi)
-    ALT_IOBUF(GPIO1_D(5), A.qspi_cs(0))
-    ALT_IOBUF(GPIO1_D(7), A.qspi_sck)
-  }
   chip.uart_rxd := ALT_IOBUF(GPIO1_D(35))	// UART_TXD
   ALT_IOBUF(GPIO1_D(34), chip.uart_txd) // UART_RXD
   ALT_IOBUF(GPIO0_D(28), chip.sdio.sdio_clk)
   ALT_IOBUF(GPIO0_D(30), chip.sdio.sdio_cmd)
   chip.sdio.sdio_dat_0 := ALT_IOBUF(GPIO0_D(32))
   ALT_IOBUF(GPIO0_D(34), chip.sdio.sdio_dat_3)
-
+  
   // USB phy connections
-  (chip.usb11hs zip intern.usbClk).foreach{ case (chipport, uclk) =>
+  chip.usb11hs.foreach{ case chipport=>
     ALT_IOBUF(GPIO1_D(17), chipport.USBFullSpeed)
-    chipport.USBWireDataIn := ALT_IOBUF(GPIO1_D(24))
-    ALT_IOBUF(GPIO1_D(24), chipport.USBWireCtrlOut(0))
-    ALT_IOBUF(GPIO1_D(26), chipport.USBWireCtrlOut(1))
+    chipport.USBWireDataIn := Cat(ALT_IOBUF(GPIO1_D(24)), ALT_IOBUF(GPIO1_D(26)))
+    ALT_IOBUF(GPIO1_D(28), chipport.USBWireCtrlOut)
     ALT_IOBUF(GPIO1_D(16), chipport.USBWireDataOut(0))
     ALT_IOBUF(GPIO1_D(18), chipport.USBWireDataOut(1))
-
-    chipport.usbClk := uclk
   }
+
+  chip.qspi.foreach{A =>
+    A.qspi_miso := ALT_IOBUF(GPIO1_D(1))
+    ALT_IOBUF(GPIO1_D(3), A.qspi_mosi)
+    ALT_IOBUF(GPIO1_D(5), A.qspi_cs(0))
+    ALT_IOBUF(GPIO1_D(7), A.qspi_sck)
+  }
+}
+
+trait WithFPGATR4Connect extends WithFPGATR4PureConnect 
+  with WithFPGATR4InternCreate 
+  with WithFPGATR4InternConnect {
+  this: FPGATR4Shell =>
+
+  // From intern = Clocks and resets
+  intern.connectChipInternals(chip)
+
+  // The rest of the platform connections
+  LED := Cat(
+    intern.mem_status_local_cal_fail,
+    intern.mem_status_local_cal_success,
+    intern.mem_status_local_init_done,
+    BUTTON(2)
+  )
 }
 
 object ConnectHSMCGPIO {
@@ -380,33 +394,33 @@ object ConnectHSMCGPIO {
           case 2 => if(get) c := HSMC.CLKIN_p2 else throw new RuntimeException(s"GPIO${n}_${p} can only be input")
           case 3 => if(get) c := ALT_IOBUF(HSMC.RX_p(16)) else ALT_IOBUF(HSMC.RX_p(16), c)
           case 4 => if(get) c := ALT_IOBUF(HSMC.TX_n(16)) else ALT_IOBUF(HSMC.TX_n(16), c)
-          case 5 => if(get) c := ALT_IOBUF(HSMC.RX_n(15)) else ALT_IOBUF(HSMC.TX_n(15), c)
+          case 5 => if(get) c := ALT_IOBUF(HSMC.RX_n(15)) else ALT_IOBUF(HSMC.RX_n(15), c)
           case 6 => if(get) c := ALT_IOBUF(HSMC.TX_p(16)) else ALT_IOBUF(HSMC.TX_p(16), c)
-          case 7 => if(get) c := ALT_IOBUF(HSMC.RX_p(15)) else ALT_IOBUF(HSMC.TX_p(15), c)
+          case 7 => if(get) c := ALT_IOBUF(HSMC.RX_p(15)) else ALT_IOBUF(HSMC.RX_p(15), c)
           case 8 => if(get) c := ALT_IOBUF(HSMC.TX_n(15)) else ALT_IOBUF(HSMC.TX_n(15), c)
-          case 9 => if(get) c := ALT_IOBUF(HSMC.RX_n(14)) else ALT_IOBUF(HSMC.TX_n(14), c)
+          case 9 => if(get) c := ALT_IOBUF(HSMC.RX_n(14)) else ALT_IOBUF(HSMC.RX_n(14), c)
           case 10 => if(get) c := ALT_IOBUF(HSMC.TX_p(15)) else ALT_IOBUF(HSMC.TX_p(15), c)
-          case 11 => if(get) c := ALT_IOBUF(HSMC.RX_p(14)) else ALT_IOBUF(HSMC.TX_p(14), c)
+          case 11 => if(get) c := ALT_IOBUF(HSMC.RX_p(14)) else ALT_IOBUF(HSMC.RX_p(14), c)
           case 12 => if(get) c := ALT_IOBUF(HSMC.TX_n(14)) else ALT_IOBUF(HSMC.TX_n(14), c)
-          case 13 => if(get) c := ALT_IOBUF(HSMC.RX_n(13)) else ALT_IOBUF(HSMC.TX_n(13), c)
+          case 13 => if(get) c := ALT_IOBUF(HSMC.RX_n(13)) else ALT_IOBUF(HSMC.RX_n(13), c)
           case 14 => if(get) c := ALT_IOBUF(HSMC.TX_p(14)) else ALT_IOBUF(HSMC.TX_p(14), c)
-          case 15 => if(get) c := ALT_IOBUF(HSMC.RX_p(13)) else ALT_IOBUF(HSMC.TX_p(13), c)
-          case 16 => if(get) c := ALT_IOBUF(HSMC.OUT_n2) else ALT_IOBUF(HSMC.OUT_n2, c)
-          case 17 => if(get) c := ALT_IOBUF(HSMC.RX_n(12)) else ALT_IOBUF(HSMC.TX_n(12), c)
-          case 18 => if(get) c := ALT_IOBUF(HSMC.OUT_p2) else ALT_IOBUF(HSMC.OUT_p2, c)
-          case 19 => if(get) c := ALT_IOBUF(HSMC.RX_p(12)) else ALT_IOBUF(HSMC.TX_p(12), c)
+          case 15 => if(get) c := ALT_IOBUF(HSMC.RX_p(13)) else ALT_IOBUF(HSMC.RX_p(13), c)
+          case 16 => if(get) c := ALT_IOBUF(HSMC.OUT_n2.get) else ALT_IOBUF(HSMC.OUT_n2.get, c)
+          case 17 => if(get) c := ALT_IOBUF(HSMC.RX_n(12)) else ALT_IOBUF(HSMC.RX_n(12), c)
+          case 18 => if(get) c := ALT_IOBUF(HSMC.OUT_p2.get) else ALT_IOBUF(HSMC.OUT_p2.get, c)
+          case 19 => if(get) c := ALT_IOBUF(HSMC.RX_p(12)) else ALT_IOBUF(HSMC.RX_p(12), c)
           case 20 => if(get) c := ALT_IOBUF(HSMC.TX_n(13)) else ALT_IOBUF(HSMC.TX_n(13), c)
-          case 21 => if(get) c := ALT_IOBUF(HSMC.RX_n(11)) else ALT_IOBUF(HSMC.TX_n(11), c)
+          case 21 => if(get) c := ALT_IOBUF(HSMC.RX_n(11)) else ALT_IOBUF(HSMC.RX_n(11), c)
           case 22 => if(get) c := ALT_IOBUF(HSMC.TX_p(13)) else ALT_IOBUF(HSMC.TX_p(13), c)
-          case 23 => if(get) c := ALT_IOBUF(HSMC.RX_p(11)) else ALT_IOBUF(HSMC.TX_p(11), c)
+          case 23 => if(get) c := ALT_IOBUF(HSMC.RX_p(11)) else ALT_IOBUF(HSMC.RX_p(11), c)
           case 24 => if(get) c := ALT_IOBUF(HSMC.TX_n(12)) else ALT_IOBUF(HSMC.TX_n(12), c)
-          case 25 => if(get) c := ALT_IOBUF(HSMC.RX_n(10)) else ALT_IOBUF(HSMC.TX_n(10), c)
+          case 25 => if(get) c := ALT_IOBUF(HSMC.RX_n(10)) else ALT_IOBUF(HSMC.RX_n(10), c)
           case 26 => if(get) c := ALT_IOBUF(HSMC.TX_p(12)) else ALT_IOBUF(HSMC.TX_p(12), c)
-          case 27 => if(get) c := ALT_IOBUF(HSMC.RX_p(10)) else ALT_IOBUF(HSMC.TX_p(10), c)
+          case 27 => if(get) c := ALT_IOBUF(HSMC.RX_p(10)) else ALT_IOBUF(HSMC.RX_p(10), c)
           case 28 => if(get) c := ALT_IOBUF(HSMC.TX_n(11)) else ALT_IOBUF(HSMC.TX_n(11), c)
-          case 29 => if(get) c := ALT_IOBUF(HSMC.RX_n(9)) else ALT_IOBUF(HSMC.TX_n(9), c)
+          case 29 => if(get) c := ALT_IOBUF(HSMC.RX_n(9)) else ALT_IOBUF(HSMC.RX_n(9), c)
           case 30 => if(get) c := ALT_IOBUF(HSMC.TX_p(11)) else ALT_IOBUF(HSMC.TX_p(11), c)
-          case 31 => if(get) c := ALT_IOBUF(HSMC.RX_p(9)) else ALT_IOBUF(HSMC.TX_p(9), c)
+          case 31 => if(get) c := ALT_IOBUF(HSMC.RX_p(9)) else ALT_IOBUF(HSMC.RX_p(9), c)
           case 32 => if(get) c := ALT_IOBUF(HSMC.TX_n(10)) else ALT_IOBUF(HSMC.TX_n(10), c)
           case 33 => if(get) c := ALT_IOBUF(HSMC.TX_n(9)) else ALT_IOBUF(HSMC.TX_n(9), c)
           case 34 => if(get) c := ALT_IOBUF(HSMC.TX_p(10)) else ALT_IOBUF(HSMC.TX_p(10), c)
@@ -420,33 +434,33 @@ object ConnectHSMCGPIO {
           case 2 => if(get) c := HSMC.CLKIN_p1 else throw new RuntimeException(s"GPIO${n}_${p} can only be input")
           case 3 => if(get) c := ALT_IOBUF(HSMC.RX_p(7)) else ALT_IOBUF(HSMC.RX_p(7), c)
           case 4 => if(get) c := ALT_IOBUF(HSMC.TX_n(7)) else ALT_IOBUF(HSMC.TX_n(7), c)
-          case 5 => if(get) c := ALT_IOBUF(HSMC.RX_n(6)) else ALT_IOBUF(HSMC.TX_n(6), c)
+          case 5 => if(get) c := ALT_IOBUF(HSMC.RX_n(6)) else ALT_IOBUF(HSMC.RX_n(6), c)
           case 6 => if(get) c := ALT_IOBUF(HSMC.TX_p(7)) else ALT_IOBUF(HSMC.TX_p(7), c)
-          case 7 => if(get) c := ALT_IOBUF(HSMC.RX_p(6)) else ALT_IOBUF(HSMC.TX_p(6), c)
+          case 7 => if(get) c := ALT_IOBUF(HSMC.RX_p(6)) else ALT_IOBUF(HSMC.RX_p(6), c)
           case 8 => if(get) c := ALT_IOBUF(HSMC.TX_n(6)) else ALT_IOBUF(HSMC.TX_n(6), c)
-          case 9 => if(get) c := ALT_IOBUF(HSMC.RX_n(5)) else ALT_IOBUF(HSMC.TX_n(5), c)
+          case 9 => if(get) c := ALT_IOBUF(HSMC.RX_n(5)) else ALT_IOBUF(HSMC.RX_n(5), c)
           case 10 => if(get) c := ALT_IOBUF(HSMC.TX_p(6)) else ALT_IOBUF(HSMC.TX_p(6), c)
-          case 11 => if(get) c := ALT_IOBUF(HSMC.RX_p(5)) else ALT_IOBUF(HSMC.TX_p(5), c)
+          case 11 => if(get) c := ALT_IOBUF(HSMC.RX_p(5)) else ALT_IOBUF(HSMC.RX_p(5), c)
           case 12 => if(get) c := ALT_IOBUF(HSMC.TX_n(5)) else ALT_IOBUF(HSMC.TX_n(5), c)
-          case 13 => if(get) c := ALT_IOBUF(HSMC.RX_n(4)) else ALT_IOBUF(HSMC.TX_n(4), c)
+          case 13 => if(get) c := ALT_IOBUF(HSMC.RX_n(4)) else ALT_IOBUF(HSMC.RX_n(4), c)
           case 14 => if(get) c := ALT_IOBUF(HSMC.TX_p(5)) else ALT_IOBUF(HSMC.TX_p(5), c)
-          case 15 => if(get) c := ALT_IOBUF(HSMC.RX_p(4)) else ALT_IOBUF(HSMC.TX_p(4), c)
-          case 16 => if(get) c := ALT_IOBUF(HSMC.OUT_n1) else ALT_IOBUF(HSMC.OUT_n1, c)
-          case 17 => if(get) c := ALT_IOBUF(HSMC.RX_n(3)) else ALT_IOBUF(HSMC.TX_n(3), c)
-          case 18 => if(get) c := ALT_IOBUF(HSMC.OUT_p1) else ALT_IOBUF(HSMC.OUT_p1, c)
-          case 19 => if(get) c := ALT_IOBUF(HSMC.RX_p(3)) else ALT_IOBUF(HSMC.TX_p(3), c)
+          case 15 => if(get) c := ALT_IOBUF(HSMC.RX_p(4)) else ALT_IOBUF(HSMC.RX_p(4), c)
+          case 16 => if(get) c := ALT_IOBUF(HSMC.OUT_n1.get) else ALT_IOBUF(HSMC.OUT_n1.get, c)
+          case 17 => if(get) c := ALT_IOBUF(HSMC.RX_n(3)) else ALT_IOBUF(HSMC.RX_n(3), c)
+          case 18 => if(get) c := ALT_IOBUF(HSMC.OUT_p1.get) else ALT_IOBUF(HSMC.OUT_p1.get, c)
+          case 19 => if(get) c := ALT_IOBUF(HSMC.RX_p(3)) else ALT_IOBUF(HSMC.RX_p(3), c)
           case 20 => if(get) c := ALT_IOBUF(HSMC.TX_n(4)) else ALT_IOBUF(HSMC.TX_n(4), c)
-          case 21 => if(get) c := ALT_IOBUF(HSMC.RX_n(2)) else ALT_IOBUF(HSMC.TX_n(2), c)
+          case 21 => if(get) c := ALT_IOBUF(HSMC.RX_n(2)) else ALT_IOBUF(HSMC.RX_n(2), c)
           case 22 => if(get) c := ALT_IOBUF(HSMC.TX_p(4)) else ALT_IOBUF(HSMC.TX_p(4), c)
-          case 23 => if(get) c := ALT_IOBUF(HSMC.RX_p(2)) else ALT_IOBUF(HSMC.TX_p(2), c)
+          case 23 => if(get) c := ALT_IOBUF(HSMC.RX_p(2)) else ALT_IOBUF(HSMC.RX_p(2), c)
           case 24 => if(get) c := ALT_IOBUF(HSMC.TX_n(3)) else ALT_IOBUF(HSMC.TX_n(3), c)
-          case 25 => if(get) c := ALT_IOBUF(HSMC.RX_n(1)) else ALT_IOBUF(HSMC.TX_n(1), c)
+          case 25 => if(get) c := ALT_IOBUF(HSMC.RX_n(1)) else ALT_IOBUF(HSMC.RX_n(1), c)
           case 26 => if(get) c := ALT_IOBUF(HSMC.TX_p(3)) else ALT_IOBUF(HSMC.TX_p(3), c)
-          case 27 => if(get) c := ALT_IOBUF(HSMC.RX_p(1)) else ALT_IOBUF(HSMC.TX_p(1), c)
+          case 27 => if(get) c := ALT_IOBUF(HSMC.RX_p(1)) else ALT_IOBUF(HSMC.RX_p(1), c)
           case 28 => if(get) c := ALT_IOBUF(HSMC.TX_n(2)) else ALT_IOBUF(HSMC.TX_n(2), c)
-          case 29 => if(get) c := ALT_IOBUF(HSMC.RX_n(0)) else ALT_IOBUF(HSMC.TX_n(0), c)
+          case 29 => if(get) c := ALT_IOBUF(HSMC.RX_n(0)) else ALT_IOBUF(HSMC.RX_n(0), c)
           case 30 => if(get) c := ALT_IOBUF(HSMC.TX_p(2)) else ALT_IOBUF(HSMC.TX_p(2), c)
-          case 31 => if(get) c := ALT_IOBUF(HSMC.RX_p(0)) else ALT_IOBUF(HSMC.TX_p(0), c)
+          case 31 => if(get) c := ALT_IOBUF(HSMC.RX_p(0)) else ALT_IOBUF(HSMC.RX_p(0), c)
           case 32 => if(get) c := ALT_IOBUF(HSMC.TX_n(1)) else ALT_IOBUF(HSMC.TX_n(1), c)
           case 33 => if(get) c := ALT_IOBUF(HSMC.TX_n(0)) else ALT_IOBUF(HSMC.TX_n(0), c)
           case 34 => if(get) c := ALT_IOBUF(HSMC.TX_p(1)) else ALT_IOBUF(HSMC.TX_p(1), c)
@@ -463,6 +477,7 @@ object ConnectHSMCGPIO {
 trait WithFPGATR4ToChipConnect extends WithFPGATR4InternNoChipCreate with WithFPGATR4InternConnect {
   this: FPGATR4Shell =>
 
+  // ******* Duy section ******
   // NOTES:
   // JP19 -> J2 / JP18 -> J3 belongs to HSMB
   // JP20 -> J2 / JP21 -> J3 belongs to HSMA
@@ -654,6 +669,76 @@ trait WithFPGATR4ToChipConnect extends WithFPGATR4InternNoChipCreate with WithFP
     ConnectHSMCGPIO(JP21, 39, tlport.d.bits.data( 1), false, HSMC_JP20_21)
     ConnectHSMCGPIO(JP21, 40, tlport.d.bits.data( 0), false, HSMC_JP20_21)
   }
+  
+  // ******* Ahn-Dao section ******
+  def HSMCSER = HSMA
+  def versionSer = 1
+  versionSer match {
+    case _ => // TODO: There is no such thing as versions in TR4
+      val MEMSER_GPIO = 0
+      val EXTSER_GPIO = 1
+      //ConnectHSMCGPIO(MEMSER_GPIO, 1, intern.sys_clk.asBool(), false, HSMCSER)
+      //intern.ChildClock.foreach{ a => ConnectHSMCGPIO(MEMSER_GPIO, 2, a.asBool(), false, HSMCSER) }
+      //intern.usbClk.foreach{ a => ConnectHSMCGPIO(MEMSER_GPIO, 3, a.asBool(), false, HSMCSER) }
+      ConnectHSMCGPIO(MEMSER_GPIO, 4, intern.jrst_n, false, HSMCSER)
+      ConnectHSMCGPIO(MEMSER_GPIO, 5, intern.rst_n, false, HSMCSER)
+      // ExtSerMem
+      intern.memser.foreach { memser =>
+        val in_bits = Wire(Vec(8, Bool()))
+        ConnectHSMCGPIO(MEMSER_GPIO, 9, in_bits(7), false, HSMCSER)
+        ConnectHSMCGPIO(MEMSER_GPIO, 10, in_bits(6), false, HSMCSER)
+        ConnectHSMCGPIO(MEMSER_GPIO, 13, in_bits(5), false, HSMCSER)
+        ConnectHSMCGPIO(MEMSER_GPIO, 14, in_bits(4), false, HSMCSER)
+        ConnectHSMCGPIO(MEMSER_GPIO, 15, in_bits(3), false, HSMCSER)
+        ConnectHSMCGPIO(MEMSER_GPIO, 16, in_bits(2), false, HSMCSER)
+        ConnectHSMCGPIO(MEMSER_GPIO, 17, in_bits(1), false, HSMCSER)
+        ConnectHSMCGPIO(MEMSER_GPIO, 18, in_bits(0), false, HSMCSER)
+        in_bits := memser.in.bits.asBools()
+        ConnectHSMCGPIO(MEMSER_GPIO, 19, memser.in.valid, false, HSMCSER)
+        ConnectHSMCGPIO(MEMSER_GPIO, 20, memser.out.ready, false, HSMCSER)
+        ConnectHSMCGPIO(MEMSER_GPIO, 21, memser.in.ready, true, HSMCSER)
+        val out_bits = Wire(Vec(8, Bool()))
+        ConnectHSMCGPIO(MEMSER_GPIO, 22, out_bits(7), true, HSMCSER)
+        ConnectHSMCGPIO(MEMSER_GPIO, 23, out_bits(6), true, HSMCSER)
+        ConnectHSMCGPIO(MEMSER_GPIO, 24, out_bits(5), true, HSMCSER)
+        ConnectHSMCGPIO(MEMSER_GPIO, 25, out_bits(4), true, HSMCSER)
+        ConnectHSMCGPIO(MEMSER_GPIO, 26, out_bits(3), true, HSMCSER)
+        ConnectHSMCGPIO(MEMSER_GPIO, 27, out_bits(2), true, HSMCSER)
+        ConnectHSMCGPIO(MEMSER_GPIO, 28, out_bits(1), true, HSMCSER)
+        ConnectHSMCGPIO(MEMSER_GPIO, 31, out_bits(0), true, HSMCSER)
+        memser.out.bits := out_bits.asUInt()
+        ConnectHSMCGPIO(MEMSER_GPIO, 32, memser.out.valid, true, HSMCSER)
+      }
+      // ExtSerBus
+      intern.extser.foreach{ extser =>
+        val in_bits = Wire(Vec(8, Bool()))
+        ConnectHSMCGPIO(EXTSER_GPIO, 9, in_bits(7), false, HSMCSER)
+        ConnectHSMCGPIO(EXTSER_GPIO, 10, in_bits(6), false, HSMCSER)
+        ConnectHSMCGPIO(EXTSER_GPIO, 13, in_bits(5), false, HSMCSER)
+        ConnectHSMCGPIO(EXTSER_GPIO, 14, in_bits(4), false, HSMCSER)
+        ConnectHSMCGPIO(EXTSER_GPIO, 15, in_bits(3), false, HSMCSER)
+        ConnectHSMCGPIO(EXTSER_GPIO, 16, in_bits(2), false, HSMCSER)
+        ConnectHSMCGPIO(EXTSER_GPIO, 17, in_bits(1), false, HSMCSER)
+        ConnectHSMCGPIO(EXTSER_GPIO, 18, in_bits(0), false, HSMCSER)
+        in_bits := extser.in.bits.asBools()
+        ConnectHSMCGPIO(EXTSER_GPIO, 19, extser.in.valid, false, HSMCSER)
+        ConnectHSMCGPIO(EXTSER_GPIO, 20, extser.out.ready, false, HSMCSER)
+        ConnectHSMCGPIO(EXTSER_GPIO, 21, extser.in.ready, true, HSMCSER)
+        val out_bits = Wire(Vec(8, Bool()))
+        ConnectHSMCGPIO(EXTSER_GPIO, 22, out_bits(7), true, HSMCSER)
+        ConnectHSMCGPIO(EXTSER_GPIO, 23, out_bits(6), true, HSMCSER)
+        ConnectHSMCGPIO(EXTSER_GPIO, 24, out_bits(5), true, HSMCSER)
+        ConnectHSMCGPIO(EXTSER_GPIO, 25, out_bits(4), true, HSMCSER)
+        ConnectHSMCGPIO(EXTSER_GPIO, 26, out_bits(3), true, HSMCSER)
+        ConnectHSMCGPIO(EXTSER_GPIO, 27, out_bits(2), true, HSMCSER)
+        ConnectHSMCGPIO(EXTSER_GPIO, 28, out_bits(1), true, HSMCSER)
+        ConnectHSMCGPIO(EXTSER_GPIO, 31, out_bits(0), true, HSMCSER)
+        extser.out.bits := out_bits.asUInt()
+        ConnectHSMCGPIO(EXTSER_GPIO, 32, extser.out.valid, true, HSMCSER)
+      }
+  }
+
+  // ******** Misc part ********
 
   // LEDs
   LED := Cat(
@@ -666,4 +751,97 @@ trait WithFPGATR4ToChipConnect extends WithFPGATR4InternNoChipCreate with WithFP
   ALT_IOBUF(SMA_CLKOUT, intern.sys_clk.asBool())
   intern.ChildClock.foreach(A => ALT_IOBUF(SMA_CLKOUT_p, A.asBool()))
   intern.usbClk.foreach(A => ALT_IOBUF(SMA_CLKOUT_n, A.asBool()))
+}
+
+// Trait which connects the FPGA the chip
+trait WithFPGATR4FromChipConnect extends WithFPGATR4PureConnect {
+  this: FPGATR4Shell =>
+
+  override def memEnable = false // No memory interface in this version
+
+  // ******* Ahn-Dao section ******
+  def HSMCSER = HSMA
+  def versionSer = 1
+  versionSer match {
+    case _ => // TODO: There is no such thing as versions in TR4
+      val MEMSER_GPIO = 0
+      val EXTSER_GPIO = 1
+      val sysclk = Wire(Bool())
+      sysclk := SMA_CLKIN.asBool() //ConnectHSMCGPIO(MEMSER_GPIO, 1, sysclk,  true, HSMCSER)
+      chip.sys_clk := sysclk.asClock()
+      chip.ChildClock.foreach{ a =>
+        val clkwire = Wire(Bool())
+        clkwire := ALT_IOBUF(SMA_CLKOUT_p) // ConnectHSMCGPIO(MEMSER_GPIO, 2, clkwire,  true, HSMCSER)
+        a := clkwire.asClock()
+      }
+      chip.usb11hs.foreach{ a =>
+        val clkwire = Wire(Bool())
+        clkwire := ALT_IOBUF(SMA_CLKOUT_n) // ConnectHSMCGPIO(MEMSER_GPIO, 3, clkwire,  true, HSMCSER)
+        a.usbClk := clkwire.asClock()
+      }
+      ConnectHSMCGPIO(MEMSER_GPIO, 4, chip.jrst_n,  true, HSMCSER)
+      ConnectHSMCGPIO(MEMSER_GPIO, 5, chip.rst_n,  true, HSMCSER)
+      chip.aclocks.foreach{ aclocks =>
+        // Only some of the aclocks are actually connected.
+        println("Connecting orphan clocks =>")
+        (aclocks zip namedclocks).foreach{ case (aclk, nam) =>
+          println(s"  Detected clock ${nam}")
+          aclk := sysclk.asClock()
+        }
+      }
+      // ExtSerMem
+      chip.memser.foreach { memser =>
+        val in_bits = Wire(Vec(8, Bool()))
+        ConnectHSMCGPIO(MEMSER_GPIO, 9, in_bits(7),  true, HSMCSER)
+        ConnectHSMCGPIO(MEMSER_GPIO, 10, in_bits(6),  true, HSMCSER)
+        ConnectHSMCGPIO(MEMSER_GPIO, 13, in_bits(5),  true, HSMCSER)
+        ConnectHSMCGPIO(MEMSER_GPIO, 14, in_bits(4),  true, HSMCSER)
+        ConnectHSMCGPIO(MEMSER_GPIO, 15, in_bits(3),  true, HSMCSER)
+        ConnectHSMCGPIO(MEMSER_GPIO, 16, in_bits(2),  true, HSMCSER)
+        ConnectHSMCGPIO(MEMSER_GPIO, 17, in_bits(1),  true, HSMCSER)
+        ConnectHSMCGPIO(MEMSER_GPIO, 18, in_bits(0),  true, HSMCSER)
+        memser.in.bits := in_bits.asUInt()
+        ConnectHSMCGPIO(MEMSER_GPIO, 19, memser.in.valid,  true, HSMCSER)
+        ConnectHSMCGPIO(MEMSER_GPIO, 20, memser.out.ready,  true, HSMCSER)
+        ConnectHSMCGPIO(MEMSER_GPIO, 21, memser.in.ready,  false, HSMCSER)
+        val out_bits = Wire(Vec(8, Bool()))
+        ConnectHSMCGPIO(MEMSER_GPIO, 22, out_bits(7),  false, HSMCSER)
+        ConnectHSMCGPIO(MEMSER_GPIO, 23, out_bits(6),  false, HSMCSER)
+        ConnectHSMCGPIO(MEMSER_GPIO, 24, out_bits(5),  false, HSMCSER)
+        ConnectHSMCGPIO(MEMSER_GPIO, 25, out_bits(4),  false, HSMCSER)
+        ConnectHSMCGPIO(MEMSER_GPIO, 26, out_bits(3),  false, HSMCSER)
+        ConnectHSMCGPIO(MEMSER_GPIO, 27, out_bits(2),  false, HSMCSER)
+        ConnectHSMCGPIO(MEMSER_GPIO, 28, out_bits(1),  false, HSMCSER)
+        ConnectHSMCGPIO(MEMSER_GPIO, 31, out_bits(0),  false, HSMCSER)
+        out_bits := memser.out.bits.asBools()
+        ConnectHSMCGPIO(MEMSER_GPIO, 32, memser.out.valid,  false, HSMCSER)
+      }
+      // ExtSerBus
+      chip.extser.foreach{ extser =>
+        val in_bits = Wire(Vec(8, Bool()))
+        ConnectHSMCGPIO(EXTSER_GPIO, 9, in_bits(7),  true, HSMCSER)
+        ConnectHSMCGPIO(EXTSER_GPIO, 10, in_bits(6),  true, HSMCSER)
+        ConnectHSMCGPIO(EXTSER_GPIO, 13, in_bits(5),  true, HSMCSER)
+        ConnectHSMCGPIO(EXTSER_GPIO, 14, in_bits(4),  true, HSMCSER)
+        ConnectHSMCGPIO(EXTSER_GPIO, 15, in_bits(3),  true, HSMCSER)
+        ConnectHSMCGPIO(EXTSER_GPIO, 16, in_bits(2),  true, HSMCSER)
+        ConnectHSMCGPIO(EXTSER_GPIO, 17, in_bits(1),  true, HSMCSER)
+        ConnectHSMCGPIO(EXTSER_GPIO, 18, in_bits(0),  true, HSMCSER)
+        extser.in.bits := in_bits.asUInt()
+        ConnectHSMCGPIO(EXTSER_GPIO, 19, extser.in.valid,  true, HSMCSER)
+        ConnectHSMCGPIO(EXTSER_GPIO, 20, extser.out.ready,  true, HSMCSER)
+        ConnectHSMCGPIO(EXTSER_GPIO, 21, extser.in.ready,  false, HSMCSER)
+        val out_bits = Wire(Vec(8, Bool()))
+        ConnectHSMCGPIO(EXTSER_GPIO, 22, out_bits(7),  false, HSMCSER)
+        ConnectHSMCGPIO(EXTSER_GPIO, 23, out_bits(6),  false, HSMCSER)
+        ConnectHSMCGPIO(EXTSER_GPIO, 24, out_bits(5),  false, HSMCSER)
+        ConnectHSMCGPIO(EXTSER_GPIO, 25, out_bits(4),  false, HSMCSER)
+        ConnectHSMCGPIO(EXTSER_GPIO, 26, out_bits(3),  false, HSMCSER)
+        ConnectHSMCGPIO(EXTSER_GPIO, 27, out_bits(2),  false, HSMCSER)
+        ConnectHSMCGPIO(EXTSER_GPIO, 28, out_bits(1),  false, HSMCSER)
+        ConnectHSMCGPIO(EXTSER_GPIO, 31, out_bits(0),  false, HSMCSER)
+        out_bits := extser.out.bits.asBools()
+        ConnectHSMCGPIO(EXTSER_GPIO, 32, extser.out.valid,  false, HSMCSER)
+      }
+  }
 }

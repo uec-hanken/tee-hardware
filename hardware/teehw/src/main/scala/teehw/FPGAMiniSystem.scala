@@ -165,3 +165,26 @@ class FPGAMiniSystemModule[+L <: FPGAMiniSystem](_outer: L) extends FPGAMiniSubS
     o.reset := reset
   }
 }
+
+// The dummy without the Xilinx clock
+class FPGAMiniSystemDummy(idBits: Int = 6)(implicit p :Parameters) extends FPGAMiniSubSystem(idBits)(p)
+  with HasPeripheryClockCtrlDummy {
+
+  // Create the ClockGroupSource (only 1...)
+  val clockGroup = ClockGroupSourceNode(List.fill(1) { ClockGroupSourceParameters() })
+  // Create the Aggregator. This will just take the SourceNode, then just replicate it in a Nexus
+  val clocksAggregator = LazyModule(new ClockGroupAggregator("allClocks")).node
+  // Connect it to the asyncClockGroupsNode, with the aggregator
+  asyncClockGroupsNode :*= clocksAggregator := clockGroup
+
+  override lazy val module = new FPGAMiniSystemDummyModule(this)
+}
+
+class FPGAMiniSystemDummyModule[+L <: FPGAMiniSystemDummy](_outer: L) extends FPGAMiniSubSystemModule(_outer) {
+
+  // Connect the clock to the clockgroup (all of them)
+  outer.clockGroup.out.flatMap(_._1.member.data).foreach { o =>
+    o.clock := clock
+    o.reset := reset
+  }
+}
