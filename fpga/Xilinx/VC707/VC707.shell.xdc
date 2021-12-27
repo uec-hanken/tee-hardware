@@ -3,6 +3,7 @@ set_property CONFIG_VOLTAGE 1.8                       [current_design]
 
 set_property BOARD_PIN {clk_p} [get_ports {sys_clock_p}]
 set_property BOARD_PIN {clk_n} [get_ports {sys_clock_n}]
+
 create_clock -name sys_diff_clk -period 5.0 [get_ports sys_clock_p]
 set_input_jitter [get_clocks -of_objects [get_ports sys_clock_p]] 0.5
 create_clock -name JTCK -period 100.0 [get_ports {jtag_jtag_TCK}]
@@ -155,9 +156,9 @@ set_property IOSTANDARD {LVCMOS18} [get_ports {rst_3}]
 
 # User Clock
 set_property PACKAGE_PIN AK34 [get_ports USER_CLOCK_P]
-set_property IOSTANDARD LVDS [get_ports USER_CLOCK_P]
+set_property IOSTANDARD LVCMOS18 [get_ports USER_CLOCK_P]
 set_property PACKAGE_PIN AL34 [get_ports USER_CLOCK_N]
-set_property IOSTANDARD LVDS [get_ports USER_CLOCK_N]
+set_property IOSTANDARD LVCMOS18 [get_ports USER_CLOCK_N]
 
 # User SMA Clock
 set_property PACKAGE_PIN AJ32 [get_ports USER_SMA_CLOCK_P]

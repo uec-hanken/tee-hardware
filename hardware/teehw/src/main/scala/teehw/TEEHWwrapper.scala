@@ -294,3 +294,10 @@ class FPGATR5(implicit p :Parameters) extends FPGATR5Shell()(p)
 class FPGATR5ToChip(implicit p :Parameters) extends FPGATR5Shell()(p)
   with WithFPGATR5ToChipConnect {
 }
+
+// ********************************************************************
+// FPGASakuraX - Demo on Sakura-X FPGA board
+// ********************************************************************
+class FPGASakuraX(implicit p :Parameters) extends FPGASakuraXShell()(p)
+  with HasTEEHWChip with WithFPGASakuraXConnect {
+}

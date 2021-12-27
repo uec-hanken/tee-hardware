@@ -54,6 +54,8 @@ class RV64IMAC extends Config((site, here, up) => {
 // ************ Hybrid core configurations (HYBRID) **************
 
 //Only Rocket: 2 cores
+class Rocket1 extends Config(
+  new WithNBigCores(1))
 class Rocket extends Config(
   new WithNBigCores(2))
 class RocketReduced extends Config(
@@ -538,6 +540,21 @@ class ArtyA7Config extends Config((site,here,up) => {
   // Not supported
   case ExtSerBus => None
 })
+
+class SakuraXConfig extends Config((site,here,up) => {
+  case FreqKeyMHz => 50.0
+  case TEEHWResetVector => 0x20000000
+  case PeripherySPIFlashKey => List() // disable SPIFlash
+  case PeripherySPIKey => up(PeripherySPIKey).slice(0, 1) // Disable SPIFlash, even if is the backup
+  /* Force to disable USB1.1, because there are no pins */
+  case PeripheryUSB11HSKey => List()
+  case PeripheryRandomKey => up(PeripheryRandomKey, site) map {r =>
+    r.copy(board = "Xilinx")
+  }
+  /* The DDR memory supports 128 transactions. This is to avoid modifying chipyard*/
+  case MemoryBusKey => up(MemoryBusKey).copy(blockBytes = 128)
+})
+
 
 // ***************** The simulation flag *****************
 class WithSimulation extends Config((site, here, up) => {
