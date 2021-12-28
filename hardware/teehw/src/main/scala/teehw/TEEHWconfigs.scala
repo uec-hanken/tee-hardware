@@ -542,6 +542,7 @@ class ArtyA7Config extends Config((site,here,up) => {
 
 class SakuraXConfig extends Config((site,here,up) => {
   case FreqKeyMHz => 50.0
+  case SDCardMHz => 5.0
   case TEEHWResetVector => 0x20000000
   case PeripherySPIFlashKey => List() // disable SPIFlash
   case PeripherySPIKey => up(PeripherySPIKey).slice(0, 1) // Disable SPIFlash, even if is the backup
@@ -550,7 +551,14 @@ class SakuraXConfig extends Config((site,here,up) => {
   case PeripheryRandomKey => up(PeripheryRandomKey, site) map {r =>
     r.copy(board = "Xilinx")
   }
-  /* The DDR memory supports 128 transactions. This is to avoid modifying chipyard*/
+  // Transform all ExtMem and ExtSerMem into 128MB
+  case ExtMem => up(ExtMem).map{ mem =>
+    mem.copy(mem.master.copy(size = x"0_0800_0000"))
+  }
+  case ExtSerMem => up(ExtSerMem).map{ mem =>
+    mem.copy(mem.master.copy(size = x"0_0800_0000"))
+  }
+  /* The DDR memory supports 128 transactions */
   case MemoryBusKey => up(MemoryBusKey).copy(blockBytes = 128)
 })
 

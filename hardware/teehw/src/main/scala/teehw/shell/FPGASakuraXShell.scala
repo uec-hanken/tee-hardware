@@ -29,32 +29,22 @@ class FMCSakuraX extends Bundle {
 trait FPGASakuraXChipShell {
   // This trait only contains the connections that are supposed to be handled by the chip
   implicit val p: Parameters
-  val gpio_in = IO(Input(UInt(p(GPIOInKey).W)))
-  val gpio_out = IO(Output(UInt((p(PeripheryGPIOKey).head.width-p(GPIOInKey)).W)))
-  val jtag = IO(new Bundle {
-    val jtag_TDI = (Input(Bool())) // J19_20 / XADC_GPIO_2
-    val jtag_TDO = (Output(Bool())) // J19_17 / XADC_GPIO_1
-    val jtag_TCK = (Input(Bool())) // J19_19 / XADC_GPIO_3
-    val jtag_TMS = (Input(Bool())) // J19_18 / XADC_GPIO_0
-  })
-  val sdio = IO(new Bundle {
-    val sdio_clk = (Output(Bool()))
-    val sdio_cmd = (Output(Bool()))
-    val sdio_dat_0 = (Input(Bool()))
-    val sdio_dat_1 = (Analog(1.W))
-    val sdio_dat_2 = (Analog(1.W))
-    val sdio_dat_3 = (Output(Bool()))
-  })
-  val uart_txd = IO(Output(Bool()))
-  val uart_rxd = IO(Input(Bool()))
 
-  val FMC_LPC = IO(new FMCSakuraX)
+  // Table 19
+  val K_HEADER = IO(Vec(10, Analog(1.W)))
+  val K_CLK_EXT_N = IO(Vec(2, Analog(1.W)))
+  val K_CLK_EXT_P = IO(Vec(2, Analog(1.W)))
+  val K_RSVIO_N = IO(Vec(1, Analog(1.W)))
+  val K_RSVIO_P = IO(Vec(1, Analog(1.W)))
 
-//  val USER_SMA_CLOCK_P = IO(Analog(1.W))
-//  val USER_SMA_CLOCK_N = IO(Analog(1.W))
-//
-//  val USER_CLOCK_P = IO(Analog(1.W))
-//  val USER_CLOCK_N = IO(Analog(1.W))
+  // Table 17
+  val K_DIPSW = IO(Vec(8, Input(Bool())))
+
+  // Table 20
+  val K_LED = IO(Vec(8, Analog(1.W)))
+
+  // Table 18
+  val K_FMC = IO(new FMCSakuraX)
 }
 
 trait FPGASakuraXClockAndResetsAndDDR {
@@ -479,36 +469,42 @@ trait WithFPGASakuraXPureConnect {
   def namedclocks: Seq[String] = chip.system.sys.asInstanceOf[HasTEEHWSystemModule].namedclocks
   // This trait connects the chip to all essentials. This assumes no DDR is connected yet
 
-  // def PCIPORT = FMC_LPC   // LPC cannot support PCIe
-  def MISCPORT = FMC_LPC
+  (chip.gpio_out.asBools() zip K_LED).foreach{ case(gpo, led) =>
+    IOBUF(led, gpo)
+  }
+  chip.gpio_in := K_DIPSW.asUInt()
+  chip.jtag.jtag_TCK := IBUFG(IOBUF(K_HEADER(5)).asClock()).asBool()
+  chip.jtag.jtag_TDI := IOBUF(K_HEADER(4))
+  PULLUP(K_HEADER(4))
+  IOBUF(K_HEADER(3), chip.jtag.jtag_TDO)
+  chip.jtag.jtag_TMS := IOBUF(K_HEADER(2))
+  PULLUP(K_HEADER(2))
+  chip.uart_rxd := IOBUF(K_HEADER(1))
+  IOBUF(K_HEADER(0), chip.uart_txd)
+  IOBUF(K_HEADER(6), chip.sdio.sdio_clk)
+  IOBUF(K_HEADER(7), chip.sdio.sdio_cmd)
+  chip.sdio.sdio_dat_0 := IOBUF(K_HEADER(8))
+  IOBUF(K_HEADER(9), chip.sdio.sdio_dat_3)
 
-  gpio_out := chip.gpio_out
-  chip.gpio_in := gpio_in
-  jtag <> chip.jtag
-  chip.jtag.jtag_TCK := IBUFG(jtag.jtag_TCK.asClock).asUInt
-  chip.uart_rxd := uart_rxd	  // UART_TXD
-  uart_txd := chip.uart_txd 	// UART_RXD
-  sdio <> chip.sdio
-
-  // Connected to MISCPORT
+  // Connected to K_FMC
   chip.usb11hs.foreach{ case chipport =>
     val USBWireDataIn = Wire(Vec(2, Bool()))
-    ConnectFMCLPCXilinxGPIO.debug(1, 1, USBWireDataIn(0), true, MISCPORT)
-    ConnectFMCLPCXilinxGPIO.debug(1, 2, USBWireDataIn(1), true, MISCPORT)
+    ConnectFMCLPCXilinxGPIO.debug(1, 1, USBWireDataIn(0), true, K_FMC)
+    ConnectFMCLPCXilinxGPIO.debug(1, 2, USBWireDataIn(1), true, K_FMC)
     chipport.USBWireDataIn := USBWireDataIn.asUInt()
-    ConnectFMCLPCXilinxGPIO.debug(1, 3, chipport.USBWireDataOut(0), false, MISCPORT)
-    ConnectFMCLPCXilinxGPIO.debug(1, 4, chipport.USBWireDataOut(1), false, MISCPORT)
-    ConnectFMCLPCXilinxGPIO.debug(1, 5, chipport.USBWireCtrlOut, false, MISCPORT)
-    ConnectFMCLPCXilinxGPIO.debug(1, 6, chipport.USBFullSpeed, false, MISCPORT)
+    ConnectFMCLPCXilinxGPIO.debug(1, 3, chipport.USBWireDataOut(0), false, K_FMC)
+    ConnectFMCLPCXilinxGPIO.debug(1, 4, chipport.USBWireDataOut(1), false, K_FMC)
+    ConnectFMCLPCXilinxGPIO.debug(1, 5, chipport.USBWireCtrlOut, false, K_FMC)
+    ConnectFMCLPCXilinxGPIO.debug(1, 6, chipport.USBFullSpeed, false, K_FMC)
   }
 
   chip.qspi.foreach { case qspi =>
-    ConnectFMCLPCXilinxGPIO.debug(1, 7, qspi.qspi_cs(0), false, MISCPORT)
-    ConnectFMCLPCXilinxGPIO.debug(1, 8, qspi.qspi_sck, false, MISCPORT)
-    ConnectFMCLPCXilinxGPIO.debug(1, 9, qspi.qspi_miso, true, MISCPORT)
-    ConnectFMCLPCXilinxGPIO.debug(1, 10, qspi.qspi_mosi, false, MISCPORT)
-    ConnectFMCLPCXilinxGPIO.debug(1, 11, qspi.qspi_wp, false, MISCPORT)
-    ConnectFMCLPCXilinxGPIO.debug(1, 12, qspi.qspi_hold, false, MISCPORT)
+    ConnectFMCLPCXilinxGPIO.debug(1, 7, qspi.qspi_cs(0), false, K_FMC)
+    ConnectFMCLPCXilinxGPIO.debug(1, 8, qspi.qspi_sck, false, K_FMC)
+    ConnectFMCLPCXilinxGPIO.debug(1, 9, qspi.qspi_miso, true, K_FMC)
+    ConnectFMCLPCXilinxGPIO.debug(1, 10, qspi.qspi_mosi, false, K_FMC)
+    ConnectFMCLPCXilinxGPIO.debug(1, 11, qspi.qspi_wp, false, K_FMC)
+    ConnectFMCLPCXilinxGPIO.debug(1, 12, qspi.qspi_hold, false, K_FMC)
   }
 }
 
@@ -524,9 +520,5 @@ trait WithFPGASakuraXConnect extends WithFPGASakuraXPureConnect
   // gpio_out := Cat(chip.gpio_out(chip.gpio_out.getWidth-1, 1), intern.init_calib_complete)
   (chip.usb11hs zip intern.usbClk).foreach { case (chipport, uclk) =>
     chipport.usbClk := uclk
-  }
-
-  chip.xdmaPorts.foreach{ port =>
-    // Nothing
   }
 }
