@@ -18,7 +18,7 @@ CFLAGS=$(CFLAGS_ARCH) -mcmodel=medany -O2 -std=gnu11 -Wall -nostartfiles
 CFLAGS+= -fno-common -g -DENTROPY=0 -DNONSMP_HART=0 
 CFLAGS+= -I $(BOOTROM_DIR)/include -I. -I./gpt -I./boot -I./sd -I./kprintf $(ADD_OPTS) 
 LFLAGS=-static -nostdlib -L $(BOOTROM_DIR)/linker -T sdboot.elf.lds
-SDBOOT_TARGET_ADDR?=0x84000000UL
+SDBOOT_TARGET_ADDR?=0x82000000UL
 SDBOOT_SOURCE_ADDR?=0x20000000
 
 dts := $(BUILD_DIR)/$(long_name).dts
