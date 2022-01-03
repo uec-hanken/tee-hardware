@@ -201,10 +201,10 @@ set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_CLKIN_n1
 set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_CLKIN_n2
 set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_CLKIN_p1
 set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_CLKIN_p2
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_D[0]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_D[1]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_D[2]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_D[3]
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_D_0
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_D_1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_D_2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_D_3
 set_instance_assignment -name IO_STANDARD "1.4-V PCML" -to HSMA_GXB_RX_p[0]
 set_instance_assignment -name IO_STANDARD "1.4-V PCML" -to HSMA_GXB_RX_p[1]
 set_instance_assignment -name IO_STANDARD "1.4-V PCML" -to HSMA_GXB_RX_p[2]
@@ -227,83 +227,83 @@ set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_OUT_n2
 set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_OUT_p1
 set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_OUT_p2
 set_instance_assignment -name IO_STANDARD "1.4-V PCML" -to HSMA_REFCLK_p
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_n[0]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_n[1]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_n[2]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_n[3]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_n[4]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_n[5]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_n[6]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_n[7]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_n[8]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_n[9]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_n[10]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_n[11]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_n[12]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_n[13]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_n[14]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_n[15]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_n[16]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_p[0]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_p[1]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_p[2]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_p[3]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_p[4]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_p[5]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_p[6]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_p[7]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_p[8]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_p[9]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_p[10]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_p[11]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_p[12]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_p[13]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_p[14]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_p[15]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_p[16]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_n[0]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_n[1]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_n[2]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_n[3]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_n[4]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_n[5]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_n[6]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_n[7]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_n[8]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_n[9]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_n[10]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_n[11]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_n[12]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_n[13]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_n[14]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_n[15]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_n[16]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_p[0]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_p[1]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_p[2]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_p[3]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_p[4]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_p[5]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_p[6]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_p[7]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_p[8]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_p[9]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_p[10]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_p[11]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_p[12]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_p[13]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_p[14]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_p[15]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_p[16]
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_n_0
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_n_1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_n_2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_n_3
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_n_4
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_n_5
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_n_6
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_n_7
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_n_8
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_n_9
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_n_10
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_n_11
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_n_12
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_n_13
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_n_14
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_n_15
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_n_16
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_p_0
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_p_1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_p_2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_p_3
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_p_4
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_p_5
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_p_6
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_p_7
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_p_8
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_p_9
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_p_10
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_p_11
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_p_12
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_p_13
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_p_14
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_p_15
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_RX_p_16
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_n_0
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_n_1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_n_2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_n_3
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_n_4
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_n_5
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_n_6
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_n_7
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_n_8
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_n_9
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_n_10
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_n_11
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_n_12
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_n_13
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_n_14
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_n_15
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_n_16
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_p_0
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_p_1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_p_2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_p_3
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_p_4
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_p_5
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_p_6
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_p_7
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_p_8
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_p_9
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_p_10
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_p_11
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_p_12
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_p_13
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_p_14
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_p_15
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMA_TX_p_16
 set_location_assignment PIN_C10 -to HSMA_CLKIN0
 set_location_assignment PIN_AE5 -to HSMA_CLKIN_n1
 set_location_assignment PIN_AC5 -to HSMA_CLKIN_n2
 set_location_assignment PIN_AF6 -to HSMA_CLKIN_p1
 set_location_assignment PIN_AC6 -to HSMA_CLKIN_p2
-set_location_assignment PIN_AK8 -to HSMA_D[0]
-set_location_assignment PIN_AP6 -to HSMA_D[1]
-set_location_assignment PIN_AK7 -to HSMA_D[2]
-set_location_assignment PIN_AP5 -to HSMA_D[3]
+set_location_assignment PIN_AK8 -to HSMA_D_0
+set_location_assignment PIN_AP6 -to HSMA_D_1
+set_location_assignment PIN_AK7 -to HSMA_D_2
+set_location_assignment PIN_AP5 -to HSMA_D_3
 set_location_assignment PIN_AE2 -to HSMA_GXB_RX_p[0]
 set_location_assignment PIN_AC2 -to HSMA_GXB_RX_p[1]
 set_location_assignment PIN_U2 -to HSMA_GXB_RX_p[2]
@@ -326,74 +326,74 @@ set_location_assignment PIN_G10 -to HSMA_OUT_n2
 set_location_assignment PIN_R12 -to HSMA_OUT_p1
 set_location_assignment PIN_H10 -to HSMA_OUT_p2
 set_location_assignment PIN_AA2 -to HSMA_REFCLK_p
-set_location_assignment PIN_AN5 -to HSMA_RX_n[0]
-set_location_assignment PIN_AM5 -to HSMA_RX_n[1]
-set_location_assignment PIN_AL5 -to HSMA_RX_n[2]
-set_location_assignment PIN_AK5 -to HSMA_RX_n[3]
-set_location_assignment PIN_AJ5 -to HSMA_RX_n[4]
-set_location_assignment PIN_AH5 -to HSMA_RX_n[5]
-set_location_assignment PIN_AG5 -to HSMA_RX_n[6]
-set_location_assignment PIN_AC8 -to HSMA_RX_n[7]
-set_location_assignment PIN_E10 -to HSMA_RX_n[8]
-set_location_assignment PIN_F9 -to HSMA_RX_n[9]
-set_location_assignment PIN_C9 -to HSMA_RX_n[10]
-set_location_assignment PIN_F6 -to HSMA_RX_n[11]
-set_location_assignment PIN_F5 -to HSMA_RX_n[12]
-set_location_assignment PIN_E7 -to HSMA_RX_n[13]
-set_location_assignment PIN_C8 -to HSMA_RX_n[14]
-set_location_assignment PIN_C5 -to HSMA_RX_n[15]
-set_location_assignment PIN_C7 -to HSMA_RX_n[16]
-set_location_assignment PIN_AN6 -to HSMA_RX_p[0]
-set_location_assignment PIN_AM6 -to HSMA_RX_p[1]
-set_location_assignment PIN_AL6 -to HSMA_RX_p[2]
-set_location_assignment PIN_AK6 -to HSMA_RX_p[3]
-set_location_assignment PIN_AJ6 -to HSMA_RX_p[4]
-set_location_assignment PIN_AH6 -to HSMA_RX_p[5]
-set_location_assignment PIN_AG6 -to HSMA_RX_p[6]
-set_location_assignment PIN_AB9 -to HSMA_RX_p[7]
-set_location_assignment PIN_F10 -to HSMA_RX_p[8]
-set_location_assignment PIN_G9 -to HSMA_RX_p[9]
-set_location_assignment PIN_D9 -to HSMA_RX_p[10]
-set_location_assignment PIN_G6 -to HSMA_RX_p[11]
-set_location_assignment PIN_G5 -to HSMA_RX_p[12]
-set_location_assignment PIN_F7 -to HSMA_RX_p[13]
-set_location_assignment PIN_D8 -to HSMA_RX_p[14]
-set_location_assignment PIN_D5 -to HSMA_RX_p[15]
-set_location_assignment PIN_D7 -to HSMA_RX_p[16]
-set_location_assignment PIN_AG9 -to HSMA_TX_n[0]
-set_location_assignment PIN_AH8 -to HSMA_TX_n[1]
-set_location_assignment PIN_AG7 -to HSMA_TX_n[2]
-set_location_assignment PIN_AF10 -to HSMA_TX_n[3]
-set_location_assignment PIN_AD9 -to HSMA_TX_n[4]
-set_location_assignment PIN_AB12 -to HSMA_TX_n[5]
-set_location_assignment PIN_AB10 -to HSMA_TX_n[6]
-set_location_assignment PIN_T12 -to HSMA_TX_n[7]
-set_location_assignment PIN_P13 -to HSMA_TX_n[8]
-set_location_assignment PIN_N10 -to HSMA_TX_n[9]
-set_location_assignment PIN_M12 -to HSMA_TX_n[10]
-set_location_assignment PIN_L10 -to HSMA_TX_n[11]
-set_location_assignment PIN_L11 -to HSMA_TX_n[12]
-set_location_assignment PIN_J8 -to HSMA_TX_n[13]
-set_location_assignment PIN_J9 -to HSMA_TX_n[14]
-set_location_assignment PIN_G7 -to HSMA_TX_n[15]
-set_location_assignment PIN_J10 -to HSMA_TX_n[16]
-set_location_assignment PIN_AG10 -to HSMA_TX_p[0]
-set_location_assignment PIN_AH9 -to HSMA_TX_p[1]
-set_location_assignment PIN_AG8 -to HSMA_TX_p[2]
-set_location_assignment PIN_AF11 -to HSMA_TX_p[3]
-set_location_assignment PIN_AD10 -to HSMA_TX_p[4]
-set_location_assignment PIN_AB13 -to HSMA_TX_p[5]
-set_location_assignment PIN_AB11 -to HSMA_TX_p[6]
-set_location_assignment PIN_T13 -to HSMA_TX_p[7]
-set_location_assignment PIN_R13 -to HSMA_TX_p[8]
-set_location_assignment PIN_N11 -to HSMA_TX_p[9]
-set_location_assignment PIN_N12 -to HSMA_TX_p[10]
-set_location_assignment PIN_M10 -to HSMA_TX_p[11]
-set_location_assignment PIN_M11 -to HSMA_TX_p[12]
-set_location_assignment PIN_K8 -to HSMA_TX_p[13]
-set_location_assignment PIN_K9 -to HSMA_TX_p[14]
-set_location_assignment PIN_H7 -to HSMA_TX_p[15]
-set_location_assignment PIN_K10 -to HSMA_TX_p[16]
+set_location_assignment PIN_AN5 -to HSMA_RX_n_0
+set_location_assignment PIN_AM5 -to HSMA_RX_n_1
+set_location_assignment PIN_AL5 -to HSMA_RX_n_2
+set_location_assignment PIN_AK5 -to HSMA_RX_n_3
+set_location_assignment PIN_AJ5 -to HSMA_RX_n_4
+set_location_assignment PIN_AH5 -to HSMA_RX_n_5
+set_location_assignment PIN_AG5 -to HSMA_RX_n_6
+set_location_assignment PIN_AC8 -to HSMA_RX_n_7
+set_location_assignment PIN_E10 -to HSMA_RX_n_8
+set_location_assignment PIN_F9 -to HSMA_RX_n_9
+set_location_assignment PIN_C9 -to HSMA_RX_n_10
+set_location_assignment PIN_F6 -to HSMA_RX_n_11
+set_location_assignment PIN_F5 -to HSMA_RX_n_12
+set_location_assignment PIN_E7 -to HSMA_RX_n_13
+set_location_assignment PIN_C8 -to HSMA_RX_n_14
+set_location_assignment PIN_C5 -to HSMA_RX_n_15
+set_location_assignment PIN_C7 -to HSMA_RX_n_16
+set_location_assignment PIN_AN6 -to HSMA_RX_p_0
+set_location_assignment PIN_AM6 -to HSMA_RX_p_1
+set_location_assignment PIN_AL6 -to HSMA_RX_p_2
+set_location_assignment PIN_AK6 -to HSMA_RX_p_3
+set_location_assignment PIN_AJ6 -to HSMA_RX_p_4
+set_location_assignment PIN_AH6 -to HSMA_RX_p_5
+set_location_assignment PIN_AG6 -to HSMA_RX_p_6
+set_location_assignment PIN_AB9 -to HSMA_RX_p_7
+set_location_assignment PIN_F10 -to HSMA_RX_p_8
+set_location_assignment PIN_G9 -to HSMA_RX_p_9
+set_location_assignment PIN_D9 -to HSMA_RX_p_10
+set_location_assignment PIN_G6 -to HSMA_RX_p_11
+set_location_assignment PIN_G5 -to HSMA_RX_p_12
+set_location_assignment PIN_F7 -to HSMA_RX_p_13
+set_location_assignment PIN_D8 -to HSMA_RX_p_14
+set_location_assignment PIN_D5 -to HSMA_RX_p_15
+set_location_assignment PIN_D7 -to HSMA_RX_p_16
+set_location_assignment PIN_AG9 -to HSMA_TX_n_0
+set_location_assignment PIN_AH8 -to HSMA_TX_n_1
+set_location_assignment PIN_AG7 -to HSMA_TX_n_2
+set_location_assignment PIN_AF10 -to HSMA_TX_n_3
+set_location_assignment PIN_AD9 -to HSMA_TX_n_4
+set_location_assignment PIN_AB12 -to HSMA_TX_n_5
+set_location_assignment PIN_AB10 -to HSMA_TX_n_6
+set_location_assignment PIN_T12 -to HSMA_TX_n_7
+set_location_assignment PIN_P13 -to HSMA_TX_n_8
+set_location_assignment PIN_N10 -to HSMA_TX_n_9
+set_location_assignment PIN_M12 -to HSMA_TX_n_10
+set_location_assignment PIN_L10 -to HSMA_TX_n_11
+set_location_assignment PIN_L11 -to HSMA_TX_n_12
+set_location_assignment PIN_J8 -to HSMA_TX_n_13
+set_location_assignment PIN_J9 -to HSMA_TX_n_14
+set_location_assignment PIN_G7 -to HSMA_TX_n_15
+set_location_assignment PIN_J10 -to HSMA_TX_n_16
+set_location_assignment PIN_AG10 -to HSMA_TX_p_0
+set_location_assignment PIN_AH9 -to HSMA_TX_p_1
+set_location_assignment PIN_AG8 -to HSMA_TX_p_2
+set_location_assignment PIN_AF11 -to HSMA_TX_p_3
+set_location_assignment PIN_AD10 -to HSMA_TX_p_4
+set_location_assignment PIN_AB13 -to HSMA_TX_p_5
+set_location_assignment PIN_AB11 -to HSMA_TX_p_6
+set_location_assignment PIN_T13 -to HSMA_TX_p_7
+set_location_assignment PIN_R13 -to HSMA_TX_p_8
+set_location_assignment PIN_N11 -to HSMA_TX_p_9
+set_location_assignment PIN_N12 -to HSMA_TX_p_10
+set_location_assignment PIN_M10 -to HSMA_TX_p_11
+set_location_assignment PIN_M11 -to HSMA_TX_p_12
+set_location_assignment PIN_K8 -to HSMA_TX_p_13
+set_location_assignment PIN_K9 -to HSMA_TX_p_14
+set_location_assignment PIN_H7 -to HSMA_TX_p_15
+set_location_assignment PIN_K10 -to HSMA_TX_p_16
 #============================================================
 # HSMB
 #============================================================
@@ -402,339 +402,316 @@ set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_CLKIN_n1
 set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_CLKIN_n2
 set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_CLKIN_p1
 set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_CLKIN_p2
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_D[0]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_D[1]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_D[2]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_D[3]
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_D_0
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_D_1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_D_2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_D_3
 set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_OUT0
 set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_OUT_n1
 set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_OUT_n2
 set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_OUT_p1
 set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_OUT_p2
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_n[0]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_n[1]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_n[2]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_n[3]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_n[4]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_n[5]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_n[6]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_n[7]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_n[8]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_n[9]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_n[10]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_n[11]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_n[12]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_n[13]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_n[14]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_n[15]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_n[16]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_p[0]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_p[1]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_p[2]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_p[3]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_p[4]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_p[5]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_p[6]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_p[7]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_p[8]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_p[9]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_p[10]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_p[11]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_p[12]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_p[13]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_p[14]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_p[15]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_p[16]
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_n_0
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_n_1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_n_2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_n_3
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_n_4
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_n_5
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_n_6
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_n_7
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_n_8
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_n_9
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_n_10
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_n_11
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_n_12
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_n_13
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_n_14
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_n_15
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_n_16
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_p_0
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_p_1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_p_2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_p_3
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_p_4
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_p_5
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_p_6
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_p_7
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_p_8
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_p_9
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_p_10
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_p_11
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_p_12
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_p_13
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_p_14
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_p_15
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_RX_p_16
 set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_SCL
 set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_SDA
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_n[0]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_n[1]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_n[2]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_n[3]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_n[4]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_n[5]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_n[6]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_n[7]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_n[8]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_n[9]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_n[10]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_n[11]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_n[12]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_n[13]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_n[14]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_n[15]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_n[16]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_p[0]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_p[1]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_p[2]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_p[3]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_p[4]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_p[5]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_p[6]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_p[7]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_p[8]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_p[9]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_p[10]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_p[11]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_p[12]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_p[13]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_p[14]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_p[15]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_p[16]
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_n_0
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_n_1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_n_2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_n_3
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_n_4
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_n_5
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_n_6
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_n_7
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_n_8
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_n_9
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_n_10
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_n_11
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_n_12
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_n_13
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_n_14
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_n_15
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_n_16
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_p_0
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_p_1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_p_2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_p_3
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_p_4
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_p_5
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_p_6
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_p_7
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_p_8
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_p_9
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_p_10
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_p_11
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_p_12
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_p_13
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_p_14
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_p_15
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMB_TX_p_16
 set_location_assignment PIN_AP15 -to HSMB_CLKIN0
 set_location_assignment PIN_AU7 -to HSMB_CLKIN_n1
 set_location_assignment PIN_AW14 -to HSMB_CLKIN_n2
 set_location_assignment PIN_AT7 -to HSMB_CLKIN_p1
 set_location_assignment PIN_AV14 -to HSMB_CLKIN_p2
-set_location_assignment PIN_AD15 -to HSMB_D[0]
-set_location_assignment PIN_AV13 -to HSMB_D[1]
-set_location_assignment PIN_AE15 -to HSMB_D[2]
-set_location_assignment PIN_AW13 -to HSMB_D[3]
+set_location_assignment PIN_AD15 -to HSMB_D_0
+set_location_assignment PIN_AV13 -to HSMB_D_1
+set_location_assignment PIN_AE15 -to HSMB_D_2
+set_location_assignment PIN_AW13 -to HSMB_D_3
 set_location_assignment PIN_AN15 -to HSMB_OUT0
 set_location_assignment PIN_AP10 -to HSMB_OUT_n1
 set_location_assignment PIN_AJ10 -to HSMB_OUT_n2
 set_location_assignment PIN_AN10 -to HSMB_OUT_p1
 set_location_assignment PIN_AH10 -to HSMB_OUT_p2
-set_location_assignment PIN_AW10 -to HSMB_RX_n[0]
-set_location_assignment PIN_AU9 -to HSMB_RX_n[1]
-set_location_assignment PIN_AW7 -to HSMB_RX_n[2]
-set_location_assignment PIN_AW5 -to HSMB_RX_n[3]
-set_location_assignment PIN_AW4 -to HSMB_RX_n[4]
-set_location_assignment PIN_AW8 -to HSMB_RX_n[5]
-set_location_assignment PIN_AT5 -to HSMB_RX_n[6]
-set_location_assignment PIN_AU6 -to HSMB_RX_n[7]
-set_location_assignment PIN_AR8 -to HSMB_RX_n[8]
-set_location_assignment PIN_AU8 -to HSMB_RX_n[9]
-set_location_assignment PIN_AU10 -to HSMB_RX_n[10]
-set_location_assignment PIN_AV11 -to HSMB_RX_n[11]
-set_location_assignment PIN_AT13 -to HSMB_RX_n[12]
-set_location_assignment PIN_AK13 -to HSMB_RX_n[13]
-set_location_assignment PIN_AJ14 -to HSMB_RX_n[14]
-set_location_assignment PIN_AF14 -to HSMB_RX_n[15]
-set_location_assignment PIN_AM13 -to HSMB_RX_n[16]
-set_location_assignment PIN_AV10 -to HSMB_RX_p[0]
-set_location_assignment PIN_AT9 -to HSMB_RX_p[1]
-set_location_assignment PIN_AV7 -to HSMB_RX_p[2]
-set_location_assignment PIN_AW6 -to HSMB_RX_p[3]
-set_location_assignment PIN_AV5 -to HSMB_RX_p[4]
-set_location_assignment PIN_AV8 -to HSMB_RX_p[5]
-set_location_assignment PIN_AR5 -to HSMB_RX_p[6]
-set_location_assignment PIN_AT6 -to HSMB_RX_p[7]
-set_location_assignment PIN_AP8 -to HSMB_RX_p[8]
-set_location_assignment PIN_AT8 -to HSMB_RX_p[9]
-set_location_assignment PIN_AT10 -to HSMB_RX_p[10]
-set_location_assignment PIN_AU11 -to HSMB_RX_p[11]
-set_location_assignment PIN_AR13 -to HSMB_RX_p[12]
-set_location_assignment PIN_AJ13 -to HSMB_RX_p[13]
-set_location_assignment PIN_AH14 -to HSMB_RX_p[14]
-set_location_assignment PIN_AE14 -to HSMB_RX_p[15]
-set_location_assignment PIN_AL13 -to HSMB_RX_p[16]
+set_location_assignment PIN_AW10 -to HSMB_RX_n_0
+set_location_assignment PIN_AU9 -to HSMB_RX_n_1
+set_location_assignment PIN_AW7 -to HSMB_RX_n_2
+set_location_assignment PIN_AW5 -to HSMB_RX_n_3
+set_location_assignment PIN_AW4 -to HSMB_RX_n_4
+set_location_assignment PIN_AW8 -to HSMB_RX_n_5
+set_location_assignment PIN_AT5 -to HSMB_RX_n_6
+set_location_assignment PIN_AU6 -to HSMB_RX_n_7
+set_location_assignment PIN_AR8 -to HSMB_RX_n_8
+set_location_assignment PIN_AU8 -to HSMB_RX_n_9
+set_location_assignment PIN_AU10 -to HSMB_RX_n_10
+set_location_assignment PIN_AV11 -to HSMB_RX_n_11
+set_location_assignment PIN_AT13 -to HSMB_RX_n_12
+set_location_assignment PIN_AK13 -to HSMB_RX_n_13
+set_location_assignment PIN_AJ14 -to HSMB_RX_n_14
+set_location_assignment PIN_AF14 -to HSMB_RX_n_15
+set_location_assignment PIN_AM13 -to HSMB_RX_n_16
+set_location_assignment PIN_AV10 -to HSMB_RX_p_0
+set_location_assignment PIN_AT9 -to HSMB_RX_p_1
+set_location_assignment PIN_AV7 -to HSMB_RX_p_2
+set_location_assignment PIN_AW6 -to HSMB_RX_p_3
+set_location_assignment PIN_AV5 -to HSMB_RX_p_4
+set_location_assignment PIN_AV8 -to HSMB_RX_p_5
+set_location_assignment PIN_AR5 -to HSMB_RX_p_6
+set_location_assignment PIN_AT6 -to HSMB_RX_p_7
+set_location_assignment PIN_AP8 -to HSMB_RX_p_8
+set_location_assignment PIN_AT8 -to HSMB_RX_p_9
+set_location_assignment PIN_AT10 -to HSMB_RX_p_10
+set_location_assignment PIN_AU11 -to HSMB_RX_p_11
+set_location_assignment PIN_AR13 -to HSMB_RX_p_12
+set_location_assignment PIN_AJ13 -to HSMB_RX_p_13
+set_location_assignment PIN_AH14 -to HSMB_RX_p_14
+set_location_assignment PIN_AE14 -to HSMB_RX_p_15
+set_location_assignment PIN_AL13 -to HSMB_RX_p_16
 set_location_assignment PIN_AE16 -to HSMB_SCL
 set_location_assignment PIN_AF16 -to HSMB_SDA
-set_location_assignment PIN_AL15 -to HSMB_TX_n[0]
-set_location_assignment PIN_AU14 -to HSMB_TX_n[1]
-set_location_assignment PIN_AW11 -to HSMB_TX_n[2]
-set_location_assignment PIN_AM14 -to HSMB_TX_n[3]
-set_location_assignment PIN_AU12 -to HSMB_TX_n[4]
-set_location_assignment PIN_AN14 -to HSMB_TX_n[5]
-set_location_assignment PIN_AG15 -to HSMB_TX_n[6]
-set_location_assignment PIN_AP9 -to HSMB_TX_n[7]
-set_location_assignment PIN_AM8 -to HSMB_TX_n[8]
-set_location_assignment PIN_AL9 -to HSMB_TX_n[9]
-set_location_assignment PIN_AM10 -to HSMB_TX_n[10]
-set_location_assignment PIN_AJ11 -to HSMB_TX_n[11]
-set_location_assignment PIN_AH12 -to HSMB_TX_n[12]
-set_location_assignment PIN_AE12 -to HSMB_TX_n[13]
-set_location_assignment PIN_AG13 -to HSMB_TX_n[14]
-set_location_assignment PIN_AD12 -to HSMB_TX_n[15]
-set_location_assignment PIN_AP7 -to HSMB_TX_n[16]
-set_location_assignment PIN_AN13 -to HSMB_TX_p[0]
-set_location_assignment PIN_AT14 -to HSMB_TX_p[1]
-set_location_assignment PIN_AW12 -to HSMB_TX_p[2]
-set_location_assignment PIN_AL14 -to HSMB_TX_p[3]
-set_location_assignment PIN_AT12 -to HSMB_TX_p[4]
-set_location_assignment PIN_AP13 -to HSMB_TX_p[5]
-set_location_assignment PIN_AG14 -to HSMB_TX_p[6]
-set_location_assignment PIN_AN9 -to HSMB_TX_p[7]
-set_location_assignment PIN_AL8 -to HSMB_TX_p[8]
-set_location_assignment PIN_AK9 -to HSMB_TX_p[9]
-set_location_assignment PIN_AL10 -to HSMB_TX_p[10]
-set_location_assignment PIN_AH11 -to HSMB_TX_p[11]
-set_location_assignment PIN_AG12 -to HSMB_TX_p[12]
-set_location_assignment PIN_AE13 -to HSMB_TX_p[13]
-set_location_assignment PIN_AF13 -to HSMB_TX_p[14]
-set_location_assignment PIN_AD13 -to HSMB_TX_p[15]
-set_location_assignment PIN_AN7 -to HSMB_TX_p[16]
+set_location_assignment PIN_AL15 -to HSMB_TX_n_0
+set_location_assignment PIN_AU14 -to HSMB_TX_n_1
+set_location_assignment PIN_AW11 -to HSMB_TX_n_2
+set_location_assignment PIN_AM14 -to HSMB_TX_n_3
+set_location_assignment PIN_AU12 -to HSMB_TX_n_4
+set_location_assignment PIN_AN14 -to HSMB_TX_n_5
+set_location_assignment PIN_AG15 -to HSMB_TX_n_6
+set_location_assignment PIN_AP9 -to HSMB_TX_n_7
+set_location_assignment PIN_AM8 -to HSMB_TX_n_8
+set_location_assignment PIN_AL9 -to HSMB_TX_n_9
+set_location_assignment PIN_AM10 -to HSMB_TX_n_10
+set_location_assignment PIN_AJ11 -to HSMB_TX_n_11
+set_location_assignment PIN_AH12 -to HSMB_TX_n_12
+set_location_assignment PIN_AE12 -to HSMB_TX_n_13
+set_location_assignment PIN_AG13 -to HSMB_TX_n_14
+set_location_assignment PIN_AD12 -to HSMB_TX_n_15
+set_location_assignment PIN_AP7 -to HSMB_TX_n_16
+set_location_assignment PIN_AN13 -to HSMB_TX_p_0
+set_location_assignment PIN_AT14 -to HSMB_TX_p_1
+set_location_assignment PIN_AW12 -to HSMB_TX_p_2
+set_location_assignment PIN_AL14 -to HSMB_TX_p_3
+set_location_assignment PIN_AT12 -to HSMB_TX_p_4
+set_location_assignment PIN_AP13 -to HSMB_TX_p_5
+set_location_assignment PIN_AG14 -to HSMB_TX_p_6
+set_location_assignment PIN_AN9 -to HSMB_TX_p_7
+set_location_assignment PIN_AL8 -to HSMB_TX_p_8
+set_location_assignment PIN_AK9 -to HSMB_TX_p_9
+set_location_assignment PIN_AL10 -to HSMB_TX_p_10
+set_location_assignment PIN_AH11 -to HSMB_TX_p_11
+set_location_assignment PIN_AG12 -to HSMB_TX_p_12
+set_location_assignment PIN_AE13 -to HSMB_TX_p_13
+set_location_assignment PIN_AF13 -to HSMB_TX_p_14
+set_location_assignment PIN_AD13 -to HSMB_TX_p_15
+set_location_assignment PIN_AN7 -to HSMB_TX_p_16
 #============================================================
 # HSMC
 #============================================================
-#set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D[6]
-#set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D[7]
-#set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D[8]
-#set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D[9]
-#set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D[10]
-#set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D[11]
-#set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D[12]
-#set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D[13]
-#set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D[14]
-#set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D[15]
-#set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D[16]
-#set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D[17]
-#set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D[18]
-#set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D[19]
-#set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D[20]
-#set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D[21]
-#set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D[22]
-#set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D[23]
-#set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D[24]
-#set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D[25]
-#set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D[26]
-#set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D[27]
-#set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D[29]
-#set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D[31]
-#set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D[33]
-#set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D[35]
-#set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D[0]
-#set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D[1]
-#set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D[2]
-#set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D[3]
-#set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D[5]
-#set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D[7]
-#set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D[9]
-#set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D[11]
-#set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D[12]
-#set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D[13]
-#set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D[14]
-#set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D[15]
-#set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D[16]
-#set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D[17]
-#set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D[19]
-#set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D[21]
-#set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D[23]
-#set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D[25]
-#set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D[26]
-#set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D[27]
-#set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D[28]
-#set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D[29]
-#set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D[30]
-#set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D[31]
-#set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D[32]
-#set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D[33]
-#set_location_assignment PIN_AC32 -to GPIO0_D[6]
-#set_location_assignment PIN_AH33 -to GPIO0_D[7]
-#set_location_assignment PIN_AH34 -to GPIO0_D[8]
-#set_location_assignment PIN_AJ34 -to GPIO0_D[9]
-#set_location_assignment PIN_AH35 -to GPIO0_D[10]
-#set_location_assignment PIN_AJ35 -to GPIO0_D[11]
-#set_location_assignment PIN_AK34 -to GPIO0_D[12]
-#set_location_assignment PIN_AL34 -to GPIO0_D[13]
-#set_location_assignment PIN_AK35 -to GPIO0_D[14]
-#set_location_assignment PIN_AL35 -to GPIO0_D[15]
-#set_location_assignment PIN_AM34 -to GPIO0_D[16]
-#set_location_assignment PIN_AN34 -to GPIO0_D[17]
-#set_location_assignment PIN_AM35 -to GPIO0_D[18]
-#set_location_assignment PIN_AN35 -to GPIO0_D[19]
-#set_location_assignment PIN_AJ32 -to GPIO0_D[20]
-#set_location_assignment PIN_AJ26 -to GPIO0_D[21]
-#set_location_assignment PIN_AK33 -to GPIO0_D[22]
-#set_location_assignment PIN_AK26 -to GPIO0_D[23]
-#set_location_assignment PIN_AF25 -to GPIO0_D[24]
-#set_location_assignment PIN_AV29 -to GPIO0_D[25]
-#set_location_assignment PIN_AG25 -to GPIO0_D[26]
-#set_location_assignment PIN_AW30 -to GPIO0_D[27]
-#set_location_assignment PIN_AT28 -to GPIO0_D[29]
-#set_location_assignment PIN_AU28 -to GPIO0_D[31]
-#set_location_assignment PIN_AP28 -to GPIO0_D[33]
-#set_location_assignment PIN_AR28 -to GPIO0_D[35]
-#set_location_assignment PIN_AB27 -to GPIO1_D[0]
-#set_location_assignment PIN_AE25 -to GPIO1_D[1]
-#set_location_assignment PIN_AB28 -to GPIO1_D[2]
-#set_location_assignment PIN_AD25 -to GPIO1_D[3]
-#set_location_assignment PIN_AU29 -to GPIO1_D[5]
-#set_location_assignment PIN_AT29 -to GPIO1_D[7]
-#set_location_assignment PIN_AW33 -to GPIO1_D[9]
-#set_location_assignment PIN_AW34 -to GPIO1_D[11]
-#set_location_assignment PIN_AW31 -to GPIO1_D[12]
-#set_location_assignment PIN_AH24 -to GPIO1_D[13]
-#set_location_assignment PIN_AV31 -to GPIO1_D[14]
-#set_location_assignment PIN_AG24 -to GPIO1_D[15]
-#set_location_assignment PIN_AL27 -to GPIO1_D[16]
-#set_location_assignment PIN_AW27 -to GPIO1_D[17]
-#set_location_assignment PIN_AW28 -to GPIO1_D[19]
-#set_location_assignment PIN_AD30 -to GPIO1_D[21]
-#set_location_assignment PIN_AD31 -to GPIO1_D[23]
-#set_location_assignment PIN_AE30 -to GPIO1_D[25]
-#set_location_assignment PIN_AB31 -to GPIO1_D[26]
-#set_location_assignment PIN_AE31 -to GPIO1_D[27]
-#set_location_assignment PIN_AG31 -to GPIO1_D[28]
-#set_location_assignment PIN_AE28 -to GPIO1_D[29]
-#set_location_assignment PIN_AG32 -to GPIO1_D[30]
-#set_location_assignment PIN_AE29 -to GPIO1_D[31]
-#set_location_assignment PIN_AF29 -to GPIO1_D[32]
-#set_location_assignment PIN_AD28 -to GPIO1_D[33]
-
-set_instance_assignment -name IO_STANDARD "1.8 V" -to USB_0_FullSpeed
-set_instance_assignment -name IO_STANDARD "1.8 V" -to USB_0_WireDataIn[0]
-set_instance_assignment -name IO_STANDARD "1.8 V" -to USB_0_WireDataIn[1]
-set_instance_assignment -name IO_STANDARD "1.8 V" -to USB_0_WireCtrlOut
-set_instance_assignment -name IO_STANDARD "1.8 V" -to USB_0_WireDataOut[1]
-set_instance_assignment -name IO_STANDARD "1.8 V" -to USB_0_WireDataOut[0]
-set_instance_assignment -name IO_STANDARD "1.8 V" -to sdio_sdio_clk
-set_instance_assignment -name IO_STANDARD "1.8 V" -to sdio_sdio_cmd
-set_instance_assignment -name IO_STANDARD "1.8 V" -to sdio_sdio_dat_0
-set_instance_assignment -name IO_STANDARD "1.8 V" -to sdio_sdio_dat_3
-set_instance_assignment -name IO_STANDARD "1.8 V" -to jtag_jtag_TDI
-set_instance_assignment -name IO_STANDARD "1.8 V" -to jtag_jtag_TMS
-set_instance_assignment -name IO_STANDARD "1.8 V" -to jtag_jtag_TCK
-set_instance_assignment -name IO_STANDARD "1.8 V" -to jtag_jtag_TDO
-set_instance_assignment -name IO_STANDARD "1.8 V" -to qspi_qspi_cs
-set_instance_assignment -name IO_STANDARD "1.8 V" -to qspi_qspi_sck
-set_instance_assignment -name IO_STANDARD "1.8 V" -to qspi_qspi_miso
-set_instance_assignment -name IO_STANDARD "1.8 V" -to qspi_qspi_mosi
-set_instance_assignment -name IO_STANDARD "1.8 V" -to UART_TXD
-set_instance_assignment -name IO_STANDARD "1.8 V" -to UART_RXD
-
-set_location_assignment PIN_AF34 -to USB_0_FullSpeed
-set_location_assignment PIN_AG34 -to USB_0_WireDataIn[0]
-set_location_assignment PIN_AE35 -to USB_0_WireDataIn[1]
-set_location_assignment PIN_AG35 -to USB_0_WireCtrlOut
-set_location_assignment PIN_AC31 -to USB_0_WireDataOut[1]
-set_location_assignment PIN_AH32 -to USB_0_WireDataOut[0]
-set_location_assignment PIN_AV32 -to sdio_sdio_clk
-set_location_assignment PIN_AW32 -to sdio_sdio_cmd
-set_location_assignment PIN_AV28 -to sdio_sdio_dat_0
-set_location_assignment PIN_AW29 -to sdio_sdio_dat_3
-set_location_assignment PIN_AP27 -to jtag_jtag_TDI
-set_location_assignment PIN_AN27 -to jtag_jtag_TMS
-set_location_assignment PIN_AL25 -to jtag_jtag_TCK
-set_location_assignment PIN_AP26 -to jtag_jtag_TDO
-set_location_assignment PIN_AH26 -to qspi_qspi_cs
-set_location_assignment PIN_AK27 -to qspi_qspi_sck
-set_location_assignment PIN_AE24 -to qspi_qspi_miso
-set_location_assignment PIN_AB30 -to qspi_qspi_mosi
-set_location_assignment PIN_AG30 -to UART_TXD
-set_location_assignment PIN_AD29 -to UART_RXD
-
-#set_location_assignment PIN_AC28 -to USB_0_FullSpeed
-#set_location_assignment PIN_AK25 -to USB_0_WireDataIn[0]
-#set_location_assignment PIN_AB27 -to USB_0_WireDataIn[1]
-#set_location_assignment PIN_AJ25 -to USB_0_WireCtrlOut
-#set_location_assignment PIN_AB28 -to USB_0_WireDataOut[1]
-#set_location_assignment PIN_AM26 -to USB_0_WireDataOut[0]
-#set_location_assignment PIN_AJ26 -to sdio_sdio_clk
-#set_location_assignment PIN_AF25 -to sdio_sdio_cmd
-#set_location_assignment PIN_AK26 -to sdio_sdio_dat_0
-#set_location_assignment PIN_AG25 -to sdio_sdio_dat_3
-#set_location_assignment PIN_AG35 -to jtag_jtag_TDI
-#set_location_assignment PIN_AG34 -to jtag_jtag_TMS
-#set_location_assignment PIN_AB31 -to jtag_jtag_TCK
-#set_location_assignment PIN_AB30 -to jtag_jtag_TDO
-#set_location_assignment PIN_AT28 -to qspi_qspi_cs
-#set_location_assignment PIN_AN26 -to qspi_qspi_sck
-#set_location_assignment PIN_AP28 -to qspi_qspi_miso
-#set_location_assignment PIN_AR28 -to qspi_qspi_mosi
-#set_location_assignment PIN_AE35 -to UART_TXD
-#set_location_assignment PIN_AF34 -to UART_RXD
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_0
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_1
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_2
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_3
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_4
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_5
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_6
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_7
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_8
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_9
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_10
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_11
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_12
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_13
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_14
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_15
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_16
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_17
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_18
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_19
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_20
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_21
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_22
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_23
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_24
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_25
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_26
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_27
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_28
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_29
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_30
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_31
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_32
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_33
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_34
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO0_D_35
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_0
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_1
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_2
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_3
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_4
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_5
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_6
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_7
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_8
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_9
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_10
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_11
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_12
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_13
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_14
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_15
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_16
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_17
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_18
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_19
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_20
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_21
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_22
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_23
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_24
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_25
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_26
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_27
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_28
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_29
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_30
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_31
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_32
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_33
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_34
+set_instance_assignment -name IO_STANDARD "1.8 V" -to GPIO1_D_35
+set_location_assignment PIN_AF34 -to GPIO0_D_0
+set_location_assignment PIN_AG34 -to GPIO0_D_1
+set_location_assignment PIN_AE35 -to GPIO0_D_2
+set_location_assignment PIN_AG35 -to GPIO0_D_3
+set_location_assignment PIN_AC31 -to GPIO0_D_4
+set_location_assignment PIN_AH32 -to GPIO0_D_5
+set_location_assignment PIN_AC32 -to GPIO0_D_6
+set_location_assignment PIN_AH33 -to GPIO0_D_7
+set_location_assignment PIN_AH34 -to GPIO0_D_8
+set_location_assignment PIN_AJ34 -to GPIO0_D_9
+set_location_assignment PIN_AH35 -to GPIO0_D_10
+set_location_assignment PIN_AJ35 -to GPIO0_D_11
+set_location_assignment PIN_AK34 -to GPIO0_D_12
+set_location_assignment PIN_AL34 -to GPIO0_D_13
+set_location_assignment PIN_AK35 -to GPIO0_D_14
+set_location_assignment PIN_AL35 -to GPIO0_D_15
+set_location_assignment PIN_AM34 -to GPIO0_D_16
+set_location_assignment PIN_AN34 -to GPIO0_D_17
+set_location_assignment PIN_AM35 -to GPIO0_D_18
+set_location_assignment PIN_AN35 -to GPIO0_D_19
+set_location_assignment PIN_AJ32 -to GPIO0_D_20
+set_location_assignment PIN_AJ26 -to GPIO0_D_21
+set_location_assignment PIN_AK33 -to GPIO0_D_22
+set_location_assignment PIN_AK26 -to GPIO0_D_23
+set_location_assignment PIN_AF25 -to GPIO0_D_24
+set_location_assignment PIN_AV29 -to GPIO0_D_25
+set_location_assignment PIN_AG25 -to GPIO0_D_26
+set_location_assignment PIN_AW30 -to GPIO0_D_27
+set_location_assignment PIN_AV32 -to GPIO0_D_28
+set_location_assignment PIN_AT28 -to GPIO0_D_29
+set_location_assignment PIN_AW32 -to GPIO0_D_30
+set_location_assignment PIN_AU28 -to GPIO0_D_31
+set_location_assignment PIN_AV28 -to GPIO0_D_32
+set_location_assignment PIN_AP28 -to GPIO0_D_33
+set_location_assignment PIN_AW29 -to GPIO0_D_34
+set_location_assignment PIN_AR28 -to GPIO0_D_35
+set_location_assignment PIN_AB27 -to GPIO1_D_0
+set_location_assignment PIN_AE25 -to GPIO1_D_1
+set_location_assignment PIN_AB28 -to GPIO1_D_2
+set_location_assignment PIN_AD25 -to GPIO1_D_3
+set_location_assignment PIN_AP27 -to GPIO1_D_4
+set_location_assignment PIN_AU29 -to GPIO1_D_5
+set_location_assignment PIN_AN27 -to GPIO1_D_6
+set_location_assignment PIN_AT29 -to GPIO1_D_7
+set_location_assignment PIN_AL25 -to GPIO1_D_8
+set_location_assignment PIN_AW33 -to GPIO1_D_9
+set_location_assignment PIN_AP26 -to GPIO1_D_10
+set_location_assignment PIN_AW34 -to GPIO1_D_11
+set_location_assignment PIN_AW31 -to GPIO1_D_12
+set_location_assignment PIN_AH24 -to GPIO1_D_13
+set_location_assignment PIN_AV31 -to GPIO1_D_14
+set_location_assignment PIN_AG24 -to GPIO1_D_15
+set_location_assignment PIN_AL27 -to GPIO1_D_16
+set_location_assignment PIN_AW27 -to GPIO1_D_17
+set_location_assignment PIN_AH26 -to GPIO1_D_18
+set_location_assignment PIN_AW28 -to GPIO1_D_19
+set_location_assignment PIN_AK27 -to GPIO1_D_20
+set_location_assignment PIN_AD30 -to GPIO1_D_21
+set_location_assignment PIN_AE24 -to GPIO1_D_22
+set_location_assignment PIN_AD31 -to GPIO1_D_23
+set_location_assignment PIN_AB30 -to GPIO1_D_24
+set_location_assignment PIN_AE30 -to GPIO1_D_25
+set_location_assignment PIN_AB31 -to GPIO1_D_26
+set_location_assignment PIN_AE31 -to GPIO1_D_27
+set_location_assignment PIN_AG31 -to GPIO1_D_28
+set_location_assignment PIN_AE28 -to GPIO1_D_29
+set_location_assignment PIN_AG32 -to GPIO1_D_30
+set_location_assignment PIN_AE29 -to GPIO1_D_31
+set_location_assignment PIN_AF29 -to GPIO1_D_32
+set_location_assignment PIN_AD28 -to GPIO1_D_33
+set_location_assignment PIN_AG30 -to GPIO1_D_34
+set_location_assignment PIN_AD29 -to GPIO1_D_35
 
 #============================================================
 # HSMD
@@ -746,83 +723,83 @@ set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_CLKIN_p1
 set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_CLKIN_p2
 set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_CLKOUT_n1
 set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_CLKOUT_p1
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_D[0]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_D[1]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_D[2]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_D[3]
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_D_0
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_D_1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_D_2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_D_3
 set_instance_assignment -name IO_STANDARD 1.5V -to HSMD_OUT0
 set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_OUT_n2
 set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_OUT_p2
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_n[0]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_n[1]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_n[2]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_n[3]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_n[4]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_n[5]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_n[6]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_n[7]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_n[8]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_n[9]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_n[10]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_n[11]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_n[12]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_n[13]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_n[14]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_n[15]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_n[16]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_p[0]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_p[1]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_p[2]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_p[3]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_p[4]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_p[5]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_p[6]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_p[7]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_p[8]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_p[9]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_p[10]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_p[11]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_p[12]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_p[13]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_p[14]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_p[15]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_p[16]
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_n_0
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_n_1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_n_2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_n_3
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_n_4
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_n_5
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_n_6
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_n_7
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_n_8
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_n_9
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_n_10
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_n_11
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_n_12
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_n_13
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_n_14
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_n_15
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_n_16
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_p_0
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_p_1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_p_2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_p_3
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_p_4
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_p_5
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_p_6
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_p_7
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_p_8
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_p_9
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_p_10
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_p_11
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_p_12
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_p_13
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_p_14
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_p_15
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_RX_p_16
 set_instance_assignment -name IO_STANDARD 1.5V -to HSMD_SCL
 set_instance_assignment -name IO_STANDARD 1.5V -to HSMD_SDA
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_n[0]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_n[1]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_n[2]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_n[3]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_n[4]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_n[5]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_n[6]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_n[7]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_n[8]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_n[9]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_n[10]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_n[11]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_n[12]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_n[13]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_n[14]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_n[15]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_n[16]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_p[0]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_p[1]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_p[2]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_p[3]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_p[4]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_p[5]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_p[6]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_p[7]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_p[8]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_p[9]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_p[10]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_p[11]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_p[12]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_p[13]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_p[14]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_p[15]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_p[16]
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_n_0
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_n_1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_n_2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_n_3
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_n_4
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_n_5
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_n_6
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_n_7
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_n_8
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_n_9
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_n_10
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_n_11
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_n_12
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_n_13
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_n_14
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_n_15
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_n_16
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_p_0
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_p_1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_p_2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_p_3
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_p_4
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_p_5
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_p_6
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_p_7
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_p_8
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_p_9
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_p_10
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_p_11
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_p_12
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_p_13
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_p_14
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_p_15
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMD_TX_p_16
 set_location_assignment PIN_AA35 -to HSMD_CLKIN0
 set_location_assignment PIN_W35 -to HSMD_CLKIN_n1
 set_location_assignment PIN_J35 -to HSMD_CLKIN_n2
@@ -830,83 +807,83 @@ set_location_assignment PIN_W34 -to HSMD_CLKIN_p1
 set_location_assignment PIN_J34 -to HSMD_CLKIN_p2
 set_location_assignment PIN_W33 -to HSMD_CLKOUT_n1
 set_location_assignment PIN_W32 -to HSMD_CLKOUT_p1
-set_location_assignment PIN_AJ29 -to HSMD_D[0]
-set_location_assignment PIN_AR31 -to HSMD_D[1]
-set_location_assignment PIN_AK29 -to HSMD_D[2]
-set_location_assignment PIN_AT30 -to HSMD_D[3]
+set_location_assignment PIN_AJ29 -to HSMD_D_0
+set_location_assignment PIN_AR31 -to HSMD_D_1
+set_location_assignment PIN_AK29 -to HSMD_D_2
+set_location_assignment PIN_AT30 -to HSMD_D_3
 set_location_assignment PIN_P19 -to HSMD_OUT0
 set_location_assignment PIN_L32 -to HSMD_OUT_n2
 set_location_assignment PIN_M32 -to HSMD_OUT_p2
-set_location_assignment PIN_AU31 -to HSMD_RX_n[0]
-set_location_assignment PIN_AU32 -to HSMD_RX_n[1]
-set_location_assignment PIN_AU33 -to HSMD_RX_n[2]
-set_location_assignment PIN_AV34 -to HSMD_RX_n[3]
-set_location_assignment PIN_AP34 -to HSMD_RX_n[4]
-set_location_assignment PIN_AR34 -to HSMD_RX_n[5]
-set_location_assignment PIN_AR35 -to HSMD_RX_n[6]
-set_location_assignment PIN_AP33 -to HSMD_RX_n[7]
-set_location_assignment PIN_AN31 -to HSMD_RX_n[8]
-set_location_assignment PIN_AP30 -to HSMD_RX_n[9]
-set_location_assignment PIN_AR32 -to HSMD_RX_n[10]
-set_location_assignment PIN_U35 -to HSMD_RX_n[11]
-set_location_assignment PIN_V31 -to HSMD_RX_n[12]
-set_location_assignment PIN_N34 -to HSMD_RX_n[13]
-set_location_assignment PIN_M34 -to HSMD_RX_n[14]
-set_location_assignment PIN_L35 -to HSMD_RX_n[15]
-set_location_assignment PIN_K35 -to HSMD_RX_n[16]
-set_location_assignment PIN_AT31 -to HSMD_RX_p[0]
-set_location_assignment PIN_AT32 -to HSMD_RX_p[1]
-set_location_assignment PIN_AT33 -to HSMD_RX_p[2]
-set_location_assignment PIN_AU34 -to HSMD_RX_p[3]
-set_location_assignment PIN_AN33 -to HSMD_RX_p[4]
-set_location_assignment PIN_AT34 -to HSMD_RX_p[5]
-set_location_assignment PIN_AP35 -to HSMD_RX_p[6]
-set_location_assignment PIN_AN32 -to HSMD_RX_p[7]
-set_location_assignment PIN_AM31 -to HSMD_RX_p[8]
-set_location_assignment PIN_AN30 -to HSMD_RX_p[9]
-set_location_assignment PIN_AP32 -to HSMD_RX_p[10]
-set_location_assignment PIN_V34 -to HSMD_RX_p[11]
-set_location_assignment PIN_U31 -to HSMD_RX_p[12]
-set_location_assignment PIN_N33 -to HSMD_RX_p[13]
-set_location_assignment PIN_M33 -to HSMD_RX_p[14]
-set_location_assignment PIN_L34 -to HSMD_RX_p[15]
-set_location_assignment PIN_K34 -to HSMD_RX_p[16]
+set_location_assignment PIN_AU31 -to HSMD_RX_n_0
+set_location_assignment PIN_AU32 -to HSMD_RX_n_1
+set_location_assignment PIN_AU33 -to HSMD_RX_n_2
+set_location_assignment PIN_AV34 -to HSMD_RX_n_3
+set_location_assignment PIN_AP34 -to HSMD_RX_n_4
+set_location_assignment PIN_AR34 -to HSMD_RX_n_5
+set_location_assignment PIN_AR35 -to HSMD_RX_n_6
+set_location_assignment PIN_AP33 -to HSMD_RX_n_7
+set_location_assignment PIN_AN31 -to HSMD_RX_n_8
+set_location_assignment PIN_AP30 -to HSMD_RX_n_9
+set_location_assignment PIN_AR32 -to HSMD_RX_n_10
+set_location_assignment PIN_U35 -to HSMD_RX_n_11
+set_location_assignment PIN_V31 -to HSMD_RX_n_12
+set_location_assignment PIN_N34 -to HSMD_RX_n_13
+set_location_assignment PIN_M34 -to HSMD_RX_n_14
+set_location_assignment PIN_L35 -to HSMD_RX_n_15
+set_location_assignment PIN_K35 -to HSMD_RX_n_16
+set_location_assignment PIN_AT31 -to HSMD_RX_p_0
+set_location_assignment PIN_AT32 -to HSMD_RX_p_1
+set_location_assignment PIN_AT33 -to HSMD_RX_p_2
+set_location_assignment PIN_AU34 -to HSMD_RX_p_3
+set_location_assignment PIN_AN33 -to HSMD_RX_p_4
+set_location_assignment PIN_AT34 -to HSMD_RX_p_5
+set_location_assignment PIN_AP35 -to HSMD_RX_p_6
+set_location_assignment PIN_AN32 -to HSMD_RX_p_7
+set_location_assignment PIN_AM31 -to HSMD_RX_p_8
+set_location_assignment PIN_AN30 -to HSMD_RX_p_9
+set_location_assignment PIN_AP32 -to HSMD_RX_p_10
+set_location_assignment PIN_V34 -to HSMD_RX_p_11
+set_location_assignment PIN_U31 -to HSMD_RX_p_12
+set_location_assignment PIN_N33 -to HSMD_RX_p_13
+set_location_assignment PIN_M33 -to HSMD_RX_p_14
+set_location_assignment PIN_L34 -to HSMD_RX_p_15
+set_location_assignment PIN_K34 -to HSMD_RX_p_16
 set_location_assignment PIN_G21 -to HSMD_SCL
 set_location_assignment PIN_F21 -to HSMD_SDA
-set_location_assignment PIN_AM29 -to HSMD_TX_n[0]
-set_location_assignment PIN_AL30 -to HSMD_TX_n[1]
-set_location_assignment PIN_AL32 -to HSMD_TX_n[2]
-set_location_assignment PIN_AH30 -to HSMD_TX_n[3]
-set_location_assignment PIN_AH27 -to HSMD_TX_n[4]
-set_location_assignment PIN_AH29 -to HSMD_TX_n[5]
-set_location_assignment PIN_AH28 -to HSMD_TX_n[6]
-set_location_assignment PIN_AE27 -to HSMD_TX_n[7]
-set_location_assignment PIN_AD26 -to HSMD_TX_n[8]
-set_location_assignment PIN_AF26 -to HSMD_TX_n[9]
-set_location_assignment PIN_V30 -to HSMD_TX_n[10]
-set_location_assignment PIN_V28 -to HSMD_TX_n[11]
-set_location_assignment PIN_T31 -to HSMD_TX_n[12]
-set_location_assignment PIN_R33 -to HSMD_TX_n[13]
-set_location_assignment PIN_P32 -to HSMD_TX_n[14]
-set_location_assignment PIN_R31 -to HSMD_TX_n[15]
-set_location_assignment PIN_AL31 -to HSMD_TX_n[16]
-set_location_assignment PIN_AL29 -to HSMD_TX_p[0]
-set_location_assignment PIN_AK30 -to HSMD_TX_p[1]
-set_location_assignment PIN_AK32 -to HSMD_TX_p[2]
-set_location_assignment PIN_AJ31 -to HSMD_TX_p[3]
-set_location_assignment PIN_AG27 -to HSMD_TX_p[4]
-set_location_assignment PIN_AG29 -to HSMD_TX_p[5]
-set_location_assignment PIN_AG28 -to HSMD_TX_p[6]
-set_location_assignment PIN_AD27 -to HSMD_TX_p[7]
-set_location_assignment PIN_AC26 -to HSMD_TX_p[8]
-set_location_assignment PIN_AE26 -to HSMD_TX_p[9]
-set_location_assignment PIN_V29 -to HSMD_TX_p[10]
-set_location_assignment PIN_W28 -to HSMD_TX_p[11]
-set_location_assignment PIN_T30 -to HSMD_TX_p[12]
-set_location_assignment PIN_R32 -to HSMD_TX_p[13]
-set_location_assignment PIN_P31 -to HSMD_TX_p[14]
-set_location_assignment PIN_R30 -to HSMD_TX_p[15]
-set_location_assignment PIN_AK31 -to HSMD_TX_p[16]
+set_location_assignment PIN_AM29 -to HSMD_TX_n_0
+set_location_assignment PIN_AL30 -to HSMD_TX_n_1
+set_location_assignment PIN_AL32 -to HSMD_TX_n_2
+set_location_assignment PIN_AH30 -to HSMD_TX_n_3
+set_location_assignment PIN_AH27 -to HSMD_TX_n_4
+set_location_assignment PIN_AH29 -to HSMD_TX_n_5
+set_location_assignment PIN_AH28 -to HSMD_TX_n_6
+set_location_assignment PIN_AE27 -to HSMD_TX_n_7
+set_location_assignment PIN_AD26 -to HSMD_TX_n_8
+set_location_assignment PIN_AF26 -to HSMD_TX_n_9
+set_location_assignment PIN_V30 -to HSMD_TX_n_10
+set_location_assignment PIN_V28 -to HSMD_TX_n_11
+set_location_assignment PIN_T31 -to HSMD_TX_n_12
+set_location_assignment PIN_R33 -to HSMD_TX_n_13
+set_location_assignment PIN_P32 -to HSMD_TX_n_14
+set_location_assignment PIN_R31 -to HSMD_TX_n_15
+set_location_assignment PIN_AL31 -to HSMD_TX_n_16
+set_location_assignment PIN_AL29 -to HSMD_TX_p_0
+set_location_assignment PIN_AK30 -to HSMD_TX_p_1
+set_location_assignment PIN_AK32 -to HSMD_TX_p_2
+set_location_assignment PIN_AJ31 -to HSMD_TX_p_3
+set_location_assignment PIN_AG27 -to HSMD_TX_p_4
+set_location_assignment PIN_AG29 -to HSMD_TX_p_5
+set_location_assignment PIN_AG28 -to HSMD_TX_p_6
+set_location_assignment PIN_AD27 -to HSMD_TX_p_7
+set_location_assignment PIN_AC26 -to HSMD_TX_p_8
+set_location_assignment PIN_AE26 -to HSMD_TX_p_9
+set_location_assignment PIN_V29 -to HSMD_TX_p_10
+set_location_assignment PIN_W28 -to HSMD_TX_p_11
+set_location_assignment PIN_T30 -to HSMD_TX_p_12
+set_location_assignment PIN_R32 -to HSMD_TX_p_13
+set_location_assignment PIN_P31 -to HSMD_TX_p_14
+set_location_assignment PIN_R30 -to HSMD_TX_p_15
+set_location_assignment PIN_AK31 -to HSMD_TX_p_16
 #============================================================
 # HSME
 #============================================================
@@ -917,10 +894,10 @@ set_instance_assignment -name IO_STANDARD 2.5V -to HSME_CLKIN_p1
 set_instance_assignment -name IO_STANDARD 2.5V -to HSME_CLKIN_p2
 set_instance_assignment -name IO_STANDARD 2.5V -to HSME_CLKOUT_n1
 set_instance_assignment -name IO_STANDARD 2.5V -to HSME_CLKOUT_p1
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_D[0]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_D[1]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_D[2]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_D[3]
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_D_0
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_D_1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_D_2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_D_3
 set_instance_assignment -name IO_STANDARD "1.4-V PCML" -to HSME_GXB_RX_p[0]
 set_instance_assignment -name IO_STANDARD "1.4-V PCML" -to HSME_GXB_RX_p[1]
 set_instance_assignment -name IO_STANDARD "1.4-V PCML" -to HSME_GXB_RX_p[2]
@@ -941,74 +918,74 @@ set_instance_assignment -name IO_STANDARD 2.5V -to HSME_OUT0
 set_instance_assignment -name IO_STANDARD 2.5V -to HSME_OUT_n2
 set_instance_assignment -name IO_STANDARD 2.5V -to HSME_OUT_p2
 set_instance_assignment -name IO_STANDARD "1.4-V PCML" -to HSME_REFCLK_p
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_n[0]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_n[1]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_n[2]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_n[3]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_n[4]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_n[5]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_n[6]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_n[7]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_n[8]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_n[9]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_n[10]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_n[11]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_n[12]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_n[13]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_n[14]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_n[15]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_n[16]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_p[0]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_p[1]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_p[2]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_p[3]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_p[4]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_p[5]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_p[6]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_p[7]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_p[8]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_p[9]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_p[10]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_p[11]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_p[12]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_p[13]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_p[14]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_p[15]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_p[16]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_n[0]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_n[1]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_n[2]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_n[3]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_n[4]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_n[5]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_n[6]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_n[7]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_n[8]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_n[9]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_n[10]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_n[11]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_n[12]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_n[13]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_n[14]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_n[15]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_n[16]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_p[0]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_p[1]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_p[2]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_p[3]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_p[4]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_p[5]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_p[6]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_p[7]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_p[8]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_p[9]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_p[10]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_p[11]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_p[12]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_p[13]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_p[14]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_p[15]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_p[16]
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_n_0
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_n_1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_n_2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_n_3
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_n_4
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_n_5
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_n_6
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_n_7
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_n_8
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_n_9
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_n_10
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_n_11
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_n_12
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_n_13
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_n_14
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_n_15
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_n_16
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_p_0
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_p_1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_p_2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_p_3
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_p_4
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_p_5
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_p_6
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_p_7
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_p_8
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_p_9
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_p_10
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_p_11
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_p_12
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_p_13
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_p_14
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_p_15
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_RX_p_16
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_n_0
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_n_1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_n_2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_n_3
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_n_4
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_n_5
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_n_6
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_n_7
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_n_8
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_n_9
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_n_10
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_n_11
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_n_12
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_n_13
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_n_14
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_n_15
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_n_16
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_p_0
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_p_1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_p_2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_p_3
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_p_4
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_p_5
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_p_6
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_p_7
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_p_8
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_p_9
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_p_10
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_p_11
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_p_12
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_p_13
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_p_14
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_p_15
+set_instance_assignment -name IO_STANDARD 2.5V -to HSME_TX_p_16
 set_location_assignment PIN_C13 -to HSME_CLKIN0
 set_location_assignment PIN_W5 -to HSME_CLKIN_n1
 set_location_assignment PIN_AA5 -to HSME_CLKIN_n2
@@ -1016,10 +993,10 @@ set_location_assignment PIN_W6 -to HSME_CLKIN_p1
 set_location_assignment PIN_AB6 -to HSME_CLKIN_p2
 set_location_assignment PIN_W11 -to HSME_CLKOUT_n1
 set_location_assignment PIN_W12 -to HSME_CLKOUT_p1
-set_location_assignment PIN_V12 -to HSME_D[0]
-set_location_assignment PIN_W8 -to HSME_D[1]
-set_location_assignment PIN_V11 -to HSME_D[2]
-set_location_assignment PIN_W7 -to HSME_D[3]
+set_location_assignment PIN_V12 -to HSME_D_0
+set_location_assignment PIN_W8 -to HSME_D_1
+set_location_assignment PIN_V11 -to HSME_D_2
+set_location_assignment PIN_W7 -to HSME_D_3
 set_location_assignment PIN_AE38 -to HSME_GXB_RX_p[0]
 set_location_assignment PIN_AC38 -to HSME_GXB_RX_p[1]
 set_location_assignment PIN_U38 -to HSME_GXB_RX_p[2]
@@ -1040,74 +1017,74 @@ set_location_assignment PIN_C12 -to HSME_OUT0
 set_location_assignment PIN_N15 -to HSME_OUT_n2
 set_location_assignment PIN_R14 -to HSME_OUT_p2
 set_location_assignment PIN_AA38 -to HSME_REFCLK_p
-set_location_assignment PIN_U5 -to HSME_RX_n[0]
-set_location_assignment PIN_R5 -to HSME_RX_n[1]
-set_location_assignment PIN_P6 -to HSME_RX_n[2]
-set_location_assignment PIN_N5 -to HSME_RX_n[3]
-set_location_assignment PIN_N7 -to HSME_RX_n[4]
-set_location_assignment PIN_L5 -to HSME_RX_n[5]
-set_location_assignment PIN_K5 -to HSME_RX_n[6]
-set_location_assignment PIN_J5 -to HSME_RX_n[7]
-set_location_assignment PIN_N14 -to HSME_RX_n[8]
-set_location_assignment PIN_K13 -to HSME_RX_n[9]
-set_location_assignment PIN_K14 -to HSME_RX_n[10]
-set_location_assignment PIN_G13 -to HSME_RX_n[11]
-set_location_assignment PIN_E13 -to HSME_RX_n[12]
-set_location_assignment PIN_A11 -to HSME_RX_n[13]
-set_location_assignment PIN_E14 -to HSME_RX_n[14]
-set_location_assignment PIN_A13 -to HSME_RX_n[15]
-set_location_assignment PIN_C14 -to HSME_RX_n[16]
-set_location_assignment PIN_V6 -to HSME_RX_p[0]
-set_location_assignment PIN_R6 -to HSME_RX_p[1]
-set_location_assignment PIN_R7 -to HSME_RX_p[2]
-set_location_assignment PIN_N6 -to HSME_RX_p[3]
-set_location_assignment PIN_N8 -to HSME_RX_p[4]
-set_location_assignment PIN_M6 -to HSME_RX_p[5]
-set_location_assignment PIN_K6 -to HSME_RX_p[6]
-set_location_assignment PIN_J6 -to HSME_RX_p[7]
-set_location_assignment PIN_P14 -to HSME_RX_p[8]
-set_location_assignment PIN_L13 -to HSME_RX_p[9]
-set_location_assignment PIN_L14 -to HSME_RX_p[10]
-set_location_assignment PIN_H13 -to HSME_RX_p[11]
-set_location_assignment PIN_F13 -to HSME_RX_p[12]
-set_location_assignment PIN_B11 -to HSME_RX_p[13]
-set_location_assignment PIN_F14 -to HSME_RX_p[14]
-set_location_assignment PIN_B13 -to HSME_RX_p[15]
-set_location_assignment PIN_D14 -to HSME_RX_p[16]
-set_location_assignment PIN_V9 -to HSME_TX_n[0]
-set_location_assignment PIN_R10 -to HSME_TX_n[1]
-set_location_assignment PIN_T9 -to HSME_TX_n[2]
-set_location_assignment PIN_R8 -to HSME_TX_n[3]
-set_location_assignment PIN_P8 -to HSME_TX_n[4]
-set_location_assignment PIN_M7 -to HSME_TX_n[5]
-set_location_assignment PIN_L7 -to HSME_TX_n[6]
-set_location_assignment PIN_J7 -to HSME_TX_n[7]
-set_location_assignment PIN_M13 -to HSME_TX_n[8]
-set_location_assignment PIN_K12 -to HSME_TX_n[9]
-set_location_assignment PIN_B10 -to HSME_TX_n[10]
-set_location_assignment PIN_C11 -to HSME_TX_n[11]
-set_location_assignment PIN_J13 -to HSME_TX_n[12]
-set_location_assignment PIN_D13 -to HSME_TX_n[13]
-set_location_assignment PIN_A14 -to HSME_TX_n[14]
-set_location_assignment PIN_G14 -to HSME_TX_n[15]
-set_location_assignment PIN_J15 -to HSME_TX_n[16]
-set_location_assignment PIN_V10 -to HSME_TX_p[0]
-set_location_assignment PIN_T10 -to HSME_TX_p[1]
-set_location_assignment PIN_U10 -to HSME_TX_p[2]
-set_location_assignment PIN_R9 -to HSME_TX_p[3]
-set_location_assignment PIN_N9 -to HSME_TX_p[4]
-set_location_assignment PIN_M8 -to HSME_TX_p[5]
-set_location_assignment PIN_L8 -to HSME_TX_p[6]
-set_location_assignment PIN_K7 -to HSME_TX_p[7]
-set_location_assignment PIN_N13 -to HSME_TX_p[8]
-set_location_assignment PIN_M14 -to HSME_TX_p[9]
-set_location_assignment PIN_D11 -to HSME_TX_p[10]
-set_location_assignment PIN_A10 -to HSME_TX_p[11]
-set_location_assignment PIN_J12 -to HSME_TX_p[12]
-set_location_assignment PIN_F12 -to HSME_TX_p[13]
-set_location_assignment PIN_B14 -to HSME_TX_p[14]
-set_location_assignment PIN_H14 -to HSME_TX_p[15]
-set_location_assignment PIN_K15 -to HSME_TX_p[16]
+set_location_assignment PIN_U5 -to HSME_RX_n_0
+set_location_assignment PIN_R5 -to HSME_RX_n_1
+set_location_assignment PIN_P6 -to HSME_RX_n_2
+set_location_assignment PIN_N5 -to HSME_RX_n_3
+set_location_assignment PIN_N7 -to HSME_RX_n_4
+set_location_assignment PIN_L5 -to HSME_RX_n_5
+set_location_assignment PIN_K5 -to HSME_RX_n_6
+set_location_assignment PIN_J5 -to HSME_RX_n_7
+set_location_assignment PIN_N14 -to HSME_RX_n_8
+set_location_assignment PIN_K13 -to HSME_RX_n_9
+set_location_assignment PIN_K14 -to HSME_RX_n_10
+set_location_assignment PIN_G13 -to HSME_RX_n_11
+set_location_assignment PIN_E13 -to HSME_RX_n_12
+set_location_assignment PIN_A11 -to HSME_RX_n_13
+set_location_assignment PIN_E14 -to HSME_RX_n_14
+set_location_assignment PIN_A13 -to HSME_RX_n_15
+set_location_assignment PIN_C14 -to HSME_RX_n_16
+set_location_assignment PIN_V6 -to HSME_RX_p_0
+set_location_assignment PIN_R6 -to HSME_RX_p_1
+set_location_assignment PIN_R7 -to HSME_RX_p_2
+set_location_assignment PIN_N6 -to HSME_RX_p_3
+set_location_assignment PIN_N8 -to HSME_RX_p_4
+set_location_assignment PIN_M6 -to HSME_RX_p_5
+set_location_assignment PIN_K6 -to HSME_RX_p_6
+set_location_assignment PIN_J6 -to HSME_RX_p_7
+set_location_assignment PIN_P14 -to HSME_RX_p_8
+set_location_assignment PIN_L13 -to HSME_RX_p_9
+set_location_assignment PIN_L14 -to HSME_RX_p_10
+set_location_assignment PIN_H13 -to HSME_RX_p_11
+set_location_assignment PIN_F13 -to HSME_RX_p_12
+set_location_assignment PIN_B11 -to HSME_RX_p_13
+set_location_assignment PIN_F14 -to HSME_RX_p_14
+set_location_assignment PIN_B13 -to HSME_RX_p_15
+set_location_assignment PIN_D14 -to HSME_RX_p_16
+set_location_assignment PIN_V9 -to HSME_TX_n_0
+set_location_assignment PIN_R10 -to HSME_TX_n_1
+set_location_assignment PIN_T9 -to HSME_TX_n_2
+set_location_assignment PIN_R8 -to HSME_TX_n_3
+set_location_assignment PIN_P8 -to HSME_TX_n_4
+set_location_assignment PIN_M7 -to HSME_TX_n_5
+set_location_assignment PIN_L7 -to HSME_TX_n_6
+set_location_assignment PIN_J7 -to HSME_TX_n_7
+set_location_assignment PIN_M13 -to HSME_TX_n_8
+set_location_assignment PIN_K12 -to HSME_TX_n_9
+set_location_assignment PIN_B10 -to HSME_TX_n_10
+set_location_assignment PIN_C11 -to HSME_TX_n_11
+set_location_assignment PIN_J13 -to HSME_TX_n_12
+set_location_assignment PIN_D13 -to HSME_TX_n_13
+set_location_assignment PIN_A14 -to HSME_TX_n_14
+set_location_assignment PIN_G14 -to HSME_TX_n_15
+set_location_assignment PIN_J15 -to HSME_TX_n_16
+set_location_assignment PIN_V10 -to HSME_TX_p_0
+set_location_assignment PIN_T10 -to HSME_TX_p_1
+set_location_assignment PIN_U10 -to HSME_TX_p_2
+set_location_assignment PIN_R9 -to HSME_TX_p_3
+set_location_assignment PIN_N9 -to HSME_TX_p_4
+set_location_assignment PIN_M8 -to HSME_TX_p_5
+set_location_assignment PIN_L8 -to HSME_TX_p_6
+set_location_assignment PIN_K7 -to HSME_TX_p_7
+set_location_assignment PIN_N13 -to HSME_TX_p_8
+set_location_assignment PIN_M14 -to HSME_TX_p_9
+set_location_assignment PIN_D11 -to HSME_TX_p_10
+set_location_assignment PIN_A10 -to HSME_TX_p_11
+set_location_assignment PIN_J12 -to HSME_TX_p_12
+set_location_assignment PIN_F12 -to HSME_TX_p_13
+set_location_assignment PIN_B14 -to HSME_TX_p_14
+set_location_assignment PIN_H14 -to HSME_TX_p_15
+set_location_assignment PIN_K15 -to HSME_TX_p_16
 #============================================================
 # HSMF
 #============================================================
@@ -1120,79 +1097,79 @@ set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_CLKOUT_n1
 set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_CLKOUT_n2
 set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_CLKOUT_p1
 set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_CLKOUT_p2
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_D[0]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_D[1]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_D[2]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_D[3]
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_D_0
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_D_1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_D_2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_D_3
 set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_OUT0
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_n[0]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_n[1]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_n[2]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_n[3]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_n[4]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_n[5]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_n[6]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_n[7]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_n[8]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_n[9]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_n[10]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_n[11]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_n[12]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_n[13]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_n[14]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_n[15]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_n[16]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_p[0]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_p[1]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_p[2]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_p[3]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_p[4]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_p[5]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_p[6]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_p[7]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_p[8]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_p[9]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_p[10]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_p[11]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_p[12]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_p[13]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_p[14]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_p[15]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_p[16]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_n[0]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_n[1]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_n[2]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_n[3]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_n[4]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_n[5]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_n[6]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_n[7]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_n[8]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_n[9]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_n[10]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_n[11]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_n[12]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_n[13]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_n[14]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_n[15]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_n[16]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_p[0]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_p[1]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_p[2]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_p[3]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_p[4]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_p[5]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_p[6]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_p[7]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_p[8]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_p[9]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_p[10]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_p[11]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_p[12]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_p[13]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_p[14]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_p[15]
-set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_p[16]
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_n_0
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_n_1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_n_2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_n_3
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_n_4
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_n_5
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_n_6
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_n_7
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_n_8
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_n_9
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_n_10
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_n_11
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_n_12
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_n_13
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_n_14
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_n_15
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_n_16
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_p_0
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_p_1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_p_2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_p_3
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_p_4
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_p_5
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_p_6
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_p_7
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_p_8
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_p_9
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_p_10
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_p_11
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_p_12
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_p_13
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_p_14
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_p_15
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_RX_p_16
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_n_0
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_n_1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_n_2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_n_3
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_n_4
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_n_5
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_n_6
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_n_7
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_n_8
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_n_9
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_n_10
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_n_11
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_n_12
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_n_13
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_n_14
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_n_15
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_n_16
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_p_0
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_p_1
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_p_2
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_p_3
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_p_4
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_p_5
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_p_6
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_p_7
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_p_8
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_p_9
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_p_10
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_p_11
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_p_12
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_p_13
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_p_14
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_p_15
+set_instance_assignment -name IO_STANDARD 2.5V -to HSMF_TX_p_16
 set_location_assignment PIN_AV22 -to HSMF_CLKIN0
 set_location_assignment PIN_AW21 -to HSMF_CLKIN_n1
 set_location_assignment PIN_AT21 -to HSMF_CLKIN_n2
@@ -1202,79 +1179,79 @@ set_location_assignment PIN_AP21 -to HSMF_CLKOUT_n1
 set_location_assignment PIN_AJ20 -to HSMF_CLKOUT_n2
 set_location_assignment PIN_AN21 -to HSMF_CLKOUT_p1
 set_location_assignment PIN_AH20 -to HSMF_CLKOUT_p2
-set_location_assignment PIN_AU25 -to HSMF_D[0]
-set_location_assignment PIN_AV26 -to HSMF_D[1]
-set_location_assignment PIN_AT25 -to HSMF_D[2]
-set_location_assignment PIN_AW26 -to HSMF_D[3]
+set_location_assignment PIN_AU25 -to HSMF_D_0
+set_location_assignment PIN_AV26 -to HSMF_D_1
+set_location_assignment PIN_AT25 -to HSMF_D_2
+set_location_assignment PIN_AW26 -to HSMF_D_3
 set_location_assignment PIN_AP20 -to HSMF_OUT0
-set_location_assignment PIN_AU26 -to HSMF_RX_n[0]
-set_location_assignment PIN_AU24 -to HSMF_RX_n[1]
-set_location_assignment PIN_AP24 -to HSMF_RX_n[2]
-set_location_assignment PIN_AU23 -to HSMF_RX_n[3]
-set_location_assignment PIN_AT20 -to HSMF_RX_n[4]
-set_location_assignment PIN_AU22 -to HSMF_RX_n[5]
-set_location_assignment PIN_AV20 -to HSMF_RX_n[6]
-set_location_assignment PIN_AU19 -to HSMF_RX_n[7]
-set_location_assignment PIN_AU18 -to HSMF_RX_n[8]
-set_location_assignment PIN_AV17 -to HSMF_RX_n[9]
-set_location_assignment PIN_AN22 -to HSMF_RX_n[10]
-set_location_assignment PIN_AP18 -to HSMF_RX_n[11]
-set_location_assignment PIN_AL23 -to HSMF_RX_n[12]
-set_location_assignment PIN_AJ23 -to HSMF_RX_n[13]
-set_location_assignment PIN_AG22 -to HSMF_RX_n[14]
-set_location_assignment PIN_AF20 -to HSMF_RX_n[15]
-set_location_assignment PIN_AF19 -to HSMF_RX_n[16]
-set_location_assignment PIN_AT26 -to HSMF_RX_p[0]
-set_location_assignment PIN_AT24 -to HSMF_RX_p[1]
-set_location_assignment PIN_AN24 -to HSMF_RX_p[2]
-set_location_assignment PIN_AT23 -to HSMF_RX_p[3]
-set_location_assignment PIN_AR20 -to HSMF_RX_p[4]
-set_location_assignment PIN_AT22 -to HSMF_RX_p[5]
-set_location_assignment PIN_AU20 -to HSMF_RX_p[6]
-set_location_assignment PIN_AT19 -to HSMF_RX_p[7]
-set_location_assignment PIN_AT18 -to HSMF_RX_p[8]
-set_location_assignment PIN_AU17 -to HSMF_RX_p[9]
-set_location_assignment PIN_AM22 -to HSMF_RX_p[10]
-set_location_assignment PIN_AN18 -to HSMF_RX_p[11]
-set_location_assignment PIN_AK23 -to HSMF_RX_p[12]
-set_location_assignment PIN_AH23 -to HSMF_RX_p[13]
-set_location_assignment PIN_AF22 -to HSMF_RX_p[14]
-set_location_assignment PIN_AE20 -to HSMF_RX_p[15]
-set_location_assignment PIN_AE19 -to HSMF_RX_p[16]
-set_location_assignment PIN_AW25 -to HSMF_TX_n[0]
-set_location_assignment PIN_AP25 -to HSMF_TX_n[1]
-set_location_assignment PIN_AW23 -to HSMF_TX_n[2]
-set_location_assignment PIN_AR23 -to HSMF_TX_n[3]
-set_location_assignment PIN_AN23 -to HSMF_TX_n[4]
-set_location_assignment PIN_AM25 -to HSMF_TX_n[5]
-set_location_assignment PIN_AL21 -to HSMF_TX_n[6]
-set_location_assignment PIN_AP19 -to HSMF_TX_n[7]
-set_location_assignment PIN_AW18 -to HSMF_TX_n[8]
-set_location_assignment PIN_AM19 -to HSMF_TX_n[9]
-set_location_assignment PIN_AK24 -to HSMF_TX_n[10]
-set_location_assignment PIN_AH22 -to HSMF_TX_n[11]
-set_location_assignment PIN_AE22 -to HSMF_TX_n[12]
-set_location_assignment PIN_AE21 -to HSMF_TX_n[13]
-set_location_assignment PIN_AG20 -to HSMF_TX_n[14]
-set_location_assignment PIN_AE18 -to HSMF_TX_n[15]
-set_location_assignment PIN_AG19 -to HSMF_TX_n[16]
-set_location_assignment PIN_AV25 -to HSMF_TX_p[0]
-set_location_assignment PIN_AR25 -to HSMF_TX_p[1]
-set_location_assignment PIN_AV23 -to HSMF_TX_p[2]
-set_location_assignment PIN_AP23 -to HSMF_TX_p[3]
-set_location_assignment PIN_AM23 -to HSMF_TX_p[4]
-set_location_assignment PIN_AN25 -to HSMF_TX_p[5]
-set_location_assignment PIN_AL22 -to HSMF_TX_p[6]
-set_location_assignment PIN_AR19 -to HSMF_TX_p[7]
-set_location_assignment PIN_AT17 -to HSMF_TX_p[8]
-set_location_assignment PIN_AN19 -to HSMF_TX_p[9]
-set_location_assignment PIN_AJ22 -to HSMF_TX_p[10]
-set_location_assignment PIN_AE23 -to HSMF_TX_p[11]
-set_location_assignment PIN_AF23 -to HSMF_TX_p[12]
-set_location_assignment PIN_AG21 -to HSMF_TX_p[13]
-set_location_assignment PIN_AD21 -to HSMF_TX_p[14]
-set_location_assignment PIN_AG18 -to HSMF_TX_p[15]
-set_location_assignment PIN_AD19 -to HSMF_TX_p[16]
+set_location_assignment PIN_AU26 -to HSMF_RX_n_0
+set_location_assignment PIN_AU24 -to HSMF_RX_n_1
+set_location_assignment PIN_AP24 -to HSMF_RX_n_2
+set_location_assignment PIN_AU23 -to HSMF_RX_n_3
+set_location_assignment PIN_AT20 -to HSMF_RX_n_4
+set_location_assignment PIN_AU22 -to HSMF_RX_n_5
+set_location_assignment PIN_AV20 -to HSMF_RX_n_6
+set_location_assignment PIN_AU19 -to HSMF_RX_n_7
+set_location_assignment PIN_AU18 -to HSMF_RX_n_8
+set_location_assignment PIN_AV17 -to HSMF_RX_n_9
+set_location_assignment PIN_AN22 -to HSMF_RX_n_10
+set_location_assignment PIN_AP18 -to HSMF_RX_n_11
+set_location_assignment PIN_AL23 -to HSMF_RX_n_12
+set_location_assignment PIN_AJ23 -to HSMF_RX_n_13
+set_location_assignment PIN_AG22 -to HSMF_RX_n_14
+set_location_assignment PIN_AF20 -to HSMF_RX_n_15
+set_location_assignment PIN_AF19 -to HSMF_RX_n_16
+set_location_assignment PIN_AT26 -to HSMF_RX_p_0
+set_location_assignment PIN_AT24 -to HSMF_RX_p_1
+set_location_assignment PIN_AN24 -to HSMF_RX_p_2
+set_location_assignment PIN_AT23 -to HSMF_RX_p_3
+set_location_assignment PIN_AR20 -to HSMF_RX_p_4
+set_location_assignment PIN_AT22 -to HSMF_RX_p_5
+set_location_assignment PIN_AU20 -to HSMF_RX_p_6
+set_location_assignment PIN_AT19 -to HSMF_RX_p_7
+set_location_assignment PIN_AT18 -to HSMF_RX_p_8
+set_location_assignment PIN_AU17 -to HSMF_RX_p_9
+set_location_assignment PIN_AM22 -to HSMF_RX_p_10
+set_location_assignment PIN_AN18 -to HSMF_RX_p_11
+set_location_assignment PIN_AK23 -to HSMF_RX_p_12
+set_location_assignment PIN_AH23 -to HSMF_RX_p_13
+set_location_assignment PIN_AF22 -to HSMF_RX_p_14
+set_location_assignment PIN_AE20 -to HSMF_RX_p_15
+set_location_assignment PIN_AE19 -to HSMF_RX_p_16
+set_location_assignment PIN_AW25 -to HSMF_TX_n_0
+set_location_assignment PIN_AP25 -to HSMF_TX_n_1
+set_location_assignment PIN_AW23 -to HSMF_TX_n_2
+set_location_assignment PIN_AR23 -to HSMF_TX_n_3
+set_location_assignment PIN_AN23 -to HSMF_TX_n_4
+set_location_assignment PIN_AM25 -to HSMF_TX_n_5
+set_location_assignment PIN_AL21 -to HSMF_TX_n_6
+set_location_assignment PIN_AP19 -to HSMF_TX_n_7
+set_location_assignment PIN_AW18 -to HSMF_TX_n_8
+set_location_assignment PIN_AM19 -to HSMF_TX_n_9
+set_location_assignment PIN_AK24 -to HSMF_TX_n_10
+set_location_assignment PIN_AH22 -to HSMF_TX_n_11
+set_location_assignment PIN_AE22 -to HSMF_TX_n_12
+set_location_assignment PIN_AE21 -to HSMF_TX_n_13
+set_location_assignment PIN_AG20 -to HSMF_TX_n_14
+set_location_assignment PIN_AE18 -to HSMF_TX_n_15
+set_location_assignment PIN_AG19 -to HSMF_TX_n_16
+set_location_assignment PIN_AV25 -to HSMF_TX_p_0
+set_location_assignment PIN_AR25 -to HSMF_TX_p_1
+set_location_assignment PIN_AV23 -to HSMF_TX_p_2
+set_location_assignment PIN_AP23 -to HSMF_TX_p_3
+set_location_assignment PIN_AM23 -to HSMF_TX_p_4
+set_location_assignment PIN_AN25 -to HSMF_TX_p_5
+set_location_assignment PIN_AL22 -to HSMF_TX_p_6
+set_location_assignment PIN_AR19 -to HSMF_TX_p_7
+set_location_assignment PIN_AT17 -to HSMF_TX_p_8
+set_location_assignment PIN_AN19 -to HSMF_TX_p_9
+set_location_assignment PIN_AJ22 -to HSMF_TX_p_10
+set_location_assignment PIN_AE23 -to HSMF_TX_p_11
+set_location_assignment PIN_AF23 -to HSMF_TX_p_12
+set_location_assignment PIN_AG21 -to HSMF_TX_p_13
+set_location_assignment PIN_AD21 -to HSMF_TX_p_14
+set_location_assignment PIN_AG18 -to HSMF_TX_p_15
+set_location_assignment PIN_AD19 -to HSMF_TX_p_16
 #============================================================
 # memory
 #============================================================

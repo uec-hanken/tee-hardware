@@ -31,29 +31,33 @@ class IbexBlackbox
   DmHaltAddr: BigInt = BigInt("1A110800"),
   DmExceptionAddr: BigInt = BigInt("1A110808"),
   PipeLine: Boolean = false,
+  Synth: Boolean = false,
+  SynthFlavor: String = "IbexSecureDefault",
 )
   extends BlackBox(
-    Map(
-      "PMPEnable" -> IntParam(if(PMPEnable) 1 else 0),
-      "PMPGranularity" -> IntParam(PMPGranularity),
-      "PMPNumRegions" -> IntParam(PMPNumRegions),
-      "MHPMCounterNum" -> IntParam(MHPMCounterNum),
-      "MHPMCounterWidth" -> IntParam(MHPMCounterWidth),
-      "RV32E" -> IntParam(if(RV32E) 1 else 0),
-      "RV32M" -> IntParam(RV32M),
-      "RV32B" -> IntParam(RV32B),
-      "RegFile" -> IntParam(RegFile),
-      "BranchTargetALU" -> IntParam(if(BranchTargetALU) 1 else 0),
-      "WritebackStage" -> IntParam(if(WritebackStage) 1 else 0),
-      "ICache" -> IntParam(if(ICache) 1 else 0),
-      "ICacheECC" -> IntParam(if(ICacheECC) 1 else 0),
-      "BranchPredictor" -> IntParam(if(BranchPredictor) 1 else 0),
-      "DbgTriggerEn" -> IntParam(if(DbgTriggerEn) 1 else 0),
-      "SecureIbex" -> IntParam(if(SecureIbex) 1 else 0),
-      "DmHaltAddr" -> IntParam(DmHaltAddr),
-      "DmExceptionAddr" -> IntParam(DmExceptionAddr),
-      "PipeLine" -> IntParam(if(PipeLine) 1 else 0)
-    )
+    if(!Synth)
+      Map(
+        "PMPEnable" -> IntParam(if(PMPEnable) 1 else 0),
+        "PMPGranularity" -> IntParam(PMPGranularity),
+        "PMPNumRegions" -> IntParam(PMPNumRegions),
+        "MHPMCounterNum" -> IntParam(MHPMCounterNum),
+        "MHPMCounterWidth" -> IntParam(MHPMCounterWidth),
+        "RV32E" -> IntParam(if(RV32E) 1 else 0),
+        "RV32M" -> IntParam(RV32M),
+        "RV32B" -> IntParam(RV32B),
+        "RegFile" -> IntParam(RegFile),
+        "BranchTargetALU" -> IntParam(if(BranchTargetALU) 1 else 0),
+        "WritebackStage" -> IntParam(if(WritebackStage) 1 else 0),
+        "ICache" -> IntParam(if(ICache) 1 else 0),
+        "ICacheECC" -> IntParam(if(ICacheECC) 1 else 0),
+        "BranchPredictor" -> IntParam(if(BranchPredictor) 1 else 0),
+        "DbgTriggerEn" -> IntParam(if(DbgTriggerEn) 1 else 0),
+        "SecureIbex" -> IntParam(if(SecureIbex) 1 else 0),
+        "DmHaltAddr" -> IntParam(DmHaltAddr),
+        "DmExceptionAddr" -> IntParam(DmExceptionAddr),
+        "PipeLine" -> IntParam(if(PipeLine) 1 else 0)
+      )
+    else Map()
   )
     with HasBlackBoxResource
 {
@@ -108,9 +112,18 @@ class IbexBlackbox
   })
 
   // add wrapper/blackbox after it is pre-processed
-  addResource("/aaaa_pkgs.preprocessed.sv")
-  addResource("/tlul.preprocessed.sv")
-  addResource("/prim.preprocessed.sv")
-  addResource("/IbexBlackbox.preprocessed.sv")
-  addResource("/IbexBlackbox.preprocessed.v")
+  addResource("/prim_nopkg.preprocessed.sv")
+  if(Synth) {
+    addResource(s"/ibex_syn/IbexBlackbox.$SynthFlavor.v")
+    println(s"Ibex Synthesized with ${SynthFlavor} flavor")
+  }
+  else {
+    addResource("/aaaa_pkgs.preprocessed.sv")
+    addResource("/tlul.preprocessed.sv")
+    addResource("/prim.preprocessed.sv")
+    addResource("/Ibex.preprocessed.sv")
+    addResource("/Ibex.preprocessed.v")
+    addResource("/IbexBlackbox.preprocessed.sv")
+    println(s"Ibex regular implemented")
+  }
 }

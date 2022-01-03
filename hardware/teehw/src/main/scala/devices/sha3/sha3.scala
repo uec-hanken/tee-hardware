@@ -165,7 +165,7 @@ case class SHA3AttachParams(
    sha3par: SHA3Params,
    controlWhere: TLBusWrapperLocation = uec.teehardware.CRYPTOBUS,
    blockerAddr: Option[BigInt] = None,
-   controlXType: ClockCrossingType = NoCrossing,
+   controlXType: ClockCrossingType = SynchronousCrossing(),
    intXType: ClockCrossingType = NoCrossing)
  (implicit val p: Parameters) {
 

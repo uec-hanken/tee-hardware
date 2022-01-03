@@ -6,15 +6,11 @@
 
 // Note: Copied from prim_generic_ram_1p.sv, because I don't know how to FuseSoC
 
-`include "prim_assert.sv"
-
 module prim_ram_1p #(
   parameter  int Width           = 32, // bit
   parameter  int Depth           = 128,
   parameter  int DataBitsPerMask = 1, // Number of data bits per bit of write mask
-  parameter      MemInitFile     = "", // VMEM file to initialize the memory with
-
-  localparam int Aw              = $clog2(Depth)  // derived parameter
+  parameter      MemInitFile     = "" // VMEM file to initialize the memory with
 ) (
   input  logic             clk_i,
 
@@ -25,6 +21,7 @@ module prim_ram_1p #(
   input  logic [Width-1:0] wmask_i,
   output logic [Width-1:0] rdata_o // Read data. Data is returned one cycle after req_i is high.
 );
+  localparam int Aw              = $clog2(Depth);  // derived parameter
 
   // Width of internal write mask. Note wmask_i input into the module is always assumed
   // to be the full bit mask
@@ -33,14 +30,12 @@ module prim_ram_1p #(
   logic [Width-1:0]     mem [Depth];
   logic [MaskWidth-1:0] wmask;
 
-  for (genvar k = 0; k < MaskWidth; k++) begin : gen_wmask
-    assign wmask[k] = &wmask_i[k*DataBitsPerMask +: DataBitsPerMask];
-
-    // Ensure that all mask bits within a group have the same value for a write
-    `ASSERT(MaskCheck_A, req_i && write_i |->
-        wmask_i[k*DataBitsPerMask +: DataBitsPerMask] inside {{DataBitsPerMask{1'b1}}, '0},
-        clk_i, '0)
-  end
+  genvar k;
+  generate
+    for (k = 0; k < MaskWidth; k++) begin : gen_wmask
+      assign wmask[k] = &wmask_i[k*DataBitsPerMask +: DataBitsPerMask];
+    end
+  endgenerate
 
   // using always instead of always_ff to avoid 'ICPD  - illegal combination of drivers' error
   // thrown when using $readmemh system task to backdoor load an image

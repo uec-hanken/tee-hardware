@@ -13,7 +13,6 @@ import sifive.blocks.devices.pinctrl._
 import sifive.blocks.devices.gpio._
 import sifive.blocks.devices.spi._
 import sifive.fpgashells.clocks._
-import uec.teehardware.vc707mig32._
 
 class ilaaxi extends BlackBox {
   val io = IO(new Bundle {

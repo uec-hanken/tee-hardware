@@ -1,0 +1,9 @@
+*
+!.gitignore
+!Makefile
+!TR5.shell.quartus.tcl
+!TR5.qsys.main.tcl
+!main.qsys
+!main_10M.qsys
+!stp_tlport.stp
+

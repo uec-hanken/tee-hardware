@@ -85,12 +85,10 @@ endif
 $(teehw_dir)/hardware/teehw/src/main/resources/resources.checkpoint: $(teehw_dir)/hardware/teehw/src/main/resources/Makefile
 	make -C $(teehw_dir)/hardware/teehw/src/main/resources/ all
 
-resources: $(teehw_dir)/hardware/teehw/src/main/resources/resources.checkpoint
-
 #########################################################################################
 # create list of simulation file inputs
 #########################################################################################
-$(sim_files): $(call lookup_srcs,$(teehw_dir)/hardware/teehw/src/main/scala,scala) $(SCALA_BUILDTOOL_DEPS) resources
+$(sim_files): $(call lookup_srcs,$(teehw_dir)/hardware/teehw/src/main/scala,scala) $(SCALA_BUILDTOOL_DEPS) $(resources_checkpoints)
 	$(call run_scala_main,teehardware,uec.teehardware.uecutils.GenerateSimFiles,-td $(build_dir) -sim $(sim_name))
 
 #########################################################################################

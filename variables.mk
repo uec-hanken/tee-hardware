@@ -138,7 +138,7 @@ JAVA_OPTS ?= -Xmx$(JAVA_HEAP_SIZE) -Xss8M -XX:MaxPermSize=256M
 # default sbt launch command
 #########################################################################################
 # by default build chisel3/firrtl and other subprojects from source
-override SBT_OPTS += -Dsbt.sourcemode=true -Dsbt.workspace=$(teehw_dir)/hardware/chipyard/tools
+override SBT_OPTS += -Dsbt.sourcemode=true -Dsbt.workspace=$(teehw_dir)/hardware/chipyard/tools -DfirrtlVersion=1.4.1
 
 SCALA_BUILDTOOL_DEPS = $(SBT_SOURCES)
 
@@ -199,6 +199,8 @@ sim_vsrcs = \
 	$(HARNESS_FILE) \
 	$(TOP_SMEMS_FILE) \
 	$(HARNESS_SMEMS_FILE)
+
+resources_checkpoints = $(teehw_dir)/hardware/teehw/src/main/resources/resources.checkpoint
 
 #########################################################################################
 # assembly/benchmark variables

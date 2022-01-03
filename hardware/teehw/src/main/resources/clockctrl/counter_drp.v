@@ -38,7 +38,7 @@ module counter_drp (
     end
   end
 
-  assign tmp = counter_ref ^ 2000000000;
+  assign tmp = counter_ref ^ 20000000;
   assign tmp2 = |tmp;
   assign done = done_status;
   assign counter_value = counter_target;

@@ -28,8 +28,6 @@ import testchipip.SerialAdapter.SERIAL_TSI_WIDTH
 import uec.teehardware.devices.aes._
 import uec.teehardware.devices.ed25519._
 import uec.teehardware.devices.random._
-import uec.teehardware.devices.chacha._
-import uec.teehardware.devices.poly._
 import uec.teehardware.devices.sha3._
 import uec.teehardware.devices.usb11hs._
 import uec.teehardware.devices.opentitan.aes._
@@ -127,13 +125,20 @@ trait HasTEEHWSystem
         fifoId = Some(0),
         mayDenyPut = true,
         mayDenyGet = true))
-    println(s"SERDES added to the system ${mbus.blockBytes}")
+    println(s"SERDES in mbus added to the system ${mbus.blockBytes}")
     val serdes = LazyModule(new TLSerdes(
       w = A.serWidth,
       params = mainMemParam,
       beatBytes = A.master.beatBytes))
     serdes.node := TLBuffer() := mbus.toDRAMController(Some("ser"))()
-    // TODO: The clock separation for this is obviously not done
+    // Request a clock node
+    val clkNode = ClockSinkNode(Seq(ClockSinkParameters()))
+    clkNode := mbus.fixedClockNode
+    InModuleBody {
+      serdes.module.clock := clkNode.in.head._1.clock
+      serdes.module.reset := clkNode.in.head._1.reset
+    }
+    // The clock separation for memser is done through the aclocks
     serdes
   }
 
@@ -150,13 +155,20 @@ trait HasTEEHWSystem
       fifoId = Some(0),
       mayDenyPut = true,
       mayDenyGet = true))
-    println(s"SERDES added to the system ${cbus.blockBytes}")
+    println(s"SERDES in sbus added to the system ${cbus.blockBytes}")
     val serdes = LazyModule(new TLSerdes(
       w = A.serWidth,
       params = mainMemParam,
       beatBytes = A.master.beatBytes))
     cbus.coupleTo("ser") {
       serdes.node := TLBuffer() := TLWidthWidget(cbus.beatBytes) := _
+    }
+    // Request a clock node
+    val clkNode = ClockSinkNode(Seq(ClockSinkParameters()))
+    clkNode := cbus.fixedClockNode
+    InModuleBody {
+      serdes.module.clock := clkNode.in.head._1.clock
+      serdes.module.reset := clkNode.in.head._1.reset
     }
     // TODO: The clock separation for this is obviously not done
     serdes
@@ -281,6 +293,7 @@ trait HasTEEHWSystem
   // We can use the clock aggregator (ClockGroupAggregator) which will take a single clock and a reset, then
   // replicate it for all asyncClockGroupsNode. This requires a ClockGroup with only 1 group.
   // Then we iterate them using node.out.unzip. Unfortunately, will not have names.
+  // NOTE2: The names are now extracted using the clocksAggregator out node. It contains all the names.
 
   // Create the ClockGroupSource (only 1...)
   val clockGroup = ClockGroupSourceNode(List.fill(1) { ClockGroupSourceParameters() })
@@ -298,8 +311,6 @@ class TEEHWSystem(implicit p: Parameters) extends TEEHWSubsystem
   with HasPeripheryAES
   with HasPeripheryUSB11HS
   with HasPeripheryRandom
-  with HasPeripheryChacha
-  with HasPeripheryPoly
   // The opentitan components
   with HasPeripheryAESOT
   with HasPeripheryHMAC
@@ -344,6 +355,7 @@ trait HasTEEHWSystemModule extends HasRTCModuleImp
   val (memSerPorts, serSourceBits) = outer.memserctl.map { A =>
     val ser = IO(new SerialIO(A.module.io.ser.head.w))
     ser <> A.module.io.ser.head
+    //A.module.clock := outer.mbus.fixedClockNode.in.head._1.clock // TODO: This is the right way?
     (ser, A.node.in.head._1.params.sourceBits)
   }.unzip
 
@@ -351,6 +363,7 @@ trait HasTEEHWSystemModule extends HasRTCModuleImp
   val (extSerPorts, extSourceBits) = outer.extserctl.map { A =>
     val ser = IO(new SerialIO(A.module.io.ser.head.w))
     ser <> A.module.io.ser.head
+    //A.module.clock := outer.cbus.fixedClockNode.in.head._1.clock // TODO: This is the right way?
     (ser, A.node.in.head._1.params.sourceBits)
   }.unzip
 
@@ -404,6 +417,7 @@ trait HasTEEHWSystemModule extends HasRTCModuleImp
   // Create the actual port
   val aclocks = IO(Vec(numClocks, Flipped(new ClockBundle(ClockBundleParameters()))))
   val extclocks = outer.clockGroup.out.flatMap(_._1.member.data)
+  val namedclocks = outer.clocksAggregator.out.flatMap(_._1.member.elements).map(A => A._1)
   // Connect the clocks in the hardware
   (extclocks zip aclocks).foreach{ case (o, ai) =>
     o.clock := ai.clock
@@ -423,8 +437,6 @@ class TEEHWSystemModule[+L <: TEEHWSystem](_outer: L)
     with HasPeripheryAESModuleImp
     with HasPeripheryUSB11HSModuleImp
     with HasPeripheryRandomModuleImp
-    with HasPeripheryChachaModuleImp
-    with HasPeripheryPolyModuleImp
     // The opentitan components
     with HasPeripheryAESOTModuleImp
     with HasPeripheryHMACModuleImp

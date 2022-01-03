@@ -4,3 +4,7 @@
 !TR4.shell.quartus.tcl
 !TR4.qsys.main.tcl
 !main.qsys
+!main_1M.qsys
+!main_10M.qsys
+!main_20M.qsys
+!main_50M.qsys

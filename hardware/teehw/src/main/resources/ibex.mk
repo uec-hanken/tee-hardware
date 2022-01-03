@@ -4,11 +4,13 @@
 opentitan_dir=$(base_dir)/hardware/opentitan
 
 # name of output pre-processed verilog file
-IBEX_PREPROC_SVERILOG = IbexBlackbox.preprocessed.sv
-IBEX_PREPROC_VERILOG = IbexBlackbox.preprocessed.v
+IBEX_PREPROC_SVERILOG = Ibex.preprocessed.sv
+IBEX_PREPROC_VERILOG = Ibex.preprocessed.v
+IBEX_BLACKBOX = $(vsrc_dir)/rv_core_ibex_blackbox/IbexBlackbox.sv
+IBEX_PROC_BLACKBOX = IbexBlackbox.preprocessed.sv
 
-.PHONY: ibex $(IBEX_PREPROC_SVERILOG) $(IBEX_PREPROC_VERILOG)
-ibex: $(IBEX_PREPROC_SVERILOG) $(IBEX_PREPROC_VERILOG)
+.PHONY: ibex $(IBEX_PREPROC_SVERILOG) $(IBEX_PREPROC_VERILOG) $(IBEX_PROC_BLACKBOX)
+ibex: $(IBEX_PREPROC_SVERILOG) $(IBEX_PREPROC_VERILOG) $(IBEX_PROC_BLACKBOX)
 
 #########################################################################################
 # includes and vsrcs
@@ -41,8 +43,7 @@ IBEX_OPENTITAN_VSRCS = \
 IBEX_OPENTITAN_VERSRCS = \
 	$(opentitan_dir)/hw/vendor/lowrisc_ibex/syn/rtl/prim_clock_gating.v
 
-IBEX_OPENTITAN_WRAPPER = \
-	$(vsrc_dir)/rv_core_ibex_blackbox/IbexBlackbox.sv
+IBEX_OPENTITAN_WRAPPER =
 
 IBEX_ALL_VSRCS = $(IBEX_OPENTITAN_PKGS) $(IBEX_OPENTITAN_VSRCS) $(IBEX_OPENTITAN_WRAPPER)
 IBEX_ALL_VERSRCS = $(IBEX_OPENTITAN_VERSRCS)
@@ -83,4 +84,7 @@ $(IBEX_PREPROC_VERILOG): $(IBEX_ALL_VERSRCS)
 	sed -i '/define.tmp.h/d' combined.v
 	$(PREPROC_SCRIPT) combined.v $@ $(IBEX_INC_DIRS)
 	rm -rf combined.v def.v undef.v
+
+$(IBEX_PROC_BLACKBOX): $(IBEX_BLACKBOX)
+	cp -v $(IBEX_BLACKBOX) $(IBEX_PROC_BLACKBOX)
 

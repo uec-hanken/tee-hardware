@@ -5,7 +5,8 @@ import chisel3.util._
 import chisel3.experimental.{Analog, IO, attach}
 import freechips.rocketchip.config._
 import freechips.rocketchip.diplomacy._
-import freechips.rocketchip.subsystem.BaseSubsystem
+import freechips.rocketchip.subsystem.{BaseSubsystem, ExtMem, MemoryBusKey, SbusToMbusXTypeKey}
+import freechips.rocketchip.tilelink.{TLBundleD, TLBundleParameters}
 import freechips.rocketchip.util._
 import sifive.blocks.devices.pinctrl._
 import sifive.blocks.devices.gpio._
@@ -17,6 +18,7 @@ import freechips.rocketchip.util._
 import sifive.fpgashells.shell.xilinx.XDMATopPads
 import testchipip.SerialIO
 import uec.teehardware.devices.clockctrl.ClockCtrlPortIO
+import uec.teehardware.shell._
 
 // **********************************************************************
 // **TEEHW chip - for doing the only-input/output chip
@@ -52,8 +54,6 @@ class  WithTEEHWbaseShell(implicit val p :Parameters) extends RawModule {
   val uart_txd = IO(Output(Bool()))
   val uart_rxd = IO(Input(Bool()))
   val usb11hs = p(PeripheryUSB11HSKey).map{ _ => IO(new USB11HSPortIO)}
-  val ChildClock = p(DDRPortOther).option(IO(Input(Clock())))
-  val ChildReset = p(DDRPortOther).option(IO(Input(Bool())))
   val pciePorts = p(IncludePCIe).option(IO(new XilinxVC707PCIeX1IO))
   val xdmaPorts = p(XDMAPCIe).map(A => IO(new XDMATopPadswReset(A.lanes)))
   // Memory port serialized
@@ -61,6 +61,8 @@ class  WithTEEHWbaseShell(implicit val p :Parameters) extends RawModule {
   // Ext port serialized
   val extser = p(ExtSerBus).map(A => IO(new SerialIO(A.serWidth)))
   // Clocks and resets
+  val ChildClock = p(DDRPortOther).option(IO(Input(Clock())))
+  val ChildReset = p(DDRPortOther).option(IO(Input(Bool())))
   val sys_clk = IO(Input(Clock()))
   val rst_n = IO(Input(Bool()))
   val jrst_n = IO(Input(Bool()))
@@ -125,7 +127,6 @@ trait WithTEEHWbaseConnect {
   (usb11hs zip system.io.usb11hs).foreach{ case (port, sysport) => port <> sysport }
 
   // The memory port
-  val tlportw = system.io.tlport
   val memdevice = Some(new MemoryDevice)
   (ChildClock zip system.io.ChildClock).foreach{ case (port, sysport) => sysport := port }
   (ChildReset zip system.io.ChildReset).foreach{ case (port, sysport) => sysport := port }
@@ -141,15 +142,23 @@ trait WithTEEHWbaseConnect {
   (xdmaPorts zip system.io.xdmaPorts).foreach{ case (port, sysport) => port <> sysport }
 
   // TL external memory port
-  tlport = tlportw.map{tl => IO(new TLUL(tl.params))}
+  val tlparam = system.io.tlport.map(tl => tl.params)
+  tlport = tlparam.map{tl => IO(new TLUL(tl))}
   // TL port connection
-  (tlportw zip tlport).foreach{case (base, chip) =>
+  (system.io.tlport zip tlport).foreach{case (base, chip) =>
     chip.a <> base.a
     base.d <> chip.d
   }
+  // A helper function for alterate the number of bits of the id
+  def tlparamsOtherId(n: Int) = {
+    tlparam.map{param =>
+      param.copy(sourceBits = n)
+    }
+  }
 
   // Clock and reset connection
-  aclocks = p(ExposeClocks).option(IO(Vec(system.io.aclocks.size, Input(Clock()))))
+  val aclkn = p(ExposeClocks).option(system.io.aclocks.size)
+  aclocks = aclkn.map(A => IO(Vec(A, Input(Clock()))))
   clock := sys_clk
   if(p(ExposeClocks)) system.io.aclocks := aclocks.get
   else {
@@ -169,6 +178,7 @@ trait HasTEEHWbase {
     // The platform module
     Module(new TEEHWPlatform)
   }
+  system.suggestName("system")
 }
 
 class TEEHWSoC(implicit p :Parameters) extends WithTEEHWbaseShell()(p) with HasTEEHWbase with WithTEEHWbaseConnect {
@@ -177,688 +187,92 @@ class TEEHWSoC(implicit p :Parameters) extends WithTEEHWbaseShell()(p) with HasT
 trait HasTEEHWChip {
   implicit val p: Parameters
   val chip = Module(new TEEHWSoC)
+  chip.suggestName("chip")
+}
+
+// ********************************************************************
+// General traits for FPGA connections to the chip
+// ********************************************************************
+
+trait FPGAInternals {
+  implicit val p: Parameters
+  def outer : Option [WithTEEHWbaseShell with WithTEEHWbaseConnect]
+  def otherId : Option[Int] = None
+  // Parameters that depends on the generated system (not only the config)
+  def tlparam: Option[TLBundleParameters] = otherId.map(outer.get.tlparamsOtherId).getOrElse(outer.get.tlparam)
+  def aclkn: Option[Int] = outer.get.aclkn
+  def memserSourceBits: Option[Int] = outer.get.system.sys.asInstanceOf[HasTEEHWSystemModule].serSourceBits
+  def extserSourceBits: Option[Int] = outer.get.system.sys.asInstanceOf[HasTEEHWSystemModule].extSourceBits
+  def namedclocks: Seq[String] = outer.get.system.sys.asInstanceOf[HasTEEHWSystemModule].namedclocks
+  // Clocks and resets
+  val ChildClock = p(DDRPortOther).option(IO(Output(Clock())))
+  val ChildReset = p(DDRPortOther).option(IO(Output(Bool())))
+  val sys_clk = IO(Output(Clock()))
+  val rst_n = IO(Output(Bool()))
+  val jrst_n = IO(Output(Bool()))
+  val usbClk = p(PeripheryUSB11HSKey).map(A => IO(Output(Clock())))
+  // Memory port serialized
+  val memser = p(ExtSerMem).map(A => IO(Flipped(new SerialIO(A.serWidth))))
+  // Ext port serialized
+  val extser = p(ExtSerBus).map(A => IO(Flipped(new SerialIO(A.serWidth))))
+  // Memory port
+  var tlport = tlparam.map(A => IO(Flipped(new TLUL(A))))
+  // Asyncrhonoys clocks
+  var aclocks = aclkn.map(A => IO(Vec(A, Output(Clock()))))
+
+  def connectChipInternals(chip: WithTEEHWbaseShell with WithTEEHWbaseConnect) = {
+    (chip.ChildClock zip ChildClock).foreach{ case (a, b) => a := b }
+    (chip.ChildReset zip ChildReset).foreach{ case (a, b) => a := b }
+    chip.sys_clk := sys_clk
+    chip.rst_n := rst_n
+    chip.jrst_n := jrst_n
+    // Memory port serialized
+    (chip.memser zip memser).foreach{ case (a, b) => a <> b }
+    // Ext port serialized
+    (chip.extser zip extser).foreach{ case (a, b) => a <> b }
+    // Memory port
+    (chip.tlport zip tlport).foreach{ case (a, b) => b.a <> a.a; a.d <> b.d }
+    // Asyncrhonoys clocks
+    (chip.aclocks zip aclocks).foreach{ case (a, b) => (a zip b).foreach{ case (c, d) => c := d} }
+    // USB clock
+    (chip.usb11hs zip usbClk).foreach { case (chipport, uclk) =>
+      chipport.usbClk := uclk
+    }
+  }
 }
 
 // ********************************************************************
 // FPGAVC707 - Demo on VC707 FPGA board
 // ********************************************************************
-import sifive.fpgashells.ip.xilinx.vc707mig._
-import sifive.fpgashells.ip.xilinx._
-
-class FPGAVC707Shell(implicit val p :Parameters) extends RawModule {
-  val gpio_in = IO(Input(UInt(p(GPIOInKey).W)))
-  val gpio_out = IO(Output(UInt((p(PeripheryGPIOKey).head.width-p(GPIOInKey)).W)))
-  val jtag = IO(new Bundle {
-    val jtag_TDI = (Input(Bool())) // J19_20 / XADC_GPIO_2
-    val jtag_TDO = (Output(Bool())) // J19_17 / XADC_GPIO_1
-    val jtag_TCK = (Input(Bool())) // J19_19 / XADC_GPIO_3
-    val jtag_TMS = (Input(Bool())) // J19_18 / XADC_GPIO_0
-  })
-  val sdio = IO(new Bundle {
-    val sdio_clk = (Output(Bool()))
-    val sdio_cmd = (Output(Bool()))
-    val sdio_dat_0 = (Input(Bool()))
-    val sdio_dat_1 = (Analog(1.W))
-    val sdio_dat_2 = (Analog(1.W))
-    val sdio_dat_3 = (Output(Bool()))
-  })
-  val uart_txd = IO(Output(Bool()))
-  val uart_rxd = IO(Input(Bool()))
-
-  var qspi: Option[TEEHWQSPIBundle] = None
-
-  val USB = p(PeripheryUSB11HSKey).map{_ => IO(new Bundle {
-    val FullSpeed = Output(Bool()) // D12 / LA05_N / J1_23
-    val WireDataIn = Input(Bits(2.W)) // H7 / LA02_P / J1_9 // H8 / LA02_N / J1_11
-    val WireCtrlOut = Output(Bool()) // D11 / LA05_P / J1_21
-    val WireDataOut = Output(Bits(2.W)) // G9 / LA03_P / J1_13 // G10 / LA03_N / J1_15
-  })}
-
-  val sys_clock_p = IO(Input(Clock()))
-  val sys_clock_n = IO(Input(Clock()))
-  val sys_clock_ibufds = Module(new IBUFDS())
-  val sys_clk_i = IBUFG(sys_clock_ibufds.io.O)
-  sys_clock_ibufds.io.I := sys_clock_p
-  sys_clock_ibufds.io.IB := sys_clock_n
-  val rst_0 = IO(Input(Bool()))
-  val rst_1 = IO(Input(Bool()))
-  val rst_2 = IO(Input(Bool()))
-  val rst_3 = IO(Input(Bool()))
-  val reset_0 = IBUF(rst_0)
-  val reset_1 = IBUF(rst_1)
-  val reset_2 = IBUF(rst_2)
-  val reset_3 = IBUF(rst_3)
-
-  val clock = Wire(Clock())
-  val reset = Wire(Bool())
-
-  val pciePorts = p(IncludePCIe).option(IO(new XilinxVC707PCIeX1Pads))
-  val xdmaPorts = p(XDMAPCIe).map(A => IO(new XDMATopPads(A.lanes)))
-
-  var ddr: Option[VC707MIGIODDR] = None
-}
-
-trait WithFPGAVC707Connect {
-  this: FPGAVC707Shell =>
-  val chip : WithTEEHWbaseShell with WithTEEHWbaseConnect
-
-  withClockAndReset(clock, reset) {
-    // PLL instance
-    val c = new PLLParameters(
-      name = "pll",
-      input = PLLInClockParameters(freqMHz = 200.0, feedback = true),
-      req = Seq(
-        PLLOutClockParameters(freqMHz = 48.0),
-        PLLOutClockParameters(freqMHz = 50.0),
-        PLLOutClockParameters(freqMHz = p(FreqKeyMHz))
-      )
-    )
-    val pll = Module(new Series7MMCM(c))
-    pll.io.clk_in1 := sys_clk_i
-    pll.io.reset := reset_0
-
-    // The DDR port
-    val init_calib_complete_tl = chip.tlport.map{ case chiptl =>
-      val mod = Module(LazyModule(new TLULtoMIG(chip.cacheBlockBytes, chip.tlportw.get.params)).module)
-
-      // DDR port only
-      ddr = Some(IO(new VC707MIGIODDR(mod.depth)))
-      ddr.get <> mod.io.ddrport
-      // MIG connections, like resets and stuff
-      mod.io.ddrport.sys_clk_i := sys_clk_i.asUInt()
-      mod.io.ddrport.aresetn := !reset_0
-      mod.io.ddrport.sys_rst := reset_1
-
-      // TileLink Interface from platform
-      mod.io.tlport.a <> chiptl.a
-      chiptl.d <> mod.io.tlport.d
-
-      if(p(DDRPortOther)) {
-        chip.ChildClock.foreach(_ := pll.io.clk_out2.getOrElse(false.B))
-        chip.ChildReset.foreach(_ := reset_2)
-        mod.clock := pll.io.clk_out2.getOrElse(false.B)
-      }
-      else {
-        chip.ChildClock.foreach(_ := pll.io.clk_out3.getOrElse(false.B))
-        chip.ChildReset.foreach(_ := reset_2)
-        mod.clock := pll.io.clk_out3.getOrElse(false.B)
-      }
-
-      mod.io.ddrport.init_calib_complete
-    }
-    val init_calib_complete_ser = chip.memser.map { A =>
-      val mod = Module(LazyModule(new SertoMIG(
-        A.w,
-        chip.system.sys.asInstanceOf[HasTEEHWSystemModule].serSourceBits.get
-      )).module)
-
-      // Serial port
-      mod.io.serport.flipConnect(A)
-
-      // DDR port only
-      ddr = Some(IO(new VC707MIGIODDR(mod.depth)))
-      ddr.get <> mod.io.ddrport
-      // MIG connections, like resets and stuff
-      mod.io.ddrport.sys_clk_i := sys_clk_i.asUInt()
-      mod.io.ddrport.aresetn := !reset_0
-      mod.io.ddrport.sys_rst := reset_1
-      mod.clock := pll.io.clk_out3.getOrElse(false.B)
-
-      mod.io.ddrport.init_calib_complete
-    }
-
-    val init_calib_complete = init_calib_complete_tl.getOrElse(init_calib_complete_ser.getOrElse(false.B))
-
-    // Main clock and reset assignments
-    clock := pll.io.clk_out3.get
-    reset := reset_2
-    chip.sys_clk := pll.io.clk_out3.get
-    chip.aclocks.foreach(_.foreach(_ := pll.io.clk_out3.get)) // TODO: Connect your clocks here
-    chip.rst_n := !reset_2
-
-    // Clock controller
-    chip.extser.foreach { A =>
-      val mod = Module(LazyModule(new FPGAMiniSystem(
-        chip.system.sys.asInstanceOf[HasTEEHWSystemModule].extSourceBits.get
-      )).module)
-
-      // Serial port
-      mod.serport.flipConnect(A)
-
-      // TODO: Connect the clock, to the aclock that you need
-      chip.aclocks.foreach{ aclocks =>
-        aclocks(2) := mod.clockctrl.head.asInstanceOf[ClockCtrlPortIO].clko_1 // for Tile_0
-        aclocks(3) := mod.clockctrl.head.asInstanceOf[ClockCtrlPortIO].clko_2 // for Tile_1
-        aclocks(8) := mod.clockctrl.head.asInstanceOf[ClockCtrlPortIO].clko_0 // for Cryptobus
-      }
-    }
-
-    // The rest of the platform connections
-    // gpio_out := Cat(reset_0, reset_1, reset_2, reset_3, init_calib_complete)
-    gpio_out := chip.gpio_out
-    chip.gpio_in := gpio_in
-    jtag <> chip.jtag
-    qspi = chip.qspi.map(A => IO ( new TEEHWQSPIBundle(A.csWidth) ) )
-    (chip.qspi zip qspi).foreach { case (sysqspi, portspi) => portspi <> sysqspi}
-    chip.jtag.jtag_TCK := IBUFG(jtag.jtag_TCK.asClock).asUInt
-    chip.uart_rxd := uart_rxd	  // UART_TXD
-    uart_txd := chip.uart_txd 	// UART_RXD
-    sdio <> chip.sdio
-    chip.jrst_n := !reset_3
-
-    // USB phy connections
-    (chip.usb11hs zip USB).foreach{ case (chipport, port) =>
-      port.FullSpeed := chipport.USBFullSpeed
-      chipport.USBWireDataIn := port.WireDataIn
-      port.WireCtrlOut := chipport.USBWireCtrlOut
-      port.WireDataOut := chipport.USBWireDataOut
-
-      chipport.usbClk := pll.io.clk_out1.getOrElse(false.B)
-    }
-
-    // PCIe (if available)
-    (pciePorts zip chip.pciePorts).foreach{ case (port, chipport) =>
-      chipport.REFCLK_rxp := port.REFCLK_rxp
-      chipport.REFCLK_rxn := port.REFCLK_rxn
-      port.pci_exp_txp := chipport.pci_exp_txp
-      port.pci_exp_txn := chipport.pci_exp_txn
-      chipport.pci_exp_rxp := port.pci_exp_rxp
-      chipport.pci_exp_rxn := port.pci_exp_rxn
-      chipport.axi_aresetn := !reset_0
-      chipport.axi_ctl_aresetn := !reset_0
-    }
-    (xdmaPorts zip chip.xdmaPorts).foreach{
-      case (port, sysport) =>
-        port.lanes <> sysport.lanes
-        port.refclk <> sysport.refclk
-        sysport.erst_n := !reset_0
-    }
-  }
-}
-
 class FPGAVC707(implicit p :Parameters) extends FPGAVC707Shell()(p)
   with HasTEEHWChip with WithFPGAVC707Connect {
+}
+
+class FPGAVC707ToChip(implicit p :Parameters) extends FPGAVC707Shell()(p)
+  with WithFPGAVC707ToChipConnect {
+}
+
+class FPGAVC707FromChip(implicit p :Parameters) extends FPGAVC707Shell()(p)
+  with HasTEEHWChip with WithFPGAVC707FromChipConnect {
 }
 
 // ********************************************************************
 // FPGAVCU118 - Demo on VCU118 FPGA board
 // ********************************************************************
-import sifive.fpgashells.ip.xilinx.vcu118mig._
-import sifive.fpgashells.ip.xilinx._
-
-class FPGAVCU118Shell(implicit val p :Parameters) extends RawModule {
-  val gpio_in = IO(Input(UInt(p(GPIOInKey).W)))
-  val gpio_out = IO(Output(UInt((p(PeripheryGPIOKey).head.width - p(GPIOInKey)).W)))
-  val jtag = IO(new Bundle {
-    val jtag_TDI = (Input(Bool())) // J53.6
-    val jtag_TDO = (Output(Bool())) // J53.8
-    val jtag_TCK = (Input(Bool())) // J53.2
-    val jtag_TMS = (Input(Bool())) // J53.4
-  })
-  val sdio = IO(new Bundle {
-    val sdio_clk = (Output(Bool())) // J52.7
-    val sdio_cmd = (Output(Bool())) // J52.3
-    val sdio_dat_0 = (Input(Bool())) // J52.5
-    val sdio_dat_1 = (Analog(1.W)) // J52.2
-    val sdio_dat_2 = (Analog(1.W)) // J52.4
-    val sdio_dat_3 = (Output(Bool())) // J52.1
-  })
-  val uart_txd = IO(Output(Bool()))
-  val uart_rxd = IO(Input(Bool()))
-
-  var qspi: Option[TEEHWQSPIBundle] = None
-
-  val USB = p(PeripheryUSB11HSKey).map { _ =>
-    IO(new Bundle {
-      val FullSpeed = Output(Bool()) // NC
-      val WireDataIn = Input(Bits(2.W)) // NC // NC
-      val WireCtrlOut = Output(Bool()) // NC
-      val WireDataOut = Output(Bits(2.W)) // NC // NC
-    })
-  }
-
-  val sys_clock_p = IO(Input(Clock()))
-  val sys_clock_n = IO(Input(Clock()))
-  val sys_clock_ibufds = Module(new IBUFDS())
-  val sys_clk_i = IBUFG(sys_clock_ibufds.io.O)
-  sys_clock_ibufds.io.I := sys_clock_p
-  sys_clock_ibufds.io.IB := sys_clock_n
-  val rst_0 = IO(Input(Bool()))
-  val rst_1 = IO(Input(Bool()))
-  val rst_2 = IO(Input(Bool()))
-  val rst_3 = IO(Input(Bool()))
-  val reset_0 = IBUF(rst_0)
-  val reset_1 = IBUF(rst_1)
-  val reset_2 = IBUF(rst_2)
-  val reset_3 = IBUF(rst_3)
-
-  val clock = Wire(Clock())
-  val reset = Wire(Bool())
-
-  val pciePorts = p(IncludePCIe).option(IO(new XilinxVC707PCIeX1Pads))
-  val xdmaPorts = p(XDMAPCIe).map(A => IO(new XDMATopPads(A.lanes)))
-
-  var ddr: Option[VCU118MIGIODDR] = None
-}
-
-trait WithFPGAVCU118Connect {
-  this: FPGAVCU118Shell =>
-  val chip : WithTEEHWbaseShell with WithTEEHWbaseConnect
-
-  withClockAndReset(clock, reset) {
-    // PLL instance
-    val c = new PLLParameters(
-      name = "pll",
-      input = PLLInClockParameters(freqMHz = 250.0, feedback = true),
-      req = Seq(
-        PLLOutClockParameters(freqMHz = 48.0),
-        PLLOutClockParameters(freqMHz = 50.0),
-        PLLOutClockParameters(freqMHz = p(FreqKeyMHz))
-      )
-    )
-    val pll = Module(new Series7MMCM(c))
-    pll.io.clk_in1 := sys_clk_i
-    pll.io.reset := reset_0
-
-    // The DDR port
-    val init_calib_complete_tl = chip.tlport.map{ case chiptl =>
-      val mod = Module(LazyModule(new TLULtoMIGUltra(chip.cacheBlockBytes, chip.tlportw.get.params)).module)
-
-      // DDR port only
-      ddr = Some(IO(new VCU118MIGIODDR(mod.depth)))
-      ddr.get <> mod.io.ddrport
-      // MIG connections, like resets and stuff
-      mod.io.ddrport.c0_sys_clk_i := sys_clk_i.asUInt()
-      mod.io.ddrport.c0_ddr4_aresetn := !reset_0
-      mod.io.ddrport.sys_rst := reset_1
-
-      // TileLink Interface from platform
-      mod.io.tlport.a <> chiptl.a
-      chiptl.d <> mod.io.tlport.d
-
-      if(p(DDRPortOther)) {
-        chip.ChildClock.foreach(_ := pll.io.clk_out2.getOrElse(false.B))
-        chip.ChildReset.foreach(_ := reset_2)
-        mod.clock := pll.io.clk_out2.getOrElse(false.B)
-      }
-      else {
-        chip.ChildClock.foreach(_ := pll.io.clk_out3.getOrElse(false.B))
-        chip.ChildReset.foreach(_ := reset_2)
-        mod.clock := pll.io.clk_out3.getOrElse(false.B)
-      }
-
-      mod.io.ddrport.c0_init_calib_complete
-    }
-    val init_calib_complete_ser = chip.memser.map { A =>
-      val mod = Module(LazyModule(new SertoMIGUltra(
-        A.w,
-        chip.system.sys.asInstanceOf[HasTEEHWSystemModule].serSourceBits.get
-      )).module)
-
-      // Serial port
-      mod.io.serport.flipConnect(A)
-
-      // DDR port only
-      ddr = Some(IO(new VCU118MIGIODDR(mod.depth)))
-      ddr.get <> mod.io.ddrport
-      // MIG connections, like resets and stuff
-      mod.io.ddrport.c0_sys_clk_i := sys_clk_i.asUInt()
-      mod.io.ddrport.c0_ddr4_aresetn := !reset_0
-      mod.io.ddrport.sys_rst := reset_1
-
-      mod.io.ddrport.c0_init_calib_complete
-    }
-
-    val init_calib_complete = init_calib_complete_tl.getOrElse(init_calib_complete_ser.getOrElse(false.B))
-
-    // Main clock and reset assignments
-    clock := pll.io.clk_out3.get
-    reset := reset_2
-    chip.sys_clk := pll.io.clk_out3.get
-    chip.aclocks.foreach(_.foreach(_ := pll.io.clk_out3.get)) // TODO: Connect your clocks here
-    chip.rst_n := !reset_2
-
-    // Clock controller
-    chip.extser.foreach { A =>
-      val mod = Module(LazyModule(new FPGAMiniSystem(
-        chip.system.sys.asInstanceOf[HasTEEHWSystemModule].extSourceBits.get
-      )).module)
-
-      // Serial port
-      mod.serport.flipConnect(A)
-
-      // TODO: Connect the clock, to the aclock that you need
-      chip.aclocks.foreach{ aclocks =>
-        // aclocks(1) := mod.clockctrl.head.asInstanceOf[ClockCtrlPortIO].clko
-      }
-    }
-
-    // The rest of the platform connections
-    gpio_out := Cat(reset_0, reset_1, reset_2, reset_3, init_calib_complete)
-    chip.gpio_in := gpio_in
-    jtag <> chip.jtag
-    qspi = chip.qspi.map(A => IO ( new TEEHWQSPIBundle(A.csWidth) ) )
-    (chip.qspi zip qspi).foreach { case (sysqspi, portspi) => portspi <> sysqspi}
-    chip.jtag.jtag_TCK := IBUFG(jtag.jtag_TCK.asClock).asUInt
-    chip.uart_rxd := uart_rxd	  // UART_TXD
-    uart_txd := chip.uart_txd 	// UART_RXD
-    sdio <> chip.sdio
-    chip.jrst_n := !reset_3
-
-    // USB phy connections
-    (chip.usb11hs zip USB).foreach{ case (chipport, port) =>
-      port.FullSpeed := chipport.USBFullSpeed
-      chipport.USBWireDataIn := port.WireDataIn
-      port.WireCtrlOut := chipport.USBWireCtrlOut
-      port.WireDataOut := chipport.USBWireDataOut
-
-      chipport.usbClk := pll.io.clk_out1.getOrElse(false.B)
-    }
-
-    // PCIe (if available)
-    (pciePorts zip chip.pciePorts).foreach{ case (port, chipport) =>
-      chipport.REFCLK_rxp := port.REFCLK_rxp
-      chipport.REFCLK_rxn := port.REFCLK_rxn
-      port.pci_exp_txp := chipport.pci_exp_txp
-      port.pci_exp_txn := chipport.pci_exp_txn
-      chipport.pci_exp_rxp := port.pci_exp_rxp
-      chipport.pci_exp_rxn := port.pci_exp_rxn
-      chipport.axi_aresetn := !reset_0
-      chipport.axi_ctl_aresetn := !reset_0
-    }
-    (xdmaPorts zip chip.xdmaPorts).foreach{
-      case (port, sysport) =>
-        port.lanes <> sysport.lanes
-        port.refclk <> sysport.refclk
-        sysport.erst_n := !reset_0
-    }
-  }
-}
-
 class FPGAVCU118(implicit p :Parameters) extends FPGAVCU118Shell()(p)
   with HasTEEHWChip with WithFPGAVCU118Connect {
 }
 
 // ********************************************************************
+// FPGAArtyA7 - Demo on Arty A7 100 FPGA board
+// ********************************************************************
+class FPGAArtyA7(implicit p :Parameters) extends FPGAArtyA7Shell()(p)
+  with HasTEEHWChip with WithFPGAArtyA7Connect {
+}
+
+// ********************************************************************
 // FPGADE4 - Demo on DE4 FPGA board
 // ********************************************************************
-
-class FPGADE4Shell(implicit val p :Parameters) extends RawModule {
-  ///////// CLOCKS /////////
-  val OSC_50_BANK2 = IO(Input(Clock())) //HSMA + UART + ext_pll
-  val OSC_50_BANK3 = IO(Input(Clock())) //DIMM1		<-- most used
-  val OSC_50_BANK4 = IO(Input(Clock())) //SDCARD
-  val OSC_50_BANK5 = IO(Input(Clock())) //GPIO0 + GPIO1
-  val OSC_50_BANK6 = IO(Input(Clock())) //HSMB + Ethernet
-  val OSC_50_BANK7 = IO(Input(Clock())) //DIMM2 + USB + FSM + Flash
-  val GCLKIN = IO(Input(Clock()))
-  //val GCLKOUT_FPGA = IO(Output(Clock()))
-  //val SMA_CLKOUT_p = IO(Output(Clock()))
-
-  //////// CPU RESET //////////
-  val CPU_RESET_n = IO(Input(Bool()))
-
-  ///////// LED /////////
-  val LED = IO(Output(Bits((7 + 1).W)))
-
-  //////////// 7-Segment Display //////////
-  /*val SEG0_D = IO(Output(Bits((6+1).W)))
-  val SEG1_D = IO(Output(Bits((6+1).W)))
-  val SEG0_DP = IO(Output(Bool()))
-  val SEG1_DP = IO(Output(Bool()))*/
-
-  ///////// BUTTON /////////
-  val BUTTON = IO(Input(Bits((3 + 1).W)))
-
-  ///////// SW /////////
-  val SW = IO(Input(Bits((7 + 1).W)))
-
-  //////////// SLIDE SWITCH x 4 //////////
-  val SLIDE_SW = IO(Input(Bits((3 + 1).W)))
-
-  ///////// FAN /////////
-  val FAN_CTRL = IO(Output(Bool()))
-
-  //////////// SDCARD //////////
-  val SD_CLK = IO(Output(Bool()))
-  val SD_MOSI = IO(Output(Bool()))
-  val SD_MISO = IO(Input(Bool()))
-  val SD_CS_N = IO(Output(Bool()))
-  //val SD_INTERUPT_N = IO(Input(Bool()))
-  //val SD_WP_n = IO(Input(Bool()))
-
-  ////////////// PCIe x 8 //////////
-  /*	val PCIE_PREST_n = IO(Input(Bool()))
-    val PCIE_REFCLK_p = IO(Input(Bool()))
-    val PCIE_RX_p = IO(Input(Bits((7+1).W)))
-    val PCIE_SMBCLK = IO(Input(Bool()))
-    val PCIE_SMBDAT = IO(Analog(1.W))
-    val PCIE_TX_p = IO(Output(Bits((7+1).W)))
-    val PCIE_WAKE_n = IO(Output(Bool()))  */
-
-  //////////// DDR2 SODIMM //////////
-  val M1_DDR2_addr = IO(Output(Bits((15 + 1).W)))
-  val M1_DDR2_ba = IO(Output(Bits((2 + 1).W)))
-  val M1_DDR2_cas_n = IO(Output(Bool()))
-  val M1_DDR2_cke = IO(Output(Bits((1 + 1).W)))
-  val M1_DDR2_clk = IO(Output(Bits((1 + 1).W)))
-  val M1_DDR2_clk_n = IO(Output(Bits((1 + 1).W)))
-  val M1_DDR2_cs_n = IO(Output(Bits((1 + 1).W)))
-  val M1_DDR2_dm = IO(Output(Bits((7 + 1).W)))
-  val M1_DDR2_dq = IO(Analog((63 + 1).W))
-  val M1_DDR2_dqs = IO(Analog((7 + 1).W))
-  val M1_DDR2_dqsn = IO(Analog((7 + 1).W))
-  val M1_DDR2_odt = IO(Output(Bits((1 + 1).W)))
-  val M1_DDR2_ras_n = IO(Output(Bool()))
-  //val M1_DDR2_SA = IO(Output(Bits((1+1).W)))
-  //val M1_DDR2_SCL = IO(Output(Bool()))
-  //val M1_DDR2_SDA = IO(Analog(1.W))
-  val M1_DDR2_we_n = IO(Output(Bool()))
-  val M1_DDR2_oct_rdn = IO(Input(Bool()))
-  val M1_DDR2_oct_rup = IO(Input(Bool()))
-
-  //////////// DDR2 SODIMM //////////
-  /*	val M2_DDR2_addr = IO(Output(Bits((15+1).W)))
-    val M2_DDR2_ba = IO(Output(Bits((2+1).W)))
-    val M2_DDR2_cas_n = IO(Output(Bool()))
-    val M2_DDR2_cke = IO(Output(Bits((1+1).W)))
-    val M2_DDR2_clk = IO(Analog((1+1).W))
-    val M2_DDR2_clk_n = IO(Analog((1+1).W))
-    val M2_DDR2_cs_n = IO(Output(Bits((1+1).W)))
-    val M2_DDR2_dm = IO(Output(Bits((7+1).W)))
-    val M2_DDR2_dq = IO(Analog((63+1).W))
-    val M2_DDR2_dqs = IO(Analog((7+1).W))
-    val M2_DDR2_dqsn = IO(Analog((7+1).W))
-    val M2_DDR2_odt = IO(Output(Bits((1+1).W)))
-    val M2_DDR2_ras_n = IO(Output(Bool()))
-    val M2_DDR2_SA = IO(Output(Bits((1+1).W)))
-    val M2_DDR2_SCL = IO(Output(Bool()))
-    val M2_DDR2_SDA = IO(Analog(1.W))
-    val M2_DDR2_we_n = IO(Output(Bool()))
-    val M2_DDR2_oct_rdn = IO(Input(Bool()))
-    val M2_DDR2_oct_rup = IO(Input(Bool()))  */
-
-  ///////// GPIO /////////
-  //val GPIO0_D = IO(Output(Bits((35+1).W)))
-  //val GPIO1_D = IO(Analog((35+1).W))
-  val jtag = IO(new Bundle {
-    val jtag_TDI = (Input(Bool()))
-    val jtag_TMS = (Input(Bool()))
-    val jtag_TCK = (Input(Bool()))
-    val jtag_TDO = (Output(Bool()))
-  })
-
-  var qspi: Option[TEEHWQSPIBundle] = None
-
-  val USB = p(PeripheryUSB11HSKey).map { _ =>
-    IO(new Bundle {
-      val FullSpeed = Output(Bool()) // GPIO0_D[7]
-      val WireDataIn = Input(Bits(2.W)) // GPIO0_D[1:0]
-      val WireCtrlOut = Output(Bool()) // GPIO0_D[6]
-      val WireDataOut = Output(Bits(2.W)) // GPIO0_D[3:2]
-    })
-  }
-
-  ///////////  EXT_IO /////////
-  //val EXT_IO = IO(Analog(1.W))
-
-  //////////// HSMC_A //////////
-  /*val HSMA_CLKIN_n1 = IO(Input(Bool()))
-  val HSMA_CLKIN_n2 = IO(Input(Bool()))
-  val HSMA_CLKIN_p1 = IO(Input(Bool()))
-  val HSMA_CLKIN_p2 = IO(Input(Bool()))
-  val HSMA_CLKIN0 = IO(Input(Bool()))
-  val HSMA_CLKOUT_n2 = IO(Output(Bool()))
-  val HSMA_CLKOUT_p2 = IO(Output(Bool()))
-  val HSMA_D = IO(Analog((3+1).W))
-  //val HSMA_GXB_RX_p = IO(Input(Bits((3+1).W)))
-  //val HSMA_GXB_TX_p = IO(Output(Bits((3+1).W)))
-  val HSMA_OUT_n1 = IO(Analog(1.W))
-  val HSMA_OUT_p1 = IO(Analog(1.W))
-  val HSMA_OUT0 = IO(Analog(1.W))
-  //val HSMA_REFCLK_p = IO(Input(Bool()))
-  val HSMA_RX_n = IO(Analog((16+1).W))
-  val HSMA_RX_p = IO(Analog((16+1).W))
-  val HSMA_TX_n = IO(Analog((16+1).W))
-  val HSMA_TX_p = IO(Analog((16+1).W))*/
-
-  //////////// HSMC_B //////////
-  /*val HSMB_CLKIN_n1 = IO(Input(Bool()))
-  val HSMB_CLKIN_n2 = IO(Input(Bool()))
-  val HSMB_CLKIN_p1 = IO(Input(Bool()))
-  val HSMB_CLKIN_p2 = IO(Input(Bool()))
-  val HSMB_CLKIN0 = IO(Input(Bool()))
-  val HSMB_CLKOUT_n2 = IO(Output(Bool()))
-  val HSMB_CLKOUT_p2 = IO(Output(Bool()))
-  val HSMB_D = IO(Analog((3+1).W))
-  //val HSMB_GXB_RX_p = IO(Input(Bits((7+1).W)))
-  //val HSMB_GXB_TX_p = IO(Output(Bits((7+1).W)))
-  val HSMB_OUT_n1 = IO(Analog(1.W))
-  val HSMB_OUT_p1 = IO(Analog(1.W))
-  val HSMB_OUT0 = IO(Analog(1.W))
-  //val HSMB_REFCLK_p = IO(Input(Bool()))
-  val HSMB_RX_n = IO(Analog((16+1).W))
-  val HSMB_RX_p = IO(Analog((16+1).W))
-  val HSMB_TX_n = IO(Analog((16+1).W))
-  val HSMB_TX_p = IO(Analog((16+1).W))*/
-
-  //////////// HSMC I2C //////////
-  /*val HSMC_SCL = IO(Output(Bool()))
-  val HSMC_SDA = IO(Analog(1.W))*/
-
-  //////////// 7-Segment Display //////////
-  /*val SEG0_D = IO(Output(Bits((6+1).W)))
-  val SEG1_D = IO(Output(Bits((6+1).W)))
-  val SEG0_DP = IO(Output(Bool()))
-  val SEG1_DP = IO(Output(Bool()))*/
-
-  //////////// Uart //////////
-  //val UART_CTS = IO(Output(Bool()))
-  //val UART_RTS = IO(Input(Bool()))
-  val UART_RXD = IO(Input(Bool()))
-  val UART_TXD = IO(Output(Bool()))
-
-  FAN_CTRL := true.B
-
-  val clock = Wire(Clock())
-  val reset = Wire(Bool())
-}
-
-trait WithFPGADE4Connect {
-  this: FPGADE4Shell =>
-  val chip : WithTEEHWbaseShell with WithTEEHWbaseConnect
-
-  withClockAndReset(clock, reset) {
-    // Instance our converter, and connect everything
-    val mod = Module(LazyModule(
-      new TLULtoQuartusPlatform(
-        chip.cacheBlockBytes,
-        chip.tlportw.get.params
-      )
-    ).module)
-
-    // Clock and reset (for TL stuff)
-    clock := mod.io.ckrst.qsys_clk
-    reset := SLIDE_SW(3)
-    chip.sys_clk := mod.io.ckrst.qsys_clk
-    chip.aclocks.foreach(_.foreach(_ := mod.io.ckrst.qsys_clk)) // TODO: Connect your clocks here
-    chip.rst_n := !SLIDE_SW(3)
-    if(p(DDRPortOther)) {
-      chip.ChildClock.get := mod.io.ckrst.io_clk
-      chip.ChildReset.get := SLIDE_SW(3)
-      mod.clock := mod.io.ckrst.io_clk
-    }
-    else mod.clock := mod.io.ckrst.qsys_clk
-
-    // Quartus Platform connections
-    M1_DDR2_addr := mod.io.qport.memory_mem_a
-    M1_DDR2_ba := mod.io.qport.memory_mem_ba
-    M1_DDR2_clk := mod.io.qport.memory_mem_ck
-    M1_DDR2_clk_n := mod.io.qport.memory_mem_ck_n
-    M1_DDR2_cke := mod.io.qport.memory_mem_cke
-    M1_DDR2_cs_n := mod.io.qport.memory_mem_cs_n
-    M1_DDR2_dm := mod.io.qport.memory_mem_dm
-    M1_DDR2_ras_n := mod.io.qport.memory_mem_ras_n
-    M1_DDR2_cas_n := mod.io.qport.memory_mem_cas_n
-    M1_DDR2_we_n := mod.io.qport.memory_mem_we_n
-    attach(M1_DDR2_dq, mod.io.qport.memory_mem_dq)
-    attach(M1_DDR2_dqs, mod.io.qport.memory_mem_dqs)
-    attach(M1_DDR2_dqsn, mod.io.qport.memory_mem_dqs_n)
-    M1_DDR2_odt := mod.io.qport.memory_mem_odt
-    mod.io.qport.oct_rdn := M1_DDR2_oct_rdn
-    mod.io.qport.oct_rup := M1_DDR2_oct_rup
-    mod.io.ckrst.ddr_ref_clk := OSC_50_BANK3.asUInt()
-    mod.io.ckrst.qsys_ref_clk := OSC_50_BANK5.asUInt()
-    mod.io.ckrst.system_reset_n := CPU_RESET_n
-
-    // TileLink Interface from platform
-    // TODO: Make the DDR optional. Need to stop using the Quartus Platform
-    mod.io.tlport.a <> chip.tlport.get.a
-    chip.tlport.get.d <> mod.io.tlport.d
-
-    // The external bus
-    chip.extser.foreach { A =>
-      val mod = Module(LazyModule(new FPGAMiniSystem(
-        chip.system.sys.asInstanceOf[HasTEEHWSystemModule].extSourceBits.get
-      )).module)
-
-      // Serial port
-      mod.serport.flipConnect(A)
-    }
-
-    // The rest of the platform connections
-    val chipshell_led = chip.gpio_out 	// output [7:0]
-    LED := Cat(
-      mod.io.qport.mem_status_local_cal_fail,
-      mod.io.qport.mem_status_local_cal_success,
-      mod.io.qport.mem_status_local_init_done,
-      SLIDE_SW(3),
-      chipshell_led(3,0)
-    )
-    chip.gpio_in := SW(7,0)			// input  [7:0]
-    jtag <> chip.jtag
-    qspi = chip.qspi.map(A => IO ( new TEEHWQSPIBundle(A.csWidth) ) )
-    (chip.qspi zip qspi).foreach { case (sysqspi, portspi) => portspi <> sysqspi}
-    chip.uart_rxd := UART_RXD	// UART_TXD
-    UART_TXD := chip.uart_txd 	// UART_RXD
-    SD_CLK := chip.sdio.sdio_clk 	// output
-    SD_MOSI := chip.sdio.sdio_cmd 	// output
-    chip.sdio.sdio_dat_0 := SD_MISO 	// input
-    SD_CS_N := chip.sdio.sdio_dat_3 	// output
-    chip.jrst_n := !SLIDE_SW(2)
-
-    // USB phy connections
-    (chip.usb11hs zip USB).foreach{ case (chipport, port) =>
-      port.FullSpeed := chipport.USBFullSpeed
-      chipport.USBWireDataIn := port.WireDataIn
-      port.WireCtrlOut := chipport.USBWireCtrlOut
-      port.WireDataOut := chipport.USBWireDataOut
-
-      chipport.usbClk := mod.io.ckrst.usb_clk
-    }
-  }
-}
-
 class FPGADE4(implicit p :Parameters) extends FPGADE4Shell()(p)
   with HasTEEHWChip with WithFPGADE4Connect {
 }
@@ -866,268 +280,36 @@ class FPGADE4(implicit p :Parameters) extends FPGADE4Shell()(p)
 // ********************************************************************
 // FPGATR4 - Demo on TR4 FPGA board
 // ********************************************************************
-
-class FPGATR4Shell(implicit val p :Parameters) extends RawModule {
-  ///////// CLOCKS /////////
-  val OSC_50_BANK1 = IO(Input(Clock()))
-  val OSC_50_BANK3 = IO(Input(Clock()))
-  val OSC_50_BANK4 = IO(Input(Clock()))
-  val OSC_50_BANK7 = IO(Input(Clock()))
-  val OSC_50_BANK8 = IO(Input(Clock()))
-
-  ///////// BUTTON /////////
-  val BUTTON = IO(Input(Bits((3 + 1).W)))
-
-  ///////// LED /////////
-  val LED = IO(Output(Bits((3 + 1).W)))
-
-  ///////// SW /////////
-  val SW = IO(Input(Bits((3 + 1).W)))
-
-  ///////// FAN /////////
-  val FAN_CTRL = IO(Output(Bool()))
-
-  //////////// HSMC_A //////////
-  /*val HSMA_CLKIN0 = IO(Input(Bool()))
-  val HSMA_CLKIN_n1 = IO(Input(Bool()))
-  val HSMA_CLKIN_n2 = IO(Input(Bool()))
-  val HSMA_CLKIN_p1 = IO(Input(Bool()))
-  val HSMA_CLKIN_p2 = IO(Input(Bool()))
-  val HSMA_D = IO(Analog((3+1).W))
-  val HSMA_OUT0 = IO(Analog(1.W))
-  val HSMA_OUT_n1 = IO(Analog(1.W))
-  val HSMA_OUT_n2 = IO(Analog(1.W))
-  val HSMA_OUT_p1 = IO(Analog(1.W))
-  val HSMA_OUT_p2 = IO(Analog(1.W))
-  val HSMA_RX_n = IO(Analog((16+1).W))
-  val HSMA_RX_p = IO(Analog((16+1).W))
-  val HSMA_TX_n = IO(Analog((16+1).W))
-  val HSMA_TX_p = IO(Analog((16+1).W))*/
-
-  //////////// HSMC_B //////////
-  /*val HSMB_CLKIN0 = IO(Input(Bool()))
-  val HSMB_CLKIN_n1 = IO(Input(Bool()))
-  val HSMB_CLKIN_n2 = IO(Input(Bool()))
-  val HSMB_CLKIN_p1 = IO(Input(Bool()))
-  val HSMB_CLKIN_p2 = IO(Input(Bool()))
-  val HSMB_D = IO(Analog((3+1).W))
-  val HSMB_OUT0 = IO(Analog(1.W))
-  val HSMB_OUT_n1 = IO(Analog(1.W))
-  val HSMB_OUT_n2 = IO(Analog(1.W))
-  val HSMB_OUT_p1 = IO(Analog(1.W))
-  val HSMB_OUT_p2 = IO(Analog(1.W))
-  val HSMB_RX_n = IO(Analog((16+1).W))
-  val HSMB_RX_p = IO(Analog((16+1).W))
-  val HSMB_TX_n = IO(Analog((16+1).W))
-  val HSMB_TX_p = IO(Analog((16+1).W))*/
-
-  //////////// HSMC_C //////////
-  //val GPIO0_D = IO(Output(Bits((35+1).W)))
-  //val GPIO1_D = IO(Analog((35+1).W))
-
-  //////////// HSMC_D //////////
-  /*val HSMD_CLKIN0 = IO(Input(Bool()))
-  val HSMD_CLKIN_n1 = IO(Input(Bool()))
-  val HSMD_CLKIN_n2 = IO(Input(Bool()))
-  val HSMD_CLKIN_p1 = IO(Input(Bool()))
-  val HSMD_CLKIN_p2 = IO(Input(Bool()))
-  val HSMD_CLKOUT_n1 = IO(Analog(1.W))
-  val HSMD_CLKOUT_p1 = IO(Analog(1.W))
-  val HSMD_D = IO(Analog((3+1).W))
-  val HSMD_OUT0 = IO(Analog(1.W))
-  val HSMD_OUT_n2 = IO(Analog(1.W))
-  val HSMD_OUT_p2 = IO(Analog(1.W))
-  val HSMD_RX_n = IO(Analog((16+1).W))
-  val HSMD_RX_p = IO(Analog((16+1).W))
-  val HSMD_TX_n = IO(Analog((16+1).W))
-  val HSMD_TX_p = IO(Analog((16+1).W))*/
-
-  //////////// HSMC_E //////////
-  /*val HSME_CLKIN0 = IO(Input(Bool()))
-  val HSME_CLKIN_n1 = IO(Input(Bool()))
-  val HSME_CLKIN_n2 = IO(Input(Bool()))
-  val HSME_CLKIN_p1 = IO(Input(Bool()))
-  val HSME_CLKIN_p2 = IO(Input(Bool()))
-  val HSME_CLKOUT_n1 = IO(Analog(1.W))
-  val HSME_CLKOUT_p1 = IO(Analog(1.W))
-  val HSME_D = IO(Analog((3+1).W))
-  val HSME_OUT0 = IO(Analog(1.W))
-  val HSME_OUT_n2 = IO(Analog(1.W))
-  val HSME_OUT_p2 = IO(Analog(1.W))
-  val HSME_RX_n = IO(Analog((16+1).W))
-  val HSME_RX_p = IO(Analog((16+1).W))
-  val HSME_TX_n = IO(Analog((16+1).W))
-  val HSME_TX_p = IO(Analog((16+1).W))*/
-
-  //////////// HSMC_F //////////
-  /*val HSMF_CLKIN0 = IO(Input(Bool()))
-  val HSMF_CLKIN_n1 = IO(Input(Bool()))
-  val HSMF_CLKIN_n2 = IO(Input(Bool()))
-  val HSMF_CLKIN_p1 = IO(Input(Bool()))
-  val HSMF_CLKIN_p2 = IO(Input(Bool()))
-  val HSMF_CLKOUT_n1 = IO(Analog(1.W))
-  val HSMF_CLKOUT_p1 = IO(Analog(1.W))
-  val HSMF_D = IO(Analog((3+1).W))
-  val HSMF_OUT0 = IO(Analog(1.W))
-  val HSMF_OUT_n2 = IO(Analog(1.W))
-  val HSMF_OUT_p2 = IO(Analog(1.W))
-  val HSMF_RX_n = IO(Analog((16+1).W))
-  val HSMF_RX_p = IO(Analog((16+1).W))
-  val HSMF_TX_n = IO(Analog((16+1).W))
-  val HSMF_TX_p = IO(Analog((16+1).W))*/
-
-  //////////// mem //////////
-  val mem_a = IO(Output(Bits((15 + 1).W)))
-  val mem_ba = IO(Output(Bits((2 + 1).W)))
-  val mem_cas_n = IO(Output(Bool()))
-  val mem_cke = IO(Output(Bits((1 + 1).W)))
-  val mem_ck = IO(Output(Bits((0 + 1).W))) // NOTE: Is impossible to do [0:0]
-  val mem_ck_n = IO(Output(Bits((0 + 1).W))) // NOTE: Is impossible to do [0:0]
-  val mem_cs_n = IO(Output(Bits((1 + 1).W)))
-  val mem_dm = IO(Output(Bits((7 + 1).W)))
-  val mem_dq = IO(Analog((63 + 1).W))
-  val mem_dqs = IO(Analog((7 + 1).W))
-  val mem_dqs_n = IO(Analog((7 + 1).W))
-  val mem_odt = IO(Output(Bits((1 + 1).W)))
-  val mem_ras_n = IO(Output(Bool()))
-  val mem_reset_n = IO(Output(Bool()))
-  val mem_we_n = IO(Output(Bool()))
-  val mem_oct_rdn = IO(Input(Bool()))
-  val mem_oct_rup = IO(Input(Bool()))
-  //val mem_scl = IO(Output(Bool()))
-  //val mem_sda = IO(Analog(1.W))
-  //val mem_event_n = IO(Input(Bool())) // NOTE: This also appeared, but is not used
-
-  ///////// GPIO /////////
-  val jtag = IO(new Bundle {
-    val jtag_TDI = (Input(Bool()))  // PIN_AP27 / GPIO1_D4 / JP10 5
-    val jtag_TMS = (Input(Bool()))  // PIN_AN27 / GPIO1_D6 / JP10 7
-    val jtag_TCK = (Input(Bool()))  // PIN_AL25 / GPIO1_D8 / JP10 9
-    val jtag_TDO = (Output(Bool())) // PIN_AP26 / GPIO1_D10 / JP10 13
-  })
-  val sdio = IO(new Bundle {
-    val sdio_clk = (Output(Bool())) // PIN_AV32 / GPIO0_D28 / JP9 33
-    val sdio_cmd = (Output(Bool())) // PIN_AW32 / GPIO0_D30 / JP9 35
-    val sdio_dat_0 = (Input(Bool())) // PIN_AV28 / GPIO0_D32 / JP9 37
-    val sdio_dat_1 = (Analog(1.W))
-    val sdio_dat_2 = (Analog(1.W))
-    val sdio_dat_3 = (Output(Bool())) // PIN_AW29 / GPIO0_D34 / JP9 39
-  })
-
-  var qspi: Option[TEEHWQSPIBundle] = None
-
-  val USB = p(PeripheryUSB11HSKey).map { _ =>
-    IO(new Bundle {
-      val FullSpeed = Output(Bool()) // HSMC_TX_p[10] / PIN_AW27 / GPIO1_D17 GPIO1[20]
-      val WireDataIn = Input(Bits(2.W)) // HSMC_TX_p[7] HSMC_TX_n[7] / PIN_AB30 PIN_AB31 / GPIO1_D24 GPIO1_D26 GPIO1[27,31]
-      val WireCtrlOut = Output(Bool()) // HSMC_TX_n[10] / PIN_AW28 / GPIO1_D19 GPIO[22]
-      val WireDataOut = Output(Bits(2.W)) // HSMC_TX_p[8] HSMC_TX_n[8] / PIN_AL27 PIN_AH26 / GPIO1_D16 GPIO1_D18 GPIO1[19,21]
-    })
-  }
-
-  //////////// Uart //////////
-  val UART_TXD = IO(Output(Bool())) // GPIO1_D34 / PIN_AG30 / JP10 39
-  val UART_RXD = IO(Input(Bool())) // GPIO1_D35 / PIN_AD29 / JP10 40
-
-  FAN_CTRL := true.B
-
-  val clock = Wire(Clock())
-  val reset = Wire(Bool())
-}
-
-trait WithFPGATR4Connect {
-  this: FPGATR4Shell =>
-  val chip : WithTEEHWbaseShell with WithTEEHWbaseConnect
-
-  withClockAndReset(clock, reset) {
-    // Instance our converter, and connect everything
-    val mod = Module(LazyModule(
-      new TLULtoQuartusPlatform(
-        chip.cacheBlockBytes,
-        chip.tlportw.get.params,
-        QuartusDDRConfig(size_ck = 1, is_reset = true)
-      )
-    ).module)
-
-    // Clock and reset (for TL stuff)
-    clock := mod.io.ckrst.qsys_clk
-    reset := SW(1)
-    chip.sys_clk := mod.io.ckrst.qsys_clk
-    chip.aclocks.foreach(_.foreach(_ := mod.io.ckrst.qsys_clk)) // TODO: Connect your clocks here
-    chip.rst_n := !SW(2)
-    if(p(DDRPortOther)) {
-      chip.ChildClock.get := mod.io.ckrst.io_clk
-      chip.ChildReset.get := SW(3)
-      mod.clock := mod.io.ckrst.io_clk
-    }
-    else mod.clock := mod.io.ckrst.qsys_clk
-
-    // Quartus Platform connections
-    mem_a := mod.io.qport.memory_mem_a
-    mem_ba := mod.io.qport.memory_mem_ba
-    mem_ck := mod.io.qport.memory_mem_ck(0) // Force only 1 line (although the config forces 1 line)
-    mem_ck_n := mod.io.qport.memory_mem_ck_n(0) // Force only 1 line (although the config forces 1 line)
-    mem_cke := mod.io.qport.memory_mem_cke
-    mem_cs_n := mod.io.qport.memory_mem_cs_n
-    mem_dm := mod.io.qport.memory_mem_dm
-    mem_ras_n := mod.io.qport.memory_mem_ras_n
-    mem_cas_n := mod.io.qport.memory_mem_cas_n
-    mem_we_n := mod.io.qport.memory_mem_we_n
-    attach(mem_dq, mod.io.qport.memory_mem_dq)
-    attach(mem_dqs, mod.io.qport.memory_mem_dqs)
-    attach(mem_dqs_n, mod.io.qport.memory_mem_dqs_n)
-    mem_odt := mod.io.qport.memory_mem_odt
-    mem_reset_n := mod.io.qport.memory_mem_reset_n.getOrElse(true.B)
-    mod.io.qport.oct_rdn := mem_oct_rdn
-    mod.io.qport.oct_rup := mem_oct_rup
-    mod.io.ckrst.ddr_ref_clk := OSC_50_BANK1.asUInt()
-    mod.io.ckrst.qsys_ref_clk := OSC_50_BANK4.asUInt() // TODO: This is okay?
-    mod.io.ckrst.system_reset_n := BUTTON(2)
-
-    // TileLink Interface from platform
-    // TODO: Make the DDR optional. Need to stop using the Quartus Platform
-    mod.io.tlport.a <> chip.tlport.get.a
-    chip.tlport.get.d <> mod.io.tlport.d
-
-    // The external bus
-    chip.extser.foreach { A =>
-      val mod = Module(LazyModule(new FPGAMiniSystem(
-        chip.system.sys.asInstanceOf[HasTEEHWSystemModule].extSourceBits.get
-      )).module)
-
-      // Serial port
-      mod.serport.flipConnect(A)
-    }
-
-    // The rest of the platform connections
-    val chipshell_led = chip.gpio_out 	// TODO: Not used! LED [3:0]
-    LED := Cat(
-      mod.io.qport.mem_status_local_cal_fail,
-      mod.io.qport.mem_status_local_cal_success,
-      mod.io.qport.mem_status_local_init_done,
-      SW(3)
-    )
-    chip.gpio_in := Cat(BUTTON(3), BUTTON(1,0), SW(1,0))
-    jtag <> chip.jtag
-    qspi = chip.qspi.map(A => IO ( new TEEHWQSPIBundle(A.csWidth) ) )
-    (chip.qspi zip qspi).foreach { case (sysqspi, portspi) => portspi <> sysqspi}
-    chip.uart_rxd := UART_RXD	// UART_TXD
-    UART_TXD := chip.uart_txd // UART_RXD
-    sdio <> chip.sdio
-    chip.jrst_n := !SW(0)
-
-    // USB phy connections
-    (chip.usb11hs zip USB).foreach{ case (chipport, port) =>
-      port.FullSpeed := chipport.USBFullSpeed
-      chipport.USBWireDataIn := port.WireDataIn
-      port.WireCtrlOut := chipport.USBWireCtrlOut
-      port.WireDataOut := chipport.USBWireDataOut
-
-      chipport.usbClk := mod.io.ckrst.usb_clk
-    }
-  }
-}
-
 class FPGATR4(implicit p :Parameters) extends FPGATR4Shell()(p)
   with HasTEEHWChip with WithFPGATR4Connect {
+}
+
+class FPGATR4ToChip(implicit p :Parameters) extends FPGATR4Shell()(p)
+  with WithFPGATR4ToChipConnect {
+}
+
+class FPGATR4FromChip(implicit p :Parameters) extends FPGATR4Shell()(p)
+  with HasTEEHWChip with WithFPGATR4FromChipConnect {
+}
+
+// ********************************************************************
+// FPGATR5 - Demo on TR5 FPGA board
+// ********************************************************************
+class FPGATR5(implicit p :Parameters) extends FPGATR5Shell()(p)
+  with HasTEEHWChip with WithFPGATR5Connect {
+}
+
+class FPGATR5ToChip(implicit p :Parameters) extends FPGATR5Shell()(p)
+  with WithFPGATR5ToChipConnect {
+}
+
+class FPGATR5FromChip(implicit p :Parameters) extends FPGATR5Shell()(p)
+  with HasTEEHWChip with WithFPGATR5FromChipConnect {
+}
+
+// ********************************************************************
+// FPGASakuraX - Demo on Sakura-X FPGA board
+// ********************************************************************
+class FPGASakuraX(implicit p :Parameters) extends FPGASakuraXShell()(p)
+  with HasTEEHWChip with WithFPGASakuraXConnect {
 }

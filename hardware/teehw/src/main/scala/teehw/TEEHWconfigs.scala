@@ -14,8 +14,6 @@ import sifive.blocks.devices.uart._
 import sifive.blocks.devices.i2c._
 import uec.teehardware.devices.aes._
 import uec.teehardware.devices.ed25519._
-import uec.teehardware.devices.chacha._
-import uec.teehardware.devices.poly._
 import uec.teehardware.devices.sha3._
 import uec.teehardware.devices.usb11hs._
 import uec.teehardware.devices.random._
@@ -56,6 +54,8 @@ class RV64IMAC extends Config((site, here, up) => {
 // ************ Hybrid core configurations (HYBRID) **************
 
 //Only Rocket: 2 cores
+class Rocket1 extends Config(
+  new WithNBigCores(1))
 class Rocket extends Config(
   new WithNBigCores(2))
 class RocketReduced extends Config(
@@ -69,33 +69,86 @@ class Rocket8 extends Config(
 class Ibex extends Config(
   new WithNIbexCores(1) )
 
-// Rocket Micro (For microcontrollers)
-class RocketMicro extends Config(
-  new WithNSmallCores(1).alter((site, here, up) => {
-    case RocketTilesKey => up(RocketTilesKey, site) map { r =>
-      r.copy(
-        btb = None,
-        dcache = r.dcache map {d =>
+// Rocket just for small configs
+class RocketSmall extends Config(
+  new WithNSmallCores(1, Some(0))
+)
+class RocketMicro extends With1TinyCore
+
+// Rocket Very Small Cache
+class MicroCached extends Config ((site, here, up) => {
+  case RocketTilesKey => up(RocketTilesKey, site) map { r =>
+    r.copy(
+      btb = None,
+      dcache = r.dcache map {d =>
+        d.copy(
+          nSets = 64, // 2Kb cache
+          nWays = 1,
+          nTLBSets = 1,
+          nTLBWays = 4,
+          nMSHRs = 0
+        )
+      },
+      icache = r.icache map {i =>
+        i.copy(
+          nSets = 64, // 2Kb cache
+          nWays = 1,
+          nTLBSets = 1,
+          nTLBWays = 4,
+        )})
+  }}
+)
+
+// Microcontroller with only scratchpad
+class Micro extends Config ((site, here, up) => {
+  case TilesLocated(InSubsystem) => up(TilesLocated(InSubsystem), site) map {
+    case i: IbexTileAttachParams => i.copy(
+      tileParams = i.tileParams.copy(
+        core = i.tileParams.core.copy(),
+        icache = None,
+        dcache = i.tileParams.dcache map { d =>
           d.copy(
-            nSets = 64, // 16Kb scratchpad
+            nSets = 64, // 4Kb scratchpad
             nWays = 1,
             nTLBSets = 1,
             nTLBWays = 4,
-            nMSHRs = 0
-            //scratch = Some(0x80000000L) // TODO: Not possible to put the scratchpad here
-          )
-        },
-        icache = r.icache map {i =>
-          i.copy(
-            nSets = 64,
-            nWays = 1,
-            nTLBSets = 1,
-            nTLBWays = 4,
-          )
-        }
-      )
-    }
-  })
+            nMSHRs = 0,
+            scratch = Some(0x40000000L)
+          )},
+      ))
+    case other => other
+  }
+  case RocketTilesKey => up(RocketTilesKey, site) map { r =>
+    r.copy(
+      core = RocketCoreParams(
+        useVM = false,
+        useUser = false,
+        useSupervisor = false,
+        useAtomics = false,
+        useCompressed = true,
+        useRVE = false,
+        nPMPs = 0,
+        fastLoadWord = false,
+        fpu = None,
+        mulDiv = Some(MulDivParams(mulUnroll = 8))),
+      btb = None,
+      dcache = r.dcache map { d =>
+        d.copy(
+          nSets = 64, // 4Kb scratchpad
+          nWays = 1,
+          nTLBSets = 1,
+          nTLBWays = 4,
+          nMSHRs = 0,
+          scratch = Some(0x40000000L)
+        )},
+      icache = r.icache map {i =>
+        i.copy(
+          nSets = 32, // 2Kb cache
+          nWays = 1,
+          nTLBSets = 1,
+          nTLBWays = 4,
+        )})
+  }}
 )
 
 // Non-secure Ibex (Without Isolation)
@@ -151,10 +204,7 @@ class TEEHWPeripherals extends Config((site, here, up) => {
 //    USB11HSParams(address = BigInt(0x64008000L)))
   case PeripheryRandomKey => List(
     RandomParams(address = BigInt(0x64009000L), impl = 1))
-  case PeripheryChachaKey => List()
-  case PeripheryPolyKey => List()
-  case PeripheryClockCtrlKey => List(
-    ClockCtrlParams(address = BigInt(0x64010000L)))
+  case PeripheryClockCtrlKey => List()
   // OpenTitan devices
   case PeripheryAESOTKey => List()
   case PeripheryHMACKey => List()
@@ -186,10 +236,6 @@ class TLS13Peripherals extends Config((site, here, up) => {
     USB11HSParams(address = BigInt(0x64008000L)))
   case PeripheryRandomKey => List(
     RandomParams(address = BigInt(0x64009000L), impl = 1))
-  case PeripheryChachaKey => List(
-    ChachaParams(address = BigInt(0x6400A000L)))
-  case PeripheryPolyKey => List(
-    PolyParams(address = BigInt(0x6400D000L)))
   // OpenTitan devices
   case PeripheryAESOTKey => List()
   case PeripheryHMACKey => List()
@@ -215,8 +261,6 @@ class OpenTitanPeripherals extends Config((site, here, up) => {
   case PeripheryAESKey => List()
   case PeripheryUSB11HSKey => List()
   case PeripheryRandomKey => List()
-  case PeripheryChachaKey => List()
-  case PeripheryPolyKey => List()
   // OpenTitan devices
   case PeripheryAESOTKey => List(
     AESOTParams(address = BigInt(0x6400A000L)))
@@ -252,9 +296,6 @@ class TEEHWAndOpenTitanPeripherals extends Config((site, here, up) => {
     USB11HSParams(address = BigInt(0x64008000L)))
   case PeripheryRandomKey => List(
     RandomParams(address = BigInt(0x64009000L), impl = 1))
-  case PeripheryChachaKey => List(
-    ChachaParams(address = BigInt(0x6400A000L)))
-  case PeripheryPolyKey => List()
   // OpenTitan devices
   case PeripheryAESOTKey => List(
     AESOTParams(address = BigInt(0x6400A000L)))
@@ -284,8 +325,6 @@ class NoSecurityPeripherals extends Config((site, here, up) => {
     AESParams(address = BigInt(0x64007000L)))
   case PeripheryUSB11HSKey => List()
   case PeripheryRandomKey => List()
-  case PeripheryChachaKey => List()
-  case PeripheryPolyKey => List()
   case PeripheryAESOTKey => List()
   case PeripheryHMACKey => List()
   case PeripheryAlertKey =>
@@ -313,6 +352,15 @@ class MBus64 extends Config((site, here, up) => {
     beatBytes = 8,
     idBits = 4), 1))
   case ExtSerMem => None
+})
+
+class SBus4 extends Config((site, here, up) => {
+  case ExtMem => None
+  case ExtSerMem => Some(MemorySerialPortParams(MasterPortParams(
+    base = x"0_8000_0000",
+    size = x"0_4000_0000",
+    beatBytes = 4,
+    idBits = 4), 1, 4))
 })
 
 class SBus8 extends Config((site, here, up) => {
@@ -376,12 +424,17 @@ class WoSepaDDRClk extends Config((site, here, up) => {
   case DDRPortOther => false
 })
 
+class WSepaMBusClk extends Config((site, here, up) => {
+  case DDRPortOther => false // Just for measure
+  case SbusToMbusXTypeKey => AsynchronousCrossing() // The MBus clock will be separated
+})
+
 class WExposeClk extends Config((site, here, up) => {
   case ExposeClocks => true
 })
 
 // *************** Board Config (BOARD) ***************
-class DE4Config extends Config((site,here,up) => {
+class DE4Config extends Config((new WithIbexSynthesizedNoICache).alter((site,here,up) => {
   case FreqKeyMHz => 50.0
   case QSPICardMHz => 1.0
   case SDCardMHz => 5.0
@@ -392,9 +445,9 @@ class DE4Config extends Config((site,here,up) => {
   }
   /* The DDR memory supports 128 transactions. This is to avoid modifying chipyard*/
   case MemoryBusKey => up(MemoryBusKey).copy(blockBytes = 64)
-})
+}))
 
-class TR4Config extends Config((site,here,up) => {
+class TR4Config extends Config((new WithIbexSynthesizedNoICache).alter((site,here,up) => {
   case FreqKeyMHz => 50.0
   case QSPICardMHz => 1.0
   case SDCardMHz => 5.0
@@ -403,9 +456,24 @@ class TR4Config extends Config((site,here,up) => {
   case PeripheryRandomKey => up(PeripheryRandomKey, site) map {r =>
     r.copy(board = "Altera", impl = 0)
   }
-  /* The DDR memory supports 128 transactions. This is to avoid modifying chipyard*/
+  /* The DDR memory supports 64 transactions. This is to avoid modifying chipyard*/
   case MemoryBusKey => up(MemoryBusKey).copy(blockBytes = 64)
-})
+}))
+
+class TR5Config extends Config((new WithIbexSynthesizedNoICache).alter((site,here,up) => {
+  case FreqKeyMHz => 50.0
+  case QSPICardMHz => 1.0
+  case SDCardMHz => 5.0
+  /* TR4 is not support PCIe (yet) */
+  case IncludePCIe => false
+  case PeripheryRandomKey => up(PeripheryRandomKey, site) map {r =>
+    r.copy(board = "Altera", impl = 0)
+  }
+  /* The DDR memory supports 64 transactions. This is to avoid modifying chipyard*/
+  case MemoryBusKey => up(MemoryBusKey).copy(blockBytes = 64)
+  case ExtMem => up(ExtMem).map{ext => ext.copy(master = ext.master.copy(size = x"0_8000_0000"))}
+  case ExtSerMem => up(ExtSerMem).map{ext => ext.copy(master = ext.master.copy(size = x"0_8000_0000"))}
+}))
 
 class VC707Config extends Config((site,here,up) => {
   case FreqKeyMHz => 50.0
@@ -453,7 +521,39 @@ class VCU118Config extends Config((site,here,up) => {
   /* The DDR memory supports 256*8 transactions. This is to avoid modifying chipyard*/
   case MemoryBusKey => up(MemoryBusKey).copy(blockBytes = 256*8)
 })
-  
+
+class ArtyA7Config extends Config((site,here,up) => {
+  case FreqKeyMHz => 50.0
+  case PeripheryUSB11HSKey => List()
+  case PeripheryRandomKey => up(PeripheryRandomKey, site) map {r =>
+    r.copy(board = "Xilinx")
+  }
+    // Transform all ExtMem and ExtSerMem into 256MB
+  case ExtMem => up(ExtMem).map{ mem =>
+    mem.copy(mem.master.copy(size = x"0_1000_0000"))
+  }
+  case ExtSerMem => up(ExtSerMem).map{ mem =>
+    mem.copy(mem.master.copy(size = x"0_1000_0000"))
+  }
+
+  // Not supported
+  case ExtSerBus => None
+})
+
+class SakuraXConfig extends Config((site,here,up) => {
+  case FreqKeyMHz => 50.0
+  case TEEHWResetVector => 0x20000000
+  case PeripherySPIFlashKey => List() // disable SPIFlash
+  case PeripherySPIKey => up(PeripherySPIKey).slice(0, 1) // Disable SPIFlash, even if is the backup
+  /* Force to disable USB1.1, because there are no pins */
+  case PeripheryUSB11HSKey => List()
+  case PeripheryRandomKey => up(PeripheryRandomKey, site) map {r =>
+    r.copy(board = "Xilinx")
+  }
+  /* The DDR memory supports 128 transactions. This is to avoid modifying chipyard*/
+  case MemoryBusKey => up(MemoryBusKey).copy(blockBytes = 128)
+})
+
 
 // ***************** The simulation flag *****************
 class WithSimulation extends Config((site, here, up) => {

@@ -198,10 +198,13 @@ class MMCME2_ADV extends BlackBox(
   })
   ElaborationArtefacts.add(
     "MMCME2_ADV.xdc",
-    s"""create_clock -name MMCME2_ADV_CLKOUT0 -period 10.0 [get_ports {${instanceName}/CLKOUT0}]
-       |set_input_jitter MMCME2_ADV_CLKOUT0 0.5
-       |
-       |""".stripMargin
+    {
+      val master = pathName.split("\\.").drop(1).mkString("/")
+      s"""create_clock -name MMCME2_ADV_CLKOUT0 -period 10.0 [get_ports {${master}/CLKOUT0}]
+         |set_input_jitter MMCME2_ADV_CLKOUT0 0.5
+         |
+         |""".stripMargin
+    }
   )
 }
 
@@ -331,51 +334,10 @@ abstract class ClockCtrl(busWidthBytes: Int, val c: ClockCtrlParams, divisorInit
     mmcme2_adv_inst_1.io.PSINCDEC := false.B
     mmcme2_adv_inst_1.io.PWRDWN := false.B
     // wiring counter_drp
-    counter_drp_inst_1.io.reset := mmcme2_drp_inst_1.io.LOCKED_OUT
-    counter_drp_inst_1.io.ref_clock := clock.asBool() //TODO: could be the on-board 200MHz clk
-    drpcounterReg_1.countvalue := counter_drp_inst_1.io.counter_value
-    drpcounterReg_1.countdone := counter_drp_inst_1.io.done
-
-    // modules for ClockCtrl_2
-    val mmcme2_drp_inst_2 = Module(new mmcme2_drp)
-    val counter_drp_inst_2 = Module(new counter_drp)
-    val mmcme2_adv_inst_2 = Module(new MMCME2_ADV)
-    // wiring MMIO register - mmcme2_drp
-    mmcme2_drp_inst_2.io.CLKFBOUT_MULT := drpclkfbReg_2(16,10)
-    mmcme2_drp_inst_2.io.CLKFBOUT_FRAC := drpclkfbReg_2(9,0)
-    mmcme2_drp_inst_2.io.CLKOUT0_DIVIDE := drpclk0dReg_2(17,10)
-    mmcme2_drp_inst_2.io.CLKOUT0_FRAC := drpclk0dReg_2(9,0)
-    mmcme2_drp_inst_2.io.CLKOUT0_PHASE := drpclk0pReg_2(18,0)
-    mmcme2_drp_inst_2.io.CLKDIV_DIVIDE := drpclkdivReg_2(6,0)
-    mmcme2_drp_inst_2.io.SEN := drpsenReg_2
-    mmcme2_drp_inst_2.io.RST := reset.asBool()
-    //    drpsrdyReg.srdy := mmcme2_drp_inst.SRDY
-    mmcme2_drp_inst_2.io.SCLK := clock.asBool()
-    mmcme2_drp_inst_2.io.DO := mmcme2_adv_inst_2.io.DO
-    mmcme2_drp_inst_2.io.DRDY := mmcme2_adv_inst_2.io.DRDY
-    mmcme2_drp_inst_2.io.LOCK_REG_CLK_IN := clock.asBool()
-    mmcme2_drp_inst_2.io.LOCKED_IN := mmcme2_adv_inst_2.io.LOCKED
-    mmcme2_adv_inst_2.io.DWE := mmcme2_drp_inst_2.io.DWE
-    mmcme2_adv_inst_2.io.DEN := mmcme2_drp_inst_2.io.DEN
-    mmcme2_adv_inst_2.io.DADDR := mmcme2_drp_inst_2.io.DADDR
-    mmcme2_adv_inst_2.io.DI := mmcme2_drp_inst_2.io.DI
-    mmcme2_adv_inst_2.io.DCLK := mmcme2_drp_inst_2.io.DCLK
-    mmcme2_adv_inst_2.io.RST := mmcme2_drp_inst_2.io.RST_MMCM
-    drpsrdyReg_2.srdy := mmcme2_drp_inst_2.io.LOCKED_OUT
-    // wiring mmcm_drp and mmcm_adv
-    mmcme2_adv_inst_2.io.CLKFBIN := mmcme2_adv_inst_2.io.CLKFBOUT
-    counter_drp_inst_2.io.target_clock := mmcme2_adv_inst_2.io.CLKOUT0
-    mmcme2_adv_inst_2.io.CLKIN1 := clock.asBool() //TODO: should be a new clock of 800MHz
-    mmcme2_adv_inst_2.io.CLKINSEL := true.B
-    mmcme2_adv_inst_2.io.PSCLK := false.B
-    mmcme2_adv_inst_2.io.PSEN := false.B
-    mmcme2_adv_inst_2.io.PSINCDEC := false.B
-    mmcme2_adv_inst_2.io.PWRDWN := false.B
-    // wiring counter_drp
-    counter_drp_inst_2.io.reset := mmcme2_drp_inst_2.io.LOCKED_OUT
-    counter_drp_inst_2.io.ref_clock := clock.asBool() //TODO: could be the on-board 200MHz clk
-    drpcounterReg_2.countvalue := counter_drp_inst_2.io.counter_value
-    drpcounterReg_2.countdone := counter_drp_inst_2.io.done
+    counter_drp_inst.io.reset := mmcme2_drp_inst.io.LOCKED_OUT
+    counter_drp_inst.io.ref_clock := clock.asBool() //TODO: could be the on-board 200MHz clk
+    drpcounterReg.countvalue := counter_drp_inst.io.counter_value
+    drpcounterReg.countdone := counter_drp_inst.io.done
 
     // Export the clock to the module
     val iop: ClockCtrlPortIO = port.getWrappedValue.asInstanceOf[ClockCtrlPortIO]

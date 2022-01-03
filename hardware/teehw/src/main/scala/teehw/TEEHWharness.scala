@@ -252,10 +252,11 @@ trait WithTEEHWHarnessConnect {
   // Don't touch stuff (avoids firrtl of cutting down hardware because Dead Code Elimination)
   //dut.dontTouchPorts()
 
-  // Serial interface (if existent) will be connected here
   io.success := false.B
+  // Serial interface (if existent) will be connected here
+  def connectSimSerial(serial: SerialIO, clock: Clock, reset: Reset): Bool
   dut.io.tlserial.foreach{ port =>
-    val ser_success = SerialAdapter.connectSimSerial(port, clock, del_reset)
+    val ser_success = connectSimSerial(port, clock, del_reset)
     when (ser_success) { io.success := true.B }
   }
 
@@ -332,4 +333,10 @@ trait HasTEEHWHarness {
 }
 
 class TEEHWHarness()(implicit val p: Parameters) extends Module with HasTEEHWHarness with WithTEEHWHarnessConnect {
+
+  // NOTE: This function will be overrided by the full version if the serial is isolated
+  def connectSimSerial(serial: SerialIO, clock: Clock, reset: Reset): Bool = {
+    println("Connecting regular SimSerial")
+    SerialAdapter.connectSimSerial(serial, clock, reset)
+  }
 }

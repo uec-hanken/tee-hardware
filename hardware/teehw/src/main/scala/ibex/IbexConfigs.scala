@@ -11,6 +11,24 @@ import freechips.rocketchip.diplomacy.{AsynchronousCrossing, RationalCrossing, S
 import freechips.rocketchip.rocket._
 import freechips.rocketchip.tile._
 
+class WithIbexSynthesizedNoICache extends Config((site, here, up) => {
+  case TilesLocated(InSubsystem) => up(TilesLocated(InSubsystem), site) map {
+    case i: IbexTileAttachParams => i.copy(tileParams = i.tileParams.copy(core = i.tileParams.core.copy(
+      Synth = true, SynthFlavor = "IbexSecureNoICache"
+    )))
+    case other => other
+  }
+})
+
+class WithIbexSynthesized extends Config((site, here, up) => {
+  case TilesLocated(InSubsystem) => up(TilesLocated(InSubsystem), site) map {
+    case i: IbexTileAttachParams => i.copy(tileParams = i.tileParams.copy(core = i.tileParams.core.copy(
+      Synth = true, SynthFlavor = "IbexSecureDefault"
+    )))
+    case other => other
+  }
+})
+
 class WithIbexEnableICacheICC extends Config((site, here, up) => {
   case TilesLocated(InSubsystem) => up(TilesLocated(InSubsystem), site) map {
     case i: IbexTileAttachParams => i.copy(tileParams = i.tileParams.copy(ICacheECC = true))
