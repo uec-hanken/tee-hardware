@@ -198,7 +198,7 @@ trait HasTEEHWSystem
     case _ =>
       throw new RuntimeException("We cannot cast a configuration of SPI?")
   }
-  val spiNodes = spiDevs.map { ps => ps.ioNode.makeSink() }
+  val spiNodes = spiDevs.map { ps => ps.ioNode.makeSink() } // TODO: Put the Isolated ones here also
 
   spiDevs.zipWithIndex.foreach { case (ps, i) =>
     i match {
@@ -371,7 +371,8 @@ trait HasTEEHWSystemModule extends HasRTCModuleImp
   val uart = outer.uartNodes.zipWithIndex.map { case(n,i) => n.makeIO()(ValName(s"uart_$i")).asInstanceOf[UARTPortIO] }
 
   // SPI to MMC conversion
-  val spi  = outer.spiNodes.zipWithIndex.map  { case(n,i) => n.makeIO()(ValName(s"spi_$i")).asInstanceOf[SPIPortIO] }
+  val spiAll = outer.spiNodes.zipWithIndex.map  { case(n,i) => n.makeIO()(ValName(s"spi_$i")).asInstanceOf[SPIPortIO] }
+  def spi    = spiAll
 
   // GPIO implementation
   val gpio = outer.gpioNodes.zipWithIndex.map { case(n,i) => n.makeIO()(ValName(s"gpio_$i")).asInstanceOf[GPIOPortIO] }
@@ -465,7 +466,7 @@ class XDMATopPadswReset(n: Int) extends XDMATopPads(n) {
 
 class TEEHWPlatformIO(val params: Option[TLBundleParameters] = None, val numClocks: Int = 1)
                     (implicit val p: Parameters) extends Bundle {
-  val allspicfg = p(PeripherySPIKey) ++ p(PeripherySPIFlashKey)
+  val allspicfg = p(PeripherySPIKey) ++ p(PeripherySPIFlashKey) ++ p(DummySPIFlashKey)
   val pins = new Bundle {
     val jtag = new JTAGPins(() => PinGen(), false)
     val gpio = new GPIOPins(() => PinGen(), p(PeripheryGPIOKey)(0))

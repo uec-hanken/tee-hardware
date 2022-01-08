@@ -11,6 +11,7 @@ import freechips.rocketchip.rocket._
 import freechips.rocketchip.system._
 import freechips.rocketchip.tile._
 import boom.common._
+import sifive.blocks.devices.spi.SPIFlashParams
 import sifive.fpgashells.devices.xilinx.xdma.XDMAParams
 import uec.teehardware.ibex._
 
@@ -51,6 +52,9 @@ case object ExtSerBus extends Field[Option[MemorySerialPortParams]](None)
 
 // Async clock exposure
 case object ExposeClocks extends Field[Boolean](false)
+
+// TODO: This is used in the full version. Do not use here.
+case object DummySPIFlashKey extends Field[Seq[SPIFlashParams]](Nil)
 
 /**
   * Class to renumber BOOM + Rocket harts so that there are no overlapped harts
