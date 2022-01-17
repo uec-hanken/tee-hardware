@@ -80,6 +80,7 @@ trait FPGADE2ChipShell {
   val GPIO = IO(Vec(36, Analog(1.W)))
 
   //val AUD = IO(new AUD_CODEC_DE2_PORT)
+  val DRAM = IO(new DE2SDRAM)
 
   val UART_TXD = IO(Analog(1.W))
   val UART_RXD = IO(Analog(1.W))
@@ -95,7 +96,6 @@ trait FPGADE2ClockAndResetsAndSDRAM {
   implicit val p: Parameters
   val CLOCK_50 = IO(Input(Clock()))
   val KEY = IO(Vec(4, Input(Bool())))
-  val DRAM = IO(new DE2SDRAM)
 }
 
 class FPGADE2Shell(implicit val p :Parameters) extends RawModule
@@ -131,6 +131,9 @@ trait WithFPGADE2Connect {
   // To intern = Clocks and resets
   intern.CLOCK_50 := CLOCK_50
   intern.KEY := KEY
+
+  // From intern = Clocks and resets
+  intern.connectChipInternals(chip)
 
   chip.sdram.foreach(DRAM.from_SDRAMIf)
 

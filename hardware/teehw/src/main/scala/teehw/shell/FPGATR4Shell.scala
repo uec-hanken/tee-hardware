@@ -359,6 +359,12 @@ trait WithFPGATR4PureConnect {
     ALT_IOBUF(GPIO1_D(5), A.qspi_cs(0))
     ALT_IOBUF(GPIO1_D(7), A.qspi_sck)
   }
+
+  // TODO Nullify this for now
+  chip.sdram.foreach{ sdram =>
+    sdram.sdram_data_i := 0.U
+  }
+  chip.sdramclock.foreach(_ := chip.sys_clk)
 }
 
 trait WithFPGATR4Connect extends WithFPGATR4PureConnect 

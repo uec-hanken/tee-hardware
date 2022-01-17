@@ -721,6 +721,12 @@ trait WithFPGAVC707PureConnect {
     ConnectFMCXilinxGPIO.debug(1, 11, qspi.qspi_wp, false, MISCPORT)
     ConnectFMCXilinxGPIO.debug(1, 12, qspi.qspi_hold, false, MISCPORT)
   }
+
+  // TODO Nullify this for now
+  chip.sdram.foreach{ sdram =>
+    sdram.sdram_data_i := 0.U
+  }
+  chip.sdramclock.foreach(_ := chip.sys_clk)
 }
 
 trait WithFPGAVC707Connect extends WithFPGAVC707PureConnect 

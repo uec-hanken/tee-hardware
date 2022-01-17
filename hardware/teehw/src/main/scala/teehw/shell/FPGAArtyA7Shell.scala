@@ -344,4 +344,10 @@ trait WithFPGAArtyA7Connect {
 
   // USB phy connections
   // TODO: Not possible to create the 48MHz
+
+  // TODO Nullify this for now
+  chip.sdram.foreach{ sdram =>
+    sdram.sdram_data_i := 0.U
+  }
+  chip.sdramclock.foreach(_ := chip.sys_clk)
 }

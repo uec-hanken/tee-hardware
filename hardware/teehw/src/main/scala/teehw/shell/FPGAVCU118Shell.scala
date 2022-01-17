@@ -296,4 +296,10 @@ trait WithFPGAVCU118Connect {
       port.refclk <> sysport.refclk
       sysport.erst_n := intern.rst_n
   }
+
+  // TODO Nullify this for now
+  chip.sdram.foreach{ sdram =>
+    sdram.sdram_data_i := 0.U
+  }
+  chip.sdramclock.foreach(_ := chip.sys_clk)
 }

@@ -506,6 +506,12 @@ trait WithFPGASakuraXPureConnect {
     ConnectFMCLPCXilinxGPIO.debug(1, 11, qspi.qspi_wp, false, K_FMC)
     ConnectFMCLPCXilinxGPIO.debug(1, 12, qspi.qspi_hold, false, K_FMC)
   }
+
+  // TODO Nullify this for now
+  chip.sdram.foreach{ sdram =>
+    sdram.sdram_data_i := 0.U
+  }
+  chip.sdramclock.foreach(_ := chip.sys_clk)
 }
 
 trait WithFPGASakuraXConnect extends WithFPGASakuraXPureConnect

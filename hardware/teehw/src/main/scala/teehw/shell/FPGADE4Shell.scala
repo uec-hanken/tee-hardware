@@ -354,4 +354,10 @@ trait WithFPGADE4Connect {
 
     chipport.usbClk := uclk
   }
+
+  // TODO Nullify this for now
+  chip.sdram.foreach{ sdram =>
+    sdram.sdram_data_i := 0.U
+  }
+  chip.sdramclock.foreach(_ := chip.sys_clk)
 }
