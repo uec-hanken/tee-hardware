@@ -20,6 +20,7 @@ HYBRID?=Rocket1
 SEPARE?=Nothing
 
 # Not compatible
+BASE=MCUWithLinuxConfig
 MBUS=MBusNone
 #PERIPHERALS?=TEEHWPeripherals
 PERIPHERALS=NoSecurityPeripherals

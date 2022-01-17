@@ -144,7 +144,7 @@ trait WithFPGADE2Connect {
   chip.jtag.jtag_TDI := ALT_IOBUF(GPIO(0))
   chip.jtag.jtag_TMS := ALT_IOBUF(GPIO(2))
   chip.jtag.jtag_TCK := ALT_IOBUF(GPIO(4))
-  ALT_IOBUF(GPIO(6), chip.jtag.jtag_TDI)
+  ALT_IOBUF(GPIO(6), chip.jtag.jtag_TDO)
   chip.qspi.foreach{A =>
     A.qspi_miso := ALT_IOBUF(GPIO(1))
     ALT_IOBUF(GPIO(3), A.qspi_mosi)
