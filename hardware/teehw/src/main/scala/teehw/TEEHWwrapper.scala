@@ -18,6 +18,7 @@ import freechips.rocketchip.util._
 import sifive.fpgashells.shell.xilinx.XDMATopPads
 import testchipip.SerialIO
 import uec.teehardware.devices.clockctrl.ClockCtrlPortIO
+import uec.teehardware.devices.sdram.{SDRAMIf, SDRAMKey}
 import uec.teehardware.shell._
 
 // **********************************************************************
@@ -60,12 +61,16 @@ class  WithTEEHWbaseShell(implicit val p :Parameters) extends RawModule {
   val memser = p(ExtSerMem).map(A => IO(new SerialIO(A.serWidth)))
   // Ext port serialized
   val extser = p(ExtSerBus).map(A => IO(new SerialIO(A.serWidth)))
+  // SDRAM port
+  val sdram = p(SDRAMKey).map{ A => IO(new SDRAMIf(A.sdcfg))}
   // Clocks and resets
   val ChildClock = p(DDRPortOther).option(IO(Input(Clock())))
   val ChildReset = p(DDRPortOther).option(IO(Input(Bool())))
   val sys_clk = IO(Input(Clock()))
   val rst_n = IO(Input(Bool()))
   val jrst_n = IO(Input(Bool()))
+  val issdramclock = !p(ExposeClocks) && p(SDRAMKey).nonEmpty
+  val sdramclock = issdramclock.option(IO(Input(Clock())))
   // An option to dynamically assign
   var qspi: Option[TEEHWQSPIBundle] = None // QSPI gets added progresively using both PeripherySPIKey and PeripherySPIFlashKey
   var aclocks: Option[Vec[Clock]] = None // Async clocks depends on a node of clocks named "globalClocksNode"
@@ -137,6 +142,9 @@ trait WithTEEHWbaseConnect {
   // The serialized external port
   (extser zip system.io.extser).foreach{ case (port, sysport) => port <> sysport }
 
+  // The SDRAM port
+  (sdram zip system.io.sdram).foreach{ case (port, sysport) => port <> sysport }
+
   // PCIe port (if available)
   (pciePorts zip system.io.pciePorts).foreach{ case (port, sysport) => port <> sysport }
   (xdmaPorts zip system.io.xdmaPorts).foreach{ case (port, sysport) => port <> sysport }
@@ -166,6 +174,12 @@ trait WithTEEHWbaseConnect {
   }
   reset := !rst_n || system.io.ndreset // This connects the debug reset and the general reset together
   system.io.jtag_reset := !jrst_n
+  // Connecting the SD clock if the clocks are not exposed
+  sdramclock.foreach{ sdclk =>
+    (system.io.aclocks zip system.sys.namedclocks).filter(_._2.contains("sdramClockGroup")).foreach{ case (aclk, anam) =>
+      aclk := sdclk
+    }
+  }
 }
 
 trait HasTEEHWbase {
@@ -218,11 +232,14 @@ trait FPGAInternals {
   // Memory port
   var tlport = tlparam.map(A => IO(Flipped(new TLUL(A))))
   // Asyncrhonoys clocks
-  var aclocks = aclkn.map(A => IO(Vec(A, Output(Clock()))))
+  val aclocks = aclkn.map(A => IO(Vec(A, Output(Clock()))))
+  // SDRAM clock
+  val sdramclock = outer.get.sdramclock.map(A => IO(Output(Clock())))
 
   def connectChipInternals(chip: WithTEEHWbaseShell with WithTEEHWbaseConnect) = {
     (chip.ChildClock zip ChildClock).foreach{ case (a, b) => a := b }
     (chip.ChildReset zip ChildReset).foreach{ case (a, b) => a := b }
+    (chip.sdramclock zip sdramclock).foreach{ case (a, b) => a := b }
     chip.sys_clk := sys_clk
     chip.rst_n := rst_n
     chip.jrst_n := jrst_n
@@ -312,4 +329,11 @@ class FPGATR5FromChip(implicit p :Parameters) extends FPGATR5Shell()(p)
 // ********************************************************************
 class FPGASakuraX(implicit p :Parameters) extends FPGASakuraXShell()(p)
   with HasTEEHWChip with WithFPGASakuraXConnect {
+}
+
+// ********************************************************************
+// FPGADE2 - Demo on DE2 FPGA board
+// ********************************************************************
+class FPGADE2(implicit p :Parameters) extends FPGADE2Shell()(p)
+  with HasTEEHWChip with WithFPGADE2Connect {
 }

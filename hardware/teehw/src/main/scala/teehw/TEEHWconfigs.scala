@@ -26,6 +26,7 @@ import testchipip.{SerialTLAttachKey, SerialTLAttachParams, SerialTLKey, SerialT
 import freechips.rocketchip.util.BooleanToAugmentedBoolean
 import uec.teehardware.devices.clockctrl.{ClockCtrlParams, PeripheryClockCtrlKey}
 import uec.teehardware.devices.opentitan.nmi_gen._
+import uec.teehardware.devices.sdram._
 import uec.teehardware.ibex._
 
 
@@ -562,6 +563,27 @@ class SakuraXConfig extends Config((site,here,up) => {
   case MemoryBusKey => up(MemoryBusKey).copy(blockBytes = 128)
 })
 
+class DE2Config extends Config((new WithIbexSynthesizedNoICache).alter((site,here,up) => {
+  case FreqKeyMHz => 50.0
+  case QSPICardMHz => 1.0
+  case SDCardMHz => 5.0
+  /* DE4 is not support PCIe (yet) */
+  case IncludePCIe => false
+  case PeripheryRandomKey => up(PeripheryRandomKey, site) map {r =>
+    r.copy(board = "Altera", impl = 0)
+  }
+    // This version only supports SDRAM
+  case SDRAMKey => Seq(SDRAMConfig(
+    address = 0x80000000L,
+    sdcfg = sdram_bb_cfg(
+      SDRAM_HZ = 50000000L,
+      SDRAM_DQM_W = 4,
+      SDRAM_DQ_W = 32,
+      SDRAM_READ_LATENCY = 2)))
+  case ExtMem => None
+  case ExtSerMem => None
+  case ExtSerBus => None
+}))
 
 // ***************** The simulation flag *****************
 class WithSimulation extends Config((site, here, up) => {

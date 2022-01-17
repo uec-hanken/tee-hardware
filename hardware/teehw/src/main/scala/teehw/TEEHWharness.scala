@@ -15,6 +15,7 @@ import sifive.blocks.devices.gpio.GPIOPortIO
 import sifive.blocks.devices.spi._
 import sifive.blocks.devices.uart._
 import testchipip.{SerialAdapter, SerialIO, SimDRAM, SimSPIFlashModel, TLDesser}
+import uec.teehardware.devices.sdram._
 
 // There is no simulation resource for TileLink buses, only for axi (for... some reason)
 // this is a LazyModule which instances the SimDRAM in axi4 mode from the TL bus
@@ -322,6 +323,9 @@ trait WithTEEHWHarnessConnect {
       pcie.REFCLK_rxp := false.B
       pcie.REFCLK_rxn := false.B
   }
+
+  // SDRAM
+  dut.io.sdram.foreach(sdramsim(_, reset.asBool()))
 }
 
 trait HasTEEHWHarness {

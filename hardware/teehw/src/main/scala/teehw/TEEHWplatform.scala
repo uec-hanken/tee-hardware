@@ -30,6 +30,7 @@ import uec.teehardware.devices.ed25519._
 import uec.teehardware.devices.random._
 import uec.teehardware.devices.sha3._
 import uec.teehardware.devices.usb11hs._
+import uec.teehardware.devices.sdram._
 import uec.teehardware.devices.opentitan.aes._
 import uec.teehardware.devices.opentitan.alert._
 import uec.teehardware.devices.opentitan.flash_ctrl._
@@ -315,6 +316,7 @@ class TEEHWSystem(implicit p: Parameters) extends TEEHWSubsystem
   with HasPeripheryAESOT
   with HasPeripheryHMAC
   with HasPeripheryOTPCtrl
+  with HasSDRAM
 {
   // System module creation
   override lazy val module = new TEEHWSystemModule(this)
@@ -442,7 +444,7 @@ class TEEHWSystemModule[+L <: TEEHWSystem](_outer: L)
     with HasPeripheryAESOTModuleImp
     with HasPeripheryHMACModuleImp
     with HasPeripheryOTPCtrlModuleImp
-
+    with HasSDRAMModuleImp
 object PinGen {
   def apply(): BasePin =  {
     val pin = new BasePin()
@@ -486,12 +488,13 @@ class TEEHWPlatformIO(val params: Option[TLBundleParameters] = None, val numCloc
   val tlserial = p(SerialTLKey).map(A => new SerialIO(SERIAL_TSI_WIDTH))
   val memser = p(ExtSerMem).map(A => new SerialIO(A.serWidth))
   val extser = p(ExtSerBus).map(A => new SerialIO(A.serWidth))
+  val sdram = MixedVec(p(SDRAMKey).map{ A => new SDRAMIf(A.sdcfg)})
 }
 
 object TEEHWPlatform {
   def connect
   (
-    sys: HasTEEHWSystemModule with HasTilesModuleImp with HasPeripheryUSB11HSModuleImp,
+    sys: HasTEEHWSystemModule with HasTilesModuleImp with HasPeripheryUSB11HSModuleImp with HasSDRAMModuleImp,
     io: TEEHWPlatformIO,
     clock: Clock,
     reset: Reset)(implicit p: Parameters): Unit = {
@@ -588,6 +591,9 @@ object TEEHWPlatform {
     // Serialized external bus
     (sys.extSerPorts zip io.extser).foreach { case(sysport, ioport) => ioport <> sysport }
 
+    // SDRAM
+    (io.sdram zip sys.sdramio).map{case (port, sys) => port <> sys}
+
     // Connect the USB to the outside (only the first one)
     (sys.usb11hs zip io.usb11hs).foreach{ case (sysusb, usbport) => sysusb <> usbport }
 
@@ -633,7 +639,7 @@ trait WithTEEHWPlatformConnect {
   val clock: Clock
   val reset: Reset
   val io: TEEHWPlatformIO
-  val sys: HasTEEHWSystemModule with HasTilesModuleImp with HasPeripheryUSB11HSModuleImp
+  val sys: HasTEEHWSystemModule with HasTilesModuleImp with HasPeripheryUSB11HSModuleImp with HasSDRAMModuleImp
 
   TEEHWPlatform.connect(sys, io, clock, reset)(p)
 }

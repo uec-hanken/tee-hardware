@@ -1,0 +1,6 @@
+*
+!.gitignore
+!Makefile
+!DE2.shell.quartus.tcl
+!DE2.qsys.main.tcl
+!main.qsys
