@@ -387,6 +387,38 @@ class MBusNone extends Config((site, here, up) => {
   case ExtSerMem => None
 })
 
+class With4KSRAM extends Config((site, here, up) => {
+  case SRAMKey => Seq(SRAMConfig(0x80001000L, 0x1000L))
+})
+
+class With2KSRAM extends Config((site, here, up) => {
+  case SRAMKey => Seq(SRAMConfig(0x80001000L, 0x800L))
+})
+
+class With1KSRAM extends Config((site, here, up) => {
+  case SRAMKey => Seq(SRAMConfig(0x80001000L, 0x400L))
+})
+
+class With2SDRAM extends Config((site, here, up) => {
+  case SDRAMKey => Seq(SDRAMConfig(
+    address = 0xC0000000L,
+    sdcfg = sdram_bb_cfg(
+      SDRAM_HZ = 50000000L,
+      SDRAM_DQM_W = 4,
+      SDRAM_DQ_W = 32,
+      SDRAM_READ_LATENCY = 2)))
+})
+
+class With1SDRAM extends Config((site, here, up) => {
+  case SDRAMKey => Seq(SDRAMConfig(
+    address = 0xC0000000L,
+    sdcfg = sdram_bb_cfg(
+      SDRAM_HZ = 50000000L,
+      SDRAM_DQM_W = 2,
+      SDRAM_DQ_W = 16,
+      SDRAM_READ_LATENCY = 2)))
+})
+
 // *************** Bus configuration (EXTBUS) ******************
 
 class EBus8 extends Config((site, here, up) => {

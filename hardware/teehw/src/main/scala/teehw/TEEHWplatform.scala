@@ -40,8 +40,15 @@ import uec.teehardware.devices.opentitan.kmac._
 import uec.teehardware.devices.opentitan.otp_ctrl._
 import testchipip.{CanHavePeripheryTLSerial, ClockedIO, SerialAdapter, SerialIO, SerialTLKey, TLSerdes}
 import uec.teehardware.devices.clockctrl._
-
 import java.lang.reflect.InvocationTargetException
+
+// SRAM Configuration
+case class SRAMConfig
+(
+  address: BigInt,
+  size: BigInt
+)
+case object SRAMKey extends Field[Seq[SRAMConfig]](Nil)
 
 class SlowMemIsland(blockBytes: Int, val crossing: ClockCrossingType = AsynchronousCrossing(8))(implicit p: Parameters)
     extends LazyModule
@@ -272,6 +279,14 @@ trait HasTEEHWSystem
     ibus.fromSync := xdma.intnode
 
     xdma
+  }
+
+  // SRAMs
+  val srams = p(SRAMKey).zipWithIndex.map { case(sramcfg, i) =>
+    val sram = LazyModule(new TLRAM(AddressSet.misaligned(sramcfg.address, sramcfg.size).head, cacheable = true))
+    val mbus = locateTLBusWrapper(MBUS)
+    mbus.coupleTo(s"sram_${i}") { bus => sram.node := TLFragmenter(4, mbus.blockBytes) := bus }
+    sram
   }
 
   // add ROM devices

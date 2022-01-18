@@ -174,6 +174,7 @@ class FPGASakuraXInternal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConn
     rst_n := !reset_to_sys
     jrst_n := !reset_to_sys
     usbClk.foreach(_ := pll.io.clk_out1.getOrElse(false.B))
+    sdramclock.foreach(_ := pll.io.clk_out3.get)
 
     aclocks.foreach { aclocks =>
       println(s"Connecting async clocks by default =>")
@@ -511,7 +512,6 @@ trait WithFPGASakuraXPureConnect {
   chip.sdram.foreach{ sdram =>
     sdram.sdram_data_i := 0.U
   }
-  chip.sdramclock.foreach(_ := chip.sys_clk)
 }
 
 trait WithFPGASakuraXConnect extends WithFPGASakuraXPureConnect

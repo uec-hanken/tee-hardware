@@ -145,6 +145,7 @@ class FPGATR4Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConnect]
       rst_n := !reset_to_sys
       jrst_n := !reset_to_sys
       usbClk.foreach(_ := mod_io_ckrst.usb_clk)
+      sdramclock.foreach(_ := mod_io_ckrst.qsys_clk)
 
       // Async clock connections
       aclocks.foreach { aclocks =>
@@ -364,7 +365,6 @@ trait WithFPGATR4PureConnect {
   chip.sdram.foreach{ sdram =>
     sdram.sdram_data_i := 0.U
   }
-  chip.sdramclock.foreach(_ := chip.sys_clk)
 }
 
 trait WithFPGATR4Connect extends WithFPGATR4PureConnect 

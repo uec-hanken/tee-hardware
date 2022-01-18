@@ -122,6 +122,35 @@ class SeparateCoreClocks(depth: Int, sync: Int) extends Config((site, here, up) 
   }
 })
 
+class WithMulticlockIncoherentBusTopology extends Config((site, here, up) => {
+  case TLNetworkTopologyLocated(InSubsystem) => List( // WithIncoherent, but with Clock Separation (TM)
+    JustOneBusTopologyParams(sbus = site(SystemBusKey)),
+    HierarchicalBusTopologyParams(
+      pbus = site(PeripheryBusKey),
+      fbus = site(FrontBusKey),
+      cbus = site(ControlBusKey),
+      xTypes = SubsystemCrossingParams(
+        sbusToCbusXType = site(SbusToCbusXTypeKey),
+        cbusToPbusXType = site(CbusToPbusXTypeKey),
+        fbusToSbusXType = site(FbusToSbusXTypeKey)),
+      driveClocksFromSBus = site(DriveClocksFromSBus)))
+})
+
+// JTAG configuration
+object TEEHWJtagConfig {
+  def apply() : JtagDTMConfig = {
+    JtagDTMConfig (
+      idcodeVersion = 2,      // 1 was legacy (FE310-G000, Acai).
+      idcodePartNum = 0x000,  // Decided to simplify.
+      idcodeManufId = 0x489,  // As Assigned by JEDEC to SiFive. Only used in wrappers / test harnesses.
+      debugIdleCycles = 5)    // Reasonable guess for synchronization
+  }
+}
+
+object TEEHWDebugConfig {
+  def apply() : DebugModuleParams = DebugModuleParams (clockGate = false)
+}
+
 // Chip Configs
 class ChipConfig extends Config(
   // The rest of the configurations, which are not-movable
@@ -151,13 +180,9 @@ class ChipConfig extends Config(
         blockBytes = site(CacheBlockBytes),
         dtsFrequency = Some(BigDecimal(site(FreqKeyMHz)*1000000).setScale(0, BigDecimal.RoundingMode.HALF_UP).toBigInt))
       case DTSTimebase => BigInt(1000000)
-      case JtagDTMKey => new JtagDTMConfig (
-        idcodeVersion = 2,      // 1 was legacy (FE310-G000, Acai).
-        idcodePartNum = 0x000,  // Decided to simplify.
-        idcodeManufId = 0x489,  // As Assigned by JEDEC to SiFive. Only used in wrappers / test harnesses.
-        debugIdleCycles = 5)    // Reasonable guess for synchronization
+      case JtagDTMKey => TEEHWJtagConfig()
+      case DebugModuleKey => Some(TEEHWDebugConfig())
       case FreqKeyMHz => 100.0
-      //case MaxHartIdBits => log2Up(site(BoomTilesKey).size + site(RocketTilesKey).size + site(IbexTilesKey).size)
     }))
 
 class MicroConfig extends Config(
@@ -166,12 +191,7 @@ class MicroConfig extends Config(
     new WithJtagDTM ++
     new WithNoSubsystemDrivenClocks ++
     new WithDontDriveBusClocksFromSBus ++
-    //new chipyard.config.WithBroadcastManager ++ // An utility from chipyard that forces the broadcast manager (Overkill?)
-    new WithCoherentBusTopology ++ // Will add the L2, but The L2 will be a broadcast
-    // new freechips.rocketchip.subsystem.WithInclusiveCache(capacityKB = 128) ++ // As long as you do not use this
-    // new chipyard.config.WithL2TLBs(entries = 256) ++               // Will add the TLBs for the L2, but I wonder if we need this in micro
-    //new WithIncoherentBusTopology ++ // This makes AMO kill each core
-    //new WithJustOneBus ++ // This is even worse
+    new WithCoherentBusTopology ++ // Will add the L2, but The L2 will be a broadcast with buffer
     new BaseConfig().alter((site,here,up) => {
       case BootROMLocated(InSubsystem) => None // No BootROM.
       case SystemBusKey => up(SystemBusKey).copy(
@@ -188,28 +208,10 @@ class MicroConfig extends Config(
         blockBytes = site(CacheBlockBytes),
         dtsFrequency = Some(BigDecimal(site(FreqKeyMHz)*1000000).setScale(0, BigDecimal.RoundingMode.HALF_UP).toBigInt))
       case DTSTimebase => BigInt(1000000)
-      case JtagDTMKey => new JtagDTMConfig (
-        idcodeVersion = 2,      // 1 was legacy (FE310-G000, Acai).
-        idcodePartNum = 0x000,  // Decided to simplify.
-        idcodeManufId = 0x489,  // As Assigned by JEDEC to SiFive. Only used in wrappers / test harnesses.
-        debugIdleCycles = 5)    // Reasonable guess for synchronization
+      case JtagDTMKey => TEEHWJtagConfig()
+      case DebugModuleKey => Some(TEEHWDebugConfig())
       case FreqKeyMHz => 100.0
-      //case MaxHartIdBits => log2Up(site(BoomTilesKey).size + site(RocketTilesKey).size + site(IbexTilesKey).size)
     }))
-
-class WithMulticlockIncoherentBusTopology extends Config((site, here, up) => {
-  case TLNetworkTopologyLocated(InSubsystem) => List( // WithIncoherent, but with Clock Separation (TM)
-    JustOneBusTopologyParams(sbus = site(SystemBusKey)),
-    HierarchicalBusTopologyParams(
-      pbus = site(PeripheryBusKey),
-      fbus = site(FrontBusKey),
-      cbus = site(ControlBusKey),
-      xTypes = SubsystemCrossingParams(
-        sbusToCbusXType = site(SbusToCbusXTypeKey),
-        cbusToPbusXType = site(CbusToPbusXTypeKey),
-        fbusToSbusXType = site(FbusToSbusXTypeKey)),
-      driveClocksFromSBus = site(DriveClocksFromSBus)))
-})
 
 class MCUWithLinuxConfig extends Config(
   new WithNExtTopInterrupts(0) ++
@@ -217,7 +219,7 @@ class MCUWithLinuxConfig extends Config(
     new WithJtagDTM ++
     new WithNoSubsystemDrivenClocks ++
     new WithDontDriveBusClocksFromSBus ++
-    new WithBufferlessBroadcastHub ++
+    new WithBufferlessBroadcastHub ++ // Will add the L2, but The L2 will be a broadcast without buffer
     new WithCoherentBusTopology ++
     new BaseConfig().alter((site,here,up) => {
       case BootROMLocated(InSubsystem) => None // No BootROM.
@@ -235,13 +237,9 @@ class MCUWithLinuxConfig extends Config(
         blockBytes = site(CacheBlockBytes),
         dtsFrequency = Some(BigDecimal(site(FreqKeyMHz)*1000000).setScale(0, BigDecimal.RoundingMode.HALF_UP).toBigInt))
       case DTSTimebase => BigInt(1000000)
-      case JtagDTMKey => new JtagDTMConfig (
-        idcodeVersion = 2,      // 1 was legacy (FE310-G000, Acai).
-        idcodePartNum = 0x000,  // Decided to simplify.
-        idcodeManufId = 0x489,  // As Assigned by JEDEC to SiFive. Only used in wrappers / test harnesses.
-        debugIdleCycles = 5)    // Reasonable guess for synchronization
+      case JtagDTMKey => TEEHWJtagConfig()
+      case DebugModuleKey => Some(TEEHWDebugConfig())
       case FreqKeyMHz => 100.0
-      //case MaxHartIdBits => log2Up(site(BoomTilesKey).size + site(RocketTilesKey).size + site(IbexTilesKey).size)
     }))
 
 class MCUConfig extends Config(
@@ -263,13 +261,9 @@ class MCUConfig extends Config(
         blockBytes = site(CacheBlockBytes),
         dtsFrequency = Some(BigDecimal(site(FreqKeyMHz)*1000000).setScale(0, BigDecimal.RoundingMode.HALF_UP).toBigInt))
       case DTSTimebase => BigInt(1000000)
-      case JtagDTMKey => new JtagDTMConfig (
-        idcodeVersion = 2,      // 1 was legacy (FE310-G000, Acai).
-        idcodePartNum = 0x000,  // Decided to simplify.
-        idcodeManufId = 0x489,  // As Assigned by JEDEC to SiFive. Only used in wrappers / test harnesses.
-        debugIdleCycles = 5)    // Reasonable guess for synchronization
+      case JtagDTMKey => TEEHWJtagConfig()
+      case DebugModuleKey => Some(TEEHWDebugConfig())
       case FreqKeyMHz => 100.0
-      //case MaxHartIdBits => log2Up(site(BoomTilesKey).size + site(RocketTilesKey).size + site(IbexTilesKey).size)
     }))
 
 // NOTE: Copied from chipyard

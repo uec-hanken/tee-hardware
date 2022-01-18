@@ -201,6 +201,7 @@ class FPGADE4Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConnect]
       rst_n := !reset_to_sys
       jrst_n := !reset_to_sys
       usbClk.foreach(_ := mod_io_ckrst.usb_clk)
+      sdramclock.foreach(_ := mod_io_ckrst.qsys_clk)
       if(p(DDRPortOther)) {
         ChildClock.foreach(_ := mod_io_ckrst.io_clk)
         ChildReset.foreach(_ := reset_to_child)
@@ -359,5 +360,4 @@ trait WithFPGADE4Connect {
   chip.sdram.foreach{ sdram =>
     sdram.sdram_data_i := 0.U
   }
-  chip.sdramclock.foreach(_ := chip.sys_clk)
 }

@@ -237,6 +237,7 @@ class FPGAArtyA7Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConne
     rst_n := !reset_to_sys
     jrst_n := !reset_to_sys
     usbClk.foreach(_ := false.B.asClock())
+    sdramclock.foreach(_ := pll.io.clk_out1.get)
 
     aclocks.foreach { aclocks =>
       println(s"Connecting async clocks by default =>")
@@ -349,5 +350,4 @@ trait WithFPGAArtyA7Connect {
   chip.sdram.foreach{ sdram =>
     sdram.sdram_data_i := 0.U
   }
-  chip.sdramclock.foreach(_ := chip.sys_clk)
 }
