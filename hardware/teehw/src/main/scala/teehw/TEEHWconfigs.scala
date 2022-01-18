@@ -201,42 +201,9 @@ class TEEHWPeripherals extends Config((site, here, up) => {
     I2CParams(address = 0x64006000))
   case PeripheryAESKey => List(
     AESParams(address = BigInt(0x64007000L)))
-//  case PeripheryUSB11HSKey => List(
-//    USB11HSParams(address = BigInt(0x64008000L)))
   case PeripheryRandomKey => List(
     RandomParams(address = BigInt(0x64009000L), impl = 1))
   case PeripheryClockCtrlKey => List()
-  // OpenTitan devices
-  case PeripheryAESOTKey => List()
-  case PeripheryHMACKey => List()
-  case PeripheryOTPCtrlKey => List()
-  case PeripheryAlertKey =>
-    AlertParams(address = BigInt(0x64100000L))
-  case PeripheryNmiGenKey =>
-    NmiGenParams(address = BigInt(0x64200000L))
-})
-
-class TLS13Peripherals extends Config((site, here, up) => {
-  case PeripheryUARTKey => List(
-    UARTParams(address = BigInt(0x64000000L)))
-  case PeripherySPIKey => List(
-    SPIParams(rAddress = BigInt(0x64001000L)),
-    //SPIParams(rAddress = BigInt(0x64005000L)) // TODO: Add this for OTP in the release
-  )
-  case PeripheryGPIOKey => List(
-    GPIOParams(address = BigInt(0x64002000L), width = 16))
-  case GPIOInKey => 8
-  // TEEHW devices
-  case PeripherySHA3Key => List()
-  case Peripheryed25519Key => List(
-    ed25519Params(address = BigInt(0x64004000L)))
-  case PeripheryI2CKey => List(
-    I2CParams(address = 0x64006000))
-  case PeripheryAESKey => List()
-  case PeripheryUSB11HSKey => List(
-    USB11HSParams(address = BigInt(0x64008000L)))
-  case PeripheryRandomKey => List(
-    RandomParams(address = BigInt(0x64009000L), impl = 1))
   // OpenTitan devices
   case PeripheryAESOTKey => List()
   case PeripheryHMACKey => List()
@@ -260,7 +227,6 @@ class OpenTitanPeripherals extends Config((site, here, up) => {
   case Peripheryed25519Key => List()
   case PeripheryI2CKey => List()
   case PeripheryAESKey => List()
-  case PeripheryUSB11HSKey => List()
   case PeripheryRandomKey => List()
   // OpenTitan devices
   case PeripheryAESOTKey => List(
@@ -293,8 +259,6 @@ class TEEHWAndOpenTitanPeripherals extends Config((site, here, up) => {
     I2CParams(address = 0x64006000))
   case PeripheryAESKey => List(
     AESParams(address = BigInt(0x64007000L)))
-  case PeripheryUSB11HSKey => List(
-    USB11HSParams(address = BigInt(0x64008000L)))
   case PeripheryRandomKey => List(
     RandomParams(address = BigInt(0x64009000L), impl = 1))
   // OpenTitan devices
@@ -324,7 +288,6 @@ class NoSecurityPeripherals extends Config((site, here, up) => {
   case PeripheryI2CKey => List()
   case PeripheryAESKey => List(
     AESParams(address = BigInt(0x64007000L)))
-  case PeripheryUSB11HSKey => List()
   case PeripheryRandomKey => List()
   case PeripheryAESOTKey => List()
   case PeripheryHMACKey => List()
@@ -448,6 +411,11 @@ class WoPCIe extends Config((site, here, up) => {
   case IncludePCIe => false
 })
 
+class WUSB extends Config((site, here, up) => {
+  case PeripheryUSB11HSKey => List(
+    USB11HSParams(address = BigInt(0x64008000L)))
+})
+
 // *************** DDR Clock configurations (DDRCLK) ******************
 class WSepaDDRClk extends Config((site, here, up) => {
   case DDRPortOther => true
@@ -516,8 +484,6 @@ class VC707Config extends Config((site,here,up) => {
   case TEEHWResetVector => 0x20000000
   case PeripherySPIFlashKey => List() // disable SPIFlash
   case PeripherySPIKey => up(PeripherySPIKey).slice(0, 1) // Disable SPIFlash, even if is the backup
-  /* Force to disable USB1.1, because there are no pins */
-  case PeripheryUSB11HSKey => List()
   case PeripheryRandomKey => up(PeripheryRandomKey, site) map {r =>
     r.copy(board = "Xilinx")
   }
@@ -529,8 +495,6 @@ class VCU118Config extends Config((site,here,up) => {
   case FreqKeyMHz => 50.0
   case SDCardMHz => 5.0
   case QSPICardMHz => 1.0
-  /* Force to disable USB1.1, because there are no pins */
-  case PeripheryUSB11HSKey => List()
   case PeripheryRandomKey => up(PeripheryRandomKey, site) map {r =>
     r.copy(board = "Xilinx")
   }
@@ -579,8 +543,6 @@ class SakuraXConfig extends Config((site,here,up) => {
   case TEEHWResetVector => 0x20000000
   case PeripherySPIFlashKey => List() // disable SPIFlash
   case PeripherySPIKey => up(PeripherySPIKey).slice(0, 1) // Disable SPIFlash, even if is the backup
-  /* Force to disable USB1.1, because there are no pins */
-  case PeripheryUSB11HSKey => List()
   case PeripheryRandomKey => up(PeripheryRandomKey, site) map {r =>
     r.copy(board = "Xilinx")
   }
