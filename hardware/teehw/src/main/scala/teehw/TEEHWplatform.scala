@@ -284,7 +284,7 @@ trait HasTEEHWSystem
   // SRAMs
   val srams = p(SRAMKey).zipWithIndex.map { case(sramcfg, i) =>
     val sram = LazyModule(new TLRAM(AddressSet.misaligned(sramcfg.address, sramcfg.size).head, cacheable = true))
-    val mbus = locateTLBusWrapper(PBUS) // TODO: Should be MBUS, but the MCUConfig conflicts, as removes the MBUS
+    val mbus = locateTLBusWrapper(CRYPTOBUS)
     mbus.coupleTo(s"sram_${i}") { bus => sram.node := TLFragmenter(4, mbus.blockBytes) := bus }
     sram
   }

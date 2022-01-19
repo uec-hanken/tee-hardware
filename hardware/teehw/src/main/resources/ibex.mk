@@ -41,7 +41,7 @@ IBEX_OPENTITAN_VSRCS = \
 	$(opentitan_dir)/hw/ip/rv_core_ibex/rtl/rv_core_ibex.sv
 
 IBEX_OPENTITAN_VERSRCS = \
-	$(opentitan_dir)/hw/vendor/lowrisc_ibex/syn/rtl/prim_clock_gating.v
+	$(vsrc_dir)/rv_core_ibex_blackbox/prim_clock_gating.v
 
 IBEX_OPENTITAN_WRAPPER =
 

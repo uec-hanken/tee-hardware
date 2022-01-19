@@ -114,7 +114,7 @@ class Micro extends Config ((site, here, up) => {
             nTLBSets = 1,
             nTLBWays = 4,
             nMSHRs = 0,
-            scratch = Some(0x40000000L)
+            scratch = Some(0x80000000L)
           )},
       ))
     case other => other
@@ -140,7 +140,7 @@ class Micro extends Config ((site, here, up) => {
           nTLBSets = 1,
           nTLBWays = 4,
           nMSHRs = 0,
-          scratch = Some(0x40000000L)
+          scratch = Some(0x80000000L)
         )},
       icache = r.icache map {i =>
         i.copy(
