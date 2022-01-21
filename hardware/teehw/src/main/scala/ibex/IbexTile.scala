@@ -333,5 +333,5 @@ class IbexTileModuleImp(outer: IbexTile) extends BaseTileModuleImp(outer){
 
   // Miscellaneous connections
   core.io.fetch_enable_i := true.B
-  core.io.test_en_i := true.B // TODO Always enable clock gating. No Latches!
+  core.io.test_en_i := false.B // TODO Always enable clock gating. No Latches!
 }

@@ -42,8 +42,8 @@ trait FPGAVC707ChipShell {
   val gpio_in = IO(Input(UInt(p(GPIOInKey).W)))
   val gpio_out = IO(Output(UInt((p(PeripheryGPIOKey).head.width-p(GPIOInKey)).W)))
   val jtag = IO(new Bundle {
-    val jtag_TDI = (Input(Bool())) // J19_20 / XADC_GPIO_2
-    val jtag_TDO = (Output(Bool())) // J19_17 / XADC_GPIO_1
+    val jtag_TDI = (Input(Bool())) // J19_17 / XADC_GPIO_1
+    val jtag_TDO = (Output(Bool())) // J19_20 / XADC_GPIO_2
     val jtag_TCK = (Input(Bool())) // J19_19 / XADC_GPIO_3
     val jtag_TMS = (Input(Bool())) // J19_18 / XADC_GPIO_0
   })
