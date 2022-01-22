@@ -30,12 +30,12 @@ import uec.teehardware.tile._
 case class IbexCoreParams
 (
   bootFreqHz: BigInt = BigInt(1000000000),
-  nPMPs: Int = 8,
-  pmpGranularity: Int = 4,
+  nPMPs: Int = 1,
+  pmpGranularity: Int = 0,
   useDebug: Boolean = true,
   nLocalInterrupts: Int = 0,
-  nPerfCounters: Int = 1,
-  RV32M: Int = 3, // "ibex_pkg::RV32MSingleCycle",
+  nPerfCounters: Int = 0,
+  RV32M: Int = 1, // "ibex_pkg::RV32MSlow",
   RV32B: Int = 0, // "ibex_pkg::RV32BNone",
   RegFile: Int = 0, // "ibex_pkg::RegFileFF",
   BranchTargetALU: Boolean = false,

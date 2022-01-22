@@ -87,6 +87,7 @@ class WithNIbexSmallCacheSecureCores(n: Int, overrideIdOffset: Option[Int] = Non
       IbexTileAttachParams(
         tileParams = IbexTileParams(
           hartId = i + idOffset,
+          icache = None, // No icache
           dcache = Some(DCacheParams(
             rowBits = site(SystemBusKey).beatBits,
             nSets = 32, // 2Kb scratchpad
@@ -96,6 +97,7 @@ class WithNIbexSmallCacheSecureCores(n: Int, overrideIdOffset: Option[Int] = Non
             blockBytes = 4,
             scratch = Some(0x64300000L))
           ),
+          core = IbexCoreParams(SecureIbex = true, nPMPs = 1, RV32M = 1)
         ),
         crossingParams = RocketCrossingParams()
       )} ++ prev
