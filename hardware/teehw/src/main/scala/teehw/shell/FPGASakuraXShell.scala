@@ -17,6 +17,7 @@ import sifive.fpgashells.shell.xilinx.XDMATopPads
 import uec.teehardware._
 import uec.teehardware.macros._
 import uec.teehardware.devices.clockctrl._
+import uec.teehardware.devices.sdram.SDRAMKey
 import uec.teehardware.devices.usb11hs._
 
 class FMCSakuraX extends Bundle {
@@ -81,15 +82,18 @@ class FPGASakuraXInternal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConn
   val clock = Wire(Clock())
   val reset = Wire(Bool())
 
+  val isOtherClk = isChildClock || (p(SbusToMbusXTypeKey) match {
+    case _: AsynchronousCrossing => true
+    case _ => false
+  }) || p(PeripheryUSB11HSKey).nonEmpty
+
   // PLL instance
   val c = new PLLParameters(
     name = "pll",
     input = PLLInClockParameters(freqMHz = 200.0, feedback = true),
     req = Seq(
-      PLLOutClockParameters(freqMHz = 48.0),
-      PLLOutClockParameters(freqMHz = 10.0),
       PLLOutClockParameters(freqMHz = p(FreqKeyMHz))
-    )
+    ) ++ (if (isOtherClk) Seq(PLLOutClockParameters(freqMHz = 10.0), PLLOutClockParameters(freqMHz = 48.0)) else Seq())
   )
   val pll = Module(new Series7MMCM(c))
   pll.io.clk_in1 := sys_clk_i
@@ -97,9 +101,10 @@ class FPGASakuraXInternal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConn
 
   withClockAndReset(clock, reset) {
     val aresetn = !reset_0 // Reset that goes to the MMCM inside of the DDR MIG
-    val sys_rst = ResetCatchAndSync(pll.io.clk_out3.get, !pll.io.locked) // Catched system clock
+    val sys_rst = ResetCatchAndSync(pll.io.clk_out1.get, !pll.io.locked) // Catched system clock
     val reset_to_sys = WireInit(!pll.io.locked) // If DDR is not present, this is the system reset
     val reset_to_child = WireInit(!pll.io.locked) // If DDR is not present, this is the child reset
+    pll.io.clk_out2.foreach(reset_to_child := ResetCatchAndSync(_, !pll.io.locked))
 
     // The DDR port
     init_calib_complete := false.B
@@ -114,24 +119,23 @@ class FPGASakuraXInternal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConn
       mod.io.ddrport.sys_clk_i := sys_clk_i.asUInt()
       mod.io.ddrport.aresetn := aresetn
       mod.io.ddrport.sys_rst := sys_rst
-      reset_to_sys := ResetCatchAndSync(pll.io.clk_out3.get, mod.io.ddrport.ui_clk_sync_rst)
-      ChildClock.foreach(_ := pll.io.clk_out3.getOrElse(false.B))
-      ChildReset.foreach(_ := reset_to_sys)
-      mod.clock := pll.io.clk_out3.getOrElse(false.B)
+      reset_to_sys := ResetCatchAndSync(pll.io.clk_out1.get, mod.io.ddrport.ui_clk_sync_rst)
+      mod.clock := pll.io.clk_out1.get
       mod.reset := reset_to_sys
-      reset_to_child := ResetCatchAndSync(pll.io.clk_out2.get, !pll.io.locked)
 
       // TileLink Interface from platform
       mod.io.tlport.a <> chiptl.a
       chiptl.d <> mod.io.tlport.d
 
       // Legacy ChildClock
-      if(p(DDRPortOther)) {
-        println("[Legacy] Quartus Island and Child Clock connected to clk_out2")
-        ChildClock.foreach(_ := pll.io.clk_out2.getOrElse(false.B))
-        ChildReset.foreach(_ := reset_to_sys)
-        mod.clock := pll.io.clk_out2.getOrElse(false.B)
+      ChildClock.foreach { cclk =>
+        println("Shell Island and Child Clock connected to clk_out2")
+        cclk := pll.io.clk_out2.get
+        mod.clock := pll.io.clk_out2.get
         mod.reset := reset_to_child
+      }
+      ChildReset.foreach { crst =>
+        crst := reset_to_child
       }
 
       init_calib_complete := mod.io.ddrport.init_calib_complete
@@ -151,16 +155,15 @@ class FPGASakuraXInternal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConn
       mod.io.ddrport.sys_clk_i := sys_clk_i.asUInt()
       mod.io.ddrport.aresetn := aresetn
       mod.io.ddrport.sys_rst := sys_rst
-      reset_to_sys := ResetCatchAndSync(pll.io.clk_out3.get, mod.io.ddrport.ui_clk_sync_rst)
-      reset_to_child := ResetCatchAndSync(pll.io.clk_out2.get, !pll.io.locked)
+      reset_to_sys := ResetCatchAndSync(pll.io.clk_out1.get, mod.io.ddrport.ui_clk_sync_rst)
 
       p(SbusToMbusXTypeKey) match {
         case _: AsynchronousCrossing =>
-          println("[Legacy] Quartus Island connected to clk_out2 (10MHz)")
-          mod.clock := pll.io.clk_out2.getOrElse(false.B)
+          println("Shell Island connected to clk_out2 (10MHz)")
+          mod.clock := pll.io.clk_out2.get
           mod.reset := reset_to_child
         case _ =>
-          mod.clock := pll.io.clk_out3.getOrElse(false.B)
+          mod.clock := pll.io.clk_out1.get
       }
 
       init_calib_complete := mod.io.ddrport.init_calib_complete
@@ -168,13 +171,14 @@ class FPGASakuraXInternal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConn
     }
 
     // Main clock and reset assignments
-    clock := pll.io.clk_out3.get
+    clock := pll.io.clk_out1.get
     reset := reset_to_sys
-    sys_clk := pll.io.clk_out3.get
+    sys_clk := pll.io.clk_out1.get
     rst_n := !reset_to_sys
     jrst_n := !reset_to_sys
-    usbClk.foreach(_ := pll.io.clk_out1.getOrElse(false.B))
-    sdramclock.foreach(_ := pll.io.clk_out3.get)
+    usbClk.foreach(_ := pll.io.clk_out3.get)
+    sdramclock.foreach(_ := pll.io.clk_out1.get)
+    DefaultRTC
 
     aclocks.foreach { aclocks =>
       println(s"Connecting async clocks by default =>")
@@ -186,13 +190,13 @@ class FPGASakuraXInternal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConn
               aclk := pll.io.clk_out2.get
               println("    Connected to clk_out2 (10 MHz)")
             case _ =>
-              aclk := pll.io.clk_out3.get
-              println("    Connected to clk_out3")
+              aclk := pll.io.clk_out1.get
+              println("    Connected to clk_out1")
           }
         }
         else {
-          aclk := pll.io.clk_out3.get
-          println("    Connected to clk_out3")
+          aclk := pll.io.clk_out1.get
+          println("    Connected to clk_out1")
         }
       }
     }
@@ -433,6 +437,12 @@ class FPGASakuraXInternalNoChip
   override def memserSourceBits: Option[Int] = p(ExtSerMem).map( A => idBits )
   override def extserSourceBits: Option[Int] = p(ExtSerBus).map( A => idBits )
   override def namedclocks: Seq[String] = if(p(ExposeClocks)) Seq("cryptobus", "tile_0", "tile_1") else Seq()
+  override def issdramclock: Boolean = p(SDRAMKey).nonEmpty
+  override def isChildClock: Boolean = (p(SbusToMbusXTypeKey) match {
+    case _: AsynchronousCrossing => true
+    case _ => false
+  })
+  override def isRTCclock: Boolean = p(RTCPort)
 }
 
 trait WithFPGASakuraXInternCreate {

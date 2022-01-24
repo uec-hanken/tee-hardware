@@ -86,7 +86,7 @@ trait HasTEEHWSystem
   val tlclock = new FixedClockResource("tlclk", p(FreqKeyMHz))
 
   // Main memory controller (TL memory controller)
-  val memctl: Option[(TLManagerNode, Option[SlowMemIsland])] = p(ExtMem).map { A =>
+  val memctl: Option[TLManagerNode] = p(ExtMem).map { A =>
     val memdevice = new MemoryDevice
     val mainMemParam = TLSlavePortParameters.v1(
       managers = Seq(TLSlaveParameters.v1(
@@ -104,21 +104,9 @@ trait HasTEEHWSystem
       beatBytes = A.master.beatBytes
     )
     val memTLNode = TLManagerNode(Seq(mainMemParam))
-    val island = if (p(DDRPortOther)) {
-      //val source = LazyModule(new TLAsyncCrossingSource())
-      //val sink = LazyModule(new TLAsyncCrossingSink(AsyncQueueParams(depth = 1, sync = 3, safe = true, narrow = false)))
-      //val buffer  = LazyModule(new TLBuffer) // We removed a buffer in the TOP
-      val island = LazyModule(new SlowMemIsland(mbus.blockBytes))
-      //memTLNode := buffer.node := island.node := mbus.toDRAMController(Some("tl"))()
-      island.crossTLIn(island.node) := mbus.toDRAMController(Some("tl"))()
-      memTLNode := island.node
-      Some(island)
-    } else {
-      val buffer = LazyModule(new TLBuffer)
-      memTLNode := buffer.node := mbus.toDRAMController(Some("tl"))()
-      None
-    }
-    (memTLNode, island)
+    val buffer = LazyModule(new TLBuffer)
+    memTLNode := buffer.node := mbus.toDRAMController(Some("tl"))()
+    memTLNode
   }
   val memserctl = p(ExtSerMem).map {A =>
     val memdevice = new MemoryDevice
@@ -292,10 +280,17 @@ trait HasTEEHWSystem
   // add ROM devices
   val maskROMs = p(MaskROMLocated(location)).map { MaskROM.attach(_, this, CBUS) }
 
+  // The RTC clock node (if needed)
+  val RTCNode = p(RTCPort).option{
+    val RTCclockGroup = ClockSinkNode(Seq(ClockSinkParameters(name = Some("rtc_clock"))))
+    RTCclockGroup := ClockGroup() := asyncClockGroupsNode
+    RTCclockGroup
+  }
+
   // NOTE: I do not know how this work yet. Now the clock is VERY important, for knowing where the
   // clock domains came from. You can assign it to different nodes, and create new ones.
   // Eventually, this will create even their own dts for reference purposes.
-  // so, you DEFINITELLY need to define your clocks from now on. This will be assigned to asyncClockGroupsNode
+  // so, you DEFINITELY need to define your clocks from now on. This will be assigned to asyncClockGroupsNode
   // and the "SubsystemDriveAsyncClockGroupsKey" key needs to be None'd to avoid default clocks
   // There should be a easier way, but right now also the Sifive peripherals and the TEE peripherals
   // uses all of that. So, there is no way.
@@ -337,7 +332,7 @@ class TEEHWSystem(implicit p: Parameters) extends TEEHWSubsystem
   override lazy val module = new TEEHWSystemModule(this)
 }
 
-trait HasTEEHWSystemModule extends HasRTCModuleImp
+trait HasTEEHWSystemModule extends LazyModuleImp with DontTouch
   // The components that are directly instantiated here. Needed to be re-factored from the original
   //    with HasPeripheryI2CModuleImp
   //    with HasPeripheryUARTModuleImp // NOTE: Already included
@@ -345,28 +340,15 @@ trait HasTEEHWSystemModule extends HasRTCModuleImp
   //    with HasPeripherySPIModuleImp // NOTE: Already included
   //    with CanHaveMasterAXI4MemPortModuleImp // NOTE: A TL->Axi4 is already done outside the system
   //    with CanHaveMasterTLMemPortModuleImp // NOTE: Manually created the TL port
-  // This is intended only for simulations, but does not affect the fpga/chip versions
-  with DontTouch
 {
   val outer: TEEHWBaseSubsystem with HasTEEHWSystem with CanHavePeripheryCLINT
 
   // Main memory controller
-  val memPorts = outer.memctl.map { A =>
-    val (memTLnode: TLManagerNode, island: Option[SlowMemIsland]) = A
-    val (cclk, crst) = island.map { island =>
-      val ChildClock = IO(Input(Clock()))
-      val ChildReset = IO(Input(Bool()))
-      island.module.io.ChildClock := ChildClock
-      island.module.io.ChildReset := ChildReset
-      (ChildClock, ChildReset)
-    }.unzip
+  val mem_tl = outer.memctl.map { case memTLnode: TLManagerNode =>
     val mem_tl = IO(HeterogeneousBag.fromNode(memTLnode.in))
     (mem_tl zip memTLnode.in).foreach { case (io, (bundle, _)) => io <> bundle }
-    (mem_tl, cclk, crst)
+    mem_tl
   }
-  val mem_tl = memPorts.map(_._1) // For making work HeterogeneousBag
-  val mem_ChildClock = memPorts.map(_._2) // For making work HeterogeneousBag
-  val mem_ChildReset = memPorts.map(_._3) // For making work HeterogeneousBag
 
   // Main memory serial controller
   val (memSerPorts, serSourceBits) = outer.memserctl.map { A =>
@@ -427,6 +409,40 @@ trait HasTEEHWSystemModule extends HasRTCModuleImp
 
     // Put this as the public member
     io
+  }
+
+  // RTC clock (if enabled)
+  outer.RTCNode match {
+    case Some(node) =>
+      val (rtcBundle, _) = node.in(0)
+      // Synchronize the external toggle into the clint
+      val rtc_in = rtcBundle.clock.asBool()
+      val rtc_sync = SynchronizerShiftReg(rtc_in, 3, Some("rtc"))
+      val rtc_last = RegNext(rtc_sync, false.B)
+      val rtc_tick = RegNext(rtc_sync && (!rtc_last), false.B)
+      outer.clintOpt.foreach { clint =>
+        clint.module.io.rtcTick := rtc_tick
+      }
+    case None =>
+      // NOTE: Same as RTC.scala
+      val pbusFreq = outer.p(PeripheryBusKey).dtsFrequency.get
+      val rtcFreq = outer.p(DTSTimebase)
+      val internalPeriod: BigInt = pbusFreq / rtcFreq
+
+      val pbus = outer.locateTLBusWrapper(PBUS)
+      // check whether pbusFreq >= rtcFreq
+      require(internalPeriod > 0)
+      // check wehther the integer division is within 5% of the real division
+      require((pbusFreq - rtcFreq * internalPeriod) * 100 / pbusFreq <= 5)
+
+      // Use the static period to toggle the RTC
+      chisel3.withClockAndReset(pbus.module.clock, pbus.module.reset) {
+        val (_, int_rtc_tick) = Counter(true.B, internalPeriod.toInt)
+        outer.clintOpt.foreach { clint =>
+          clint.module.io.rtcTick := int_rtc_tick
+        }
+      }
+      None
   }
 
   // NOTE: Continuation of the clock assignation
@@ -495,8 +511,6 @@ class TEEHWPlatformIO(val params: Option[TLBundleParameters] = None, val numCloc
   val jtag_reset = Input(Bool())
   val ndreset = Output(Bool())
   val tlport = params.map{par => new TLUL(par)}
-  val ChildClock = p(DDRPortOther).option(Input(Clock()))
-  val ChildReset = p(DDRPortOther).option(Input(Bool()))
   val pciePorts = p(IncludePCIe).option(new XilinxVC707PCIeX1IO)
   val xdmaPorts = p(XDMAPCIe).map(A => new XDMATopPadswReset(A.lanes))
   val aclocks = Vec(numClocks, Input(Clock()))
@@ -569,11 +583,8 @@ object TEEHWPlatform {
     // and the ports are exposed inside the "foreach". Do not worry, there is
     // only one memory (unless you configure multiple memories).
 
-    (sys.memPorts zip io.tlport).foreach{
-      case (iohf, tlport: TLUL) =>
-        val ioh = iohf._1
-        val ChildClock = iohf._2
-        val ChildReset = iohf._3
+    (sys.mem_tl zip io.tlport).foreach{
+      case (ioh, tlport: TLUL) =>
         ioh.foreach{ case ioi: TLBundle =>
           // Connect outside the ones that can be untied
           tlport.a.valid := ioi.a.valid
@@ -592,11 +603,6 @@ object TEEHWPlatform {
           ioi.e.ready := false.B
           // Important NOTE: We did check connections until the mbus in verilog
           // and there is no usage of channels B, C and E (except for some TL Monitors)
-        }
-
-        (((ChildClock zip ChildReset) zip io.ChildClock) zip io.ChildReset).map{ case (((cck, crst), ck), rst) =>
-          cck := ck
-          crst := rst
         }
     }
 
@@ -663,7 +669,7 @@ trait HasTEEHWPlatform {
   this: Module =>
   implicit val p: Parameters
   val sys: TEEHWSystemModule[TEEHWSystem] = Module(LazyModule(new TEEHWSystem).module)
-  val io = IO(new TEEHWPlatformIO(sys.outer.memctl.map{A => A._1.in.head._1.params}, sys.numClocks ) )
+  val io = IO(new TEEHWPlatformIO(sys.outer.memctl.map{A => A.in.head._1.params}, sys.numClocks ) )
 }
 
 class TEEHWPlatform(implicit val p: Parameters) extends Module with HasTEEHWPlatform with WithTEEHWPlatformConnect {

@@ -10,6 +10,7 @@ import freechips.rocketchip.subsystem._
 import freechips.rocketchip.tilelink._
 import uec.teehardware.macros._
 import uec.teehardware._
+import uec.teehardware.devices.sdram.SDRAMKey
 
 class HSMCTR4(val on1: Boolean = true, val on2: Boolean = true) extends Bundle {
   val CLKIN0 = Input(Bool())
@@ -138,8 +139,6 @@ class FPGATR4Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConnect]
       clock := mod_io_ckrst.qsys_clk
       reset := reset_to_sys
       sys_clk := mod_io_ckrst.qsys_clk
-      ChildClock.foreach(_ := mod_io_ckrst.qsys_clk)
-      ChildReset.foreach(_ := reset_to_sys)
       mod_clock := mod_io_ckrst.qsys_clk
       mod_reset := reset_to_sys
       rst_n := !reset_to_sys
@@ -173,10 +172,9 @@ class FPGATR4Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConnect]
       }
 
       // Legacy ChildClock
-      if(p(DDRPortOther)) {
-        println("[Legacy] Quartus Island and Child Clock connected to io_clk")
-        ChildClock.foreach(_ := mod_io_ckrst.io_clk)
-        ChildReset.foreach(_ := reset_to_child)
+      ChildClock.foreach { cclk =>
+        println("Quartus Island and Child Clock connected to io_clk")
+        cclk := mod_io_ckrst.io_clk
         mod_clock := mod_io_ckrst.io_clk
         mod_reset := reset_to_child
       }
@@ -278,6 +276,12 @@ class FPGATR4InternalNoChip
   override def memserSourceBits: Option[Int] = p(ExtSerMem).map( A => idBits )
   override def extserSourceBits: Option[Int] = p(ExtSerBus).map( A => idExtBits )
   override def namedclocks: Seq[String] = Seq()
+  override def issdramclock: Boolean = p(SDRAMKey).nonEmpty
+  override def isChildClock: Boolean = (p(SbusToMbusXTypeKey) match {
+    case _: AsynchronousCrossing => true
+    case _ => false
+  })
+  override def isRTCclock: Boolean = p(RTCPort)
 }
 
 trait WithFPGATR4InternCreate {

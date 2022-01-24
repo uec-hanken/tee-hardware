@@ -10,6 +10,7 @@ import freechips.rocketchip.subsystem._
 import freechips.rocketchip.tilelink._
 import uec.teehardware.macros._
 import uec.teehardware._
+import uec.teehardware.devices.sdram.SDRAMKey
 
 class FMCTR5(val ext: Boolean = false, val xcvr: Boolean = false) extends Bundle {
   val CLK_M2C_p = Vec(2, Analog(1.W))
@@ -168,13 +169,13 @@ class FPGATR5Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConnect]
       reset := reset_to_sys
       sys_clk := mod_io_ckrst.qsys_clk
       ChildClock.foreach(_ := mod_io_ckrst.qsys_clk)
-      ChildReset.foreach(_ := reset_to_sys)
       mod_clock := mod_io_ckrst.qsys_clk
       mod_reset := reset_to_sys
       rst_n := !reset_to_sys
       jrst_n := !reset_to_sys
       usbClk.foreach(_ := mod_io_ckrst.usb_clk)
       sdramclock.foreach(_ := mod_io_ckrst.qsys_clk)
+      DefaultRTC
 
       // Async clock connections
       aclocks.foreach { aclocks =>
@@ -202,10 +203,9 @@ class FPGATR5Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConnect]
       }
 
       // Legacy ChildClock
-      if(p(DDRPortOther)) {
-        println("[Legacy] Quartus Island and Child Clock connected to io_clk")
-        ChildClock.foreach(_ := mod_io_ckrst.io_clk)
-        ChildReset.foreach(_ := reset_to_child)
+      ChildClock.foreach { cclk =>
+        println("Quartus Island and Child Clock connected to io_clk")
+        cclk := mod_io_ckrst.io_clk
         mod_clock := mod_io_ckrst.io_clk
         mod_reset := reset_to_child
       }
@@ -314,6 +314,12 @@ class FPGATR5InternalNoChip
   override def memserSourceBits: Option[Int] = p(ExtSerMem).map( A => idBits )
   override def extserSourceBits: Option[Int] = p(ExtSerBus).map( A => idExtBits )
   override def namedclocks: Seq[String] = if(p(ExposeClocks)) Seq("cryptobus", "tile_0", "tile_1") else Seq()
+  override def issdramclock: Boolean = p(SDRAMKey).nonEmpty
+  override def isChildClock: Boolean = (p(SbusToMbusXTypeKey) match {
+    case _: AsynchronousCrossing => true
+    case _ => false
+  })
+  override def isRTCclock: Boolean = p(RTCPort)
 }
 
 trait WithFPGATR5InternCreate {

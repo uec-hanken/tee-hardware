@@ -16,9 +16,9 @@ ISACONF?=RV64GC
 MBUS?=MBus64
 BOOTSRC?=BOOTROM
 PCIE?=WoPCIe
-DDRCLK?=WoSepaDDRClk
+DDRCLK?=NoCrossMBusClk
 HYBRID?=Rocket
-SEPARE?=BoomTile,RocketTile,TLAES,TLed25519,TLSHA3
+SEPARE?=Nothing
 
 #########################################################################################
 # Common rules for FPGA

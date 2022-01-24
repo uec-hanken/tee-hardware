@@ -209,15 +209,6 @@ trait WithTEEHWHarnessConnect {
       simdrammod.io.tlport.d.ready := ioi.d.ready
       ioi.d.bits := simdrammod.io.tlport.d.bits
       // REMEMBER: no usage of channels B, C and E (except for some TL Monitors)
-
-      // If the other-clock-memory is activated, we need to associate the clock and the reset
-      // NOTE: Please consider that supporting other-clock is not on the boundaries of this
-      // simulation. Please refrain of activating DDRPortOther
-      (dut.io.ChildClock zip dut.io.ChildReset).foreach {
-        case (ck,rst) =>
-          ck := clock
-          rst := reset // NOTE: Normal reset
-      }
   }
 
   dut.io.memser.foreach{ A =>

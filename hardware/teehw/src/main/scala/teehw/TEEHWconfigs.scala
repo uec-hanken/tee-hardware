@@ -416,17 +416,18 @@ class WUSB extends Config((site, here, up) => {
 })
 
 // *************** DDR Clock configurations (DDRCLK) ******************
-class WSepaDDRClk extends Config((site, here, up) => {
-  case DDRPortOther => true
+class WSyncMBusClk extends Config((site, here, up) => {
+  case SbusToMbusXTypeKey => SynchronousCrossing() // The MBus clock will be synchronized
 })
 
-class WoSepaDDRClk extends Config((site, here, up) => {
-  case DDRPortOther => false
-})
+class NoCrossMBusClk extends WSyncMBusClk
 
 class WSepaMBusClk extends Config((site, here, up) => {
-  case DDRPortOther => false // Just for measure
   case SbusToMbusXTypeKey => AsynchronousCrossing() // The MBus clock will be separated
+})
+
+class WRTC extends Config((site, here, up) => {
+  case RTCPort => true
 })
 
 class WExposeClk extends Config((site, here, up) => {
@@ -600,8 +601,6 @@ class WithSimulation extends Config((site, here, up) => {
   case MaskROMLocated(InSubsystem) => Seq(
     MaskROMParams(address = BigInt(0x10000), depth = 4096, name = "BootROM"))
   case TEEHWResetVector => 0x10040 // The hang vector in this case, to support the Serial load
-  // DDRPortOther is unsupported
-  case DDRPortOther => false
   // USB11HS has problems compiling on verilator.
   case PeripheryUSB11HSKey => List()
   // Random only should include the TRNG version
@@ -630,7 +629,7 @@ class Explanation extends Config(
     new RV64GC ++
     new Rocket ++
     new MBus64 ++
-    new WoSepaDDRClk ++
+    new NoCrossMBusClk ++
     new WoPCIe ++
     new BOOTROM ++
     new TEEHWPeripherals ++

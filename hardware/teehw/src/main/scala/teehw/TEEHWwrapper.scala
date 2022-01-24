@@ -64,13 +64,18 @@ class  WithTEEHWbaseShell(implicit val p :Parameters) extends RawModule {
   // SDRAM port
   val sdram = p(SDRAMKey).map{ A => IO(new SDRAMIf(A.sdcfg))}
   // Clocks and resets
-  val ChildClock = p(DDRPortOther).option(IO(Input(Clock())))
-  val ChildReset = p(DDRPortOther).option(IO(Input(Bool())))
+  val isChildClock = !p(ExposeClocks) && (p(SbusToMbusXTypeKey) match {
+    case _: AsynchronousCrossing => true
+    case _ => false
+  })
+  val ChildClock = isChildClock.option(IO(Input(Clock())))
   val sys_clk = IO(Input(Clock()))
   val rst_n = IO(Input(Bool()))
   val jrst_n = IO(Input(Bool()))
   val issdramclock = !p(ExposeClocks) && p(SDRAMKey).nonEmpty
   val sdramclock = issdramclock.option(IO(Input(Clock())))
+  val isRTCclock = !p(ExposeClocks) && p(RTCPort)
+  val RTCclock = isRTCclock.option(IO(Input(Clock())))
   // An option to dynamically assign
   var qspi: Option[TEEHWQSPIBundle] = None // QSPI gets added progresively using both PeripherySPIKey and PeripherySPIFlashKey
   var aclocks: Option[Vec[Clock]] = None // Async clocks depends on a node of clocks named "globalClocksNode"
@@ -133,8 +138,6 @@ trait WithTEEHWbaseConnect {
 
   // The memory port
   val memdevice = Some(new MemoryDevice)
-  (ChildClock zip system.io.ChildClock).foreach{ case (port, sysport) => sysport := port }
-  (ChildReset zip system.io.ChildReset).foreach{ case (port, sysport) => sysport := port }
 
   // The serialized memory port
   (memser zip system.io.memser).foreach{ case (port, sysport) => port <> sysport }
@@ -174,10 +177,28 @@ trait WithTEEHWbaseConnect {
   }
   reset := !rst_n || system.io.ndreset // This connects the debug reset and the general reset together
   system.io.jtag_reset := !jrst_n
+
   // Connecting the SD clock if the clocks are not exposed
   sdramclock.foreach{ sdclk =>
     (system.io.aclocks zip system.sys.namedclocks).filter(_._2.contains("sdramClockGroup")).foreach{ case (aclk, anam) =>
+      println(s"  [BASE] ${anam} attached to the sdramclock")
       aclk := sdclk
+    }
+  }
+
+  // Connecting the MEM clock if the clocks are not exposed
+  ChildClock.foreach{ cclk =>
+    (system.io.aclocks zip system.sys.namedclocks).filter(_._2.contains("mbus")).foreach{ case (aclk, anam) =>
+      println(s"  [BASE] ${anam} attached to the ChildClock")
+      aclk := cclk
+    }
+  }
+
+  // Connecting the RTC clock if the clocks are not exposed
+  RTCclock.foreach{ rtcclk =>
+    (system.io.aclocks zip system.sys.namedclocks).filter(_._2.contains("rtc_clock")).foreach{ case (aclk, anam) =>
+      println(s"  [BASE] ${anam} attached to the RTCclock")
+      aclk := rtcclk
     }
   }
 }
@@ -218,13 +239,18 @@ trait FPGAInternals {
   def memserSourceBits: Option[Int] = outer.get.system.sys.asInstanceOf[HasTEEHWSystemModule].serSourceBits
   def extserSourceBits: Option[Int] = outer.get.system.sys.asInstanceOf[HasTEEHWSystemModule].extSourceBits
   def namedclocks: Seq[String] = outer.get.system.sys.asInstanceOf[HasTEEHWSystemModule].namedclocks
+  def isChildClock = outer.get.isChildClock
+  def isChildReset = false
+  def issdramclock = outer.get.issdramclock
+  def isRTCclock = outer.get.isRTCclock
   // Clocks and resets
-  val ChildClock = p(DDRPortOther).option(IO(Output(Clock())))
-  val ChildReset = p(DDRPortOther).option(IO(Output(Bool())))
+  val ChildClock = isChildClock.option(IO(Output(Clock())))
+  val ChildReset = isChildReset.option(IO(Output(Bool())))
   val sys_clk = IO(Output(Clock()))
   val rst_n = IO(Output(Bool()))
   val jrst_n = IO(Output(Bool()))
   val usbClk = p(PeripheryUSB11HSKey).map(A => IO(Output(Clock())))
+  val RTCclock = isRTCclock.option(IO(Output(Clock())))
   // Memory port serialized
   val memser = p(ExtSerMem).map(A => IO(Flipped(new SerialIO(A.serWidth))))
   // Ext port serialized
@@ -234,12 +260,12 @@ trait FPGAInternals {
   // Asyncrhonoys clocks
   val aclocks = aclkn.map(A => IO(Vec(A, Output(Clock()))))
   // SDRAM clock
-  val sdramclock = outer.get.sdramclock.map(A => IO(Output(Clock())))
+  val sdramclock = isChildClock.option(IO(Output(Clock())))
 
   def connectChipInternals(chip: WithTEEHWbaseShell with WithTEEHWbaseConnect) = {
     (chip.ChildClock zip ChildClock).foreach{ case (a, b) => a := b }
-    (chip.ChildReset zip ChildReset).foreach{ case (a, b) => a := b }
     (chip.sdramclock zip sdramclock).foreach{ case (a, b) => a := b }
+    (chip.RTCclock zip RTCclock).foreach{ case (a, b) => a := b }
     chip.sys_clk := sys_clk
     chip.rst_n := rst_n
     chip.jrst_n := jrst_n
@@ -254,6 +280,28 @@ trait FPGAInternals {
     // USB clock
     (chip.usb11hs zip usbClk).foreach { case (chipport, uclk) =>
       chipport.usbClk := uclk
+    }
+  }
+
+  def DefaultRTC = {
+    // Generalization of the RTC clock. Applies as long as the sys_clk is the DTS
+    val pbusFreq = BigDecimal(p(FreqKeyMHz)*1000000).setScale(0, BigDecimal.RoundingMode.HALF_UP).toBigInt
+    val rtcFreq = p(DTSTimebase)
+    val internalPeriod: BigInt = pbusFreq / rtcFreq
+
+    // check whether pbusFreq >= rtcFreq
+    require(internalPeriod > 0)
+    // check wehther the integer division is within 5% of the real division
+    require((pbusFreq - rtcFreq * internalPeriod) * 100 / pbusFreq <= 5)
+
+    // Use the static period to toggle the RTC
+    chisel3.withClockAndReset(sys_clk, rst_n) {
+      val (_, int_rtc_tick) = Counter(true.B, (internalPeriod/2).toInt)
+      val RTCActualClock = RegInit(false.B)
+      when(int_rtc_tick) {
+        RTCActualClock := !RTCActualClock
+      }
+      RTCclock.foreach(_ := RTCActualClock.asClock())
     }
   }
 }
@@ -285,13 +333,6 @@ class FPGAVCU118(implicit p :Parameters) extends FPGAVCU118Shell()(p)
 // ********************************************************************
 class FPGAArtyA7(implicit p :Parameters) extends FPGAArtyA7Shell()(p)
   with HasTEEHWChip with WithFPGAArtyA7Connect {
-}
-
-// ********************************************************************
-// FPGADE4 - Demo on DE4 FPGA board
-// ********************************************************************
-class FPGADE4(implicit p :Parameters) extends FPGADE4Shell()(p)
-  with HasTEEHWChip with WithFPGADE4Connect {
 }
 
 // ********************************************************************

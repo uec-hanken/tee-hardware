@@ -21,7 +21,7 @@ MBUS?=MBus32
 # Not supported
 BOOTSRC?=QSPI
 PCIE?=WoPCIe
-DDRCLK?=WoSepaDDRClk
+DDRCLK?=NoCrossMBusClk
 SEPARE?=Nothing
 BASE?=MCUConfig
 

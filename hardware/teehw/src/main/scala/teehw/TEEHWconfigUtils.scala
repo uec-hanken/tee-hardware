@@ -32,7 +32,8 @@ case object IncludePCIe extends Field[Boolean](false)
 case object XDMAPCIe extends Field[Option[XDMAParams]](None)
 
 // When external the DDR port, has to run at another freq
-case object DDRPortOther extends Field[Boolean](false)
+// case object DDRPortOther extends Field[Boolean](false) // NOTE: Deprecated
+case object RTCPort extends Field[Boolean](false)
 case class MemorySerialPortParams(master: MasterPortParams, nMemoryChannels: Int, serWidth: Int)
 case object ExtSerMem extends Field[Option[MemorySerialPortParams]](None)
 
