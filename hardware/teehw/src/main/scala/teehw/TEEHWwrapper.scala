@@ -295,7 +295,7 @@ trait FPGAInternals {
     require((pbusFreq - rtcFreq * internalPeriod) * 100 / pbusFreq <= 5)
 
     // Use the static period to toggle the RTC
-    chisel3.withClockAndReset(sys_clk, rst_n) {
+    chisel3.withClockAndReset(sys_clk, !rst_n) {
       val (_, int_rtc_tick) = Counter(true.B, (internalPeriod/2).toInt)
       val RTCActualClock = RegInit(false.B)
       when(int_rtc_tick) {

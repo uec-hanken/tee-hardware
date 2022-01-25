@@ -170,7 +170,8 @@ class FPGAVCU118Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConne
 
       p(SbusToMbusXTypeKey) match {
         case _: AsynchronousCrossing =>
-          println("[Legacy] Quartus Island connected to clk_out2 (10MHz)")
+          println("Shell Island connected to clk_out2 (10MHz)")
+          ChildClock.foreach(_ := pll.io.clk_out2.get)
           mod.clock := pll.io.clk_out2.get
           mod.reset := reset_to_child
         case _ =>

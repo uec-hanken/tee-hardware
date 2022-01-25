@@ -160,6 +160,7 @@ class FPGASakuraXInternal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConn
       p(SbusToMbusXTypeKey) match {
         case _: AsynchronousCrossing =>
           println("Shell Island connected to clk_out2 (10MHz)")
+          ChildClock.foreach(_ := pll.io.clk_out2.get)
           mod.clock := pll.io.clk_out2.get
           mod.reset := reset_to_child
         case _ =>

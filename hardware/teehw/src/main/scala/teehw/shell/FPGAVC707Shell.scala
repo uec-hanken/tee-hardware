@@ -190,11 +190,12 @@ class FPGAVC707Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConnec
 
       p(SbusToMbusXTypeKey) match {
         case _: AsynchronousCrossing =>
-          println("[Legacy] Quartus Island connected to clk_out2 (10MHz)")
-          mod.clock := pll.io.clk_out2.getOrElse(false.B)
+          println("Shell Island connected to clk_out2 (10MHz)")
+          ChildClock.foreach(_ := pll.io.clk_out2.get)
+          mod.clock := pll.io.clk_out2.get
           mod.reset := reset_to_child
         case _ =>
-          mod.clock := pll.io.clk_out1.getOrElse(false.B)
+          mod.clock := pll.io.clk_out1.get
       }
 
       init_calib_complete := mod.io.ddrport.init_calib_complete

@@ -428,6 +428,7 @@ class WSepaMBusClk extends Config((site, here, up) => {
 
 class WRTC extends Config((site, here, up) => {
   case RTCPort => true
+  case DTSTimebase => BigInt(32768) // TODO: Maybe put another configuration for this
 })
 
 class WExposeClk extends Config((site, here, up) => {
