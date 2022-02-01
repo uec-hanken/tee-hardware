@@ -186,9 +186,6 @@ class QSPI extends Config((site, here, up) => {
   case TEEHWResetVector => 0x10040
   case PeripherySPIFlashKey => List(
     SPIFlashParams(fAddress = 0x20000000, rAddress = 0x64005000, defaultSampleDel = 3))
-  // Now, the PeripherySPIKey will have the SPI. Both the MMC(0) and the FLASH(1) may be here.
-  // We need to out only 1 element (Considered the MMC only) if QSPI is here.
-  case PeripherySPIKey => up(PeripherySPIKey).slice(0, 1)
 })
 
 // ************ Chip Peripherals (PERIPHERALS) ************
@@ -305,6 +302,10 @@ class NoSecurityPeripherals extends Config((site, here, up) => {
   case PeripheryNmiGenKey =>
     NmiGenParams(address = BigInt(0x64200000L))
 
+})
+
+class RemoveSPI extends Config((site, here, up) => {
+  case PeripherySPIKey => List()
 })
 
 // *************** Bus configuration (MBUS) ******************
@@ -494,7 +495,6 @@ class VC707Config extends Config((site,here,up) => {
     MaskROMParams(address = BigInt(0x20000000), depth = 0x4000, name = "BootROM"))
   case TEEHWResetVector => 0x20000000
   case PeripherySPIFlashKey => List() // disable SPIFlash
-  case PeripherySPIKey => up(PeripherySPIKey).slice(0, 1) // Disable SPIFlash, even if is the backup
   case PeripheryRandomKey => up(PeripheryRandomKey, site) map {r =>
     r.copy(board = "Xilinx")
   }
@@ -553,7 +553,6 @@ class SakuraXConfig extends Config((site,here,up) => {
   case SDCardMHz => 5.0
   case TEEHWResetVector => 0x20000000
   case PeripherySPIFlashKey => List() // disable SPIFlash
-  case PeripherySPIKey => up(PeripherySPIKey).slice(0, 1) // Disable SPIFlash, even if is the backup
   case PeripheryRandomKey => up(PeripheryRandomKey, site) map {r =>
     r.copy(board = "Xilinx")
   }

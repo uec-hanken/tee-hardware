@@ -8,6 +8,7 @@ import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.util._
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.tilelink._
+import sifive.blocks.devices.spi._
 import sifive.fpgashells.clocks._
 import sifive.fpgashells.ip.xilinx._
 import sifive.fpgashells.ip.xilinx.arty100tmig._
@@ -321,26 +322,32 @@ trait WithFPGAArtyA7Connect {
   chip.jrst_n := IOBUF(jd_6)
   PULLUP(jd_6)
 
-  // QSPI (assuming only one)
-  chip.qspi.foreach{ qspi =>
-    IOBUF(qspi_sck, qspi.qspi_sck)
-    IOBUF(qspi_cs,  qspi.qspi_cs(0))
+  // QSPI
+  (chip.qspi zip chip.allspicfg).zipWithIndex.foreach {
+    case ((qspiport: TEEHWQSPIBundle, _: SPIParams), i: Int) =>
+      if (i == 0) {
+        // SD IO
+        IOBUF(ja_0, qspiport.qspi_cs(0))
+        IOBUF(ja_1, qspiport.qspi_mosi)
+        qspiport.qspi_miso := IOBUF(ja_2)
+        IOBUF(ja_3, qspiport.qspi_sck)
+      } else {
+        // Non-valid qspi. Just zero it
+        qspiport.qspi_miso := false.B
+      }
+    case ((qspiport: TEEHWQSPIBundle, _: SPIFlashParams), _: Int) =>
+      IOBUF(qspi_sck, qspiport.qspi_sck)
+      IOBUF(qspi_cs,  qspiport.qspi_cs(0))
 
-    IOBUF(qspi_dq(0), qspi.qspi_mosi)
-    qspi.qspi_miso := IOBUF(qspi_dq(1))
-    IOBUF(qspi_dq(2), qspi.qspi_wp)
-    IOBUF(qspi_dq(3), qspi.qspi_hold)
+      IOBUF(qspi_dq(0), qspiport.qspi_mosi)
+      qspiport.qspi_miso := IOBUF(qspi_dq(1))
+      IOBUF(qspi_dq(2), true.B)
+      IOBUF(qspi_dq(3), true.B)
   }
 
   // UART
   chip.uart_rxd := IOBUF(uart_txd_in)	  // UART_TXD
   IOBUF(uart_rxd_out, chip.uart_txd) 	  // UART_RXD
-
-  // SD IO
-  IOBUF(ja_0, chip.sdio.sdio_dat_3)
-  IOBUF(ja_1, chip.sdio.sdio_cmd)
-  chip.sdio.sdio_dat_0 := IOBUF(ja_2)
-  IOBUF(ja_3, chip.sdio.sdio_clk)
 
   // USB phy connections
   // TODO: Not possible to create the 48MHz

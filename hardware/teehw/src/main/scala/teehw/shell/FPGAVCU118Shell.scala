@@ -9,6 +9,7 @@ import chipsalliance.rocketchip.config.Parameters
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.tilelink._
 import sifive.blocks.devices.gpio.PeripheryGPIOKey
+import sifive.blocks.devices.spi.{SPIFlashParams, SPIParams}
 import sifive.fpgashells.clocks._
 import sifive.fpgashells.devices.xilinx.xilinxvc707pciex1._
 import uec.teehardware._
@@ -29,18 +30,24 @@ trait FPGAVCU118ChipShell {
     val jtag_TCK = (Input(Bool())) // J53.2
     val jtag_TMS = (Input(Bool())) // J53.4
   })
-  val sdio = IO(new Bundle {
-    val sdio_clk = (Output(Bool())) // J52.7
-    val sdio_cmd = (Output(Bool())) // J52.3
-    val sdio_dat_0 = (Input(Bool())) // J52.5
-    val sdio_dat_1 = (Analog(1.W)) // J52.2
-    val sdio_dat_2 = (Analog(1.W)) // J52.4
-    val sdio_dat_3 = (Output(Bool())) // J52.1
-  })
+  val sdio = IO(new TEEHWSDBundle)
+  //  val sdio_clk = (Output(Bool())) // J52.7
+  //  val sdio_cmd = (Output(Bool())) // J52.3
+  //  val sdio_dat_0 = (Input(Bool())) // J52.5
+  //  val sdio_dat_1 = (Analog(1.W)) // J52.2
+  //  val sdio_dat_2 = (Analog(1.W)) // J52.4
+  //  val sdio_dat_3 = (Output(Bool())) // J52.1
   val uart_txd = IO(Output(Bool()))
   val uart_rxd = IO(Input(Bool()))
 
-  var qspi: Option[TEEHWQSPIBundle] = None
+  val qspi = IO(new Bundle { // TODO: Better to expose the whole port
+    val qspi_cs = Analog(1.W)
+    val qspi_sck = Analog(1.W)
+    val qspi_miso = Analog(1.W)
+    val qspi_mosi = Analog(1.W)
+    val qspi_wp = Analog(1.W)
+    val qspi_hold = Analog(1.W)
+  })
 
   val USB = p(PeripheryUSB11HSKey).map { _ =>
     IO(new Bundle {
@@ -267,12 +274,9 @@ trait WithFPGAVCU118Connect {
   gpio_out := Cat(chip.gpio_out(chip.gpio_out.getWidth-1, 1), intern.init_calib_complete)
   chip.gpio_in := gpio_in
   jtag <> chip.jtag
-  qspi = chip.qspi.map(A => IO ( new TEEHWQSPIBundle(A.csWidth) ) )
-  (chip.qspi zip qspi).foreach { case (sysqspi, portspi) => portspi <> sysqspi}
   chip.jtag.jtag_TCK := IBUFG(jtag.jtag_TCK.asClock).asUInt
   chip.uart_rxd := uart_rxd	  // UART_TXD
   uart_txd := chip.uart_txd 	// UART_RXD
-  sdio <> chip.sdio
 
   // USB phy connections
   ((chip.usb11hs zip USB) zip intern.usbClk).foreach{ case ((chipport, port), uclk) =>
@@ -282,6 +286,26 @@ trait WithFPGAVCU118Connect {
     port.WireDataOut := chipport.USBWireDataOut
 
     chipport.usbClk := uclk
+  }
+
+  // QSPI
+  (chip.qspi zip chip.allspicfg).zipWithIndex.foreach {
+    case ((qspiport: TEEHWQSPIBundle, _: SPIParams), i: Int) =>
+      if (i == 0) {
+        // SD IO
+        sdio.connectFrom(qspiport)
+      } else {
+        // Non-valid qspi. Just zero it
+        qspiport.qspi_miso := false.B
+      }
+    case ((qspiport: TEEHWQSPIBundle, _: SPIFlashParams), _: Int) =>
+      IOBUF(qspi.qspi_sck, qspiport.qspi_sck)
+      IOBUF(qspi.qspi_cs,  qspiport.qspi_cs(0))
+
+      IOBUF(qspi.qspi_mosi, qspiport.qspi_mosi)
+      qspiport.qspi_miso := IOBUF(qspi.qspi_miso)
+      IOBUF(qspi.qspi_wp, true.B)
+      IOBUF(qspi.qspi_hold, true.B)
   }
 
   // PCIe (if available)

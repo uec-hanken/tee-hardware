@@ -196,20 +196,20 @@ trait HasTEEHWSystem
   }
   val spiNodes = spiDevs.map { ps => ps.ioNode.makeSink() } // TODO: Put the Isolated ones here also
 
-  spiDevs.zipWithIndex.foreach { case (ps, i) =>
-    i match {
-      case 0 => {
-        val mmc = new MMCDevice(ps.device, p(SDCardMHz)) // Only the first one is mmc
-        ResourceBinding {
-          Resource(mmc, "reg").bind(ResourceAddress(0))
-        }
-      }
-      case 1 => {
+  (spiDevs zip allspicfg).zipWithIndex.foreach { case ((ps, cfg), i) =>
+    cfg match {
+      case _ : SPIFlashParams =>
         val flash = new FlashDevice(ps.device, maxMHz = p(QSPICardMHz))
         ResourceBinding {
           Resource(flash, "reg").bind(ResourceAddress(0))
         }
-      }
+      case _ : SPIParams =>
+        if(i == 0) { // Only the first one is mmc
+          val mmc = new MMCDevice(ps.device, p(SDCardMHz))
+          ResourceBinding {
+            Resource(mmc, "reg").bind(ResourceAddress(0))
+          }
+        }
       case _ =>
     }
     //tlclock.bind(ps.device)

@@ -9,6 +9,7 @@ import freechips.rocketchip.util._
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.tilelink._
 import sifive.blocks.devices.gpio.PeripheryGPIOKey
+import sifive.blocks.devices.spi.{SPIFlashParams, SPIParams}
 import sifive.fpgashells.clocks._
 import sifive.fpgashells.devices.xilinx.xilinxvc707pciex1._
 import sifive.fpgashells.ip.xilinx._
@@ -493,10 +494,8 @@ trait WithFPGASakuraXPureConnect {
   PULLUP(K_HEADER(2))
   chip.uart_rxd := IOBUF(K_HEADER(1))
   IOBUF(K_HEADER(0), chip.uart_txd)
-  IOBUF(K_HEADER(6), chip.sdio.sdio_clk)
-  IOBUF(K_HEADER(7), chip.sdio.sdio_cmd)
-  chip.sdio.sdio_dat_0 := IOBUF(K_HEADER(8))
-  IOBUF(K_HEADER(9), chip.sdio.sdio_dat_3)
+
+
 
   // Connected to K_FMC
   chip.usb11hs.foreach{ case chipport =>
@@ -510,13 +509,26 @@ trait WithFPGASakuraXPureConnect {
     ConnectFMCLPCXilinxGPIO.debug(1, 6, chipport.USBFullSpeed, false, K_FMC)
   }
 
-  chip.qspi.foreach { case qspi =>
-    ConnectFMCLPCXilinxGPIO.debug(1, 7, qspi.qspi_cs(0), false, K_FMC)
-    ConnectFMCLPCXilinxGPIO.debug(1, 8, qspi.qspi_sck, false, K_FMC)
-    ConnectFMCLPCXilinxGPIO.debug(1, 9, qspi.qspi_miso, true, K_FMC)
-    ConnectFMCLPCXilinxGPIO.debug(1, 10, qspi.qspi_mosi, false, K_FMC)
-    ConnectFMCLPCXilinxGPIO.debug(1, 11, qspi.qspi_wp, false, K_FMC)
-    ConnectFMCLPCXilinxGPIO.debug(1, 12, qspi.qspi_hold, false, K_FMC)
+  // QSPI
+  (chip.qspi zip chip.allspicfg).zipWithIndex.foreach {
+    case ((qspiport: TEEHWQSPIBundle, _: SPIParams), i: Int) =>
+      if (i == 0) {
+        // SD IO
+        IOBUF(K_HEADER(6), qspiport.qspi_sck)
+        IOBUF(K_HEADER(7), qspiport.qspi_mosi)
+        qspiport.qspi_miso := IOBUF(K_HEADER(8))
+        IOBUF(K_HEADER(9), qspiport.qspi_cs(0))
+      } else {
+        // Non-valid qspi. Just zero it
+        qspiport.qspi_miso := false.B
+      }
+    case ((qspi: TEEHWQSPIBundle, _: SPIFlashParams), _: Int) =>
+      ConnectFMCLPCXilinxGPIO.debug(1, 7, qspi.qspi_cs(0), false, K_FMC)
+      ConnectFMCLPCXilinxGPIO.debug(1, 8, qspi.qspi_sck, false, K_FMC)
+      ConnectFMCLPCXilinxGPIO.debug(1, 9, qspi.qspi_miso, true, K_FMC)
+      ConnectFMCLPCXilinxGPIO.debug(1, 10, qspi.qspi_mosi, false, K_FMC)
+      ConnectFMCLPCXilinxGPIO.debug(1, 11, true.B, false, K_FMC)
+      ConnectFMCLPCXilinxGPIO.debug(1, 12, true.B, false, K_FMC)
   }
 
   // TODO Nullify this for now

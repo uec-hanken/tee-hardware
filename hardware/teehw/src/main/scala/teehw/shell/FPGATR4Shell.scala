@@ -8,6 +8,7 @@ import freechips.rocketchip.util._
 import chipsalliance.rocketchip.config.Parameters
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.tilelink._
+import sifive.blocks.devices.spi.{SPIFlashParams, SPIParams}
 import uec.teehardware.macros._
 import uec.teehardware._
 import uec.teehardware.devices.sdram.SDRAMKey
@@ -344,10 +345,27 @@ trait WithFPGATR4PureConnect {
   ALT_IOBUF(GPIO1_D(10), chip.jtag.jtag_TDO)
   chip.uart_rxd := ALT_IOBUF(GPIO1_D(35))	// UART_TXD
   ALT_IOBUF(GPIO1_D(34), chip.uart_txd) // UART_RXD
-  ALT_IOBUF(GPIO0_D(28), chip.sdio.sdio_clk)
-  ALT_IOBUF(GPIO0_D(30), chip.sdio.sdio_cmd)
-  chip.sdio.sdio_dat_0 := ALT_IOBUF(GPIO0_D(32))
-  ALT_IOBUF(GPIO0_D(34), chip.sdio.sdio_dat_3)
+
+
+  // QSPI
+  (chip.qspi zip chip.allspicfg).zipWithIndex.foreach {
+    case ((qspiport: TEEHWQSPIBundle, _: SPIParams), i: Int) =>
+      if (i == 0) {
+        // SD IO
+        ALT_IOBUF(GPIO0_D(28), qspiport.qspi_sck)
+        ALT_IOBUF(GPIO0_D(30), qspiport.qspi_mosi)
+        qspiport.qspi_miso := ALT_IOBUF(GPIO0_D(32))
+        ALT_IOBUF(GPIO0_D(34), qspiport.qspi_cs(0))
+      } else {
+        // Non-valid qspi. Just zero it
+        qspiport.qspi_miso := false.B
+      }
+    case ((qspiport: TEEHWQSPIBundle, _: SPIFlashParams), _: Int) =>
+      qspiport.qspi_miso := ALT_IOBUF(GPIO1_D(1))
+      ALT_IOBUF(GPIO1_D(3), qspiport.qspi_mosi)
+      ALT_IOBUF(GPIO1_D(5), qspiport.qspi_cs(0))
+      ALT_IOBUF(GPIO1_D(7), qspiport.qspi_sck)
+  }
   
   // USB phy connections
   chip.usb11hs.foreach{ case chipport=>
@@ -356,13 +374,6 @@ trait WithFPGATR4PureConnect {
     ALT_IOBUF(GPIO1_D(28), chipport.USBWireCtrlOut)
     ALT_IOBUF(GPIO1_D(16), chipport.USBWireDataOut(0))
     ALT_IOBUF(GPIO1_D(18), chipport.USBWireDataOut(1))
-  }
-
-  chip.qspi.foreach{A =>
-    A.qspi_miso := ALT_IOBUF(GPIO1_D(1))
-    ALT_IOBUF(GPIO1_D(3), A.qspi_mosi)
-    ALT_IOBUF(GPIO1_D(5), A.qspi_cs(0))
-    ALT_IOBUF(GPIO1_D(7), A.qspi_sck)
   }
 
   // TODO Nullify this for now

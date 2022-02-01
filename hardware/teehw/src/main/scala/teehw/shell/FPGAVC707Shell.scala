@@ -8,6 +8,7 @@ import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.util._
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.tilelink._
+import sifive.blocks.devices.spi._
 import sifive.blocks.devices.gpio.PeripheryGPIOKey
 import sifive.fpgashells.clocks._
 import sifive.fpgashells.devices.xilinx.xilinxvc707pciex1._
@@ -48,14 +49,7 @@ trait FPGAVC707ChipShell {
     val jtag_TCK = (Input(Bool())) // J19_19 / XADC_GPIO_3
     val jtag_TMS = (Input(Bool())) // J19_18 / XADC_GPIO_0
   })
-  val sdio = IO(new Bundle {
-    val sdio_clk = (Output(Bool()))
-    val sdio_cmd = (Output(Bool()))
-    val sdio_dat_0 = (Input(Bool()))
-    val sdio_dat_1 = (Analog(1.W))
-    val sdio_dat_2 = (Analog(1.W))
-    val sdio_dat_3 = (Output(Bool()))
-  })
+  val sdio = IO(new TEEHWSDBundle)
   val uart_txd = IO(Output(Bool()))
   val uart_rxd = IO(Input(Bool()))
 
@@ -711,7 +705,6 @@ trait WithFPGAVC707PureConnect {
   chip.jtag.jtag_TCK := IBUFG(jtag.jtag_TCK.asClock).asUInt
   chip.uart_rxd := uart_rxd	  // UART_TXD
   uart_txd := chip.uart_txd 	// UART_RXD
-  sdio <> chip.sdio
 
   // Connected to MISCPORT
   chip.usb11hs.foreach{ case chipport =>
@@ -725,13 +718,23 @@ trait WithFPGAVC707PureConnect {
     ConnectFMCXilinxGPIO.debug(1, 6, chipport.USBFullSpeed, false, MISCPORT)
   }
 
-  chip.qspi.foreach { case qspi =>
-    ConnectFMCXilinxGPIO.debug(1, 7, qspi.qspi_cs(0), false, MISCPORT)
-    ConnectFMCXilinxGPIO.debug(1, 8, qspi.qspi_sck, false, MISCPORT)
-    ConnectFMCXilinxGPIO.debug(1, 9, qspi.qspi_miso, true, MISCPORT)
-    ConnectFMCXilinxGPIO.debug(1, 10, qspi.qspi_mosi, false, MISCPORT)
-    ConnectFMCXilinxGPIO.debug(1, 11, qspi.qspi_wp, false, MISCPORT)
-    ConnectFMCXilinxGPIO.debug(1, 12, qspi.qspi_hold, false, MISCPORT)
+  // QSPI
+  (chip.qspi zip chip.allspicfg).zipWithIndex.foreach {
+    case ((qspiport: TEEHWQSPIBundle, _: SPIParams), i: Int) =>
+      if (i == 0) {
+        // SD IO
+        sdio.connectFrom(qspiport)
+      } else {
+        // Non-valid qspi. Just zero it
+        qspiport.qspi_miso := false.B
+      }
+    case ((qspi: TEEHWQSPIBundle, _: SPIFlashParams), _: Int) =>
+      ConnectFMCXilinxGPIO.debug(1, 7, qspi.qspi_cs(0), false, MISCPORT)
+      ConnectFMCXilinxGPIO.debug(1, 8, qspi.qspi_sck, false, MISCPORT)
+      ConnectFMCXilinxGPIO.debug(1, 9, qspi.qspi_miso, true, MISCPORT)
+      ConnectFMCXilinxGPIO.debug(1, 10, qspi.qspi_mosi, false, MISCPORT)
+      ConnectFMCXilinxGPIO.debug(1, 11, true.B, false, MISCPORT)
+      ConnectFMCXilinxGPIO.debug(1, 12, true.B, false, MISCPORT)
   }
 
   // TODO Nullify this for now

@@ -6,6 +6,7 @@ import chisel3.experimental.{Analog, IO, attach}
 import freechips.rocketchip.diplomacy.LazyModule
 import freechips.rocketchip.util.ResetCatchAndSync
 import chipsalliance.rocketchip.config.Parameters
+import sifive.blocks.devices.spi.{SPIFlashParams, SPIParams}
 import uec.teehardware.devices.sdram._
 import uec.teehardware.macros._
 import uec.teehardware._
@@ -145,17 +146,27 @@ trait WithFPGADE2Connect {
   chip.jtag.jtag_TMS := ALT_IOBUF(GPIO(2))
   chip.jtag.jtag_TCK := ALT_IOBUF(GPIO(4))
   ALT_IOBUF(GPIO(6), chip.jtag.jtag_TDO)
-  chip.qspi.foreach{A =>
-    A.qspi_miso := ALT_IOBUF(GPIO(1))
-    ALT_IOBUF(GPIO(3), A.qspi_mosi)
-    ALT_IOBUF(GPIO(5), A.qspi_cs(0))
-    ALT_IOBUF(GPIO(7), A.qspi_sck)
+
+  // QSPI
+  (chip.qspi zip chip.allspicfg).zipWithIndex.foreach {
+    case ((qspiport: TEEHWQSPIBundle, _: SPIParams), i: Int) =>
+      if (i == 0) {
+        // SD IO
+        ALT_IOBUF(SD_CLK, qspiport.qspi_sck)
+        ALT_IOBUF(SD_CMD, qspiport.qspi_mosi)
+        qspiport.qspi_miso := ALT_IOBUF(SD_DAT(0))
+        ALT_IOBUF(SD_DAT(3), qspiport.qspi_cs(0))
+      } else {
+        // Non-valid qspi. Just zero it
+        qspiport.qspi_miso := false.B
+      }
+    case ((qspiport: TEEHWQSPIBundle, _: SPIFlashParams), _: Int) =>
+      qspiport.qspi_miso := ALT_IOBUF(GPIO(1))
+      ALT_IOBUF(GPIO(3), qspiport.qspi_mosi)
+      ALT_IOBUF(GPIO(5), qspiport.qspi_cs(0))
+      ALT_IOBUF(GPIO(7), qspiport.qspi_sck)
   }
 
   chip.uart_rxd := ALT_IOBUF(GPIO(8))
   ALT_IOBUF(GPIO(10), chip.uart_txd)
-  ALT_IOBUF(SD_CLK, chip.sdio.sdio_clk)
-  ALT_IOBUF(SD_CMD, chip.sdio.sdio_cmd)
-  chip.sdio.sdio_dat_0 := ALT_IOBUF(SD_DAT(0))
-  ALT_IOBUF(SD_DAT(3), chip.sdio.sdio_dat_3)
 }

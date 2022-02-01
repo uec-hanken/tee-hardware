@@ -30,8 +30,22 @@ class TEEHWQSPIBundle(val csWidth: Int = 1) extends Bundle {
   val qspi_sck = (Output(Bool()))
   val qspi_miso = (Input(Bool()))
   val qspi_mosi = (Output(Bool()))
-  val qspi_wp = (Output(Bool()))
-  val qspi_hold = (Output(Bool()))
+}
+
+// Deprecated SD bundle
+class TEEHWSDBundle extends Bundle {
+  val sdio_clk = (Output(Bool()))
+  val sdio_cmd = (Output(Bool()))
+  val sdio_dat_0 = (Input(Bool()))
+  val sdio_dat_1 = (Analog(1.W))
+  val sdio_dat_2 = (Analog(1.W))
+  val sdio_dat_3 = (Output(Bool()))
+  def connectFrom(from: TEEHWQSPIBundle) = {
+    sdio_clk := from.qspi_sck
+    sdio_dat_3 := from.qspi_cs(0)
+    from.qspi_miso := sdio_dat_0
+    sdio_cmd := from.qspi_mosi
+  }
 }
 
 class  WithTEEHWbaseShell(implicit val p :Parameters) extends RawModule {
@@ -44,14 +58,8 @@ class  WithTEEHWbaseShell(implicit val p :Parameters) extends RawModule {
     val jtag_TCK = (Input(Bool()))
     val jtag_TMS = (Input(Bool()))
   })
-  val sdio = IO(new Bundle {
-    val sdio_clk = (Output(Bool()))
-    val sdio_cmd = (Output(Bool()))
-    val sdio_dat_0 = (Input(Bool()))
-    val sdio_dat_1 = (Analog(1.W))
-    val sdio_dat_2 = (Analog(1.W))
-    val sdio_dat_3 = (Output(Bool()))
-  })
+  def allspicfg = p(PeripherySPIKey) ++ p(PeripherySPIFlashKey) ++ p(DummySPIFlashKey)
+  val qspi = IO(MixedVec( allspicfg.map{cfg => new TEEHWQSPIBundle(cfg.csWidth)} ))
   val uart_txd = IO(Output(Bool()))
   val uart_rxd = IO(Input(Bool()))
   val usb11hs = p(PeripheryUSB11HSKey).map{ _ => IO(new USB11HSPortIO)}
@@ -77,7 +85,6 @@ class  WithTEEHWbaseShell(implicit val p :Parameters) extends RawModule {
   val isRTCclock = !p(ExposeClocks) && p(RTCPort)
   val RTCclock = isRTCclock.option(IO(Input(Clock())))
   // An option to dynamically assign
-  var qspi: Option[TEEHWQSPIBundle] = None // QSPI gets added progresively using both PeripherySPIKey and PeripherySPIFlashKey
   var aclocks: Option[Vec[Clock]] = None // Async clocks depends on a node of clocks named "globalClocksNode"
   var tlport: Option[TLUL] = None // The TL port depends of a node, and a edge, for parameters
 }
@@ -110,24 +117,15 @@ trait WithTEEHWbaseConnect {
   BasePinToRegular(system.io.pins.jtag.TDI, jtag.jtag_TDI)
   jtag.jtag_TDO := BasePinToRegular(system.io.pins.jtag.TDO)
 
-  // QSPI (SPI as flash memory)
-  qspi = (system.io.pins.spi.size >= 2).option( IO ( new TEEHWQSPIBundle(system.io.pins.spi(1).cs.size) ) )
-  qspi.foreach { portspi =>
-    portspi.qspi_cs := BasePinToRegular(system.io.pins.spi(1).cs.head)
-    portspi.qspi_sck := BasePinToRegular(system.io.pins.spi(1).sck)
-    portspi.qspi_mosi := BasePinToRegular(system.io.pins.spi(1).dq(0))
-    BasePinToRegular(system.io.pins.spi(1).dq(1), portspi.qspi_miso)
-    portspi.qspi_wp := BasePinToRegular(system.io.pins.spi(1).dq(2))
-    portspi.qspi_hold := BasePinToRegular(system.io.pins.spi(1).dq(3))
+  // QSPI
+  (qspi zip system.io.pins.spi).foreach {case (portspi, sys) =>
+    portspi.qspi_cs  := VecInit(sys.cs.map(BasePinToRegular(_))).asUInt()
+    portspi.qspi_sck := BasePinToRegular(sys.sck)
+    portspi.qspi_mosi := BasePinToRegular(sys.dq(0))
+    BasePinToRegular(sys.dq(1), portspi.qspi_miso)
+    BasePinToRegular(sys.dq(2))
+    BasePinToRegular(sys.dq(3))
   }
-
-  // SPI (SPI as SD?)
-  sdio.sdio_dat_3 := BasePinToRegular(system.io.pins.spi(0).cs.head)
-  sdio.sdio_clk := BasePinToRegular(system.io.pins.spi(0).sck)
-  sdio.sdio_cmd := BasePinToRegular(system.io.pins.spi(0).dq(0))
-  BasePinToRegular(system.io.pins.spi(0).dq(1), sdio.sdio_dat_0)
-  BasePinToRegular(system.io.pins.spi(0).dq(2)) // Ignored
-  BasePinToRegular(system.io.pins.spi(0).dq(3)) // Ignored
 
   // UART
   BasePinToRegular(system.io.pins.uart.rxd, uart_rxd)
