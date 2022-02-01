@@ -225,12 +225,14 @@ class MCUWithLinuxConfig extends Config(
     new BaseConfig().alter((site,here,up) => {
       case BootROMLocated(InSubsystem) => None // No BootROM.
       case SystemBusKey => up(SystemBusKey).copy(
+        beatBytes = site(XLen)/8,
         errorDevice = Some(BuiltInErrorDeviceParams(DevNullParams(
           Seq(AddressSet(0x4000, 0xfff)),
           maxAtomic=site(XLen)/8,
           maxTransfer=128,
           region = RegionType.TRACKED))))
       case PeripheryBusKey => up(PeripheryBusKey, site).copy(
+        beatBytes = site(XLen)/8,
         dtsFrequency = Some(BigDecimal(site(FreqKeyMHz)*1000000).setScale(0, BigDecimal.RoundingMode.HALF_UP).toBigInt),
         errorDevice = None)
       case CryptoBusKey => CryptoBusParams(
@@ -252,9 +254,14 @@ class MCUConfig extends Config(
     new WithMulticlockIncoherentBusTopology ++
     new BaseConfig().alter((site,here,up) => {
       case BootROMLocated(InSubsystem) => None // No BootROM.
-      case SystemBusKey => up(SystemBusKey).copy(errorDevice = None)
-      case ControlBusKey => up(ControlBusKey).copy(errorDevice = None)
+      case SystemBusKey => up(SystemBusKey).copy(
+        beatBytes = site(XLen)/8,
+        errorDevice = None)
+      case ControlBusKey => up(ControlBusKey).copy(
+        beatBytes = site(XLen)/8,
+        errorDevice = None)
       case PeripheryBusKey => up(PeripheryBusKey, site).copy(
+        beatBytes = site(XLen)/8,
         dtsFrequency = Some(BigDecimal(site(FreqKeyMHz)*1000000).setScale(0, BigDecimal.RoundingMode.HALF_UP).toBigInt),
         errorDevice = None)
       case CryptoBusKey => CryptoBusParams(

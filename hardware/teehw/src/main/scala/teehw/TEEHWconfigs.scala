@@ -83,6 +83,8 @@ class MicroCached extends Config ((site, here, up) => {
       btb = None,
       dcache = r.dcache map {d =>
         d.copy(
+          rowBits = site(SystemBusKey).beatBits,
+          blockBytes = site(CacheBlockBytes),
           nSets = 64, // 2Kb cache
           nWays = 1,
           nTLBSets = 1,
@@ -92,6 +94,8 @@ class MicroCached extends Config ((site, here, up) => {
       },
       icache = r.icache map {i =>
         i.copy(
+          rowBits = site(SystemBusKey).beatBits,
+          blockBytes = site(CacheBlockBytes),
           nSets = 64, // 2Kb cache
           nWays = 1,
           nTLBSets = 1,
@@ -109,6 +113,8 @@ class Micro extends Config ((site, here, up) => {
         icache = None,
         dcache = i.tileParams.dcache map { d =>
           d.copy(
+            rowBits = site(SystemBusKey).beatBits,
+            blockBytes = site(CacheBlockBytes),
             nSets = 64, // 4Kb scratchpad
             nWays = 1,
             nTLBSets = 1,
@@ -135,6 +141,8 @@ class Micro extends Config ((site, here, up) => {
       btb = None,
       dcache = r.dcache map { d =>
         d.copy(
+          rowBits = site(SystemBusKey).beatBits,
+          blockBytes = site(CacheBlockBytes),
           nSets = 64, // 4Kb scratchpad
           nWays = 1,
           nTLBSets = 1,
@@ -144,6 +152,8 @@ class Micro extends Config ((site, here, up) => {
         )},
       icache = r.icache map {i =>
         i.copy(
+          rowBits = site(SystemBusKey).beatBits,
+          blockBytes = site(CacheBlockBytes),
           nSets = 32, // 2Kb cache
           nWays = 1,
           nTLBSets = 1,
