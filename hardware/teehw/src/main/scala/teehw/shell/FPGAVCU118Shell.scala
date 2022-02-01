@@ -113,7 +113,7 @@ class FPGAVCU118Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConne
     pll.io.reset := reset_0
 
     val aresetn = !reset_0 // Reset that goes to the MMCM inside of the DDR MIG
-    val sys_rst = ResetCatchAndSync(pll.io.clk_out3.get, !pll.io.locked) // Catched system clock
+    val sys_rst = ResetCatchAndSync(pll.io.clk_out1.get, !pll.io.locked) // Catched system clock
     val reset_to_sys = WireInit(!pll.io.locked) // If DDR is not present, this is the system reset
     val reset_to_child = WireInit(!pll.io.locked) // If DDR is not present, this is the child reset
     pll.io.clk_out2.foreach(reset_to_child := ResetCatchAndSync(_, !pll.io.locked))
