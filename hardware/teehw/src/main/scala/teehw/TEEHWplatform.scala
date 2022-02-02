@@ -613,7 +613,7 @@ object TEEHWPlatform {
     (sys.extSerPorts zip io.extser).foreach { case(sysport, ioport) => ioport <> sysport }
 
     // SDRAM
-    (io.sdram zip sys.sdramio).map{case (port, sys) => port <> sys}
+    (io.sdram zip sys.sdramio).foreach{case (port, sys) => port <> sys}
 
     // Connect the USB to the outside (only the first one)
     (sys.usb11hs zip io.usb11hs).foreach{ case (sysusb, usbport) => sysusb <> usbport }
