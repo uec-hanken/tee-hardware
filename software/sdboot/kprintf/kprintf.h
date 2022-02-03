@@ -21,7 +21,7 @@ static volatile uint32_t * const uart = (void *)(UART_CTRL_ADDR);
 static inline void kputc(char c)
 {
 	volatile uint32_t *tx = &REG32(uart, UART_REG_TXFIFO);
-#ifdef __riscv_atomic
+#if 0 //def __riscv_atomic
 	int32_t r;
 	do {
 		__asm__ __volatile__ (

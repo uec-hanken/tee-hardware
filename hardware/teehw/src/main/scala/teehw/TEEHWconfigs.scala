@@ -52,6 +52,27 @@ class RV64IMAC extends Config((site, here, up) => {
   }
 })
 
+class RV32GC extends Config((site, here, up) => {
+  case XLen => 32
+})
+
+class RV32IMAC extends Config((site, here, up) => {
+  case XLen => 32
+  case TilesLocated(InSubsystem) => up(TilesLocated(InSubsystem), site) map {
+    case r: RocketTileAttachParams => r.copy(tileParams = r.tileParams.copy(core = r.tileParams.core.copy(fpu = None)))
+    case b: BoomTileAttachParams => b.copy(
+      tileParams = b.tileParams.copy(
+        core = b.tileParams.core.copy(
+          fpu = None,
+          issueParams = b.tileParams.core.issueParams.filter(_.iqType != IQT_FP.litValue))))
+    case other => other
+  }
+  // Do it also in this key.. just because
+  case RocketTilesKey => up(RocketTilesKey, site) map { r =>
+    r.copy(core = r.core.copy(fpu = None))
+  }
+})
+
 // ************ Hybrid core configurations (HYBRID) **************
 
 //Only Rocket: 2 cores
@@ -306,6 +327,11 @@ class NoSecurityPeripherals extends Config((site, here, up) => {
 
 class RemoveSPI extends Config((site, here, up) => {
   case PeripherySPIKey => List()
+})
+
+class WithSHA3 extends Config((site, here, up) => {
+  case PeripherySHA3Key => List(
+    SHA3Params(address = BigInt(0x64003000L)))
 })
 
 // *************** Bus configuration (MBUS) ******************

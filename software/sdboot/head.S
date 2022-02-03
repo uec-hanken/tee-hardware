@@ -21,4 +21,6 @@ _prog_start:
 
   .section .rodata
 dtb:
+#ifdef DEVICE_TREE
   .incbin DEVICE_TREE
+#endif
