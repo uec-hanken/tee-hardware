@@ -334,6 +334,11 @@ class WithSHA3 extends Config((site, here, up) => {
     SHA3Params(address = BigInt(0x64003000L)))
 })
 
+class WithAES extends Config((site, here, up) => {
+  case PeripheryAESKey => List(
+    AESParams(address = BigInt(0x64007000L)))
+})
+
 // *************** Bus configuration (MBUS) ******************
 
 class MBus32 extends Config((site, here, up) => {
