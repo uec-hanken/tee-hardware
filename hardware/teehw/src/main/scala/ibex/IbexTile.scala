@@ -272,7 +272,7 @@ class IbexTileModuleImp(outer: IbexTile) extends BaseTileModuleImp(outer){
   val core = Module(new IbexBlackbox(
     PMPEnable = outer.ibexParams.core.nPMPs != 0,
     PMPGranularity = outer.ibexParams.core.pmpGranularity,
-    PMPNumRegions = outer.ibexParams.core.nPMPs,
+    PMPNumRegions = if(outer.ibexParams.core.nPMPs == 0) 1 else outer.ibexParams.core.nPMPs,
     MHPMCounterNum = outer.ibexParams.core.nPerfCounters,
     MHPMCounterWidth = 32,
     RV32E = outer.ibexParams.core.useRVE,
