@@ -97,7 +97,7 @@ class WithNIbexSmallCacheSecureCores(n: Int, overrideIdOffset: Option[Int] = Non
             blockBytes = 4,
             scratch = Some(0x64300000L))
           ),
-          core = IbexCoreParams(SecureIbex = true, nPMPs = 0, RV32M = 0)
+          core = IbexCoreParams(SecureIbex = true, nPMPs = 0, RV32M = 1)
         ),
         crossingParams = RocketCrossingParams()
       )} ++ prev

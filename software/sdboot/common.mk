@@ -36,8 +36,11 @@ ifneq ($(clk),)
 INCLUDE_CLK_CFLAG:=-include $(clk)
 endif
 
+ifeq ($(all_src),)
+all_src:=$(teehw_sdboot)/head.S $(teehw_sdboot)/kprintf/kprintf.c $(CSRC)
+endif
+
 # ELF rules
-all_src := $(teehw_sdboot)/head.S $(teehw_sdboot)/kprintf/kprintf.c $(CSRC)
 $(elf): $(all_src) $(clk) $(dtb) $(m_key_h) $(dev_key_h)
 	$(CC) $(CFLAGS) $(INCLUDE_CLK_CFLAG) $(DEVICE_TREE_CFLAG) -DSDBOOT_TARGET_ADDR=$(SDBOOT_TARGET_ADDR) $(LFLAGS) -o $@ $(all_src)
 
