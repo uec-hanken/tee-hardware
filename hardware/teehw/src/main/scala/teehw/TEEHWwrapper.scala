@@ -50,8 +50,10 @@ class TEEHWSDBundle extends Bundle {
 
 class  WithTEEHWbaseShell(implicit val p :Parameters) extends RawModule {
   // The actual pins of this module.
-  val gpio_in = IO(Input(UInt(p(GPIOInKey).W)))
-  val gpio_out = IO(Output(UInt((p(PeripheryGPIOKey).head.width-p(GPIOInKey)).W)))
+  val ngpio_in = p(GPIOInKey)
+  val ngpio_out = p(PeripheryGPIOKey).head.width-p(GPIOInKey)
+  val gpio_in = (ngpio_in != 0).option( IO(Input(UInt(ngpio_in.W))) )
+  val gpio_out = (ngpio_out != 0).option( IO(Output(UInt(ngpio_out.W))) )
   val jtag = IO(new Bundle {
     val jtag_TDI = (Input(Bool()))
     val jtag_TDO = (Output(Bool()))
@@ -100,14 +102,14 @@ trait WithTEEHWbaseConnect {
   val cacheBlockBytes = system.sys.outer.asInstanceOf[BaseSubsystem].mbus.blockBytes
 
   // Merge all the gpio vector
-  val vgpio_in = VecInit(gpio_in.toBools)
-  val vgpio_out = Wire(Vec(p(PeripheryGPIOKey).head.width-p(GPIOInKey), Bool()))
-  gpio_out := vgpio_out.asUInt()
-  val gpio = vgpio_in ++ vgpio_out
+  val vgpio_in = gpio_in.map( gpi => VecInit(gpi.toBools) )
+  val vgpio_out = gpio_out.map( gpo => Wire(Vec(ngpio_out, Bool())))
+  (gpio_out zip vgpio_out).foreach{ case (u, v) => u := v.asUInt() }
+  val gpio = (vgpio_in ++ vgpio_out).flatten
   // GPIOs
   (gpio zip system.io.pins.gpio.pins).zipWithIndex.foreach {
     case ((g: Bool, pin: BasePin), i: Int) =>
-      if(i < p(GPIOInKey)) BasePinToRegular(pin, g)
+      if(i < ngpio_in) BasePinToRegular(pin, g)
       else g := BasePinToRegular(pin)
   }
 

@@ -140,8 +140,10 @@ trait WithFPGADE2Connect {
 
   LEDR.foreach(_ := false.B)
   LEDG.foreach(_ := false.B)
-  (LEDR zip chip.gpio_out.asBools()).foreach{case (a,b) => a := b}
-  chip.gpio_in := VecInit(KEY.slice(1, 4) ++ SW).asUInt()
+  chip.gpio_out.foreach{gpo =>
+    (LEDR zip gpo.asBools()).foreach{case (a,b) => a := b}
+  }
+  chip.gpio_in.foreach(gpi => gpi := VecInit(KEY.slice(1, 4) ++ SW).asUInt())
   chip.jtag.jtag_TDI := ALT_IOBUF(GPIO(0))
   chip.jtag.jtag_TMS := ALT_IOBUF(GPIO(2))
   chip.jtag.jtag_TCK := ALT_IOBUF(GPIO(4))

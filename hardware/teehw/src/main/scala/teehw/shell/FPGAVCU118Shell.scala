@@ -22,8 +22,10 @@ import uec.teehardware.devices.usb11hs.PeripheryUSB11HSKey
 trait FPGAVCU118ChipShell {
   // This trait only contains the connections that are supposed to be handled by the chip
   implicit val p: Parameters
-  val gpio_in = IO(Input(UInt(p(GPIOInKey).W)))
-  val gpio_out = IO(Output(UInt((p(PeripheryGPIOKey).head.width - p(GPIOInKey)).W)))
+  val ngpio_in = p(GPIOInKey)
+  val ngpio_out = p(PeripheryGPIOKey).head.width-p(GPIOInKey)
+  val gpio_in = (ngpio_in != 0).option( IO(Input(UInt(ngpio_in.W))) )
+  val gpio_out = (ngpio_out != 0).option( IO(Output(UInt(ngpio_out.W))) )
   val jtag = IO(new Bundle {
     val jtag_TDI = (Input(Bool())) // J53.6
     val jtag_TDO = (Output(Bool())) // J53.8
@@ -271,8 +273,8 @@ trait WithFPGAVCU118Connect {
   intern.connectChipInternals(chip)
 
   // Platform connections
-  gpio_out := Cat(chip.gpio_out(chip.gpio_out.getWidth-1, 1), intern.init_calib_complete)
-  chip.gpio_in := gpio_in
+  (gpio_out zip chip.gpio_out).foreach{case(a, b) => a := b}
+  (chip.gpio_in zip gpio_in).foreach{case(a, b) => a := b}
   jtag <> chip.jtag
   chip.jtag.jtag_TCK := IBUFG(jtag.jtag_TCK.asClock).asUInt
   chip.uart_rxd := uart_rxd	  // UART_TXD

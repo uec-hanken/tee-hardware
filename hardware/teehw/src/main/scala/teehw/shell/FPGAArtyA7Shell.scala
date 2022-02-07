@@ -306,11 +306,13 @@ trait WithFPGAArtyA7Connect {
   intern.connectChipInternals(chip)
 
   // GPIO
-  if(chip.gpio_out.getWidth >= 1) IOBUF(led_0, chip.gpio_out(0))
-  if(chip.gpio_out.getWidth >= 2) IOBUF(led_1, chip.gpio_out(1))
-  if(chip.gpio_out.getWidth >= 3) IOBUF(led_2, chip.gpio_out(2))
+  chip.gpio_out.foreach{gpo =>
+    if(gpo.getWidth >= 1) IOBUF(led_0, gpo(0))
+    if(gpo.getWidth >= 2) IOBUF(led_1, gpo(1))
+    if(gpo.getWidth >= 3) IOBUF(led_2, gpo(2))
+  }
   IOBUF(led_3, intern.init_calib_complete) //chip.gpio_out(3)
-  chip.gpio_in := Cat(IOBUF(sw_3), IOBUF(sw_2), IOBUF(sw_1), IOBUF(sw_0))
+  chip.gpio_in.foreach(gpi => gpi := Cat(IOBUF(sw_3), IOBUF(sw_2), IOBUF(sw_1), IOBUF(sw_0)))
 
   // JTAG
   chip.jtag.jtag_TCK := IBUFG(IOBUF(jd_2).asClock()).asBool()

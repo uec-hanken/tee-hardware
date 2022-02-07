@@ -41,8 +41,10 @@ class FMCVC707(val ext: Boolean = false, val xcvr: Boolean = false) extends Bund
 trait FPGAVC707ChipShell {
   // This trait only contains the connections that are supposed to be handled by the chip
   implicit val p: Parameters
-  val gpio_in = IO(Input(UInt(p(GPIOInKey).W)))
-  val gpio_out = IO(Output(UInt((p(PeripheryGPIOKey).head.width-p(GPIOInKey)).W)))
+  val ngpio_in = p(GPIOInKey)
+  val ngpio_out = p(PeripheryGPIOKey).head.width-p(GPIOInKey)
+  val gpio_in = (ngpio_in != 0).option( IO(Input(UInt(ngpio_in.W))) )
+  val gpio_out = (ngpio_out != 0).option( IO(Output(UInt(ngpio_out.W))) )
   val jtag = IO(new Bundle {
     val jtag_TDI = (Input(Bool())) // J19_17 / XADC_GPIO_1
     val jtag_TDO = (Output(Bool())) // J19_20 / XADC_GPIO_2
@@ -699,8 +701,8 @@ trait WithFPGAVC707PureConnect {
   def PCIPORT = FMC1_HPC
   def MISCPORT = FMC1_HPC
   
-  gpio_out := chip.gpio_out
-  chip.gpio_in := gpio_in
+  (gpio_out zip chip.gpio_out).foreach{case(a, b) => a := b}
+  (chip.gpio_in zip gpio_in).foreach{case(a, b) => a := b}
   jtag <> chip.jtag
   chip.jtag.jtag_TCK := IBUFG(jtag.jtag_TCK.asClock).asUInt
   chip.uart_rxd := uart_rxd	  // UART_TXD
@@ -752,7 +754,8 @@ trait WithFPGAVC707Connect extends WithFPGAVC707PureConnect
   intern.connectChipInternals(chip)
 
   // Platform connections (override)
-  gpio_out := Cat(chip.gpio_out(chip.gpio_out.getWidth-1, 1), intern.init_calib_complete)
+  (gpio_out zip chip.gpio_out).foreach{case(a, b) => a := b}
+  (chip.gpio_in zip gpio_in).foreach{case(a, b) => a := b}
 
   // PCIe (if available)
   chip.pciePorts.foreach{ case chipport =>
@@ -1047,7 +1050,7 @@ trait WithFPGAVC707ToChipConnect extends WithFPGAVC707InternNoChipCreate with Wi
   // ******** Misc part ********
 
   // LEDs
-  gpio_out := intern.init_calib_complete
+  gpio_out.foreach(_ := intern.init_calib_complete)
   
   // Nullify these ports. Not needed
   jtag.jtag_TDO := false.B

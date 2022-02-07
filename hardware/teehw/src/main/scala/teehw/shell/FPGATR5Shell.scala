@@ -383,8 +383,10 @@ trait WithFPGATR5PureConnect {
 
   def namedclocks: Seq[String] = chip.system.sys.asInstanceOf[HasTEEHWSystemModule].namedclocks
   // This trait connects the chip to all essentials. This assumes no DDR is connected yet
-  LED := Cat(chip.gpio_out, BUTTON(2))
-  chip.gpio_in := Cat(BUTTON(3), BUTTON(1,0), SW(1,0))
+  chip.gpio_out.foreach{gpo =>
+    LED := Cat(gpo, BUTTON(2))
+  }
+  chip.gpio_in.foreach(gpi => gpi := Cat(BUTTON(3), BUTTON(1,0), SW(1,0)))
   chip.jtag.jtag_TDI := ALT_IOBUF(GPIO(4))
   chip.jtag.jtag_TMS := ALT_IOBUF(GPIO(6))
   chip.jtag.jtag_TCK := ALT_IOBUF(GPIO(8))

@@ -482,10 +482,12 @@ trait WithFPGASakuraXPureConnect {
   def namedclocks: Seq[String] = chip.system.sys.asInstanceOf[HasTEEHWSystemModule].namedclocks
   // This trait connects the chip to all essentials. This assumes no DDR is connected yet
 
-  (chip.gpio_out.asBools() zip K_LED).foreach{ case(gpo, led) =>
-    IOBUF(led, gpo)
+  chip.gpio_out.foreach{gpo =>
+    (gpo.asBools() zip K_LED).foreach{ case(gpo, led) =>
+      IOBUF(led, gpo)
+    }
   }
-  chip.gpio_in := K_DIPSW.asUInt()
+  chip.gpio_in.foreach(gpi => gpi := K_DIPSW.asUInt())
   chip.jtag.jtag_TCK := IBUFG(IOBUF(K_HEADER(5)).asClock()).asBool()
   chip.jtag.jtag_TDI := IOBUF(K_HEADER(4))
   PULLUP(K_HEADER(4))
