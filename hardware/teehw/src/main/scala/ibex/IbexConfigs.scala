@@ -49,7 +49,22 @@ class WithNIbexCores(n: Int, overrideIdOffset: Option[Int] = None) extends Confi
     val idOffset = overrideIdOffset.getOrElse(prev.size)
     (0 until n).map { i =>
       IbexTileAttachParams(
-        tileParams = IbexTileParams(hartId = i + idOffset),
+        tileParams = IbexTileParams(
+          hartId = i + idOffset),
+        crossingParams = RocketCrossingParams()
+      )} ++ prev
+  }
+})
+
+class WithNIbexSmallCores(n: Int, overrideIdOffset: Option[Int] = None) extends Config((site, here, up) => {
+  case TilesLocated(InSubsystem) => {
+    val prev = up(TilesLocated(InSubsystem), site)
+    val idOffset = overrideIdOffset.getOrElse(prev.size)
+    (0 until n).map { i =>
+      IbexTileAttachParams(
+        tileParams = IbexTileParams(
+          core = IbexCoreParams(nPMPs = 0, RV32M = 1),
+          hartId = i + idOffset),
         crossingParams = RocketCrossingParams()
       )} ++ prev
   }

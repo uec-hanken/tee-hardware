@@ -90,6 +90,8 @@ class Rocket8 extends Config(
 // Ibex only (For microcontrollers)
 class Ibex extends Config(
   new WithNIbexCores(1) )
+class IbexMicro extends Config(
+  new WithNIbexSmallCores(1) )
 
 // Rocket just for small configs
 class RocketSmall extends Config(

@@ -24,7 +24,7 @@ CFLAGS:=-march=rv32imc -mabi=ilp32 -mcmodel=medany $(CFLAGS)
 else #RV32IMAC
 CFLAGS:=-march=rv32imac -mabi=ilp32 -mcmodel=medany $(CFLAGS)
 endif
-LFLAGS:=-static -nostdlib -L $(teehw_sdboot)/linker -T sdboot.elf.lds
+
 SDBOOT_TARGET_ADDR?=0x82000000UL
 SDBOOT_SOURCE_ADDR?=0x20000000
 
@@ -34,6 +34,10 @@ endif
 
 ifneq ($(clk),)
 INCLUDE_CLK_CFLAG:=-include $(clk)
+endif
+
+ifeq ($(LFLAGS),)
+LFLAGS:=-static -nostdlib -L $(teehw_sdboot)/linker -T sdboot.elf.lds
 endif
 
 ifeq ($(all_src),)
