@@ -286,9 +286,9 @@ trait WithTEEHWHarnessConnect {
           spi_mem.io.sck := BasePinToRegular(port.sck)
           //require(params.csWidth == 1, "I don't know what to do with your extra CS bits. Fix me please.")
           spi_mem.io.cs(0) := BasePinToRegular(port.cs(0))
-          /*spi_mem.io.dq.zip(port.dq).foreach { case (x, y) =>
-            x <> y
-          }*/
+          spi_mem.io.dq.zip(port.dq).foreach { case (x, y) =>
+            IOSim(x, y)
+          }
           spi_mem.io.reset := del_reset.asBool
         case _ =>
           BasePinToRegular(port.sck)
