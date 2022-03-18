@@ -620,6 +620,9 @@ class DE2Config extends Config((new WithIbexSynthesizedNoICache).alter((site,her
   case ExtMem => None
   case ExtSerMem => None
   case ExtSerBus => None
+  // To avoid errors in cryptobus
+  case PeripheryAESKey => List(
+    AESParams(address = BigInt(0x64007000L)))
 }))
 
 // ***************** The simulation flag *****************

@@ -119,6 +119,8 @@ class FPGADE2Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConnect]
   sys_clk := pll.io.c0
   aclocks.foreach(_.foreach(_ := pll.io.c0)) // TODO: Connect your clocks here
   sdramclock.foreach(_ := pll.io.c0)
+  ChildClock.foreach(_ := pll.io.c0)
+  ChildReset.foreach(_ := reset_to_sys)
   rst_n := !reset_to_sys
   jrst_n := !reset_to_sys
   usbClk.foreach(_ := pll.io.c0)
