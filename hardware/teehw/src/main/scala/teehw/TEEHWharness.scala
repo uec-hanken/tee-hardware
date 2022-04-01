@@ -271,6 +271,7 @@ trait WithTEEHWHarnessConnect {
   uart_sim.suggestName(s"uart_sim_0")
   uart_sim.io.uart.txd := BasePinToRegular(dut.io.pins.uart.txd)
   BasePinToRegular(dut.io.pins.uart.rxd, uart_sim.io.uart.rxd)
+  println(s"UART0 put into ${baudrate} rate with ${clockFrequency} frequency")
 
   // Tie down qspi and spi
   // NOTE: Those also does not have a function for tie down
