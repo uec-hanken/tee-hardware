@@ -14,14 +14,46 @@ sim_dir=$(abspath .)
 build_dir=$(sim_dir)/generated-src/$(long_name)
 xip_dir=$(teehw_dir)/software/xip
 
-BOARD?=VC707Mini
+BOARD?=TR4
 ISACONF?=RV64GC
-MBUS?=MBusNone
+MBUS?=MBus64
 BOOTSRC?=BOOTROM
 PCIE?=WoPCIe
-DDRCLK?=WoSepaDDRClk
-HYBRID?=RocketMicro
-#PERIPHERALS?=NoSecurityPeripherals
+DDRCLK?=NoCrossMBusClk
+HYBRID?=Rocket1
+PERIPHERALS?=TEEHWPeripherals
+BASE?=MCUWithLinuxConfig
+
+#########################################################################################
+# simulaton requirements
+#########################################################################################
+SIM_FILE_REQS += \
+	$(CHIPYARD_RSRCS_DIR)/csrc/emulator.cc \
+	$(ROCKETCHIP_RSRCS_DIR)/csrc/verilator.h \
+
+# the following files are needed for emulator.cc to compile
+SIM_FILE_REQS += \
+	$(TESTCHIP_RSRCS_DIR)/testchipip/csrc/SimSerial.cc \
+	$(TESTCHIP_RSRCS_DIR)/testchipip/csrc/testchip_tsi.cc \
+	$(TESTCHIP_RSRCS_DIR)/testchipip/csrc/testchip_tsi.h \
+	$(TESTCHIP_RSRCS_DIR)/testchipip/csrc/SimDRAM.cc \
+	$(TESTCHIP_RSRCS_DIR)/testchipip/csrc/mm.h \
+	$(TESTCHIP_RSRCS_DIR)/testchipip/csrc/mm.cc \
+	$(TESTCHIP_RSRCS_DIR)/testchipip/csrc/mm_dramsim2.h \
+	$(TESTCHIP_RSRCS_DIR)/testchipip/csrc/mm_dramsim2.cc \
+	$(ROCKETCHIP_RSRCS_DIR)/csrc/SimDTM.cc \
+	$(ROCKETCHIP_RSRCS_DIR)/csrc/SimJTAG.cc \
+	$(ROCKETCHIP_RSRCS_DIR)/csrc/remote_bitbang.h \
+	$(ROCKETCHIP_RSRCS_DIR)/csrc/remote_bitbang.cc
+
+# copy files and add -FI for *.h files in *.f
+$(sim_files): $(SIM_FILE_REQS) | $(build_dir)
+	cp -f $^ $(build_dir)
+	$(foreach file,\
+		$^,\
+		$(if $(filter %.h,$(file)),\
+			echo "-FI $(addprefix $(build_dir)/, $(notdir $(file)))" >> $@;,\
+			echo "$(addprefix $(build_dir)/, $(notdir $(file)))" >> $@;))
 
 #########################################################################################
 # include shared variables

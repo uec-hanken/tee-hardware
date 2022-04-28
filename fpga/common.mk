@@ -21,33 +21,46 @@ DTS_FILE = $(build_dir)/$(long_name).dts
 PERMISSIVE_ON=
 PERMISSIVE_OFF=
 
-WAVEFORM_FLAG=-v$(sim_out_name).vcd
-
-# This file is for simulation only. VLSI flows should replace this file with one containing hard SRAMs
-MACROCOMPILER_MODE ?= --mode synflops
-
-# The macro-compiler command creator. Just attach a buch of them, to avoid multiple-execution of sbt
-ALL_TOPS := $(TOP) $(MODEL) $(shell echo $(SEPARE) | sed "s/,/ /g")
-MACROCOMPILER_COMMANDS = $(foreach T, $(ALL_TOPS),"runMain barstools.macros.MacroCompiler -n $(build_dir)/$T.mems.conf -v $(build_dir)/$T.mems.v -f $(build_dir)/$T.mems.fir $(MACROCOMPILER_MODE)") 
-
 # This is for compiling all into the VRCS
-TOP_VERILOGS = $(addprefix $(build_dir)/,$(ALL_TOPS:=.v))
-TOP_VERILOG_MEMS = $(addprefix $(build_dir)/,$(ALL_TOPS:=.mems.v))
-TOP_F = $(addprefix $(build_dir)/,$(ALL_TOPS:=.f))
+TOP_VERILOGS = $(TOP_FILE) $(HARNESS_FILE)
+TOP_VERILOG_MEMS = $(TOP_SMEMS_FILE) $(HARNESS_SMEMS_FILE)
+TOP_F = $(sim_top_blackboxes) $(sim_top_blackboxes)
 
 VSRCS := \
-	$(build_dir)/EICG_wrapper.v \
 	$(TOP_VERILOGS) \
 	$(TOP_VERILOG_MEMS) \
 	$(ROM_FILE)
 
-# NOTE: We are going to add the true tapeout stuff here
-default: $(FIRRTL_FILE) $(ROM_FILE)
-	# We are going to separate the different tops here
-	cd $(base_dir) && $(SBT) "project $(SBT_PROJECT)" "runMain uec.teehardware.uecutils.MultiTopAndHarness -o $(build_dir)/SHOULDNT.v -i $(FIRRTL_FILE) --syn-tops $(SEPARE) --chip-top $(TOP) --harness-top $(MODEL) -faf $(ANNO_FILE) --infer-rw --repl-seq-mem -c:$(TOP):-o:$(build_dir)/SHOULDNT.mems.conf -td $(build_dir)"
-	# - rename.ul $(MODEL_PACKAGE).$(MODEL).$(CONFIG) $(MODEL) $(build_dir)/*
-	# We also want to generate our memories
-	cd $(base_dir) && $(SBT) "project $(SBT_PROJECT)" $(MACROCOMPILER_COMMANDS)
+#########################################################################################
+# simulaton requirements (TODO: This is for SIMULATING, not for FPGA)
+#########################################################################################
+SIM_FILE_REQS += \
+	$(CHIPYARD_RSRCS_DIR)/csrc/emulator.cc \
+	$(ROCKETCHIP_RSRCS_DIR)/csrc/verilator.h \
+
+# the following files are needed for emulator.cc to compile
+SIM_FILE_REQS += \
+	$(TESTCHIP_RSRCS_DIR)/testchipip/csrc/SimSerial.cc \
+	$(TESTCHIP_RSRCS_DIR)/testchipip/csrc/testchip_tsi.cc \
+	$(TESTCHIP_RSRCS_DIR)/testchipip/csrc/testchip_tsi.h \
+	$(TESTCHIP_RSRCS_DIR)/testchipip/csrc/SimDRAM.cc \
+	$(TESTCHIP_RSRCS_DIR)/testchipip/csrc/mm.h \
+	$(TESTCHIP_RSRCS_DIR)/testchipip/csrc/mm.cc \
+	$(TESTCHIP_RSRCS_DIR)/testchipip/csrc/mm_dramsim2.h \
+	$(TESTCHIP_RSRCS_DIR)/testchipip/csrc/mm_dramsim2.cc \
+	$(ROCKETCHIP_RSRCS_DIR)/csrc/SimDTM.cc \
+	$(ROCKETCHIP_RSRCS_DIR)/csrc/SimJTAG.cc \
+	$(ROCKETCHIP_RSRCS_DIR)/csrc/remote_bitbang.h \
+	$(ROCKETCHIP_RSRCS_DIR)/csrc/remote_bitbang.cc
+
+# copy files and add -FI for *.h files in *.f
+$(sim_files): $(SIM_FILE_REQS) | $(build_dir)
+	cp -f $^ $(build_dir)
+	$(foreach file,\
+		$^,\
+		$(if $(filter %.h,$(file)),\
+			echo "-FI $(addprefix $(build_dir)/, $(notdir $(file)))" >> $@;,\
+			echo "$(addprefix $(build_dir)/, $(notdir $(file)))" >> $@;))
 
 #########################################################################################
 # import other necessary rules and variables

@@ -1,7 +1,6 @@
 package uec.teehardware.devices.ed25519
 
 import chisel3._
-import chisel3.core.SyncReadMem
 import chisel3.util._
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.devices.tilelink.{BasicBusBlockerParams, TLClockBlocker}
@@ -114,7 +113,7 @@ abstract class ed25519(busWidthBytes: Int, val c: ed25519Params)
       val en = Bool()
       val we = Bool()
       val addr = UInt(abits.W)
-      override def cloneType = (new mem32IO(abits)).asInstanceOf[this.type]
+      // override def cloneType = (new mem32IO(abits)).asInstanceOf[this.type] TODO
     }
 
     def memAndMap(memio: mem32IO) : Seq[RegField] = {

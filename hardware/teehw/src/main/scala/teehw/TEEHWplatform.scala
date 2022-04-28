@@ -530,19 +530,19 @@ object TEEHWPlatform {
 
     // Add in debug-controlled reset.
     // TODO: Now this is okay? We also use a lot of sys.clock
-    sys.reset := ResetCatchAndSync(clock, reset.toBool, 5)
+    sys.reset := ResetCatchAndSync(clock, reset.asBool, 5)
 
     // Connect the clocks and the resets that are asynchronous
     sys.aclocks.zip(io.aclocks).foreach{ case(sysaclock, ioaclock) =>
       sysaclock.clock := ioaclock
-      sysaclock.reset := ResetCatchAndSync(ioaclock, reset.toBool, 5)
+      sysaclock.reset := ResetCatchAndSync(ioaclock, reset.asBool, 5)
     }
 
     // JTAG & Debug Interface
     sys.debug.foreach({ debug =>
       // We never use the PSDIO, so tie it off on-chip
       sys.psd.psd.foreach { _ <> 0.U.asTypeOf(new PSDTestMode) }
-      sys.resetctrl.foreach { rcio => rcio.hartIsInReset.map { _ := reset.toBool } }
+      sys.resetctrl.foreach { rcio => rcio.hartIsInReset.map { _ := reset.asBool } }
       sys.debug.foreach { d =>
         // Tie off extTrigger
         d.extTrigger.foreach { t =>
@@ -625,10 +625,10 @@ object TEEHWPlatform {
     require (p(NExtTopInterrupts) == 0, "No Top-level interrupts supported")
 
     // I2C
-    //I2CPinsFromPort(io.pins.i2c, sys.i2c(0), clock = sys.clock, reset = sys.reset.toBool, syncStages = 0)
+    //I2CPinsFromPort(io.pins.i2c, sys.i2c(0), clock = sys.clock, reset = sys.reset.asBool, syncStages = 0)
 
     // UART0
-    UARTPinsFromPort(io.pins.uart, sys.uart(0), clock = sys.clock, reset = sys.reset.toBool, syncStages = 0)
+    UARTPinsFromPort(io.pins.uart, sys.uart(0), clock = sys.clock, reset = sys.reset.asBool, syncStages = 0)
 
     //-----------------------------------------------------------------------
     // Drive actual Pads
@@ -639,17 +639,17 @@ object TEEHWPlatform {
 
     // Dedicated SPI Pads
     (io.pins.spi zip sys.spi).foreach { case (pins_spi, sys_spi) =>
-      SPIPinsFromPort(pins_spi, sys_spi, clock = sys.clock, reset = sys.reset.toBool, syncStages = 3)
+      SPIPinsFromPort(pins_spi, sys_spi, clock = sys.clock, reset = sys.reset.asBool, syncStages = 3)
     }
 
     // PCIe port connection
     (io.pciePorts zip sys.pciePorts).foreach{ case (a, b) => a <> b }
     (io.xdmaPorts zip sys.xdmaPorts).foreach{ case (a, b) => a <> b }
 
-    // TL serial
+    // TL serial (TODO: Check this)
     (io.tlserial zip sys.serial_tl).foreach{ case (a, b) =>
       val serdesser = sys.outer.asInstanceOf[HasTEEHWSystem].serdesser.get
-      val ram = SerialAdapter.connectHarnessRAM(serdesser, b, reset)
+      val ram = SerialAdapter.connectHarnessRAM(serdesser, b.getWrappedValue.bits, reset)
       a <> ram.module.io.tsi_ser
     }
   }

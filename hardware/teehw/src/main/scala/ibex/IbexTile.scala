@@ -84,6 +84,8 @@ case class IbexCoreParams
   val decodeWidth: Int = 1 // TODO: Check
   val fetchWidth: Int = 1 // TODO: Check
   val retireWidth: Int = 2 // TODO: Check
+  val nPTECacheEntries: Int = 0 // TODO: Check
+  val useHypervisor: Boolean = false // TODO: Check
 }
 
 case class IbexTileAttachParams

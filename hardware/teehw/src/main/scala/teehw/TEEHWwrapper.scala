@@ -102,7 +102,7 @@ trait WithTEEHWbaseConnect {
   val cacheBlockBytes = system.sys.outer.asInstanceOf[BaseSubsystem].mbus.blockBytes
 
   // Merge all the gpio vector
-  val vgpio_in = gpio_in.map( gpi => VecInit(gpi.toBools) )
+  val vgpio_in = gpio_in.map( gpi => VecInit(gpi.asBools) )
   val vgpio_out = gpio_out.map( gpo => Wire(Vec(ngpio_out, Bool())))
   (gpio_out zip vgpio_out).foreach{ case (u, v) => u := v.asUInt() }
   val gpio = (vgpio_in ++ vgpio_out).flatten

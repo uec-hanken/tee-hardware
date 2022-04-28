@@ -94,9 +94,9 @@ object BasePinToRegular {
   }
   def apply(pins: Vec[BasePin]) : UInt = {
     val bools: Vec[Bool] = asVec(pins)
-    bools.asUInt()
+    bools.asUInt
   }
   def apply(pins: Vec[BasePin], bools: UInt) : Unit = {
-    fromVec(pins, VecInit(bools.toBools))
+    fromVec(pins, VecInit(bools.asBools))
   }
 }
