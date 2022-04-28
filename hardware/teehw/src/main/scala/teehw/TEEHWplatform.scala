@@ -649,7 +649,8 @@ object TEEHWPlatform {
     // TL serial (TODO: Check this)
     (io.tlserial zip sys.serial_tl).foreach{ case (a, b) =>
       val serdesser = sys.outer.asInstanceOf[HasTEEHWSystem].serdesser.get
-      val ram = SerialAdapter.connectHarnessRAM(serdesser, b.getWrappedValue.bits, reset)
+      val bits = SerialAdapter.asyncQueue(b, clock, reset)
+      val ram = SerialAdapter.connectHarnessRAM(serdesser, bits, reset)
       a <> ram.module.io.tsi_ser
     }
   }

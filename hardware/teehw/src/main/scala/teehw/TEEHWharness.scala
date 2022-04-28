@@ -92,7 +92,7 @@ class TLULtoSimDRAM
     }
 
     // axinode connection to the simulated memory provided by chipyard
-    val clockFrequency = p(MemoryBusKey).dtsFrequency.get
+    val clockFrequency = p(PeripheryBusKey).dtsFrequency.get // TODO: Should be MemoryBusKey
     val memSize = p(ExtMem).get.master.size
     val lineSize = cacheBlockBytes
     axinode.in.foreach { case (io, edge) =>
@@ -154,7 +154,7 @@ class SertoSimDRAM(w: Int, cacheBlockBytes: Int, idBits: Int = 6)(implicit p :Pa
     io.serport <> desser.module.io.ser.head
 
     // axinode connection to the simulated memory provided by chipyard
-    val clockFrequency = p(MemoryBusKey).dtsFrequency.get
+    val clockFrequency = p(PeripheryBusKey).dtsFrequency.get // TODO: Should be MemoryBusKey
     val memSize = p(ExtSerMem).get.master.size
     val lineSize = cacheBlockBytes
     axinode.in.foreach { case (io, edge) =>

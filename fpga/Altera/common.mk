@@ -15,8 +15,7 @@ EXTRA_FPGA_VSRCS ?=
 PATCHVERILOG ?= ""
 
 f := $(BUILD_DIR)/$(long_name).vsrcs.F
-$(f):
-	make -C $(sim_dir) default
+$(f): $(VSRCS) $(TOP_F)
 	echo -n $(VSRCS) " " > $@
 	awk '{print $1;}' $(TOP_F) | sort -u | grep -v '.*\.\(svh\|h\)$$' | awk 'BEGIN { ORS=" " }; { print $1 }' >> $@
 
