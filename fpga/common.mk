@@ -90,6 +90,9 @@ $(build_dir)/sdboot.hex:
 $(ROM_FILE): $(ROMGEN) $(HEXFILE)
 	$(ROMGEN) $(ROM_CONF_FILE) $(HEXFILE) > $(ROM_FILE)
 
+# If compiling only the ROM files (for measure), is just enough the FIRRTL file (to induce creating the dts)
+rom: $(FIRRTL_FILE) $(ROM_FILE)
+
 #########################################################################################
 # general cleanup rule
 #########################################################################################

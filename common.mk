@@ -108,7 +108,7 @@ $(teehw_dir)/hardware/teehw/src/main/resources/resources.checkpoint: $(teehw_dir
 # create firrtl file rule and variables
 #########################################################################################
 .INTERMEDIATE: generator_temp
-$(FIRRTL_FILE) $(ANNO_FILE): generator_temp
+$(FIRRTL_FILE) $(ANNO_FILE): $(teehw_dir)/hardware/teehw/src/main/resources/resources.checkpoint generator_temp
 	@echo "" > /dev/null
 
 # AG: must re-elaborate if cva6 sources have changed... otherwise just run firrtl compile

@@ -240,7 +240,7 @@ trait FPGAInternals {
   def extserSourceBits: Option[Int] = outer.get.system.sys.asInstanceOf[HasTEEHWSystemModule].extSourceBits
   def namedclocks: Seq[String] = outer.get.system.sys.asInstanceOf[HasTEEHWSystemModule].namedclocks
   def isChildClock = outer.get.isChildClock
-  def isChildReset = false
+  def isChildReset = isChildClock
   def issdramclock = outer.get.issdramclock
   def isRTCclock = outer.get.isRTCclock
   // Clocks and resets

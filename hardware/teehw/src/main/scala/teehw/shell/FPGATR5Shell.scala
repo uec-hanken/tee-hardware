@@ -176,6 +176,7 @@ class FPGATR5Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConnect]
       jrst_n := !reset_to_sys
       usbClk.foreach(_ := mod_io_ckrst.usb_clk)
       sdramclock.foreach(_ := mod_io_ckrst.qsys_clk)
+      ChildReset.foreach(_ := reset_to_sys)
       DefaultRTC
 
       // Async clock connections
