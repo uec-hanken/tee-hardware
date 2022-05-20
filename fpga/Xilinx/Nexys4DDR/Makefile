@@ -10,8 +10,8 @@ base_dir=$(teehw_dir)
 sim_dir=$(abspath .)
 build_dir=$(sim_dir)/generated_src
 
-SUB_PROJECT ?= FPGAArtyA7
-BOARD?=ArtyA7
+SUB_PROJECT ?= FPGANexys4DDR
+BOARD?=Nexys4DDR
 ISACONF?=RV32IMAC
 HYBRID?=Rocket1
 PERIPHERALS?=TEEHWPeripherals
@@ -34,8 +34,8 @@ include $(base_dir)/fpga/common.mk
 #########################################################################################
 BUILD_DIR=$(build_dir)
 FPGA_DIR=$(base_dir)/hardware/fpga-shells/xilinx
-export FPGA_BOARD=arty_a7_100
-XDC_SHELL=$(sim_dir)/ArtyA7.shell.xdc
-TCL_SHELL=$(sim_dir)/ArtyA7.shell.vivado.tcl
+export FPGA_BOARD=nexys4ddr
+XDC_SHELL=$(sim_dir)/Nexys4DDR.shell.xdc
+TCL_SHELL=$(sim_dir)/Nexys4DDR.shell.vivado.tcl
 include $(base_dir)/fpga/Xilinx/common.mk
 

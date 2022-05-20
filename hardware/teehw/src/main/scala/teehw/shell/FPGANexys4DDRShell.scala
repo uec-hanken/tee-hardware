@@ -16,7 +16,7 @@ import uec.teehardware.macros._
 import uec.teehardware._
 import uec.teehardware.devices.clockctrl.ClockCtrlPortIO
 
-trait FPGAArtyA7ChipShell {
+trait FPGANexys4DDRChipShell {
   // This trait only contains the connections that are supposed to be handled by the chip
   implicit val p: Parameters
   //-----------------------------------------------------------------------
@@ -24,7 +24,7 @@ trait FPGAArtyA7ChipShell {
   //-----------------------------------------------------------------------
 
   // Green LEDs
-  val led          = IO(Vec(4, Analog(1.W)))
+  val led          = IO(Vec(16, Analog(1.W)))
 
   // RGB LEDs, 3 pins each
   val led0_r       = IO(Analog(1.W))
@@ -35,48 +35,28 @@ trait FPGAArtyA7ChipShell {
   val led1_g       = IO(Analog(1.W))
   val led1_b       = IO(Analog(1.W))
 
-  val led2_r       = IO(Analog(1.W))
-  val led2_g       = IO(Analog(1.W))
-  val led2_b       = IO(Analog(1.W))
+  // 7 segment display (Mapped to GPIO)
+  val cat          = IO(Vec(8, Analog(1.W)))
+  val an           = IO(Vec(8, Analog(1.W)))
 
   // Sliding switches
-  val sw           = IO(Vec(4, Analog(1.W)))
+  val sw           = IO(Vec(16, Analog(1.W)))
 
-  // Buttons. First 3 used as GPIO, the last is used as wakeup
-  val btn          = IO(Vec(4, Analog(1.W)))
-
-  // Dedicated QSPI interface
-  val qspi_cs      = IO(Analog(1.W))
-  val qspi_sck     = IO(Analog(1.W))
-  val qspi_dq      = IO(Vec(4, Analog(1.W)))
+  // Buttons. First 2 used as GPIO, 1 as fallback, the last as wakeup
+  val btn          = IO(Vec(5, Analog(1.W)))
 
   // UART0
   val uart_rxd_out = IO(Analog(1.W))
   val uart_txd_in  = IO(Analog(1.W))
 
-  // JA (Used for more generic GPIOs)
+  // Jx
   val ja           = IO(Vec(8, Analog(1.W)))
-
-  // JB
   val jb           = IO(Vec(8, Analog(1.W)))
-
-  // JC (used for additional debug/trace connection)
   val jc           = IO(Vec(8, Analog(1.W)))
-
-  // JD (used for JTAG connection)
   val jd           = IO(Vec(8, Analog(1.W)))
-
-  // ChipKit Digital I/O Pins
-  val ck_io        = IO(Vec(20, Analog(1.W)))
-
-  // ChipKit SPI
-  val ck_miso      = IO(Analog(1.W))
-  val ck_mosi      = IO(Analog(1.W))
-  val ck_ss        = IO(Analog(1.W))
-  val ck_sck       = IO(Analog(1.W))
 }
 
-trait FPGAArtyA7ClockAndResetsAndDDR {
+trait FPGANexys4DDRClockAndResetsAndDDR {
   // This trait only contains clocks and resets exclusive for the FPGA
   implicit val p: Parameters
 
@@ -84,17 +64,17 @@ trait FPGAArtyA7ClockAndResetsAndDDR {
   val CLK100MHZ    = IO(Input(Clock()))
   val ck_rst       = IO(Input(Bool()))
   // DDR
-  var ddr: Option[Arty100TMIGIODDR] = None
+  var ddr: Option[Arty100TMIGIODDR] = None // TODO: We use the ARTY version
 }
 
-class FPGAArtyA7Shell(implicit val p :Parameters) extends RawModule
-  with FPGAArtyA7ChipShell
-  with FPGAArtyA7ClockAndResetsAndDDR {
+class FPGANexys4DDRShell(implicit val p :Parameters) extends RawModule
+  with FPGANexys4DDRChipShell
+  with FPGANexys4DDRClockAndResetsAndDDR {
 }
 
-class FPGAArtyA7Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConnect])(implicit val p :Parameters) extends RawModule
+class FPGANexys4DDRInternal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConnect])(implicit val p :Parameters) extends RawModule
   with FPGAInternals
-  with FPGAArtyA7ClockAndResetsAndDDR {
+  with FPGANexys4DDRClockAndResetsAndDDR {
   def outer = chip
 
   val init_calib_complete = IO(Output(Bool()))
@@ -252,10 +232,10 @@ class FPGAArtyA7Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConne
   }
 }
 
-trait WithFPGAArtyA7Connect {
-  this: FPGAArtyA7Shell =>
+trait WithFPGANexys4DDRConnect {
+  this: FPGANexys4DDRShell =>
   val chip : WithTEEHWbaseShell with WithTEEHWbaseConnect
-  val intern = Module(new FPGAArtyA7Internal(Some(chip)))
+  val intern = Module(new FPGANexys4DDRInternal(Some(chip)))
   // To intern = Clocks and resets
   intern.CLK100MHZ := CLK100MHZ
   intern.ck_rst := ck_rst
@@ -301,13 +281,13 @@ trait WithFPGAArtyA7Connect {
         qspiport.qspi_miso := false.B
       }
     case ((qspiport: TEEHWQSPIBundle, _: SPIFlashParams), _: Int) =>
-      IOBUF(qspi_sck, qspiport.qspi_sck)
-      IOBUF(qspi_cs,  qspiport.qspi_cs(0))
+      IOBUF(jc(3), qspiport.qspi_sck)
+      IOBUF(jc(0),  qspiport.qspi_cs(0))
 
-      IOBUF(qspi_dq(0), qspiport.qspi_mosi)
-      qspiport.qspi_miso := IOBUF(qspi_dq(1))
-      IOBUF(qspi_dq(2), true.B)
-      IOBUF(qspi_dq(3), true.B)
+      IOBUF(jc(1), qspiport.qspi_mosi)
+      qspiport.qspi_miso := IOBUF(jc(2))
+      IOBUF(jc(6), true.B) // qspi_dq(2)
+      IOBUF(jc(7), true.B) // qspi_dq(3)
   }
 
   // UART

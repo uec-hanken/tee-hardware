@@ -206,6 +206,7 @@ class FPGAVC707Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConnec
     jrst_n := !reset_to_sys
     usbClk.foreach(_ := pll.io.clk_out3.getOrElse(false.B))
     sdramclock.foreach(_ := pll.io.clk_out1.get)
+    ChildReset.foreach(_ := reset_to_sys)
     DefaultRTC
 
     aclocks.foreach { aclocks =>

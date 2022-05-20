@@ -336,6 +336,13 @@ class FPGAArtyA7(implicit p :Parameters) extends FPGAArtyA7Shell()(p)
 }
 
 // ********************************************************************
+// FPGANexys4DDR - Demo on Nexys 4 DDR FPGA board
+// ********************************************************************
+class FPGANexys4DDR(implicit p :Parameters) extends FPGANexys4DDRShell()(p)
+  with HasTEEHWChip with WithFPGANexys4DDRConnect {
+}
+
+// ********************************************************************
 // FPGATR4 - Demo on TR4 FPGA board
 // ********************************************************************
 class FPGATR4(implicit p :Parameters) extends FPGATR4Shell()(p)
