@@ -11,7 +11,7 @@ import freechips.rocketchip.tilelink._
 import sifive.blocks.devices.spi._
 import sifive.fpgashells.clocks._
 import sifive.fpgashells.ip.xilinx._
-import sifive.fpgashells.ip.xilinx.arty100tmig._
+import sifive.fpgashells.ip.xilinx.nexys4ddrmig._
 import uec.teehardware.macros._
 import uec.teehardware._
 import uec.teehardware.devices.clockctrl.ClockCtrlPortIO
@@ -64,7 +64,7 @@ trait FPGANexys4DDRClockAndResetsAndDDR {
   val CLK100MHZ    = IO(Input(Clock()))
   val ck_rst       = IO(Input(Bool()))
   // DDR
-  var ddr: Option[Arty100TMIGIODDR] = None // TODO: We use the ARTY version
+  var ddr: Option[Nexys4DDRMIGIODDR] = None
 }
 
 class FPGANexys4DDRShell(implicit val p :Parameters) extends RawModule
@@ -111,14 +111,14 @@ class FPGANexys4DDRInternal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseCo
     val reset_to_child = WireInit(!pll.io.locked) // If DDR is not present, this is the child reset
     // The DDR port
     tlport.foreach{ chiptl =>
-      val mod = Module(LazyModule(new TLULtoMIGArtyA7(chiptl.params)).module)
+      val mod = Module(LazyModule(new TLULtoMIGNexys4DDR(chiptl.params)).module)
 
       // DDR port only
-      ddr = Some(IO(new Arty100TMIGIODDR(mod.depth)))
+      ddr = Some(IO(new Nexys4DDRMIGIODDR(mod.depth)))
       ddr.get <> mod.io.ddrport
       // MIG connections, like resets and stuff
-      mod.io.ddrport.sys_clk_i := pll.io.clk_out2.get.asBool()
-      mod.io.ddrport.clk_ref_i := pll.io.clk_out3.get.asBool()
+      mod.io.ddrport.sys_clk_i := pll.io.clk_out2.get.asBool
+      mod.io.ddrport.clk_ref_i := pll.io.clk_out3.get.asBool
       mod.io.ddrport.aresetn := aresetn
       mod.io.ddrport.sys_rst := sys_rst
       reset_to_sys := ResetCatchAndSync(pll.io.clk_out1.get, mod.io.ddrport.ui_clk_sync_rst)
@@ -142,13 +142,13 @@ class FPGANexys4DDRInternal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseCo
       depth = mod.depth
     }
     (memser zip memserSourceBits).foreach { case(ms, sourceBits) =>
-      val mod = Module(LazyModule(new SertoMIGArtyA7(ms.w, sourceBits)).module)
+      val mod = Module(LazyModule(new SertoMIGNexys4DDR(ms.w, sourceBits)).module)
 
       // Serial port
       mod.io.serport.flipConnect(ms)
 
       // DDR port only
-      ddr = Some(IO(new Arty100TMIGIODDR(mod.depth)))
+      ddr = Some(IO(new Nexys4DDRMIGIODDR(mod.depth)))
       ddr.get <> mod.io.ddrport
       // MIG connections, like resets and stuff
       mod.io.ddrport.sys_clk_i := pll.io.clk_out2.get.asBool()
@@ -240,7 +240,7 @@ trait WithFPGANexys4DDRConnect {
   intern.CLK100MHZ := CLK100MHZ
   intern.ck_rst := ck_rst
   ddr = intern.ddr.map{ A =>
-    val port = IO(new Arty100TMIGIODDR(intern.depth))
+    val port = IO(new Nexys4DDRMIGIODDR(intern.depth))
     port <> A
     port
   }

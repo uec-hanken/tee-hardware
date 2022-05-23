@@ -12,6 +12,7 @@ import sifive.fpgashells.devices.xilinx.xilinxvc707pciex1._
 import sifive.fpgashells.devices.xilinx.xilinxvcu118mig._
 import sifive.fpgashells.devices.xilinx.xilinxarty100tmig._
 import sifive.fpgashells.devices.xilinx.xilinxsakuraxmig._
+import sifive.fpgashells.devices.xilinx.xilinxnexys4ddrmig._
 import testchipip.{SerialIO, TLDesser}
 import uec.teehardware._
 
@@ -93,24 +94,7 @@ class TLULtoMIG(TLparams: TLBundleParameters)(implicit p :Parameters) extends La
     //val mem_tl = Wire(HeterogeneousBag.fromNode(node.in))
     node.out.foreach {
       case  (bundle, _) =>
-        // Debug TL
-        //val ilatoaxi = Module(new ilatl())
-        //ilatoaxi.io.clk := clock
-        //ilatoaxi.connectAxi(bundle)
-
-        bundle.a.valid := io.tlport.a.valid
-        io.tlport.a.ready := bundle.a.ready
-        bundle.a.bits := io.tlport.a.bits
-
-        io.tlport.d.valid := bundle.d.valid
-        bundle.d.ready := io.tlport.d.ready
-        io.tlport.d.bits := bundle.d.bits
-        //bundle.b.bits := (new TLBundleB(TLparams)).fromBits(0.U)
-        bundle.b.ready := true.B
-        bundle.c.valid := false.B
-        //bundle.c.bits := 0.U.asTypeOf(new TLBundleC(TLparams))
-        bundle.e.valid := false.B
-      //bundle.e.bits := 0.U.asTypeOf(new TLBundleE(TLparams))
+        io.tlport.ConnectTLIn(bundle)
     }
 
     // Create the actual module, and attach the DDR port
@@ -196,24 +180,7 @@ class TLULtoMIGUltra(TLparams: TLBundleParameters)(implicit p :Parameters) exten
     //val mem_tl = Wire(HeterogeneousBag.fromNode(node.in))
     node.out.foreach {
       case  (bundle, _) =>
-        // Debug TL
-        //val ilatoaxi = Module(new ilatl())
-        //ilatoaxi.io.clk := clock
-        //ilatoaxi.connectAxi(bundle)
-
-        bundle.a.valid := io.tlport.a.valid
-        io.tlport.a.ready := bundle.a.ready
-        bundle.a.bits := io.tlport.a.bits
-
-        io.tlport.d.valid := bundle.d.valid
-        bundle.d.ready := io.tlport.d.ready
-        io.tlport.d.bits := bundle.d.bits
-        //bundle.b.bits := (new TLBundleB(TLparams)).fromBits(0.U)
-        bundle.b.ready := true.B
-        bundle.c.valid := false.B
-        //bundle.c.bits := 0.U.asTypeOf(new TLBundleC(TLparams))
-        bundle.e.valid := false.B
-      //bundle.e.bits := 0.U.asTypeOf(new TLBundleE(TLparams))
+        io.tlport.ConnectTLIn(bundle)
     }
 
     // Create the actual module, and attach the DDR port
@@ -299,30 +266,12 @@ class TLULtoMIGArtyA7(TLparams: TLBundleParameters)(implicit p :Parameters) exte
     //val mem_tl = Wire(HeterogeneousBag.fromNode(node.in))
     node.out.foreach {
       case  (bundle, _) =>
-        // Debug TL
-        //val ilatoaxi = Module(new ilatl())
-        //ilatoaxi.io.clk := clock
-        //ilatoaxi.connectAxi(bundle)
-
-        bundle.a.valid := io.tlport.a.valid
-        io.tlport.a.ready := bundle.a.ready
-        bundle.a.bits := io.tlport.a.bits
-
-        io.tlport.d.valid := bundle.d.valid
-        bundle.d.ready := io.tlport.d.ready
-        io.tlport.d.bits := bundle.d.bits
-        //bundle.b.bits := (new TLBundleB(TLparams)).fromBits(0.U)
-        bundle.b.ready := true.B
-        bundle.c.valid := false.B
-        //bundle.c.bits := 0.U.asTypeOf(new TLBundleC(TLparams))
-        bundle.e.valid := false.B
-      //bundle.e.bits := 0.U.asTypeOf(new TLBundleE(TLparams))
+        io.tlport.ConnectTLIn(bundle)
     }
 
     // Create the actual module, and attach the DDR port
     io.ddrport <> ddr.module.io.port
   }
-
 }
 
 class SertoMIGSakuraX(w: Int, idBits: Int = 6)(implicit p :Parameters) extends LazyModule {
@@ -403,31 +352,99 @@ class TLULtoMIGSakuraX(TLparams: TLBundleParameters)(implicit p :Parameters) ext
     //val mem_tl = Wire(HeterogeneousBag.fromNode(node.in))
     node.out.foreach {
       case  (bundle, _) =>
-        // Debug TL
-        //val ilatoaxi = Module(new ilatl())
-        //ilatoaxi.io.clk := clock
-        //ilatoaxi.connectAxi(bundle)
-
-        bundle.a.valid := io.tlport.a.valid
-        io.tlport.a.ready := bundle.a.ready
-        bundle.a.bits := io.tlport.a.bits
-
-        io.tlport.d.valid := bundle.d.valid
-        bundle.d.ready := io.tlport.d.ready
-        io.tlport.d.bits := bundle.d.bits
-        //bundle.b.bits := (new TLBundleB(TLparams)).fromBits(0.U)
-        bundle.b.ready := true.B
-        bundle.c.valid := false.B
-        //bundle.c.bits := 0.U.asTypeOf(new TLBundleC(TLparams))
-        bundle.e.valid := false.B
-      //bundle.e.bits := 0.U.asTypeOf(new TLBundleE(TLparams))
+        io.tlport.ConnectTLIn(bundle)
     }
 
     // Create the actual module, and attach the DDR port
     io.ddrport <> ddr.module.io.port
   }
-
 }
+
+class SertoMIGNexys4DDR(w: Int, idBits: Int = 6)(implicit p :Parameters) extends LazyModule {
+  // Create the DDR
+  val ddr = LazyModule(
+    new XilinxNexys4DDRMIG(
+      XilinxNexys4DDRMIGParams(
+        AddressSet.misaligned(
+          p(ExtSerMem).get.master.base,
+          0x8000000L * 1 // 256MB for the Arty7DDR,
+        ))))
+  // Create the desser
+  val params = Seq(TLMasterParameters.v1(
+    name = "tl-desser",
+    sourceId = IdRange(0, 1 << idBits)))
+  val desser = LazyModule(new TLDesser(w, params, true)) // Attach to the DDR
+  // Attach nodes
+  if(p(ExtSerMem).head.master.beatBytes != 8)
+    ddr.node := //TLSourceShrinker(16) :=
+      TLWidthWidget(p(ExtSerMem).head.master.beatBytes) :=
+      //TLFragmenter(p(ExtSerMem).head.master.beatBytes, p(MemoryBusKey).blockBytes) :=
+      desser.node
+  else
+    ddr.node := //TLSourceShrinker(16) :=
+      desser.node
+  // Create the module
+  lazy val module = new LazyModuleImp(this) {
+    val io = IO(new Bundle {
+      val serport = new SerialIO(w)
+      val ddrport = new XilinxNexys4DDRMIGIO(ddr.depth)
+    })
+
+    val depth = ddr.depth
+
+    // Connect the serport
+    io.serport <> desser.module.io.ser.head
+
+    // Create the actual module, and attach the DDR port
+    io.ddrport <> ddr.module.io.port
+  }
+}
+
+class TLULtoMIGNexys4DDR(TLparams: TLBundleParameters)(implicit p :Parameters) extends LazyModule {
+  // Create the DDR
+  val ddr = LazyModule(
+    new XilinxNexys4DDRMIG(
+      XilinxNexys4DDRMIGParams(
+        AddressSet.misaligned(
+          p(ExtMem).get.master.base,
+          0x8000000L * 1 // 256MB for the Arty7DDR,
+        ))))
+
+  // Create a dummy node where we can attach our silly TL port
+  val node = TLClientNode(Seq.tabulate(1) { channel =>
+    TLMasterPortParameters.v1(
+      clients = Seq(TLMasterParameters.v1(
+        name = "dummy",
+        sourceId = IdRange(0, 1 << TLparams.sourceBits) // CKDUR: The maximum ID possible goes here.
+      ))
+    )
+  })
+
+  // Attach to the DDR
+  if(p(ExtMem).head.master.beatBytes != 8)
+    ddr.node := TLWidthWidget(p(ExtMem).head.master.beatBytes) := node
+  else
+    ddr.node := node
+
+  lazy val module = new LazyModuleImp(this) {
+    val io = IO(new Bundle {
+      val tlport = Flipped(new TLUL(TLparams))
+      val ddrport = new XilinxNexys4DDRMIGIO(ddr.depth)
+    })
+
+    val depth = ddr.depth
+
+    //val mem_tl = Wire(HeterogeneousBag.fromNode(node.in))
+    node.out.foreach {
+      case  (bundle, _) =>
+        io.tlport.ConnectTLIn(bundle)
+    }
+
+    // Create the actual module, and attach the DDR port
+    io.ddrport <> ddr.module.io.port
+  }
+}
+
 
 
 class TLtoPCIe(cacheBlockBytes: Int,

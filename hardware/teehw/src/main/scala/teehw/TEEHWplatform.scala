@@ -491,6 +491,42 @@ object PinGen {
 class TLUL(val params: TLBundleParameters) extends Bundle {
   val a = Decoupled(new TLBundleA(params))
   val d = Flipped(Decoupled(new TLBundleD(params)))
+
+  def ConnectTLIn(bundle: TLBundle): Unit = {
+    bundle.a.valid := a.valid
+    a.ready := bundle.a.ready
+    bundle.a.bits := a.bits
+
+    d.valid := bundle.d.valid
+    bundle.d.ready := d.ready
+    d.bits := bundle.d.bits
+    //bundle.b.bits := (new TLBundleB(TLparams)).fromBits(0.U)
+    bundle.b.ready := true.B
+    bundle.c.valid := false.B
+    //bundle.c.bits := 0.U.asTypeOf(new TLBundleC(TLparams))
+    bundle.e.valid := false.B
+    //bundle.e.bits := 0.U.asTypeOf(new TLBundleE(TLparams))
+  }
+
+  def ConnectTLOut(ioi: TLBundle): Unit = {
+    // Connect outside the ones that can be untied
+    a.valid := ioi.a.valid
+    ioi.a.ready := a.ready
+    a.bits := ioi.a.bits
+
+    ioi.d.valid := d.valid
+    d.ready := ioi.d.ready
+    ioi.d.bits := d.bits
+
+    // Tie off the channels we dont need...
+    // ... I mean, we did tell the TLNodeParams that we only want Get and Put
+    ioi.b.bits := 0.U.asTypeOf(new TLBundleB(ioi.params))
+    ioi.b.valid := false.B
+    ioi.c.ready := false.B
+    ioi.e.ready := false.B
+    // Important NOTE: We did check connections until the mbus in verilog
+    // and there is no usage of channels B, C and E (except for some TL Monitors)
+  }
 }
 // NOTE: We need an external reset for this PCIe
 class XDMATopPadswReset(n: Int) extends XDMATopPads(n) {
@@ -586,23 +622,7 @@ object TEEHWPlatform {
     (sys.mem_tl zip io.tlport).foreach{
       case (ioh, tlport: TLUL) =>
         ioh.foreach{ case ioi: TLBundle =>
-          // Connect outside the ones that can be untied
-          tlport.a.valid := ioi.a.valid
-          ioi.a.ready := tlport.a.ready
-          tlport.a.bits := ioi.a.bits
-
-          ioi.d.valid := tlport.d.valid
-          tlport.d.ready := ioi.d.ready
-          ioi.d.bits := tlport.d.bits
-
-          // Tie off the channels we dont need...
-          // ... I mean, we did tell the TLNodeParams that we only want Get and Put
-          ioi.b.bits := 0.U.asTypeOf(new TLBundleB(ioi.params))
-          ioi.b.valid := false.B
-          ioi.c.ready := false.B
-          ioi.e.ready := false.B
-          // Important NOTE: We did check connections until the mbus in verilog
-          // and there is no usage of channels B, C and E (except for some TL Monitors)
+          tlport.ConnectTLOut(ioi)
         }
     }
 

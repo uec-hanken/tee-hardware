@@ -589,10 +589,10 @@ class Nexys4DDRConfig extends Config((site,here,up) => {
   }
   // Transform all ExtMem and ExtSerMem into 256MB
   case ExtMem => up(ExtMem).map{ mem =>
-    mem.copy(mem.master.copy(size = x"0_1000_0000"))
+    mem.copy(mem.master.copy(size = x"0_0800_0000"))
   }
   case ExtSerMem => up(ExtSerMem).map{ mem =>
-    mem.copy(mem.master.copy(size = x"0_1000_0000"))
+    mem.copy(mem.master.copy(size = x"0_0800_0000"))
   }
 
   // Not supported
