@@ -10,6 +10,8 @@ import sifive.blocks.devices.spi.{SPIFlashParams, SPIParams}
 import uec.teehardware.devices.sdram._
 import uec.teehardware.macros._
 import uec.teehardware._
+import uec.teehardware.devices.sifiveblocks._
+import uec.teehardware.devices.tlmemext._
 
 class DE2SDRAM extends Bundle {
   val CLK = Output(Bool())

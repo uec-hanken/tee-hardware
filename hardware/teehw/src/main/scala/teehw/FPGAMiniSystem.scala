@@ -6,18 +6,16 @@ import chisel3.experimental._
 import freechips.rocketchip.amba.axi4._
 import freechips.rocketchip.config._
 import freechips.rocketchip.diplomacy._
-import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{LogicalModuleTree, SubsystemLogicalTreeNode}
+import freechips.rocketchip.diplomaticobjectmodel.logicaltree._
 import freechips.rocketchip.interrupts._
-import freechips.rocketchip.prci.{ClockGroupAggregator, ClockGroupEphemeralNode, ClockGroupSourceNode, ClockGroupSourceParameters}
+import freechips.rocketchip.prci._
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.util._
-import sifive.blocks.devices.pinctrl._
-import sifive.blocks.devices.gpio._
-import sifive.blocks.devices.spi._
-import sifive.fpgashells.clocks._
 import testchipip.{SerialIO, TLDesser}
 import uec.teehardware.devices.clockctrl._
+import uec.teehardware.devices.sifiveblocks._
+import uec.teehardware.devices.tlmemext._
 //import uec.teehardware.vc707mig32._
 
 // The subssytem definition

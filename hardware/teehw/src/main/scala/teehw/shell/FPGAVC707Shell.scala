@@ -20,6 +20,8 @@ import uec.teehardware.macros._
 import uec.teehardware.devices.clockctrl._
 import uec.teehardware.devices.sdram.SDRAMKey
 import uec.teehardware.devices.usb11hs._
+import uec.teehardware.devices.sifiveblocks._
+import uec.teehardware.devices.tlmemext._
 
 class FMCVC707(val ext: Boolean = false, val xcvr: Boolean = false) extends Bundle {
   val CLK_M2C_P = Vec(2, Analog(1.W))
@@ -696,7 +698,7 @@ trait WithFPGAVC707InternConnect {
 trait WithFPGAVC707PureConnect {
   this: FPGAVC707Shell =>
   val chip : WithTEEHWbaseShell with WithTEEHWbaseConnect
-  def namedclocks: Seq[String] = chip.system.sys.asInstanceOf[HasTEEHWSystemModule].namedclocks
+  def namedclocks: Seq[String] = chip.system.asInstanceOf[HasTEEHWClockGroupModuleImp].namedclocks
   // This trait connects the chip to all essentials. This assumes no DDR is connected yet
 
   def PCIPORT = FMC1_HPC

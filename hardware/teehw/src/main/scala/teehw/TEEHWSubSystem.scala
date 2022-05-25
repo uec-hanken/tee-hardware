@@ -7,25 +7,19 @@
 package uec.teehardware
 
 import chisel3._
-import chisel3.internal.sourceinfo.SourceInfo
 import freechips.rocketchip.config.{Field, Parameters}
-import freechips.rocketchip.devices.tilelink._
-import freechips.rocketchip.devices.debug.{HasPeripheryDebug, HasPeripheryDebugModuleImp}
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.diplomaticobjectmodel.model.OMInterrupt
-import freechips.rocketchip.diplomaticobjectmodel.logicaltree.{LogicalModuleTree, RocketTileLogicalTreeNode}
 import freechips.rocketchip.tile._
 import freechips.rocketchip.tilelink.{TLWidthWidget, _}
-import freechips.rocketchip.interrupts._
 import freechips.rocketchip.util._
 import freechips.rocketchip.subsystem._
-import freechips.rocketchip.amba.axi4._
 import boom.common.BoomTile
-import freechips.rocketchip.prci.asyncMux
 import uec.teehardware.ibex._
 import testchipip.DromajoHelper
 import uec.teehardware.devices.opentitan.alert._
 import uec.teehardware.devices.opentitan.nmi_gen._
+import uec.teehardware.devices.sifiveblocks.DebugJTAGOnlyModuleImp
 
 case object WithAlertAndNMI extends Field[Boolean](false)
 
@@ -87,8 +81,28 @@ trait HasTEEHWTiles extends HasTiles { this: TEEHWBaseSubsystem =>
   def getOMInterruptDevice(resourceBindingsMap: ResourceBindingsMap): Seq[OMInterrupt] = Nil
 }
 
-trait HasTEEHWTilesModuleImp extends HasTilesModuleImp {
-  val outer: HasTEEHWTiles
+trait HasTEEHWTilesModuleImp extends LazyModuleImp with DebugJTAGOnlyModuleImp {
+  val outer: HasTEEHWTiles with HasTileInterruptSources with HasTileInputConstants
+
+  // NOTE: Just a copy of HasTilesModuleImp
+  val reset_vector = outer.tileResetVectorIONodes.zipWithIndex.map { case (n, i) => n.makeIO(s"reset_vector_$i") }
+  val tile_hartids = outer.tileHartIdIONodes.zipWithIndex.map { case (n, i) => n.makeIO(s"tile_hartids_$i") }
+
+  val meip = if(outer.meipNode.isDefined) Some(IO(Input(Vec(outer.meipNode.get.out.size, Bool())))) else None
+  meip.foreach { m =>
+    m.zipWithIndex.foreach{ case (pin, i) =>
+      (outer.meipNode.get.out(i)._1)(0) := pin
+    }
+  }
+  val seip = if(outer.seipNode.isDefined) Some(IO(Input(Vec(outer.seipNode.get.out.size, Bool())))) else None
+  seip.foreach { s =>
+    s.zipWithIndex.foreach{ case (pin, i) =>
+      (outer.seipNode.get.out(i)._1)(0) := pin
+    }
+  }
+  val nmi = outer.tiles.zip(outer.tileNMIIONodes).zipWithIndex.map { case ((tile, n), i) => tile.tileParams.core.useNMI.option(n.makeIO(s"nmi_$i")) }
+  // End: Just a copy of HasTilesModuleImp
+
   // TODO: The reset_vector and tile_hartids are exported as IO.
   // create file with core params
   ElaborationArtefacts.add("""core.config""", outer.tiles.map(x => x.module.toString).mkString("\n"))

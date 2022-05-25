@@ -15,6 +15,7 @@ import sifive.fpgashells.devices.xilinx.xilinxsakuraxmig._
 import sifive.fpgashells.devices.xilinx.xilinxnexys4ddrmig._
 import testchipip.{SerialIO, TLDesser}
 import uec.teehardware._
+import uec.teehardware.devices.tlmemext._
 
 // ******* For Xilinx FPGAs
 class SertoMIG(w: Int, idBits: Int = 6)(implicit p :Parameters) extends LazyModule {

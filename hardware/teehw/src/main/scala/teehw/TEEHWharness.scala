@@ -16,6 +16,8 @@ import sifive.blocks.devices.spi._
 import sifive.blocks.devices.uart._
 import testchipip.{SerialAdapter, SerialIO, SimDRAM, SimSPIFlashModel, TLDesser}
 import uec.teehardware.devices.sdram._
+import uec.teehardware.devices.sifiveblocks._
+import uec.teehardware.devices.tlmemext._
 
 // There is no simulation resource for TileLink buses, only for axi (for... some reason)
 // this is a LazyModule which instances the SimDRAM in axi4 mode from the TL bus
@@ -170,13 +172,13 @@ class TEEHWHarnessBundle extends Bundle {
   val success = Output(Bool())
 }
 
-trait WithTEEHWHarnessConnect {
+/*trait WithTEEHWHarnessConnect {
   implicit val p: Parameters
   val clock: Clock
   val reset: Reset
   val io: TEEHWHarnessBundle
 
-  val dut: WithTEEHWPlatformConnect
+  val dut: Any
 
   // A delayed reset to be handled properly, as the internal reset is embedded with the same sync
   val del_reset = ResetCatchAndSync(clock, reset.asBool, 5)
@@ -338,3 +340,4 @@ class TEEHWHarness()(implicit val p: Parameters) extends Module with HasTEEHWHar
     SerialAdapter.connectSimSerial(serial, clock, reset)
   }
 }
+ */

@@ -15,6 +15,8 @@ import sifive.fpgashells.ip.xilinx.arty100tmig._
 import uec.teehardware.macros._
 import uec.teehardware._
 import uec.teehardware.devices.clockctrl.ClockCtrlPortIO
+import uec.teehardware.devices.sifiveblocks._
+import uec.teehardware.devices.tlmemext._
 
 trait FPGAArtyA7ChipShell {
   // This trait only contains the connections that are supposed to be handled by the chip

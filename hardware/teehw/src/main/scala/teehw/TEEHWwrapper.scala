@@ -5,8 +5,8 @@ import chisel3.util._
 import chisel3.experimental.{Analog, IO, attach}
 import freechips.rocketchip.config._
 import freechips.rocketchip.diplomacy._
-import freechips.rocketchip.subsystem.{BaseSubsystem, ExtMem, MemoryBusKey, SbusToMbusXTypeKey}
-import freechips.rocketchip.tilelink.{TLBundleD, TLBundleParameters}
+import freechips.rocketchip.subsystem._
+import freechips.rocketchip.tilelink._
 import freechips.rocketchip.util._
 import sifive.blocks.devices.pinctrl._
 import sifive.blocks.devices.gpio._
@@ -14,11 +14,13 @@ import sifive.blocks.devices.spi._
 import sifive.fpgashells.clocks._
 import sifive.fpgashells.devices.xilinx.xilinxvc707pciex1._
 import uec.teehardware.devices.usb11hs._
+import uec.teehardware.devices.sifiveblocks._
+import uec.teehardware.devices.tlmemext._
 import freechips.rocketchip.util._
 import sifive.fpgashells.shell.xilinx.XDMATopPads
 import testchipip.SerialIO
 import uec.teehardware.devices.clockctrl.ClockCtrlPortIO
-import uec.teehardware.devices.sdram.{SDRAMIf, SDRAMKey}
+import uec.teehardware.devices.sdram._
 import uec.teehardware.shell._
 
 // **********************************************************************
@@ -65,7 +67,7 @@ class  WithTEEHWbaseShell(implicit val p :Parameters) extends RawModule {
   val uart_txd = IO(Output(Bool()))
   val uart_rxd = IO(Input(Bool()))
   val usb11hs = p(PeripheryUSB11HSKey).map{ _ => IO(new USB11HSPortIO)}
-  val pciePorts = p(IncludePCIe).option(IO(new XilinxVC707PCIeX1IO))
+  val pciePorts = p(XilinxVC707PCIe).map(A => IO(new XilinxVC707PCIeX1IO))
   val xdmaPorts = p(XDMAPCIe).map(A => IO(new XDMATopPadswReset(A.lanes)))
   // Memory port serialized
   val memser = p(ExtSerMem).map(A => IO(new SerialIO(A.serWidth)))
@@ -97,68 +99,77 @@ trait WithTEEHWbaseConnect {
 
   val clock : Clock
   val reset : Bool // System reset (for cores)
-  val system: WithTEEHWPlatformConnect
-
-  val cacheBlockBytes = system.sys.outer.asInstanceOf[BaseSubsystem].mbus.blockBytes
+  val system: Any
+  val syncStages = 3
 
   // Merge all the gpio vector
   val vgpio_in = gpio_in.map( gpi => VecInit(gpi.asBools) )
   val vgpio_out = gpio_out.map( gpo => Wire(Vec(ngpio_out, Bool())))
   (gpio_out zip vgpio_out).foreach{ case (u, v) => u := v.asUInt() }
   val gpio = (vgpio_in ++ vgpio_out).flatten
+
   // GPIOs
-  (gpio zip system.io.pins.gpio.pins).zipWithIndex.foreach {
-    case ((g: Bool, pin: BasePin), i: Int) =>
-      if(i < ngpio_in) BasePinToRegular(pin, g)
-      else g := BasePinToRegular(pin)
+  system.asInstanceOf[HasTEEHWPeripheryGPIOModuleImp].gpio.foreach{sysgpio =>
+    (gpio zip sysgpio.pins).zipWithIndex.foreach {
+      case ((g: Bool, pin: EnhancedPin), i: Int) =>
+        if(i < ngpio_in) BasePinToRegular(pin.toBasePin(), g)
+        else g := BasePinToRegular(pin.toBasePin())
+    }
   }
 
   // JTAG
-  BasePinToRegular(system.io.pins.jtag.TMS, jtag.jtag_TMS)
-  BasePinToRegular(system.io.pins.jtag.TCK, jtag.jtag_TCK)
-  BasePinToRegular(system.io.pins.jtag.TDI, jtag.jtag_TDI)
-  jtag.jtag_TDO := BasePinToRegular(system.io.pins.jtag.TDO)
+  system.asInstanceOf[DebugJTAGOnlyModuleImp].jtag.foreach{sysjtag =>
+    sysjtag.TMS := jtag.jtag_TMS
+    sysjtag.TCK := jtag.jtag_TCK.asClock
+    sysjtag.TDI := jtag.jtag_TDI
+    jtag.jtag_TDO := sysjtag.TDO.data
+    sysjtag.TRSTn.foreach(_ := jrst_n)
+  }
+  reset := !rst_n || system.asInstanceOf[DebugJTAGOnlyModuleImp].ndreset.getOrElse(false.B) // This connects the debug reset and the general reset together
 
   // QSPI
-  (qspi zip system.io.pins.spi).foreach {case (portspi, sys) =>
-    portspi.qspi_cs  := VecInit(sys.cs.map(BasePinToRegular(_))).asUInt()
-    portspi.qspi_sck := BasePinToRegular(sys.sck)
-    portspi.qspi_mosi := BasePinToRegular(sys.dq(0))
-    BasePinToRegular(sys.dq(1), portspi.qspi_miso)
-    BasePinToRegular(sys.dq(2))
-    BasePinToRegular(sys.dq(3))
+  (qspi zip system.asInstanceOf[HasTEEHWPeripherySPIModuleImp].spi).foreach {case (portspi, sys) =>
+    portspi.qspi_cs  := sys.cs.asUInt
+    portspi.qspi_sck := sys.sck
+    portspi.qspi_mosi := sys.dq(0).o
+    sys.dq(1).i := withClockAndReset(clock, reset) { SynchronizerShiftReg(portspi.qspi_miso, syncStages, name = Some(s"spi_dq_1_sync")) }
+    sys.dq(0).i := false.B
+    sys.dq(2).i := false.B
+    sys.dq(3).i := false.B
   }
 
   // UART
-  BasePinToRegular(system.io.pins.uart.rxd, uart_rxd)
-  uart_txd := BasePinToRegular(system.io.pins.uart.txd)
+  system.asInstanceOf[HasTEEHWPeripheryUARTModuleImp].uart.foreach{sysuart =>
+    sysuart.rxd := withClockAndReset(clock, reset) { SynchronizerShiftReg(uart_rxd, syncStages, name = Some(s"uart_rxd_sync")) }
+    uart_txd := sysuart.txd
+  }
 
   // USB11
-  (usb11hs zip system.io.usb11hs).foreach{ case (port, sysport) => port <> sysport }
+
+  (usb11hs zip system.asInstanceOf[HasPeripheryUSB11HSModuleImp].usb11hs).foreach{ case (port, sysport) => port <> sysport }
 
   // The memory port
   val memdevice = Some(new MemoryDevice)
 
   // The serialized memory port
-  (memser zip system.io.memser).foreach{ case (port, sysport) => port <> sysport }
+  (memser zip system.asInstanceOf[HasTEEHWPeripheryExtSerMemModuleImp].memSerPorts).foreach{ case (port, sysport) => port <> sysport }
 
   // The serialized external port
-  (extser zip system.io.extser).foreach{ case (port, sysport) => port <> sysport }
+  (extser zip system.asInstanceOf[HasTEEHWPeripheryExtSerBusModuleImp].extSerPorts).foreach{ case (port, sysport) => port <> sysport }
 
   // The SDRAM port
-  (sdram zip system.io.sdram).foreach{ case (port, sysport) => port <> sysport }
+  (sdram zip system.asInstanceOf[HasSDRAMModuleImp].sdramio).foreach{ case (port, sysport) => port <> sysport }
 
   // PCIe port (if available)
-  (pciePorts zip system.io.pciePorts).foreach{ case (port, sysport) => port <> sysport }
-  (xdmaPorts zip system.io.xdmaPorts).foreach{ case (port, sysport) => port <> sysport }
+  (pciePorts zip system.asInstanceOf[HasTEEHWPeripheryXilinxVC707PCIeX1ModuleImp].pciePorts).foreach{ case (port, sysport) => port <> sysport }
+  (xdmaPorts zip system.asInstanceOf[HasTEEHWPeripheryXDMAModuleImp].xdmaPorts).foreach{ case (port, sysport) => port <> sysport }
 
   // TL external memory port
-  val tlparam = system.io.tlport.map(tl => tl.params)
+  val tlparam = system.asInstanceOf[HasTEEHWPeripheryExtMemModuleImp].mem_tl.map(tl => tl.params)
   tlport = tlparam.map{tl => IO(new TLUL(tl))}
   // TL port connection
-  (system.io.tlport zip tlport).foreach{case (base, chip) =>
-    chip.a <> base.a
-    base.d <> chip.d
+  (system.asInstanceOf[HasTEEHWPeripheryExtMemModuleImp].mem_tl zip tlport).foreach{case (base, chip) =>
+    chip.ConnectTLOut(base)
   }
   // A helper function for alterate the number of bits of the id
   def tlparamsOtherId(n: Int) = {
@@ -168,19 +179,17 @@ trait WithTEEHWbaseConnect {
   }
 
   // Clock and reset connection
-  val aclkn = p(ExposeClocks).option(system.io.aclocks.size)
+  val aclkn = p(ExposeClocks).option(system.asInstanceOf[HasTEEHWClockGroupModuleImp].aclocks.size)
   aclocks = aclkn.map(A => IO(Vec(A, Input(Clock()))))
   clock := sys_clk
-  if(p(ExposeClocks)) system.io.aclocks := aclocks.get
+  if(p(ExposeClocks)) system.asInstanceOf[HasTEEHWClockGroupModuleImp].aclocks := aclocks.get
   else {
-    system.io.aclocks.foreach(_ := sys_clk)
+    system.asInstanceOf[HasTEEHWClockGroupModuleImp].aclocks.foreach(_ := sys_clk)
   }
-  reset := !rst_n || system.io.ndreset // This connects the debug reset and the general reset together
-  system.io.jtag_reset := !jrst_n
 
   // Connecting the SD clock if the clocks are not exposed
   sdramclock.foreach{ sdclk =>
-    (system.io.aclocks zip system.sys.namedclocks).filter(_._2.contains("sdramClockGroup")).foreach{ case (aclk, anam) =>
+    (system.asInstanceOf[HasTEEHWClockGroupModuleImp].aclocks zip system.asInstanceOf[HasTEEHWClockGroupModuleImp].namedclocks).filter(_._2.contains("sdramClockGroup")).foreach{ case (aclk, anam) =>
       println(s"  [BASE] ${anam} attached to the sdramclock")
       aclk := sdclk
     }
@@ -188,7 +197,7 @@ trait WithTEEHWbaseConnect {
 
   // Connecting the MEM clock if the clocks are not exposed
   ChildClock.foreach{ cclk =>
-    (system.io.aclocks zip system.sys.namedclocks).filter(_._2.contains("mbus")).foreach{ case (aclk, anam) =>
+    (system.asInstanceOf[HasTEEHWClockGroupModuleImp].aclocks zip system.asInstanceOf[HasTEEHWClockGroupModuleImp].namedclocks).filter(_._2.contains("mbus")).foreach{ case (aclk, anam) =>
       println(s"  [BASE] ${anam} attached to the ChildClock")
       aclk := cclk
     }
@@ -196,7 +205,7 @@ trait WithTEEHWbaseConnect {
 
   // Connecting the RTC clock if the clocks are not exposed
   RTCclock.foreach{ rtcclk =>
-    (system.io.aclocks zip system.sys.namedclocks).filter(_._2.contains("rtc_clock")).foreach{ case (aclk, anam) =>
+    (system.asInstanceOf[HasTEEHWClockGroupModuleImp].aclocks zip system.asInstanceOf[HasTEEHWClockGroupModuleImp].namedclocks).filter(_._2.contains("rtc_clock")).foreach{ case (aclk, anam) =>
       println(s"  [BASE] ${anam} attached to the RTCclock")
       aclk := rtcclk
     }
@@ -211,7 +220,7 @@ trait HasTEEHWbase {
   val reset = Wire(Bool()) // System reset (for cores)
   val system = withClockAndReset(clock, reset) {
     // The platform module
-    Module(new TEEHWPlatform)
+    Module(LazyModule(new TEEHWSystem).module)
   }
   system.suggestName("system")
 }
@@ -236,9 +245,9 @@ trait FPGAInternals {
   // Parameters that depends on the generated system (not only the config)
   def tlparam: Option[TLBundleParameters] = otherId.map(outer.get.tlparamsOtherId).getOrElse(outer.get.tlparam)
   def aclkn: Option[Int] = outer.get.aclkn
-  def memserSourceBits: Option[Int] = outer.get.system.sys.asInstanceOf[HasTEEHWSystemModule].serSourceBits
-  def extserSourceBits: Option[Int] = outer.get.system.sys.asInstanceOf[HasTEEHWSystemModule].extSourceBits
-  def namedclocks: Seq[String] = outer.get.system.sys.asInstanceOf[HasTEEHWSystemModule].namedclocks
+  def memserSourceBits: Option[Int] = outer.get.system.asInstanceOf[HasTEEHWPeripheryExtSerMemModuleImp].serSourceBits
+  def extserSourceBits: Option[Int] = outer.get.system.asInstanceOf[HasTEEHWPeripheryExtSerBusModuleImp].extSourceBits
+  def namedclocks: Seq[String] = outer.get.system.asInstanceOf[HasTEEHWClockGroupModuleImp].namedclocks
   def isChildClock = outer.get.isChildClock
   def isChildReset = isChildClock
   def issdramclock = outer.get.issdramclock

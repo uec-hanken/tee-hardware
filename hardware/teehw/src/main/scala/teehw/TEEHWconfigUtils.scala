@@ -13,29 +13,14 @@ import freechips.rocketchip.tile._
 import boom.common._
 import sifive.blocks.devices.spi.SPIFlashParams
 import sifive.fpgashells.devices.xilinx.xdma.XDMAParams
+import uec.teehardware.devices.sifiveblocks.FreqKeyMHz
 import uec.teehardware.ibex._
 
 // The number of gpios that we want as input
 case object GPIOInKey extends Field[Int](8)
 
-// Frequency
-case object FreqKeyMHz extends Field[Double](100.0)
-
-// Frequency of SD
-case object SDCardMHz extends Field[Double](20.0)
-
-// Frequency of QSPI
-case object QSPICardMHz extends Field[Double](50.0)
-
-// Include the PCIe
-case object IncludePCIe extends Field[Boolean](false)
-case object XDMAPCIe extends Field[Option[XDMAParams]](None)
-
 // When external the DDR port, has to run at another freq
 // case object DDRPortOther extends Field[Boolean](false) // NOTE: Deprecated
-case object RTCPort extends Field[Boolean](false)
-case class MemorySerialPortParams(master: MasterPortParams, nMemoryChannels: Int, serWidth: Int)
-case object ExtSerMem extends Field[Option[MemorySerialPortParams]](None)
 
 // Our own reset vector
 case object TEEHWResetVector extends Field[Int](0x10040)
@@ -49,7 +34,6 @@ case object CbusToCryptoBusXTypeKey extends Field[ClockCrossingType](Synchronous
 case object EXTBUS extends TLBusWrapperLocation("subsystem_extbus")
 case object ExtBusKey extends Field[ExtBusParams]
 case object CbusToExtBusXTypeKey extends Field[ClockCrossingType](SynchronousCrossing())
-case object ExtSerBus extends Field[Option[MemorySerialPortParams]](None)
 
 // Async clock exposure
 case object ExposeClocks extends Field[Boolean](false)

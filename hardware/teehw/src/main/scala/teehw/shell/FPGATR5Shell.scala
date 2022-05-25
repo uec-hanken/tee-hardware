@@ -12,6 +12,8 @@ import sifive.blocks.devices.spi.{SPIFlashParams, SPIParams}
 import uec.teehardware.macros._
 import uec.teehardware._
 import uec.teehardware.devices.sdram.SDRAMKey
+import uec.teehardware.devices.sifiveblocks._
+import uec.teehardware.devices.tlmemext._
 
 class FMCTR5(val ext: Boolean = false, val xcvr: Boolean = false) extends Bundle {
   val CLK_M2C_p = Vec(2, Analog(1.W))
@@ -382,7 +384,7 @@ trait WithFPGATR5PureConnect {
   this: FPGATR5Shell =>
   val chip: WithTEEHWbaseShell with WithTEEHWbaseConnect
 
-  def namedclocks: Seq[String] = chip.system.sys.asInstanceOf[HasTEEHWSystemModule].namedclocks
+  def namedclocks: Seq[String] = chip.system.asInstanceOf[HasTEEHWClockGroupModuleImp].namedclocks
   // This trait connects the chip to all essentials. This assumes no DDR is connected yet
   chip.gpio_out.foreach{gpo =>
     LED := Cat(gpo, BUTTON(2))

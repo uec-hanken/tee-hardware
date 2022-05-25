@@ -12,6 +12,8 @@ import sifive.blocks.devices.spi.{SPIFlashParams, SPIParams}
 import uec.teehardware.macros._
 import uec.teehardware._
 import uec.teehardware.devices.sdram.SDRAMKey
+import uec.teehardware.devices.sifiveblocks._
+import uec.teehardware.devices.tlmemext._
 
 class HSMCTR4(val on1: Boolean = true, val on2: Boolean = true) extends Bundle {
   val CLKIN0 = Input(Bool())
@@ -337,7 +339,7 @@ trait WithFPGATR4PureConnect {
   this: FPGATR4Shell =>
   val chip : WithTEEHWbaseShell with WithTEEHWbaseConnect
   
-  def namedclocks: Seq[String] = chip.system.sys.asInstanceOf[HasTEEHWSystemModule].namedclocks
+  def namedclocks: Seq[String] = chip.system.asInstanceOf[HasTEEHWClockGroupModuleImp].namedclocks
   // This trait connects the chip to all essentials. This assumes no DDR is connected yet
   chip.gpio_out.foreach{gpo =>
     LED := Cat(gpo, BUTTON(2))

@@ -20,6 +20,8 @@ import uec.teehardware.macros._
 import uec.teehardware.devices.clockctrl._
 import uec.teehardware.devices.sdram.SDRAMKey
 import uec.teehardware.devices.usb11hs._
+import uec.teehardware.devices.sifiveblocks._
+import uec.teehardware.devices.tlmemext._
 
 class FMCSakuraX extends Bundle {
   val CLK_M2C_P = Vec(2, Analog(1.W))
@@ -480,7 +482,7 @@ trait WithFPGASakuraXInternConnect {
 trait WithFPGASakuraXPureConnect {
   this: FPGASakuraXShell =>
   val chip : WithTEEHWbaseShell with WithTEEHWbaseConnect
-  def namedclocks: Seq[String] = chip.system.sys.asInstanceOf[HasTEEHWSystemModule].namedclocks
+  def namedclocks: Seq[String] = chip.system.asInstanceOf[HasTEEHWClockGroupModuleImp].namedclocks
   // This trait connects the chip to all essentials. This assumes no DDR is connected yet
 
   chip.gpio_out.foreach{gpo =>

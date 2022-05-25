@@ -15,6 +15,8 @@ import sifive.fpgashells.ip.xilinx.nexys4ddrmig._
 import uec.teehardware.macros._
 import uec.teehardware._
 import uec.teehardware.devices.clockctrl.ClockCtrlPortIO
+import uec.teehardware.devices.sifiveblocks._
+import uec.teehardware.devices.tlmemext._
 
 trait FPGANexys4DDRChipShell {
   // This trait only contains the connections that are supposed to be handled by the chip

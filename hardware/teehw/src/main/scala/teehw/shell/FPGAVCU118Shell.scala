@@ -18,6 +18,8 @@ import sifive.fpgashells.ip.xilinx._
 import sifive.fpgashells.shell.xilinx.XDMATopPads
 import uec.teehardware.devices.clockctrl.ClockCtrlPortIO
 import uec.teehardware.devices.usb11hs.PeripheryUSB11HSKey
+import uec.teehardware.devices.sifiveblocks._
+import uec.teehardware.devices.tlmemext._
 
 trait FPGAVCU118ChipShell {
   // This trait only contains the connections that are supposed to be handled by the chip
@@ -60,7 +62,7 @@ trait FPGAVCU118ChipShell {
     })
   }
 
-  val pciePorts = p(IncludePCIe).option(IO(new XilinxVC707PCIeX1Pads))
+  val pciePorts = p(XilinxVC707PCIe).map(A => IO(new XilinxVC707PCIeX1Pads))
   val xdmaPorts = p(XDMAPCIe).map(A => IO(new XDMATopPads(A.lanes)))
 }
 

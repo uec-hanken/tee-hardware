@@ -1,6 +1,5 @@
 package uec.teehardware.macros
 
-import chipsalliance.rocketchip.config.Parameters
 import chisel3._
 import chisel3.util._
 import chisel3.experimental.{Analog, IO, attach}
@@ -12,6 +11,8 @@ import freechips.rocketchip.util._
 import sifive.blocks.devices.pinctrl.BasePin
 import testchipip.{SerialIO, TLDesser}
 import uec.teehardware._
+import uec.teehardware.devices.tlmemext._
+import chipsalliance.rocketchip.config.Parameters
 
 // ** For Quartus-based FPGAs
 

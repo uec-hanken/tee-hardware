@@ -27,6 +27,8 @@ import freechips.rocketchip.util.BooleanToAugmentedBoolean
 import uec.teehardware.devices.clockctrl.{ClockCtrlParams, PeripheryClockCtrlKey}
 import uec.teehardware.devices.opentitan.nmi_gen._
 import uec.teehardware.devices.sdram._
+import uec.teehardware.devices.sifiveblocks._
+import uec.teehardware.devices.tlmemext._
 import uec.teehardware.ibex._
 
 
@@ -447,11 +449,11 @@ class EBus16 extends Config((site, here, up) => {
 
 // *************** PCI Configuration (PCIE) ******************
 class WPCIe extends Config((site, here, up) => {
-  case IncludePCIe => true
+  case XilinxVC707PCIe => Some(XilinxVC707PCIeX1Params)
 })
 
 class WoPCIe extends Config((site, here, up) => {
-  case IncludePCIe => false
+  case XilinxVC707PCIe => None
 })
 
 class WUSB extends Config((site, here, up) => {
@@ -485,7 +487,7 @@ class DE4Config extends Config((new WithIbexSynthesizedNoICache).alter((site,her
   case QSPICardMHz => 1.0
   case SDCardMHz => 5.0
   /* DE4 is not support PCIe (yet) */
-  case IncludePCIe => false
+  case XilinxVC707PCIe => None
   case PeripheryRandomKey => up(PeripheryRandomKey, site) map {r =>
     r.copy(board = "Altera", impl = 0)
   }
@@ -498,7 +500,7 @@ class TR4Config extends Config((new WithIbexSynthesizedNoICache).alter((site,her
   case QSPICardMHz => 1.0
   case SDCardMHz => 5.0
   /* TR4 is not support PCIe (yet) */
-  case IncludePCIe => false
+  case XilinxVC707PCIe => None
   case PeripheryRandomKey => up(PeripheryRandomKey, site) map {r =>
     r.copy(board = "Altera", impl = 0)
   }
@@ -511,7 +513,7 @@ class TR5Config extends Config((new WithIbexSynthesizedNoICache).alter((site,her
   case QSPICardMHz => 1.0
   case SDCardMHz => 5.0
   /* TR4 is not support PCIe (yet) */
-  case IncludePCIe => false
+  case XilinxVC707PCIe => None
   case PeripheryRandomKey => up(PeripheryRandomKey, site) map {r =>
     r.copy(board = "Altera", impl = 0)
   }
@@ -551,14 +553,14 @@ class VCU118Config extends Config((site,here,up) => {
     // From there, is just a matter of actually disabling always the IncludePCIe,
     // as this one just enables the VC707 version
     // TODO: Do a cleaner approach
-  case XDMAPCIe => up(IncludePCIe).option(sifive.fpgashells.ip.xilinx.xdma.XDMAParams(
+  case XDMAPCIe => up(XilinxVC707PCIe).map { A => sifive.fpgashells.ip.xilinx.xdma.XDMAParams(
     name = "fmc_xdma", location = "X0Y3", lanes = 4,
     bars = Seq(AddressSet(0x40000000L, 0x1FFFFFFFL)),
     control = 0x2000000000L,
     bases = Seq(0x40000000L),
     gen = 3
-  ))
-  case IncludePCIe => false
+  )}
+  case XilinxVC707PCIe => None
   /* The DDR memory supports 256*8 transactions. This is to avoid modifying chipyard*/
   case MemoryBusKey => up(MemoryBusKey).copy(blockBytes = 256*8)
 })
@@ -623,7 +625,7 @@ class DE2Config extends Config((new WithIbexSynthesizedNoICache).alter((site,her
   case QSPICardMHz => 1.0
   case SDCardMHz => 5.0
   /* DE4 is not support PCIe (yet) */
-  case IncludePCIe => false
+  case XilinxVC707PCIe => None
   case PeripheryRandomKey => up(PeripheryRandomKey, site) map {r =>
     r.copy(board = "Altera", impl = 0)
   }
