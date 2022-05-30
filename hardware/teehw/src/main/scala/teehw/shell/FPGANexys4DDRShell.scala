@@ -74,7 +74,7 @@ class FPGANexys4DDRShell(implicit val p :Parameters) extends RawModule
   with FPGANexys4DDRClockAndResetsAndDDR {
 }
 
-class FPGANexys4DDRInternal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConnect])(implicit val p :Parameters) extends RawModule
+class FPGANexys4DDRInternal(chip: Option[Any])(implicit val p :Parameters) extends RawModule
   with FPGAInternals
   with FPGANexys4DDRClockAndResetsAndDDR {
   def outer = chip
@@ -87,7 +87,7 @@ class FPGANexys4DDRInternal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseCo
   val clock = Wire(Clock())
   val reset = Wire(Bool())
 
-  val isOtherClk = isChildClock || (p(SbusToMbusXTypeKey) match {
+  val isOtherClk = (p(SbusToMbusXTypeKey) match {
     case _: AsynchronousCrossing => true
     case _ => false
   })
@@ -132,12 +132,12 @@ class FPGANexys4DDRInternal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseCo
       mod.io.tlport.a <> chiptl.a
       chiptl.d <> mod.io.tlport.d
 
-      // Legacy ChildClock
-      ChildClock.foreach { cclk =>
-        println("Shell Island and Child Clock connected to clk_out4 (10MHz)")
-        cclk := pll.io.clk_out4.get
-        mod.clock := pll.io.clk_out4.get
-        mod.reset := reset_to_child
+      p(SbusToMbusXTypeKey) match {
+        case _: AsynchronousCrossing =>
+          mod.clock := pll.io.clk_out4.get
+          mod.reset := reset_to_child
+        case _ =>
+          mod.clock := pll.io.clk_out1.get
       }
 
       init_calib_complete := mod.io.ddrport.init_calib_complete
@@ -162,8 +162,6 @@ class FPGANexys4DDRInternal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseCo
 
       p(SbusToMbusXTypeKey) match {
         case _: AsynchronousCrossing =>
-          println("Shell Island connected to clk_out4 (10MHz)")
-          ChildClock.foreach(_ := pll.io.clk_out4.get)
           mod.clock := pll.io.clk_out4.get
           mod.reset := reset_to_child
         case _ =>
@@ -179,29 +177,29 @@ class FPGANexys4DDRInternal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseCo
     reset := reset_to_sys
     sys_clk := pll.io.clk_out1.get
     rst_n := !reset_to_sys
-    jrst_n := !reset_to_sys
-    usbClk.foreach(_ := false.B.asClock())
-    sdramclock.foreach(_ := pll.io.clk_out1.get)
+    usbClk.foreach(_ := false.B.asClock) // TODO: Create and associate a 48MHz clock
     DefaultRTC
 
-    aclocks.foreach { aclocks =>
-      println(s"Connecting async clocks by default =>")
-      (aclocks zip namedclocks).foreach { case (aclk, nam) =>
-        println(s"  Detected clock ${nam}")
-        if(nam.contains("mbus")) {
-          p(SbusToMbusXTypeKey) match {
-            case _: AsynchronousCrossing =>
-              aclk := pll.io.clk_out4.get
-              println("    Connected to clk_out4 (10 MHz)")
-            case _ =>
-              aclk := pll.io.clk_out3.get
-              println("    Connected to clk_out3")
-          }
+    println(s"Connecting ${aclkn} async clocks by default =>")
+    (aclocks zip namedclocks).foreach { case (aclk, nam) =>
+      println(s"  Detected clock ${nam}")
+      if(nam.contains("mbus")) {
+        p(SbusToMbusXTypeKey) match {
+          case _: AsynchronousCrossing =>
+            aclk := pll.io.clk_out4.get
+            println("    Connected to clk_out4 (10 MHz)")
+          case _ =>
+            aclk := pll.io.clk_out3.get
+            println("    Connected to clk_out3")
         }
-        else {
-          aclk := pll.io.clk_out3.get
-          println("    Connected to clk_out3")
-        }
+      }
+      else if(nam.contains("sdramClockGroup")) {
+        println("    Connected to clk_out1")
+        aclk := pll.io.clk_out1.get
+      }
+      else {
+        aclk := pll.io.clk_out3.get
+        println("    Connected to clk_out3")
       }
     }
 
@@ -212,22 +210,20 @@ class FPGANexys4DDRInternal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseCo
       // Serial port
       mod.serport.flipConnect(es)
 
-      aclocks.foreach{ aclocks =>
-        println(s"Connecting clock for CryptoBus from clock controller =>")
-        (aclocks zip namedclocks).foreach{ case (aclk, nam) =>
-          println(s"  Detected clock ${nam}")
-          if(nam.contains("cryptobus") && mod.clockctrl.size >= 1) {
-            aclk := mod.clockctrl(0).asInstanceOf[ClockCtrlPortIO].clko
-            println("    Connected to first clock control")
-          }
-          if(nam.contains("tile_0") && mod.clockctrl.size >= 2) {
-            aclk := mod.clockctrl(1).asInstanceOf[ClockCtrlPortIO].clko
-            println("    Connected to second clock control")
-          }
-          if(nam.contains("tile_1") && mod.clockctrl.size >= 3) {
-            aclk := mod.clockctrl(2).asInstanceOf[ClockCtrlPortIO].clko
-            println("    Connected to third clock control")
-          }
+      println(s"Connecting clock for CryptoBus from clock controller =>")
+      (aclocks zip namedclocks).foreach{ case (aclk, nam) =>
+        println(s"  Detected clock ${nam}")
+        if(nam.contains("cryptobus") && mod.clockctrl.size >= 1) {
+          aclk := mod.clockctrl(0).asInstanceOf[ClockCtrlPortIO].clko
+          println("    Connected to first clock control")
+        }
+        if(nam.contains("tile_0") && mod.clockctrl.size >= 2) {
+          aclk := mod.clockctrl(1).asInstanceOf[ClockCtrlPortIO].clko
+          println("    Connected to second clock control")
+        }
+        if(nam.contains("tile_1") && mod.clockctrl.size >= 3) {
+          aclk := mod.clockctrl(2).asInstanceOf[ClockCtrlPortIO].clko
+          println("    Connected to third clock control")
         }
       }
     }
@@ -236,7 +232,7 @@ class FPGANexys4DDRInternal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseCo
 
 trait WithFPGANexys4DDRConnect {
   this: FPGANexys4DDRShell =>
-  val chip : WithTEEHWbaseShell with WithTEEHWbaseConnect
+  val chip : Any
   val intern = Module(new FPGANexys4DDRInternal(Some(chip)))
   // To intern = Clocks and resets
   intern.CLK100MHZ := CLK100MHZ
@@ -251,56 +247,52 @@ trait WithFPGANexys4DDRConnect {
   intern.connectChipInternals(chip)
 
   // GPIO
-  chip.gpio_out.foreach{gpo =>
-    if(gpo.getWidth >= 1) IOBUF(led(0), gpo(0))
-    if(gpo.getWidth >= 2) IOBUF(led(1), gpo(1))
-    if(gpo.getWidth >= 3) IOBUF(led(2), gpo(2))
+  val gpport = led.slice(0, 3) ++ sw.slice(0, 3)
+  chip.asInstanceOf[HasTEEHWPeripheryGPIOChipImp].gpio.zip(gpport).foreach{case(gp, i) =>
+    attach(gp, i)
   }
-  IOBUF(led(3), intern.init_calib_complete) //chip.gpio_out(3)
-  chip.gpio_in.foreach(gpi => gpi := Cat(IOBUF(sw(3)), IOBUF(sw(2)), IOBUF(sw(1)), IOBUF(sw(0))))
+  IOBUF(led(3), intern.init_calib_complete)
 
   // JTAG
-  chip.jtag.jtag_TCK := IBUFG(IOBUF(jd(2)).asClock).asBool
-  chip.jtag.jtag_TDI := IOBUF(jd(4))
-  PULLUP(jd(4))
-  IOBUF(jd(0), chip.jtag.jtag_TDO)
-  chip.jtag.jtag_TMS := IOBUF(jd(5))
-  PULLUP(jd(5))
-  chip.jrst_n := IOBUF(jd(6))
-  PULLUP(jd(6))
+  chip.asInstanceOf[DebugJTAGOnlyChipImp].jtag.foreach{ jtag =>
+    attach(jd(2), jtag.TCK)
+    attach(jd(4), jtag.TDI)
+    attach(jd(0), jtag.TDO)
+    attach(jd(5), jtag.TMS)
+    attach(jd(6), jtag.TRSTn)
+    PULLUP(jd(4))
+    PULLUP(jd(5))
+    PULLUP(jd(6))
+  }
 
   // QSPI
-  (chip.qspi zip chip.allspicfg).zipWithIndex.foreach {
-    case ((qspiport: TEEHWQSPIBundle, _: SPIParams), i: Int) =>
+  (chip.asInstanceOf[HasTEEHWPeripherySPIChipImp].spi zip chip.asInstanceOf[HasTEEHWPeripherySPIChipImp].allspicfg).zipWithIndex.foreach {
+    case ((qspiport: SPIPIN, _: SPIParams), i: Int) =>
       if (i == 0) {
         // SD IO
-        IOBUF(ja(0), qspiport.qspi_cs(0))
-        IOBUF(ja(1), qspiport.qspi_mosi)
-        qspiport.qspi_miso := IOBUF(ja(2))
-        IOBUF(ja(3), qspiport.qspi_sck)
-      } else {
-        // Non-valid qspi. Just zero it
-        qspiport.qspi_miso := false.B
+        attach(ja(0), qspiport.CS(0))
+        attach(ja(1), qspiport.DQ(0))
+        attach(qspiport.DQ(1), ja(2))
+        attach(ja(3), qspiport.SCK)
       }
-    case ((qspiport: TEEHWQSPIBundle, _: SPIFlashParams), _: Int) =>
-      IOBUF(jc(3), qspiport.qspi_sck)
-      IOBUF(jc(0),  qspiport.qspi_cs(0))
+    case ((qspiport: SPIPIN, _: SPIFlashParams), _: Int) =>
+      attach(jc(3), qspiport.SCK)
+      attach(jc(0),  qspiport.CS(0))
 
-      IOBUF(jc(1), qspiport.qspi_mosi)
-      qspiport.qspi_miso := IOBUF(jc(2))
-      IOBUF(jc(6), true.B) // qspi_dq(2)
-      IOBUF(jc(7), true.B) // qspi_dq(3)
+      attach(jc(1), qspiport.DQ(0))
+      attach(qspiport.DQ(1), jc(2))
+      attach(jc(6), qspiport.DQ(2))
+      attach(jc(7), qspiport.DQ(3))
   }
 
   // UART
-  chip.uart_rxd := IOBUF(uart_txd_in)	  // UART_TXD
-  IOBUF(uart_rxd_out, chip.uart_txd) 	  // UART_RXD
+  chip.asInstanceOf[HasTEEHWPeripheryUARTChipImp].uart.foreach{ uart =>
+    attach(uart.RXD, uart_txd_in)	    // UART_TXD
+    attach(uart_rxd_out, uart.TXD) 	  // UART_RXD
+  }
 
   // USB phy connections
   // TODO: Not possible to create the 48MHz
 
-  // TODO Nullify this for now
-  chip.sdram.foreach{ sdram =>
-    sdram.sdram_data_i := 0.U
-  }
+  // TODO Nullify sdram
 }

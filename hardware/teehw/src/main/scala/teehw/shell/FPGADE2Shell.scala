@@ -41,7 +41,19 @@ class DE2SDRAM extends Bundle {
         b.io.i := o
         attach(b.io.io, an)
         b.io.o
-    }).asUInt()
+    }).asUInt
+  }
+  def from_SDRAMIO(io: SDRAMIO) = {
+    CLK := GET(io.sdram_clk_o)
+    CKE := GET(io.sdram_cke_o)
+    CS_N := GET(io.sdram_cs_o)
+    RAS_N := GET(io.sdram_ras_o)
+    CAS_N := GET(io.sdram_cas_o)
+    WE_N := GET(io.sdram_we_o)
+    DQM := VecInit(io.sdram_dqm_o.map(GET(_))).asUInt
+    ADDR := VecInit(io.sdram_addr_o.map(GET(_))).asUInt
+    BA := VecInit(io.sdram_ba_o.map(GET(_))).asUInt
+    (io.sdram_data zip DQ).foreach{ case (o, an) => attach(o, an)}
   }
 }
 
@@ -70,9 +82,9 @@ class pll extends BlackBox with HasBlackBoxResource {
 trait FPGADE2ChipShell {
   // This trait only contains the connections that are supposed to be handled by the chip
   implicit val p: Parameters
-  val LEDR = IO(Vec(18, Output(Bool())))
-  val LEDG = IO(Vec(9, Output(Bool())))
-  val SW = IO(Vec(18, Input(Bool())))
+  val LEDR = IO(Vec(18, Analog(1.W)))
+  val LEDG = IO(Vec(9, Analog(1.W)))
+  val SW = IO(Vec(18, Analog(1.W)))
 
   //val HSMC_D = IO(Vec(4, Analog(1.W)))
   //val HSMC_RX_D_P = IO(Vec(17, Analog(1.W)))
@@ -106,7 +118,7 @@ class FPGADE2Shell(implicit val p :Parameters) extends RawModule
   with FPGADE2ClockAndResetsAndSDRAM {
 }
 
-class FPGADE2Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConnect])(implicit val p :Parameters) extends RawModule
+class FPGADE2Internal(chip: Option[Any])(implicit val p :Parameters) extends RawModule
   with FPGAInternals
   with FPGADE2ClockAndResetsAndSDRAM {
   def outer = chip
@@ -119,18 +131,14 @@ class FPGADE2Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConnect]
   val reset_to_sys = ResetCatchAndSync(pll.io.inclk0, !pll.io.locked)
 
   sys_clk := pll.io.c0
-  aclocks.foreach(_.foreach(_ := pll.io.c0)) // TODO: Connect your clocks here
-  sdramclock.foreach(_ := pll.io.c0)
-  ChildClock.foreach(_ := pll.io.c0)
-  ChildReset.foreach(_ := reset_to_sys)
+  aclocks.foreach(_ := pll.io.c0) // TODO: Connect your clocks here
   rst_n := !reset_to_sys
-  jrst_n := !reset_to_sys
   usbClk.foreach(_ := pll.io.c0)
 }
 
 trait WithFPGADE2Connect {
   this: FPGADE2Shell =>
-  val chip: WithTEEHWbaseShell with WithTEEHWbaseConnect
+  val chip: Any
   val intern = Module(new FPGADE2Internal(Some(chip)))
 
   // To intern = Clocks and resets
@@ -140,39 +148,38 @@ trait WithFPGADE2Connect {
   // From intern = Clocks and resets
   intern.connectChipInternals(chip)
 
-  chip.sdram.foreach(DRAM.from_SDRAMIf)
+  chip.asInstanceOf[HasSDRAMChipImp].sdramio.foreach(DRAM.from_SDRAMIO)
 
-  LEDR.foreach(_ := false.B)
-  LEDG.foreach(_ := false.B)
-  chip.gpio_out.foreach{gpo =>
-    (LEDR zip gpo.asBools()).foreach{case (a,b) => a := b}
+  val gpport = LEDR ++ SW.slice(1, 4)
+  chip.asInstanceOf[HasTEEHWPeripheryGPIOChipImp].gpio.zip(gpport).foreach{case(gp, i) =>
+    attach(gp, i)
   }
-  chip.gpio_in.foreach(gpi => gpi := VecInit(KEY.slice(1, 4) ++ SW).asUInt())
-  chip.jtag.jtag_TDI := ALT_IOBUF(GPIO(0))
-  chip.jtag.jtag_TMS := ALT_IOBUF(GPIO(2))
-  chip.jtag.jtag_TCK := ALT_IOBUF(GPIO(4))
-  ALT_IOBUF(GPIO(6), chip.jtag.jtag_TDO)
+  chip.asInstanceOf[DebugJTAGOnlyChipImp].jtag.foreach { jtag =>
+    attach(jtag.TDI, GPIO(0))
+    attach(jtag.TMS, GPIO(2))
+    attach(jtag.TCK, GPIO(4))
+    attach(GPIO(6), jtag.TDO)
+  }
 
   // QSPI
-  (chip.qspi zip chip.allspicfg).zipWithIndex.foreach {
-    case ((qspiport: TEEHWQSPIBundle, _: SPIParams), i: Int) =>
+  (chip.asInstanceOf[HasTEEHWPeripherySPIChipImp].spi zip chip.asInstanceOf[HasTEEHWPeripherySPIChipImp].allspicfg).zipWithIndex.foreach {
+    case ((qspiport: SPIPIN, _: SPIParams), i: Int) =>
       if (i == 0) {
         // SD IO
-        ALT_IOBUF(SD_CLK, qspiport.qspi_sck)
-        ALT_IOBUF(SD_CMD, qspiport.qspi_mosi)
-        qspiport.qspi_miso := ALT_IOBUF(SD_DAT(0))
-        ALT_IOBUF(SD_DAT(3), qspiport.qspi_cs(0))
-      } else {
-        // Non-valid qspi. Just zero it
-        qspiport.qspi_miso := false.B
+        attach(SD_DAT(3), qspiport.CS(0))
+        attach(SD_CMD, qspiport.DQ(0))
+        attach(qspiport.DQ(1), SD_DAT(0))
+        attach(SD_CLK, qspiport.SCK)
       }
-    case ((qspiport: TEEHWQSPIBundle, _: SPIFlashParams), _: Int) =>
-      qspiport.qspi_miso := ALT_IOBUF(GPIO(1))
-      ALT_IOBUF(GPIO(3), qspiport.qspi_mosi)
-      ALT_IOBUF(GPIO(5), qspiport.qspi_cs(0))
-      ALT_IOBUF(GPIO(7), qspiport.qspi_sck)
+    case ((qspiport: SPIPIN, _: SPIFlashParams), _: Int) =>
+      attach(qspiport.DQ(1), GPIO(1))
+      attach(GPIO(3), qspiport.DQ(0))
+      attach(GPIO(5), qspiport.CS(0))
+      attach(GPIO(7), qspiport.SCK)
   }
 
-  chip.uart_rxd := ALT_IOBUF(GPIO(8))
-  ALT_IOBUF(GPIO(10), chip.uart_txd)
+  chip.asInstanceOf[HasTEEHWPeripheryUARTChipImp].uart.foreach { uart =>
+    attach(uart.RXD, GPIO(8))
+    attach(GPIO(10), uart.TXD)
+  }
 }

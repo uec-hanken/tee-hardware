@@ -9,6 +9,7 @@ import freechips.rocketchip.prci.{ClockGroup, ClockSinkDomain}
 import freechips.rocketchip.subsystem.{Attachable, BaseSubsystem, MBUS, SBUS}
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.util.HeterogeneousBag
+import uec.teehardware.GenericIOLibraryParams
 
 case class sdram_bb_cfg
 (
@@ -256,4 +257,81 @@ trait HasSDRAM { this: BaseSubsystem =>
 trait HasSDRAMModuleImp extends LazyModuleImp {
   val outer: HasSDRAM
   val sdramio = outer.sdramNodes.zipWithIndex.map { case(n,i) => n.makeIO()(ValName(s"sdram_$i")) }
+}
+
+class SDRAMIO(val cfg: sdram_bb_cfg = sdram_bb_cfg()) extends Bundle  {
+  val sdram_clk_o = Analog(1.W)
+  val sdram_cke_o = Analog(1.W)
+  val sdram_cs_o = Analog(1.W)
+  val sdram_ras_o = Analog(1.W)
+  val sdram_cas_o = Analog(1.W)
+  val sdram_we_o = Analog(1.W)
+  val sdram_dqm_o = Vec(cfg.SDRAM_DQM_W, Analog(1.W))
+  val sdram_addr_o = Vec(cfg.SDRAM_ROW_W, Analog(1.W))
+  val sdram_ba_o = Vec(cfg.SDRAM_BANK_W, Analog(1.W))
+  val sdram_data = Vec(cfg.SDRAM_DQ_W, Analog(1.W))
+}
+
+trait HasSDRAMChipImp extends RawModule {
+  implicit val p: Parameters
+  val clock: Clock
+  val reset: Bool
+  val IOGen: GenericIOLibraryParams
+  val system: HasSDRAMModuleImp
+
+  val sdramio = system.sdramio.map { syssdramio =>
+    val sdramio = IO(new SDRAMIO(syssdramio.cfg))
+
+    val sdram_clk_o = IOGen.gpio()
+    sdram_clk_o.suggestName("sdram_clk_o")
+    attach(sdram_clk_o.pad, sdramio.sdram_clk_o)
+    sdram_clk_o.ConnectAsOutput(syssdramio.sdram_clk_o)
+    val sdram_cke_o = IOGen.gpio()
+    sdram_cke_o.suggestName("sdram_cke_o")
+    attach(sdram_cke_o.pad, sdramio.sdram_cke_o)
+    sdram_cke_o.ConnectAsOutput(syssdramio.sdram_cke_o)
+    val sdram_cs_o = IOGen.gpio()
+    sdram_cs_o.suggestName("sdram_cs_o")
+    attach(sdram_cs_o.pad, sdramio.sdram_cs_o)
+    sdram_cs_o.ConnectAsOutput(syssdramio.sdram_cs_o)
+    val sdram_ras_o = IOGen.gpio()
+    sdram_ras_o.suggestName("sdram_ras_o")
+    attach(sdram_ras_o.pad, sdramio.sdram_ras_o)
+    sdram_ras_o.ConnectAsOutput(syssdramio.sdram_ras_o)
+    val sdram_cas_o = IOGen.gpio()
+    sdram_cas_o.suggestName("sdram_cas_o")
+    attach(sdram_cas_o.pad, sdramio.sdram_cas_o)
+    sdram_cas_o.ConnectAsOutput(syssdramio.sdram_cas_o)
+    val sdram_we_o = IOGen.gpio()
+    sdram_we_o.suggestName("sdram_we_o")
+    attach(sdram_we_o.pad, sdramio.sdram_we_o)
+    sdram_we_o.ConnectAsOutput(syssdramio.sdram_we_o)
+    (syssdramio.sdram_dqm_o.asBools zip sdramio.sdram_dqm_o).zipWithIndex.foreach{ case((a, b), i) =>
+      val pad = IOGen.gpio()
+      pad.suggestName(s"sdram_dqm_o_${i}")
+      attach(pad.pad, b)
+      pad.ConnectAsOutput(a)
+    }
+    (syssdramio.sdram_addr_o.asBools zip sdramio.sdram_addr_o).zipWithIndex.foreach{ case((a, b), i) =>
+      val pad = IOGen.gpio()
+      pad.suggestName(s"sdram_addr_o_${i}")
+      attach(pad.pad, b)
+      pad.ConnectAsOutput(a)
+    }
+    (syssdramio.sdram_ba_o.asBools zip sdramio.sdram_ba_o).zipWithIndex.foreach{ case((a, b), i) =>
+      val pad = IOGen.gpio()
+      pad.suggestName(s"sdram_ba_o_${i}")
+      attach(pad.pad, b)
+      pad.ConnectAsOutput(a)
+    }
+    syssdramio.sdram_data_i := VecInit((syssdramio.sdram_data_o.asBools zip sdramio.sdram_data).zipWithIndex.map{
+      case((a, b), i) =>
+        val pad = IOGen.gpio()
+        pad.suggestName(s"sdram_data_${i}")
+        attach(pad.pad, b)
+        pad.ConnectTristate(a, syssdramio.sdram_drive_o)
+    }).asUInt
+
+    sdramio
+  }
 }

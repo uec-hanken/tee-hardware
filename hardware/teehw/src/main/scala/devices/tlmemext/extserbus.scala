@@ -2,6 +2,7 @@ package uec.teehardware.devices.tlmemext
 
 import chipsalliance.rocketchip.config.Field
 import chisel3._
+import chisel3.experimental.{Analog, attach}
 import chisel3.util._
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.diplomacy._
@@ -9,7 +10,7 @@ import freechips.rocketchip.prci.{ClockSinkNode, ClockSinkParameters}
 import freechips.rocketchip.subsystem.MasterPortParams
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.util._
-import uec.teehardware.TEEHWBaseSubsystem
+import uec.teehardware.{GET, GenericIOLibraryParams, PUT, TEEHWBaseSubsystem}
 import testchipip.{SerialIO, TLSerdes}
 
 case object ExtSerBus extends Field[Option[MemorySerialPortParams]](None)
@@ -63,5 +64,67 @@ trait HasTEEHWPeripheryExtSerBusModuleImp extends LazyModuleImp {
   }
   val extSourceBits = outer.extserctl.map { A =>
     A.node.in.head._1.params.sourceBits
+  }
+}
+
+class SerialIOModChip(val w: Int) extends Bundle {
+  val valid = Analog(1.W)
+  val ready = Analog(1.W)
+  val bits = Vec(w, Analog(1.W))
+}
+
+class SerialIOChip(val w: Int) extends Bundle {
+  val in = new SerialIOModChip(w)
+  val out = new SerialIOModChip(w)
+  def ConnectIn(bundle: SerialIO): Unit = {
+    bundle.out.valid := GET(out.valid)
+    PUT(bundle.out.valid, out.valid)
+    bundle.out.bits := VecInit(out.bits.map{a => GET(a)}).asUInt
+    PUT(bundle.in.valid, in.valid)
+    (bundle.in.bits.asBools zip in.bits).foreach{ case (a, b) => PUT(a, b)}
+  }
+}
+
+trait HasTEEHWPeripheryExtSerBusChipImp extends RawModule {
+  implicit val p: Parameters
+  val clock: Clock
+  val reset: Bool
+  val IOGen: GenericIOLibraryParams
+  val system: HasTEEHWPeripheryExtSerBusModuleImp
+
+  val extser = system.extSerPorts.map{sysextser =>
+    val extser = IO(new SerialIOChip(sysextser.w))
+
+    val out_valid = IOGen.gpio()
+    out_valid.suggestName("out_valid")
+    attach(out_valid.pad, extser.out.valid)
+    out_valid.ConnectAsOutput(sysextser.out.valid)
+    val out_ready = IOGen.gpio()
+    out_ready.suggestName("a_ready")
+    attach(out_ready.pad, extser.out.ready)
+    sysextser.out.ready := out_ready.ConnectAsInput()
+    (sysextser.out.bits.asBools zip extser.out.bits).zipWithIndex.foreach{ case((a, b), i) =>
+      val pad = IOGen.gpio()
+      pad.suggestName(s"out_bits_${i}")
+      attach(pad.pad, b)
+      pad.ConnectAsOutput(a)
+    }
+
+    val in_valid = IOGen.gpio()
+    in_valid.suggestName("in_valid")
+    attach(in_valid.pad, extser.in.valid)
+    sysextser.in.valid := in_valid.ConnectAsInput()
+    val in_ready = IOGen.gpio()
+    in_ready.suggestName("in_ready")
+    attach(in_ready.pad, extser.in.ready)
+    in_ready.ConnectAsOutput(sysextser.in.ready)
+    sysextser.in.bits := VecInit(extser.in.bits.zipWithIndex.map{ case(b, i) =>
+      val pad = IOGen.gpio()
+      pad.suggestName(s"in_bits_${i}")
+      attach(pad.pad, b)
+      pad.ConnectAsInput()
+    }).asUInt
+
+    extser
   }
 }

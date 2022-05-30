@@ -86,7 +86,7 @@ class TLULtoMIG(TLparams: TLBundleParameters)(implicit p :Parameters) extends La
 
   lazy val module = new LazyModuleImp(this) {
     val io = IO(new Bundle {
-      val tlport = Flipped(new TLUL(TLparams))
+      val tlport = Flipped(new TLBundle(TLparams))
       val ddrport = new XilinxVC707MIGIO(ddr.depth)
     })
 
@@ -95,7 +95,7 @@ class TLULtoMIG(TLparams: TLBundleParameters)(implicit p :Parameters) extends La
     //val mem_tl = Wire(HeterogeneousBag.fromNode(node.in))
     node.out.foreach {
       case  (bundle, _) =>
-        io.tlport.ConnectTLIn(bundle)
+        io.tlport <> bundle
     }
 
     // Create the actual module, and attach the DDR port
@@ -172,16 +172,15 @@ class TLULtoMIGUltra(TLparams: TLBundleParameters)(implicit p :Parameters) exten
 
   lazy val module = new LazyModuleImp(this) {
     val io = IO(new Bundle {
-      val tlport = Flipped(new TLUL(TLparams))
+      val tlport = Flipped(new TLBundle(TLparams))
       val ddrport = new XilinxVCU118MIGIO(ddr.depth)
     })
 
     val depth = ddr.depth
 
-    //val mem_tl = Wire(HeterogeneousBag.fromNode(node.in))
     node.out.foreach {
       case  (bundle, _) =>
-        io.tlport.ConnectTLIn(bundle)
+        io.tlport <> bundle
     }
 
     // Create the actual module, and attach the DDR port
@@ -258,7 +257,7 @@ class TLULtoMIGArtyA7(TLparams: TLBundleParameters)(implicit p :Parameters) exte
 
   lazy val module = new LazyModuleImp(this) {
     val io = IO(new Bundle {
-      val tlport = Flipped(new TLUL(TLparams))
+      val tlport = Flipped(new TLBundle(TLparams))
       val ddrport = new XilinxArty100TMIGIO(ddr.depth)
     })
 
@@ -267,7 +266,7 @@ class TLULtoMIGArtyA7(TLparams: TLBundleParameters)(implicit p :Parameters) exte
     //val mem_tl = Wire(HeterogeneousBag.fromNode(node.in))
     node.out.foreach {
       case  (bundle, _) =>
-        io.tlport.ConnectTLIn(bundle)
+        io.tlport <> bundle
     }
 
     // Create the actual module, and attach the DDR port
@@ -344,7 +343,7 @@ class TLULtoMIGSakuraX(TLparams: TLBundleParameters)(implicit p :Parameters) ext
 
   lazy val module = new LazyModuleImp(this) {
     val io = IO(new Bundle {
-      val tlport = Flipped(new TLUL(TLparams))
+      val tlport = Flipped(new TLBundle(TLparams))
       val ddrport = new XilinxSakuraXMIGIO(ddr.depth)
     })
 
@@ -353,7 +352,7 @@ class TLULtoMIGSakuraX(TLparams: TLBundleParameters)(implicit p :Parameters) ext
     //val mem_tl = Wire(HeterogeneousBag.fromNode(node.in))
     node.out.foreach {
       case  (bundle, _) =>
-        io.tlport.ConnectTLIn(bundle)
+        io.tlport <> bundle
     }
 
     // Create the actual module, and attach the DDR port
@@ -429,16 +428,15 @@ class TLULtoMIGNexys4DDR(TLparams: TLBundleParameters)(implicit p :Parameters) e
 
   lazy val module = new LazyModuleImp(this) {
     val io = IO(new Bundle {
-      val tlport = Flipped(new TLUL(TLparams))
+      val tlport = Flipped(new TLBundle(TLparams))
       val ddrport = new XilinxNexys4DDRMIGIO(ddr.depth)
     })
 
     val depth = ddr.depth
 
-    //val mem_tl = Wire(HeterogeneousBag.fromNode(node.in))
     node.out.foreach {
       case  (bundle, _) =>
-        io.tlport.ConnectTLIn(bundle)
+        io.tlport <> bundle
     }
 
     // Create the actual module, and attach the DDR port

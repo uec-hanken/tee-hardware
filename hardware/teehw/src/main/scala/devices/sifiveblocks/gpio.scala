@@ -1,11 +1,12 @@
 package uec.teehardware.devices.sifiveblocks
 
 import chisel3._
+import chisel3.experimental.{Analog, attach}
 import chisel3.util.HasBlackBoxResource
 import sifive.blocks.devices.gpio._
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.subsystem.PeripheryBusKey
-import uec.teehardware.TEEHWBaseSubsystem
+import uec.teehardware.{GenericIOLibraryParams, TEEHWBaseSubsystem}
 
 trait HasTEEHWPeripheryGPIO {
   this: TEEHWBaseSubsystem =>
@@ -31,4 +32,23 @@ trait HasTEEHWPeripheryGPIOModuleImp extends LazyModuleImp {
     iof.getWrappedValue.iof_0.foreach(_.default())
     iof.getWrappedValue.iof_1.foreach(_.default())
   }}
+}
+
+trait HasTEEHWPeripheryGPIOChipImp extends RawModule {
+  val clock : Clock
+  val reset : Bool
+  val IOGen: GenericIOLibraryParams
+  val system: HasTEEHWPeripheryGPIOModuleImp
+
+  // Condensed version of all GPIO included
+  val gpiopins = system.gpio.flatMap(gp => gp.pins)
+  // Create the IOs and the actual port for the pad
+  val gpio = gpiopins.zipWithIndex.map{case(a,i) =>
+    val pad = IO(Analog(1.W))
+    val GP = IOGen.gpio()
+    GP.ConnectPin(a)
+    GP.suggestName(s"GPIO_${i}")
+    attach(pad, GP.pad)
+    pad
+  }
 }

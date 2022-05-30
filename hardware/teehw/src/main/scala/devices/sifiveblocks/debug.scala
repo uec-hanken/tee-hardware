@@ -1,8 +1,8 @@
 package uec.teehardware.devices.sifiveblocks
 
-import chipsalliance.rocketchip.config.Field
+import chipsalliance.rocketchip.config.{Field, Parameters}
 import chisel3._
-import chisel3.experimental.noPrefix
+import chisel3.experimental.{Analog, attach, noPrefix}
 import chisel3.util.HasBlackBoxResource
 import freechips.rocketchip.devices.debug._
 import freechips.rocketchip.diplomacy._
@@ -10,6 +10,7 @@ import freechips.rocketchip.jtag.JTAGIO
 import freechips.rocketchip.prci._
 import freechips.rocketchip.subsystem.{BaseSubsystem, ResetSynchronous, SubsystemResetSchemeKey}
 import freechips.rocketchip.util.{AsyncResetSynchronizerShiftReg, ResetCatchAndSync, ResetSynchronizerShiftReg}
+import uec.teehardware.GenericIOLibraryParams
 
 trait DebugJTAGOnlyModuleImp extends LazyModuleImp {
   val outer: HasPeripheryDebug
@@ -80,4 +81,49 @@ trait DebugJTAGOnlyModuleImp extends LazyModuleImp {
 
     jtag
   })
+}
+
+class JTAGPIN() extends Bundle {
+  val TCK = Analog(1.W)
+  val TMS = Analog(1.W)
+  val TDI = Analog(1.W)
+  val TDO = Analog(1.W)
+  val TRSTn = Analog(1.W)
+}
+
+trait DebugJTAGOnlyChipImp extends RawModule {
+  implicit val p: Parameters
+  val clock: Clock
+  val reset: Bool
+  val IOGen: GenericIOLibraryParams
+  val system: DebugJTAGOnlyModuleImp
+
+  val jtag = system.asInstanceOf[DebugJTAGOnlyModuleImp].jtag.map{sysjtag =>
+    val jtag = IO(new JTAGPIN)
+    val TMS = IOGen.input()
+    val TCK = IOGen.input()
+    val TDI = IOGen.input()
+    val TDO = IOGen.output()
+    val TRSTn = IOGen.input()
+
+    TMS.suggestName("TMS")
+    TCK.suggestName("TCK")
+    TDI.suggestName("TDI")
+    TDO.suggestName("TDO")
+    TRSTn.suggestName("TRSTn")
+
+    attach(jtag.TMS, TMS.pad)
+    attach(jtag.TCK, TCK.pad)
+    attach(jtag.TDI, TDI.pad)
+    attach(jtag.TDO, TDO.pad)
+    attach(jtag.TRSTn, TRSTn.pad)
+
+    sysjtag.TMS := TMS.ConnectAsInput()
+    sysjtag.TCK := TCK.ConnectAsClock()
+    sysjtag.TDI := TDI.ConnectAsInput()
+    TDO.ConnectTristate(sysjtag.TDO.data, sysjtag.TDO.driven)
+    sysjtag.TRSTn.foreach(_ := TRSTn.ConnectAsInput(true))
+
+    jtag
+  }
 }

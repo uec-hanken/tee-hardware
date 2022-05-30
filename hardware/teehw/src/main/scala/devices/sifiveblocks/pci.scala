@@ -6,7 +6,7 @@ import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.subsystem.PeripheryBusKey
 import freechips.rocketchip.tilelink.TLIdentityNode
 import sifive.fpgashells.devices.xilinx.xilinxvc707pciex1.{XilinxVC707PCIeX1, XilinxVC707PCIeX1IO}
-import chipsalliance.rocketchip.config.Field
+import chipsalliance.rocketchip.config.{Field, Parameters}
 import uec.teehardware.TEEHWBaseSubsystem
 
 case class XilinxVC707PCIeX1Params(dummy: Int = 0)
@@ -47,5 +47,19 @@ trait HasTEEHWPeripheryXilinxVC707PCIeX1ModuleImp extends LazyModuleImp {
     val port = IO(new XilinxVC707PCIeX1IO)
     port <> pcie.module.io.port
     port
+  }
+}
+
+trait HasTEEHWPeripheryXilinxVC707PCIeX1ChipImp extends RawModule {
+  implicit val p: Parameters
+  val clock: Clock
+  val reset: Bool
+  val system: HasTEEHWPeripheryXilinxVC707PCIeX1ModuleImp
+
+  val pcie: Option[XilinxVC707PCIeX1IO] = system.pciePorts.map{syspcie =>
+    // Exteriorize and connect ports
+    val pcie = IO(new XilinxVC707PCIeX1IO)
+    pcie <> syspcie
+    pcie
   }
 }

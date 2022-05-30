@@ -5,9 +5,11 @@ import chisel3.util.HasBlackBoxResource
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.subsystem.PeripheryBusKey
 import sifive.fpgashells.devices.xilinx.xdma._
-import uec.teehardware.TEEHWBaseSubsystem
-import chipsalliance.rocketchip.config.Field
+import uec.teehardware.{GenericIOLibraryParams, TEEHWBaseSubsystem}
+import chipsalliance.rocketchip.config.{Field, Parameters}
+import chisel3.experimental.attach
 import freechips.rocketchip.tilelink.TLIdentityNode
+import sifive.blocks.devices.pinctrl.EnhancedPin
 import sifive.fpgashells.ip.xilinx.IBUFDS_GTE4
 import sifive.fpgashells.shell.xilinx.XDMATopPads
 
@@ -71,5 +73,19 @@ trait HasTEEHWPeripheryXDMAModuleImp extends LazyModuleImp {
 
     // Put this as the public member
     io
+  }
+}
+
+trait HasTEEHWPeripheryXDMAChipImp extends RawModule {
+  implicit val p: Parameters
+  val clock: Clock
+  val reset: Bool
+  val system: HasTEEHWPeripheryXDMAModuleImp
+
+  val xdma: Option[XDMATopPadswReset] = system.xdmaPorts.map{sysxdma =>
+    // Exteriorize and connect ports
+    val xdma = IO(new XDMATopPadswReset(p(XDMAPCIe).get.lanes))
+    xdma <> sysxdma
+    xdma
   }
 }

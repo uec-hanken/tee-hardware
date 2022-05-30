@@ -1,13 +1,14 @@
 package uec.teehardware.devices.sifiveblocks
 
-import chipsalliance.rocketchip.config.Field
+import chipsalliance.rocketchip.config.{Field, Parameters}
 import chisel3._
+import chisel3.experimental.{Analog, attach}
 import chisel3.util.HasBlackBoxResource
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.prci._
 import freechips.rocketchip.subsystem.BaseSubsystem
-import freechips.rocketchip.util.ResetCatchAndSync
-import uec.teehardware.TEEHWBaseSubsystem
+import freechips.rocketchip.util._
+import uec.teehardware.{ExposeClocks, GenericIOLibraryParams, GenericTEEHWXTAL}
 
 // Frequency
 case object FreqKeyMHz extends Field[Double](100.0)
@@ -65,5 +66,45 @@ trait HasTEEHWClockGroupModuleImp extends LazyModuleImp {
   (extclocks zip aclocks).foreach{ case (o, ai) =>
     o.clock := ai
     o.reset := ResetCatchAndSync(ai, reset.asBool, 5)
+  }
+}
+
+trait HasTEEHWClockGroupChipImp extends RawModule {
+  implicit val p: Parameters
+  val clock : Clock
+  val reset : Bool
+  val IOGen: GenericIOLibraryParams
+  val system: HasTEEHWClockGroupModuleImp with DebugJTAGOnlyModuleImp
+
+  // General clock and reset
+  val CLOCK = IOGen.crystal()
+  val RSTn = IOGen.gpio()
+
+  val clockxi = IO(Analog(1.W))
+  val clockxo = CLOCK.xo.map(A => IO(Analog(1.W)))
+  val rstn = IO(Analog(1.W))
+
+  attach(clockxi, CLOCK.xi)
+  (CLOCK.xo zip clockxo).map{case (a, b) => attach(a, b)}
+
+  clock := CLOCK.ConnectAsClock
+  reset := !RSTn.ConnectAsInput(true) || system.ndreset.getOrElse(false.B)
+
+  // Another Clock Exposition
+  val aclkn = p(ExposeClocks).option(system.asInstanceOf[HasTEEHWClockGroupModuleImp].aclocks.size).getOrElse(0)
+  val ACLOCK = Seq.tabulate(aclkn)(_ => IOGen.crystal())
+  val aclockxi = ACLOCK.map(A => IO(Analog(1.W)))
+  val aclockxo = ACLOCK.flatMap(A => A.xo.map(B => IO(Analog(1.W))))
+
+  (ACLOCK zip aclockxi).map{case (a, b) => attach(a.xi, b)}
+  (ACLOCK zip aclockxo).map{case (a, b) => a.xo.foreach(attach(_, b))}
+
+  if(p(ExposeClocks)) {
+    (system.asInstanceOf[HasTEEHWClockGroupModuleImp].aclocks zip ACLOCK).foreach{case(sysclk, aclk) =>
+      sysclk := aclk.ConnectAsClock
+    }
+  }
+  else {
+    system.asInstanceOf[HasTEEHWClockGroupModuleImp].aclocks.foreach(_ := clock)
   }
 }
