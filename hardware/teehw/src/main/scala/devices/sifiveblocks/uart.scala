@@ -7,7 +7,7 @@ import chisel3.util.HasBlackBoxResource
 import sifive.blocks.devices.uart._
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.subsystem.PeripheryBusKey
-import sifive.blocks.devices.pinctrl.EnhancedPin
+import sifive.blocks.devices.pinctrl.{BasePin, EnhancedPin}
 import uec.teehardware.{GenericIOLibraryParams, TEEHWBaseSubsystem}
 
 trait HasTEEHWPeripheryUART {
@@ -55,7 +55,7 @@ trait HasTEEHWPeripheryUARTChipImp extends RawModule {
     attach(uart.TXD, TXD.pad)
     attach(uart.RXD, RXD.pad)
 
-    val uartpin = Wire(new UARTSignals(() => new EnhancedPin))
+    val uartpin = Wire(new UARTSignals(() => new BasePin))
     withClockAndReset(clock, reset) { UARTPinsFromPort.apply(uartpin, sysuart, clock, reset, 3) }
 
     TXD.ConnectPin(uartpin.txd)

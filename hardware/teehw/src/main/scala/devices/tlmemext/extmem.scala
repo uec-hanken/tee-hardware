@@ -92,6 +92,7 @@ class TLULChip(val params: TLBundleParameters) extends Bundle {
     bundle.a.bits.param := VecInit(a.param.map(GET(_))).asUInt
     bundle.a.bits.size := VecInit(a.size.map(GET(_))).asUInt
     bundle.a.bits.address := VecInit(a.address.map(GET(_))).asUInt
+    bundle.a.bits.source := VecInit(a.source.map(GET(_))).asUInt
     bundle.a.bits.user := a.user
     bundle.a.bits.echo := a.echo
     bundle.a.bits.mask := VecInit(a.mask.map(GET(_))).asUInt
@@ -194,7 +195,7 @@ trait HasTEEHWPeripheryExtMemChipImp extends RawModule {
     val a_corrupt = IOGen.gpio()
     a_corrupt.suggestName("a_corrupt")
     attach(a_corrupt.pad, mem_tl.a.corrupt)
-    sysmem.a.bits.corrupt := a_corrupt.ConnectAsInput()
+    a_corrupt.ConnectAsOutput(sysmem.a.bits.corrupt)
 
     val d_valid = IOGen.gpio()
     d_valid.suggestName("d_valid")

@@ -7,7 +7,7 @@ import chisel3.util.HasBlackBoxResource
 import sifive.blocks.devices.spi._
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.subsystem.PeripheryBusKey
-import sifive.blocks.devices.pinctrl.EnhancedPin
+import sifive.blocks.devices.pinctrl.{BasePin, EnhancedPin}
 import uec.teehardware.{GenericIOLibraryParams, TEEHWBaseSubsystem}
 
 // Frequency of SD
@@ -78,7 +78,7 @@ trait HasTEEHWPeripherySPIChipImp extends RawModule {
 
   val allspicfg = system.allspicfg
   val spi = system.spi.zipWithIndex.map{case(sysspi, i) =>
-    val spipin = Wire(new SPISignals(() => new EnhancedPin, sysspi.c))
+    val spipin = Wire(new SPISignals(() => new BasePin, sysspi.c))
     withClockAndReset(clock, reset) { SPIPinsFromPort.apply(spipin, sysspi, clock, reset, 3) }
 
     val spi = IO(new SPIPIN(sysspi.c.csWidth))
@@ -93,7 +93,7 @@ trait HasTEEHWPeripherySPIChipImp extends RawModule {
       c.ConnectPin(spipin.cs(j))
       c
     }
-    val DQ = Seq.tabulate(sysspi.cs.size){j =>
+    val DQ = Seq.tabulate(sysspi.dq.size){j =>
       val c = IOGen.output()
       c.suggestName(s"DQ_${i}_${j}")
       attach(c.pad, spi.DQ(j))

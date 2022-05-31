@@ -33,26 +33,26 @@ set_location_assignment PIN_BB9 -to BUTTON[3]
 #============================================================
 # SW
 #============================================================
-set_instance_assignment -name IO_STANDARD "1.5 V" -to SW[0]
-set_instance_assignment -name IO_STANDARD "1.5 V" -to SW[1]
-set_instance_assignment -name IO_STANDARD "1.5 V" -to SW[2]
-set_instance_assignment -name IO_STANDARD "1.5 V" -to SW[3]
-set_location_assignment PIN_AT9 -to SW[0]
-set_location_assignment PIN_AU8 -to SW[1]
-set_location_assignment PIN_AK9 -to SW[2]
-set_location_assignment PIN_AL9 -to SW[3]
+set_instance_assignment -name IO_STANDARD "1.5 V" -to SW_0
+set_instance_assignment -name IO_STANDARD "1.5 V" -to SW_1
+set_instance_assignment -name IO_STANDARD "1.5 V" -to SW_2
+set_instance_assignment -name IO_STANDARD "1.5 V" -to SW_3
+set_location_assignment PIN_AT9 -to SW_0
+set_location_assignment PIN_AU8 -to SW_1
+set_location_assignment PIN_AK9 -to SW_2
+set_location_assignment PIN_AL9 -to SW_3
 
 #============================================================
 # LED
 #============================================================
-set_instance_assignment -name IO_STANDARD "1.5 V" -to LED[0]
-set_instance_assignment -name IO_STANDARD "1.5 V" -to LED[1]
-set_instance_assignment -name IO_STANDARD "1.5 V" -to LED[2]
-set_instance_assignment -name IO_STANDARD "1.5 V" -to LED[3]
-set_location_assignment PIN_AT32 -to LED[0]
-set_location_assignment PIN_BA31 -to LED[1]
-set_location_assignment PIN_AN27 -to LED[2]
-set_location_assignment PIN_AH27 -to LED[3]
+set_instance_assignment -name IO_STANDARD "1.5 V" -to LED_0
+set_instance_assignment -name IO_STANDARD "1.5 V" -to LED_1
+set_instance_assignment -name IO_STANDARD "1.5 V" -to LED_2
+set_instance_assignment -name IO_STANDARD "1.5 V" -to LED_3
+set_location_assignment PIN_AT32 -to LED_0
+set_location_assignment PIN_BA31 -to LED_1
+set_location_assignment PIN_AN27 -to LED_2
+set_location_assignment PIN_AH27 -to LED_3
 
 #============================================================
 # FAN

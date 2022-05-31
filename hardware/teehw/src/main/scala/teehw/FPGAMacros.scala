@@ -131,7 +131,7 @@ case class XilinxIOLibraryParams() extends GenericIOLibraryParams {
   def gpio() = Module(new XilinxGPIO)
   def input() = Module(new XilinxGPIO)
   def output() = Module(new XilinxGPIO)
-  def crystal() = Module(new XilinxXTAL)
+  def crystal() = Module(new TEEHWXTAL)
 }
 
 class AlteraGPIO extends RawModule with GenericTEEHWGPIO {
@@ -172,5 +172,5 @@ case class AlteraIOLibraryParams() extends GenericIOLibraryParams {
   def gpio() = Module(new AlteraGPIO)
   def input() = Module(new AlteraGPIO)
   def output() = Module(new AlteraGPIO)
-  def crystal() = Module(new AlteraXTAL)
+  def crystal() = Module(new TEEHWXTAL)
 }

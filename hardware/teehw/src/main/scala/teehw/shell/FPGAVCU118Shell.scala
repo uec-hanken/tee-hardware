@@ -24,27 +24,26 @@ import uec.teehardware.devices.tlmemext._
 trait FPGAVCU118ChipShell {
   // This trait only contains the connections that are supposed to be handled by the chip
   implicit val p: Parameters
-  val ngpio_in = p(GPIOInKey)
-  val ngpio_out = p(PeripheryGPIOKey).head.width-p(GPIOInKey)
-  val gpio_in = (ngpio_in != 0).option( IO(Input(UInt(ngpio_in.W))) )
-  val gpio_out = (ngpio_out != 0).option( IO(Output(UInt(ngpio_out.W))) )
+  val gpio_in = IO(Vec(8, Analog(1.W)))
+  val gpio_out = IO(Vec(8, Analog(1.W)))
   val jtag = IO(new Bundle {
-    val jtag_TDI = (Input(Bool())) // J53.6
-    val jtag_TDO = (Output(Bool())) // J53.8
-    val jtag_TCK = (Input(Bool())) // J53.2
-    val jtag_TMS = (Input(Bool())) // J53.4
+    val jtag_TDI = Analog(1.W) // J53.6
+    val jtag_TDO = Analog(1.W) // J53.8
+    val jtag_TCK = Analog(1.W) // J53.2
+    val jtag_TMS = Analog(1.W) // J53.4
   })
-  val sdio = IO(new TEEHWSDBundle)
-  //  val sdio_clk = (Output(Bool())) // J52.7
-  //  val sdio_cmd = (Output(Bool())) // J52.3
-  //  val sdio_dat_0 = (Input(Bool())) // J52.5
-  //  val sdio_dat_1 = (Analog(1.W)) // J52.2
-  //  val sdio_dat_2 = (Analog(1.W)) // J52.4
-  //  val sdio_dat_3 = (Output(Bool())) // J52.1
-  val uart_txd = IO(Output(Bool()))
-  val uart_rxd = IO(Input(Bool()))
+  val sdio = IO(new Bundle{
+    val sdio_clk = Analog(1.W) // J52.7
+    val sdio_cmd = Analog(1.W) // J52.3
+    val sdio_dat_0 = Analog(1.W) // J52.5
+    val sdio_dat_1 = Analog(1.W) // J52.2
+    val sdio_dat_2 = Analog(1.W) // J52.4
+    val sdio_dat_3 = Analog(1.W) // J52.1
+  })
+  val uart_txd = IO(Analog(1.W))
+  val uart_rxd = IO(Analog(1.W))
 
-  val qspi = IO(new Bundle { // TODO: Better to expose the whole port
+  val qspi = IO(new Bundle { // NOTE: Better to expose the whole port
     val qspi_cs = Analog(1.W)
     val qspi_sck = Analog(1.W)
     val qspi_miso = Analog(1.W)
@@ -52,15 +51,6 @@ trait FPGAVCU118ChipShell {
     val qspi_wp = Analog(1.W)
     val qspi_hold = Analog(1.W)
   })
-
-  val USB = p(PeripheryUSB11HSKey).map { _ =>
-    IO(new Bundle {
-      val FullSpeed = Output(Bool()) // NC
-      val WireDataIn = Input(Bits(2.W)) // NC // NC
-      val WireCtrlOut = Output(Bool()) // NC
-      val WireDataOut = Output(Bits(2.W)) // NC // NC
-    })
-  }
 
   val pciePorts = p(XilinxVC707PCIe).map(A => IO(new XilinxVC707PCIeX1Pads))
   val xdmaPorts = p(XDMAPCIe).map(A => IO(new XDMATopPads(A.lanes)))
@@ -85,7 +75,7 @@ class FPGAVCU118Shell(implicit val p :Parameters) extends RawModule
   with FPGAVCU118ClockAndResetsAndDDR {
 }
 
-class FPGAVCU118Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConnect])(implicit val p :Parameters) extends RawModule
+class FPGAVCU118Internal(chip: Option[Any])(implicit val p :Parameters) extends RawModule
   with FPGAInternals
   with FPGAVCU118ClockAndResetsAndDDR {
   def outer = chip
@@ -97,15 +87,15 @@ class FPGAVCU118Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConne
   val sys_clk_i = IBUFG(sys_clock_ibufds.io.O)
   sys_clock_ibufds.io.I := sys_clock_p
   sys_clock_ibufds.io.IB := sys_clock_n
-  val reset_0 = IBUF(rst_0)
+  val reset_0 = rst_0
   //val reset_1 = IBUF(rst_1)
   //val reset_2 = IBUF(rst_2)
-  val reset_3 = IBUF(rst_3)
+  val reset_3 = rst_3
 
   val clock = Wire(Clock())
   val reset = Wire(Bool())
 
-  val isOtherClk = isChildClock || (p(SbusToMbusXTypeKey) match {
+  val isOtherClk = (p(SbusToMbusXTypeKey) match {
     case _: AsynchronousCrossing => true
     case _ => false
   }) || p(PeripheryUSB11HSKey).nonEmpty
@@ -146,18 +136,16 @@ class FPGAVCU118Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConne
       mod.reset := reset_to_sys
 
       // TileLink Interface from platform
-      mod.io.tlport.a <> chiptl.a
-      chiptl.d <> mod.io.tlport.d
+      mod.io.tlport <> chiptl
 
       // Legacy ChildClock
-      ChildClock.foreach { cclk =>
-        println("Shell Island and Child Clock connected to clk_out2")
-        cclk := pll.io.clk_out2.get
-        mod.clock := pll.io.clk_out2.get
-        mod.reset := reset_to_child
-      }
-      ChildReset.foreach { crst =>
-        crst := reset_to_child
+      p(SbusToMbusXTypeKey) match {
+        case _: AsynchronousCrossing =>
+          println("Island connected to clk_out2 (10MHz)")
+          mod.clock := pll.io.clk_out2.get
+          mod.reset := reset_to_child
+        case _ =>
+          mod.clock := pll.io.clk_out1.get
       }
 
       init_calib_complete := mod.io.ddrport.c0_init_calib_complete
@@ -182,7 +170,6 @@ class FPGAVCU118Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConne
       p(SbusToMbusXTypeKey) match {
         case _: AsynchronousCrossing =>
           println("Shell Island connected to clk_out2 (10MHz)")
-          ChildClock.foreach(_ := pll.io.clk_out2.get)
           mod.clock := pll.io.clk_out2.get
           mod.reset := reset_to_child
         case _ =>
@@ -198,30 +185,25 @@ class FPGAVCU118Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConne
     reset := reset_to_sys
     sys_clk := pll.io.clk_out1.get
     rst_n := !reset_to_sys
-    jrst_n := !reset_to_sys
     usbClk.foreach(_ := pll.io.clk_out3.get)
-    sdramclock.foreach(_ := pll.io.clk_out1.get)
-    ChildReset.foreach(_ := reset_to_sys)
     DefaultRTC
 
-    aclocks.foreach { aclocks =>
-      println(s"Connecting async clocks by default =>")
-      (aclocks zip namedclocks).foreach { case (aclk, nam) =>
-        println(s"  Detected clock ${nam}")
-        if(nam.contains("mbus")) {
-          p(SbusToMbusXTypeKey) match {
-            case _: AsynchronousCrossing =>
-              aclk := pll.io.clk_out2.get
-              println("    Connected to clk_out2 (10 MHz)")
-            case _ =>
-              aclk := pll.io.clk_out3.get
-              println("    Connected to clk_out3")
-          }
+    println(s"Connecting ${aclkn} async clocks by default =>")
+    (aclocks zip namedclocks).foreach { case (aclk, nam) =>
+      println(s"  Detected clock ${nam}")
+      if(nam.contains("mbus")) {
+        p(SbusToMbusXTypeKey) match {
+          case _: AsynchronousCrossing =>
+            aclk := pll.io.clk_out2.get
+            println("    Connected to clk_out2 (10 MHz)")
+          case _ =>
+            aclk := pll.io.clk_out3.get
+            println("    Connected to clk_out3")
         }
-        else {
-          aclk := pll.io.clk_out3.get
-          println("    Connected to clk_out3")
-        }
+      }
+      else {
+        aclk := pll.io.clk_out3.get
+        println("    Connected to clk_out3")
       }
     }
 
@@ -232,22 +214,20 @@ class FPGAVCU118Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConne
       // Serial port
       mod.serport.flipConnect(es)
 
-      aclocks.foreach{ aclocks =>
-        println(s"Connecting clock for CryptoBus from clock controller =>")
-        (aclocks zip namedclocks).foreach{ case (aclk, nam) =>
-          println(s"  Detected clock ${nam}")
-          if(nam.contains("cryptobus") && mod.clockctrl.size >= 1) {
-            aclk := mod.clockctrl(0).asInstanceOf[ClockCtrlPortIO].clko
-            println("    Connected to first clock control")
-          }
-          if(nam.contains("tile_0") && mod.clockctrl.size >= 2) {
-            aclk := mod.clockctrl(1).asInstanceOf[ClockCtrlPortIO].clko
-            println("    Connected to second clock control")
-          }
-          if(nam.contains("tile_1") && mod.clockctrl.size >= 3) {
-            aclk := mod.clockctrl(2).asInstanceOf[ClockCtrlPortIO].clko
-            println("    Connected to third clock control")
-          }
+      println(s"Connecting clock for CryptoBus from clock controller =>")
+      (aclocks zip namedclocks).foreach{ case (aclk, nam) =>
+        println(s"  Detected clock ${nam}")
+        if(nam.contains("cryptobus") && mod.clockctrl.size >= 1) {
+          aclk := mod.clockctrl(0).asInstanceOf[ClockCtrlPortIO].clko
+          println("    Connected to first clock control")
+        }
+        if(nam.contains("tile_0") && mod.clockctrl.size >= 2) {
+          aclk := mod.clockctrl(1).asInstanceOf[ClockCtrlPortIO].clko
+          println("    Connected to second clock control")
+        }
+        if(nam.contains("tile_1") && mod.clockctrl.size >= 3) {
+          aclk := mod.clockctrl(2).asInstanceOf[ClockCtrlPortIO].clko
+          println("    Connected to third clock control")
         }
       }
     }
@@ -256,7 +236,7 @@ class FPGAVCU118Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConne
 
 trait WithFPGAVCU118Connect {
   this: FPGAVCU118Shell =>
-  val chip : WithTEEHWbaseShell with WithTEEHWbaseConnect
+  val chip : Any
   val intern = Module(new FPGAVCU118Internal(Some(chip)))
 
   // To intern = Clocks and resets
@@ -276,45 +256,52 @@ trait WithFPGAVCU118Connect {
   intern.connectChipInternals(chip)
 
   // Platform connections
-  (gpio_out zip chip.gpio_out).foreach{case(a, b) => a := b}
-  (chip.gpio_in zip gpio_in).foreach{case(a, b) => a := b}
-  jtag <> chip.jtag
-  chip.jtag.jtag_TCK := IBUFG(jtag.jtag_TCK.asClock).asUInt
-  chip.uart_rxd := uart_rxd	  // UART_TXD
-  uart_txd := chip.uart_txd 	// UART_RXD
+  val gpport = gpio_out ++ gpio_in
+  chip.asInstanceOf[HasTEEHWPeripheryGPIOChipImp].gpio.zip(gpport).foreach{case(gp, i) =>
+    attach(gp, i)
+  }
 
-  // USB phy connections
-  ((chip.usb11hs zip USB) zip intern.usbClk).foreach{ case ((chipport, port), uclk) =>
-    port.FullSpeed := chipport.USBFullSpeed
-    chipport.USBWireDataIn := port.WireDataIn
-    port.WireCtrlOut := chipport.USBWireCtrlOut
-    port.WireDataOut := chipport.USBWireDataOut
-
-    chipport.usbClk := uclk
+  // JTAG
+  chip.asInstanceOf[DebugJTAGOnlyChipImp].jtag.foreach{ chipjtag =>
+    attach(chipjtag.TCK, jtag.jtag_TCK)
+    attach(chipjtag.TDI, jtag.jtag_TDI)
+    PULLUP(jtag.jtag_TDI)
+    attach(jtag.jtag_TDO, chipjtag.TDO)
+    attach(chipjtag.TMS, jtag.jtag_TMS)
+    PULLUP(jtag.jtag_TMS)
+    PUT(!rst_3, chipjtag.TRSTn) // TODO: Check
   }
 
   // QSPI
-  (chip.qspi zip chip.allspicfg).zipWithIndex.foreach {
-    case ((qspiport: TEEHWQSPIBundle, _: SPIParams), i: Int) =>
+  (chip.asInstanceOf[HasTEEHWPeripherySPIChipImp].spi zip chip.asInstanceOf[HasTEEHWPeripherySPIChipImp].allspicfg).zipWithIndex.foreach {
+    case ((qspiport: SPIPIN, _: SPIParams), i: Int) =>
       if (i == 0) {
         // SD IO
-        sdio.connectFrom(qspiport)
-      } else {
-        // Non-valid qspi. Just zero it
-        qspiport.qspi_miso := false.B
+        attach(sdio.sdio_clk, qspiport.SCK)
+        attach(sdio.sdio_cmd, qspiport.DQ(0))
+        attach(qspiport.DQ(1), sdio.sdio_dat_0)
+        attach(sdio.sdio_dat_3, qspiport.CS(0))
       }
-    case ((qspiport: TEEHWQSPIBundle, _: SPIFlashParams), _: Int) =>
-      IOBUF(qspi.qspi_sck, qspiport.qspi_sck)
-      IOBUF(qspi.qspi_cs,  qspiport.qspi_cs(0))
+    case ((qspiport: SPIPIN, _: SPIFlashParams), _: Int) =>
+      attach(qspi.qspi_sck, qspiport.SCK)
+      attach(qspi.qspi_cs,  qspiport.CS(0))
 
-      IOBUF(qspi.qspi_mosi, qspiport.qspi_mosi)
-      qspiport.qspi_miso := IOBUF(qspi.qspi_miso)
-      IOBUF(qspi.qspi_wp, true.B)
-      IOBUF(qspi.qspi_hold, true.B)
+      attach(qspi.qspi_mosi, qspiport.DQ(0))
+      attach(qspiport.DQ(1), qspi.qspi_miso)
+      attach(qspi.qspi_wp, qspiport.DQ(2))
+      attach(qspi.qspi_hold, qspiport.DQ(3))
   }
 
+  // UART
+  chip.asInstanceOf[HasTEEHWPeripheryUARTChipImp].uart.foreach { uart =>
+    attach(uart.RXD, uart_rxd)
+    attach(uart_txd, uart.TXD)
+  }
+
+  // TODO: USB phy connections
+
   // PCIe (if available)
-  (pciePorts zip chip.pciePorts).foreach{ case (port, chipport) =>
+  (pciePorts zip chip.asInstanceOf[HasTEEHWPeripheryXilinxVC707PCIeX1ChipImp].pcie).foreach{ case (port, chipport) =>
     chipport.REFCLK_rxp := port.REFCLK_rxp
     chipport.REFCLK_rxn := port.REFCLK_rxn
     port.pci_exp_txp := chipport.pci_exp_txp
@@ -324,15 +311,12 @@ trait WithFPGAVCU118Connect {
     chipport.axi_aresetn := intern.rst_n
     chipport.axi_ctl_aresetn := intern.rst_n
   }
-  (xdmaPorts zip chip.xdmaPorts).foreach{
+  (xdmaPorts zip chip.asInstanceOf[HasTEEHWPeripheryXDMAChipImp].xdma).foreach{
     case (port, sysport) =>
       port.lanes <> sysport.lanes
       port.refclk <> sysport.refclk
       sysport.erst_n := intern.rst_n
   }
 
-  // TODO Nullify this for now
-  chip.sdram.foreach{ sdram =>
-    sdram.sdram_data_i := 0.U
-  }
+  // TODO Nullify sdram
 }

@@ -17,25 +17,25 @@ set_location_assignment PIN_P20 -to BUTTON[3]
 #============================================================
 # SW
 #============================================================
-set_instance_assignment -name IO_STANDARD 2.5V -to SW[0]
-set_instance_assignment -name IO_STANDARD 2.5V -to SW[1]
-set_instance_assignment -name IO_STANDARD 2.5V -to SW[2]
-set_instance_assignment -name IO_STANDARD 2.5V -to SW[3]
-set_location_assignment PIN_AH18 -to SW[0]
-set_location_assignment PIN_AH19 -to SW[1]
-set_location_assignment PIN_D6 -to SW[2]
-set_location_assignment PIN_C6 -to SW[3]
+set_instance_assignment -name IO_STANDARD 2.5V -to SW_0
+set_instance_assignment -name IO_STANDARD 2.5V -to SW_1
+set_instance_assignment -name IO_STANDARD 2.5V -to SW_2
+set_instance_assignment -name IO_STANDARD 2.5V -to SW_3
+set_location_assignment PIN_AH18 -to SW_0
+set_location_assignment PIN_AH19 -to SW_1
+set_location_assignment PIN_D6 -to SW_2
+set_location_assignment PIN_C6 -to SW_3
 #============================================================
 # LED
 #============================================================
-set_instance_assignment -name IO_STANDARD 1.5V -to LED[0]
-set_instance_assignment -name IO_STANDARD 1.5V -to LED[1]
-set_instance_assignment -name IO_STANDARD 1.5V -to LED[2]
-set_instance_assignment -name IO_STANDARD 1.5V -to LED[3]
-set_location_assignment PIN_B19 -to LED[0]
-set_location_assignment PIN_A18 -to LED[1]
-set_location_assignment PIN_D19 -to LED[2]
-set_location_assignment PIN_C19 -to LED[3]
+set_instance_assignment -name IO_STANDARD 1.5V -to LED_0
+set_instance_assignment -name IO_STANDARD 1.5V -to LED_1
+set_instance_assignment -name IO_STANDARD 1.5V -to LED_2
+set_instance_assignment -name IO_STANDARD 1.5V -to LED_3
+set_location_assignment PIN_B19 -to LED_0
+set_location_assignment PIN_A18 -to LED_1
+set_location_assignment PIN_D19 -to LED_2
+set_location_assignment PIN_C19 -to LED_3
 #============================================================
 # OSC
 #============================================================

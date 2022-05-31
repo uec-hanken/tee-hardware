@@ -20,6 +20,7 @@ trait CanHavePeripheryTLSerialChipImp extends RawModule {
   val IOGen: GenericIOLibraryParams
   val system: CanHavePeripheryTLSerialModuleImp
 
+  // NOTE: This is a mock. Does not represent actual IO instantiations
   (system.serial_tl zip system.outer.serdesser).map{ case(ioser, serdesser) =>
     val outer_io = IO(new SerialIO(ioser.bits.w)).suggestName("serial_tl")
     val bits = SerialAdapter.asyncQueue(ioser, clock, reset)

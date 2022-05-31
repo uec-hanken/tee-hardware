@@ -42,7 +42,7 @@ trait FPGASakuraXChipShell {
   val K_RSVIO_P = IO(Vec(1, Analog(1.W)))
 
   // Table 17
-  val K_DIPSW = IO(Vec(8, Input(Bool())))
+  val K_DIPSW = IO(Vec(8, Analog(1.W)))
 
   // Table 20
   val K_LED = IO(Vec(8, Analog(1.W)))
@@ -67,7 +67,7 @@ class FPGASakuraXShell(implicit val p :Parameters) extends RawModule
   with FPGASakuraXClockAndResetsAndDDR {
 }
 
-class FPGASakuraXInternal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConnect])(implicit val p :Parameters) extends RawModule
+class FPGASakuraXInternal(chip: Option[Any])(implicit val p :Parameters) extends RawModule
   with FPGAInternals
   with FPGASakuraXClockAndResetsAndDDR {
   def outer = chip
@@ -85,7 +85,7 @@ class FPGASakuraXInternal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConn
   val clock = Wire(Clock())
   val reset = Wire(Bool())
 
-  val isOtherClk = isChildClock || (p(SbusToMbusXTypeKey) match {
+  val isOtherClk = (p(SbusToMbusXTypeKey) match {
     case _: AsynchronousCrossing => true
     case _ => false
   }) || p(PeripheryUSB11HSKey).nonEmpty
@@ -127,18 +127,15 @@ class FPGASakuraXInternal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConn
       mod.reset := reset_to_sys
 
       // TileLink Interface from platform
-      mod.io.tlport.a <> chiptl.a
-      chiptl.d <> mod.io.tlport.d
+      mod.io.tlport <> chiptl
 
       // Legacy ChildClock
-      ChildClock.foreach { cclk =>
-        println("Shell Island and Child Clock connected to clk_out2")
-        cclk := pll.io.clk_out2.get
-        mod.clock := pll.io.clk_out2.get
-        mod.reset := reset_to_child
-      }
-      ChildReset.foreach { crst =>
-        crst := reset_to_child
+      p(SbusToMbusXTypeKey) match {
+        case _: AsynchronousCrossing =>
+          mod.clock := pll.io.clk_out2.get
+          mod.reset := reset_to_child
+        case _ =>
+          mod.clock := pll.io.clk_out1.get
       }
 
       init_calib_complete := mod.io.ddrport.init_calib_complete
@@ -162,8 +159,6 @@ class FPGASakuraXInternal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConn
 
       p(SbusToMbusXTypeKey) match {
         case _: AsynchronousCrossing =>
-          println("Shell Island connected to clk_out2 (10MHz)")
-          ChildClock.foreach(_ := pll.io.clk_out2.get)
           mod.clock := pll.io.clk_out2.get
           mod.reset := reset_to_child
         case _ =>
@@ -179,30 +174,25 @@ class FPGASakuraXInternal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConn
     reset := reset_to_sys
     sys_clk := pll.io.clk_out1.get
     rst_n := !reset_to_sys
-    jrst_n := !reset_to_sys
     usbClk.foreach(_ := pll.io.clk_out3.get)
-    sdramclock.foreach(_ := pll.io.clk_out1.get)
-    ChildReset.foreach(_ := reset_to_sys)
     DefaultRTC
 
-    aclocks.foreach { aclocks =>
-      println(s"Connecting async clocks by default =>")
-      (aclocks zip namedclocks).foreach { case (aclk, nam) =>
-        println(s"  Detected clock ${nam}")
-        if(nam.contains("mbus")) {
-          p(SbusToMbusXTypeKey) match {
-            case _: AsynchronousCrossing =>
-              aclk := pll.io.clk_out2.get
-              println("    Connected to clk_out2 (10 MHz)")
-            case _ =>
-              aclk := pll.io.clk_out1.get
-              println("    Connected to clk_out1")
-          }
+    println(s"Connecting ${aclkn} async clocks by default =>")
+    (aclocks zip namedclocks).foreach { case (aclk, nam) =>
+      println(s"  Detected clock ${nam}")
+      if(nam.contains("mbus")) {
+        p(SbusToMbusXTypeKey) match {
+          case _: AsynchronousCrossing =>
+            aclk := pll.io.clk_out2.get
+            println("    Connected to clk_out2 (10 MHz)")
+          case _ =>
+            aclk := pll.io.clk_out1.get
+            println("    Connected to clk_out1")
         }
-        else {
-          aclk := pll.io.clk_out1.get
-          println("    Connected to clk_out1")
-        }
+      }
+      else {
+        aclk := pll.io.clk_out1.get
+        println("    Connected to clk_out1")
       }
     }
 
@@ -213,22 +203,20 @@ class FPGASakuraXInternal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConn
       // Serial port
       mod.serport.flipConnect(es)
 
-      aclocks.foreach{ aclocks =>
-        println(s"Connecting clock for CryptoBus from clock controller =>")
-        (aclocks zip namedclocks).foreach{ case (aclk, nam) =>
-          println(s"  Detected clock ${nam}")
-          if(nam.contains("cryptobus") && mod.clockctrl.size >= 1) {
-            aclk := mod.clockctrl(0).asInstanceOf[ClockCtrlPortIO].clko
-            println("    Connected to first clock control")
-          }
-          if(nam.contains("tile_0") && mod.clockctrl.size >= 2) {
-            aclk := mod.clockctrl(1).asInstanceOf[ClockCtrlPortIO].clko
-            println("    Connected to second clock control")
-          }
-          if(nam.contains("tile_1") && mod.clockctrl.size >= 3) {
-            aclk := mod.clockctrl(2).asInstanceOf[ClockCtrlPortIO].clko
-            println("    Connected to third clock control")
-          }
+      println(s"Connecting clock for CryptoBus from clock controller =>")
+      (aclocks zip namedclocks).foreach{ case (aclk, nam) =>
+        println(s"  Detected clock ${nam}")
+        if(nam.contains("cryptobus") && mod.clockctrl.size >= 1) {
+          aclk := mod.clockctrl(0).asInstanceOf[ClockCtrlPortIO].clko
+          println("    Connected to first clock control")
+        }
+        if(nam.contains("tile_0") && mod.clockctrl.size >= 2) {
+          aclk := mod.clockctrl(1).asInstanceOf[ClockCtrlPortIO].clko
+          println("    Connected to second clock control")
+        }
+        if(nam.contains("tile_1") && mod.clockctrl.size >= 3) {
+          aclk := mod.clockctrl(2).asInstanceOf[ClockCtrlPortIO].clko
+          println("    Connected to third clock control")
         }
       }
     }
@@ -236,6 +224,89 @@ class FPGASakuraXInternal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConn
 }
 
 object ConnectFMCLPCXilinxGPIO {
+  def npmap(FMC: FMCSakuraX): Map[(Int, Int), Analog]  = Map(
+    (0, 0) -> FMC.CLK_M2C_P(0),
+    (0, 1) -> FMC.CLK_M2C_N(0),
+    (0, 2) -> FMC.LA_P(1),
+    (0, 3) -> FMC.LA_N(1),
+    (0, 4) -> FMC.LA_P(11),
+    (0, 5) -> FMC.LA_N(11),
+    (0, 6) -> FMC.LA_P(15),
+    (0, 7) -> FMC.LA_N(15),
+    (0, 8) -> FMC.LA_P(9),
+    (0, 9) -> FMC.LA_N(9),
+    (0, 10) -> FMC.LA_P(13),
+    (0, 11) -> FMC.LA_N(13),
+    (0, 12) -> FMC.LA_P(17),
+    (0, 13) -> FMC.LA_N(17),
+    (0, 14) -> FMC.LA_P(19),
+    (0, 15) -> FMC.LA_N(19),
+    (0, 16) -> FMC.LA_P(21),
+    (0, 17) -> FMC.LA_N(21),
+    (0, 18) -> FMC.LA_P(23),
+    (0, 19) -> FMC.LA_N(23),
+    (0, 20) -> FMC.LA_P(7),
+    (0, 21) -> FMC.LA_N(7),
+    (0, 22) -> FMC.LA_P(4),
+    (0, 23) -> FMC.LA_N(4),
+    (0, 24) -> FMC.LA_P(2),
+    (0, 25) -> FMC.LA_N(2),
+    (0, 26) -> FMC.LA_P(5),
+    (0, 27) -> FMC.LA_N(5),
+    (0, 28) -> FMC.LA_P(24),
+    (0, 29) -> FMC.LA_N(24),
+    (0, 30) -> FMC.LA_P(26),
+    (0, 31) -> FMC.LA_N(26),
+    (0, 32) -> FMC.LA_P(28),
+    (0, 33) -> FMC.LA_N(28),
+    (0, 34) -> FMC.LA_P(30),
+    (0, 35) -> FMC.LA_N(30),
+    (1, 0) -> FMC.LA_P(12),
+    (1, 1) -> FMC.LA_N(12),
+    (1, 2) -> FMC.LA_P(0),
+    (1, 3) -> FMC.LA_N(0),
+    (1, 4) -> FMC.LA_P(8),
+    (1, 5) -> FMC.LA_N(8),
+    (1, 6) -> FMC.LA_P(3),
+    (1, 7) -> FMC.LA_N(3),
+    //  (1, 8) -> FMC.HA_P(2),
+    //  (1, 9) -> FMC.HA_N(2),
+    (1, 10) -> FMC.LA_P(6),
+    (1, 11) -> FMC.LA_N(6),
+    (1, 12) -> FMC.LA_P(10),
+    (1, 13) -> FMC.LA_N(10),
+    (1, 14) -> FMC.LA_P(16),
+    (1, 15) -> FMC.LA_N(16),
+    (1, 16) -> FMC.LA_P(14),
+    (1, 17) -> FMC.LA_N(14),
+    (1, 18) -> FMC.LA_P(20),
+    (1, 19) -> FMC.LA_N(20),
+    (1, 20) -> FMC.LA_P(18),
+    (1, 21) -> FMC.LA_N(18),
+    (1, 22) -> FMC.LA_P(22),
+    (1, 23) -> FMC.LA_N(22),
+    (1, 24) -> FMC.LA_P(25),
+    (1, 25) -> FMC.LA_N(25),
+    (1, 26) -> FMC.LA_P(27),
+    (1, 27) -> FMC.LA_N(27),
+    (1, 28) -> FMC.LA_P(29),
+    (1, 29) -> FMC.LA_N(29),
+    (1, 30) -> FMC.LA_P(31),
+    (1, 31) -> FMC.LA_N(31),
+    (1, 32) -> FMC.LA_P(33),
+    (1, 33) -> FMC.LA_N(33),
+    (1, 34) -> FMC.LA_P(32),
+    (1, 35) -> FMC.LA_N(32),
+  )
+  def apply (n: Int, pu: Int, FMC: FMCSakuraX): Analog = {
+    val p:Int = pu match {
+      case it if 1 to 10 contains it => pu - 1
+      case it if 13 to 28 contains it => pu - 3
+      case it if 31 to 40 contains it => pu - 5
+      case _ => throw new RuntimeException(s"J${n}_${pu} is a VDD or a GND")
+    }
+    npmap(FMC)((n, p))
+  }
   def apply (n: Int, pu: Int, c: Bool, get: Boolean, FMC: FMCSakuraX) = {
     val p:Int = pu match {
       case it if 1 to 10 contains it => pu - 1
@@ -248,174 +319,86 @@ object ConnectFMCLPCXilinxGPIO {
         p match {
           case 0 => if(get) c := GET(FMC.CLK_M2C_P(0)) else PUT(c, FMC.CLK_M2C_P(0))
           case 1 => if(get) c := GET(FMC.CLK_M2C_N(0)) else PUT(c, FMC.CLK_M2C_N(0))
-          case 2 => if(get) c := IOBUF(FMC.LA_P(1)) else IOBUF(FMC.LA_P(1), c)
-          case 3 => if(get) c := IOBUF(FMC.LA_N(1)) else IOBUF(FMC.LA_N(1), c)
-          case 4 => if(get) c := IOBUF(FMC.LA_P(11)) else IOBUF(FMC.LA_P(11), c)
-          case 5 => if(get) c := IOBUF(FMC.LA_N(11)) else IOBUF(FMC.LA_N(11), c)
-          case 6 => if(get) c := IOBUF(FMC.LA_P(15)) else IOBUF(FMC.LA_P(15), c)
-          case 7 => if(get) c := IOBUF(FMC.LA_N(15)) else IOBUF(FMC.LA_N(15), c)
-          case 8 => if(get) c := IOBUF(FMC.LA_P(9)) else IOBUF(FMC.LA_P(9), c)
-          case 9 => if(get) c := IOBUF(FMC.LA_N(9)) else IOBUF(FMC.LA_N(9), c)
-          case 10 => if(get) c := IOBUF(FMC.LA_P(13)) else IOBUF(FMC.LA_P(13), c)
-          case 11 => if(get) c := IOBUF(FMC.LA_N(13)) else IOBUF(FMC.LA_N(13), c)
-          case 12 => if(get) c := IOBUF(FMC.LA_P(17)) else IOBUF(FMC.LA_P(17), c)
-          case 13 => if(get) c := IOBUF(FMC.LA_N(17)) else IOBUF(FMC.LA_N(17), c)
-          case 14 => if(get) c := IOBUF(FMC.LA_P(19)) else IOBUF(FMC.LA_P(19), c)
-          case 15 => if(get) c := IOBUF(FMC.LA_N(19)) else IOBUF(FMC.LA_N(19), c)
-          case 16 => if(get) c := IOBUF(FMC.LA_P(21)) else IOBUF(FMC.LA_P(21), c)
-          case 17 => if(get) c := IOBUF(FMC.LA_N(21)) else IOBUF(FMC.LA_N(21), c)
-          case 18 => if(get) c := IOBUF(FMC.LA_P(23)) else IOBUF(FMC.LA_P(23), c)
-          case 19 => if(get) c := IOBUF(FMC.LA_N(23)) else IOBUF(FMC.LA_N(23), c)
-          case 20 => if(get) c := IOBUF(FMC.LA_P(7)) else IOBUF(FMC.LA_P(7), c)
-          case 21 => if(get) c := IOBUF(FMC.LA_N(7)) else IOBUF(FMC.LA_N(7), c)
-          case 22 => if(get) c := IOBUF(FMC.LA_P(4)) else IOBUF(FMC.LA_P(4), c)
-          case 23 => if(get) c := IOBUF(FMC.LA_N(4)) else IOBUF(FMC.LA_N(4), c)
-          case 24 => if(get) c := IOBUF(FMC.LA_P(2)) else IOBUF(FMC.LA_P(2), c)
-          case 25 => if(get) c := IOBUF(FMC.LA_N(2)) else IOBUF(FMC.LA_N(2), c)
-          case 26 => if(get) c := IOBUF(FMC.LA_P(5)) else IOBUF(FMC.LA_P(5), c)
-          case 27 => if(get) c := IOBUF(FMC.LA_N(5)) else IOBUF(FMC.LA_N(5), c)
-          case 28 => if(get) c := IOBUF(FMC.LA_P(24)) else IOBUF(FMC.LA_P(24), c)
-          case 29 => if(get) c := IOBUF(FMC.LA_N(24)) else IOBUF(FMC.LA_N(24), c)
-          case 30 => if(get) c := IOBUF(FMC.LA_P(26)) else IOBUF(FMC.LA_P(26), c)
-          case 31 => if(get) c := IOBUF(FMC.LA_N(26)) else IOBUF(FMC.LA_N(26), c)
-          case 32 => if(get) c := IOBUF(FMC.LA_P(28)) else IOBUF(FMC.LA_P(28), c)
-          case 33 => if(get) c := IOBUF(FMC.LA_N(28)) else IOBUF(FMC.LA_N(28), c)
-          case 34 => if(get) c := IOBUF(FMC.LA_P(30)) else IOBUF(FMC.LA_P(30), c)
-          case 35 => if(get) c := IOBUF(FMC.LA_N(30)) else IOBUF(FMC.LA_N(30), c)
-          case _ => throw new RuntimeException(s"GPIO${n}_${p} does not exist")
+          case _ => if(get) c := IOBUF(npmap(FMC)((n,p))) else IOBUF(npmap(FMC)((n,p)), c)
         }
-      case 1 =>
-        p match {
-          case 0 => if(get) c := IOBUF(FMC.LA_P(12)) else IOBUF(FMC.LA_P(12), c)
-          case 1 => if(get) c := IOBUF(FMC.LA_N(12)) else IOBUF(FMC.LA_N(12), c)
-          case 2 => if(get) c := IOBUF(FMC.LA_P(0)) else IOBUF(FMC.LA_P(0), c)
-          case 3 => if(get) c := IOBUF(FMC.LA_N(0)) else IOBUF(FMC.LA_N(0), c)
-          case 4 => if(get) c := IOBUF(FMC.LA_P(8)) else IOBUF(FMC.LA_P(8), c)
-          case 5 => if(get) c := IOBUF(FMC.LA_N(8)) else IOBUF(FMC.LA_N(8), c)
-          case 6 => if(get) c := IOBUF(FMC.LA_P(3)) else IOBUF(FMC.LA_P(3), c)
-          case 7 => if(get) c := IOBUF(FMC.LA_N(3)) else IOBUF(FMC.LA_N(3), c)
-          //case 8 => if(get) c := IOBUF(FMC.HA_P(2)) else IOBUF(FMC.HA_P(2), c)
-          //case 9 => if(get) c := IOBUF(FMC.HA_N(2)) else IOBUF(FMC.HA_N(2), c)
-          case 10 => if(get) c := IOBUF(FMC.LA_P(6)) else IOBUF(FMC.LA_P(6), c)
-          case 11 => if(get) c := IOBUF(FMC.LA_N(6)) else IOBUF(FMC.LA_N(6), c)
-          case 12 => if(get) c := IOBUF(FMC.LA_P(10)) else IOBUF(FMC.LA_P(10), c)
-          case 13 => if(get) c := IOBUF(FMC.LA_N(10)) else IOBUF(FMC.LA_N(10), c)
-          case 14 => if(get) c := IOBUF(FMC.LA_P(16)) else IOBUF(FMC.LA_P(16), c)
-          case 15 => if(get) c := IOBUF(FMC.LA_N(16)) else IOBUF(FMC.LA_N(16), c)
-          case 16 => if(get) c := IOBUF(FMC.LA_P(14)) else IOBUF(FMC.LA_P(14), c)
-          case 17 => if(get) c := IOBUF(FMC.LA_N(14)) else IOBUF(FMC.LA_N(14), c)
-          case 18 => if(get) c := IOBUF(FMC.LA_P(20)) else IOBUF(FMC.LA_P(20), c)
-          case 19 => if(get) c := IOBUF(FMC.LA_N(20)) else IOBUF(FMC.LA_N(20), c)
-          case 20 => if(get) c := IOBUF(FMC.LA_P(18)) else IOBUF(FMC.LA_P(18), c)
-          case 21 => if(get) c := IOBUF(FMC.LA_N(18)) else IOBUF(FMC.LA_N(18), c)
-          case 22 => if(get) c := IOBUF(FMC.LA_P(22)) else IOBUF(FMC.LA_P(22), c)
-          case 23 => if(get) c := IOBUF(FMC.LA_N(22)) else IOBUF(FMC.LA_N(22), c)
-          case 24 => if(get) c := IOBUF(FMC.LA_P(25)) else IOBUF(FMC.LA_P(25), c)
-          case 25 => if(get) c := IOBUF(FMC.LA_N(25)) else IOBUF(FMC.LA_N(25), c)
-          case 26 => if(get) c := IOBUF(FMC.LA_P(27)) else IOBUF(FMC.LA_P(27), c)
-          case 27 => if(get) c := IOBUF(FMC.LA_N(27)) else IOBUF(FMC.LA_N(27), c)
-          case 28 => if(get) c := IOBUF(FMC.LA_P(29)) else IOBUF(FMC.LA_P(29), c)
-          case 29 => if(get) c := IOBUF(FMC.LA_N(29)) else IOBUF(FMC.LA_N(29), c)
-          case 30 => if(get) c := IOBUF(FMC.LA_P(31)) else IOBUF(FMC.LA_P(31), c)
-          case 31 => if(get) c := IOBUF(FMC.LA_N(31)) else IOBUF(FMC.LA_N(31), c)
-          case 32 => if(get) c := IOBUF(FMC.LA_P(33)) else IOBUF(FMC.LA_P(33), c)
-          case 33 => if(get) c := IOBUF(FMC.LA_N(33)) else IOBUF(FMC.LA_N(33), c)
-          case 34 => if(get) c := IOBUF(FMC.LA_P(32)) else IOBUF(FMC.LA_P(32), c)
-          case 35 => if(get) c := IOBUF(FMC.LA_N(32)) else IOBUF(FMC.LA_N(32), c)
-          case _ => throw new RuntimeException(s"GPIO${n}_${p} does not exist")
-        }
-      case _ => throw new RuntimeException(s"GPIO${n}_${p} does not exist")
+      case _ => if(get) c := IOBUF(npmap(FMC)((n,p))) else IOBUF(npmap(FMC)((n,p)), c)
     }
   }
+  def npmap_debug(FMC: FMCSakuraX): Map[(Int, Int), Analog]  = Map(
+    (20, 1) -> FMC.LA_P(20),
+    (20, 2) -> FMC.LA_P(24),
+    (20, 3) -> FMC.LA_N(20),
+    (20, 4) -> FMC.LA_N(24),
+    (20, 5) -> FMC.LA_P(21),
+    (20, 6) -> FMC.LA_P(25),
+    (20, 7) -> FMC.LA_N(21),
+    (20, 8) -> FMC.LA_N(25),
+    (20, 9) -> FMC.LA_P(22),
+    (20, 10) -> FMC.LA_P(26),
+    (20, 11) -> FMC.LA_N(22),
+    (20, 12) -> FMC.LA_N(26),
+    (20, 13) -> FMC.LA_P(23),
+    (20, 14) -> FMC.LA_P(27),
+    (20, 15) -> FMC.LA_N(23),
+    (20, 16) -> FMC.LA_N(27),
+    (16, 5) -> FMC.LA_P(28),
+    (16, 6) -> FMC.LA_P(30),
+    (16, 7) -> FMC.LA_N(28),
+    (16, 8) -> FMC.LA_N(30),
+    (16, 9) -> FMC.LA_P(29),
+    (16, 10) -> FMC.LA_P(31),
+    (16, 11) -> FMC.LA_N(29),
+    (16, 12) -> FMC.LA_N(31),
+    (15, 3) -> FMC.LA_P(32),
+    (15, 4) -> FMC.LA_N(32),
+    (15, 5) -> FMC.LA_P(33),
+    (15, 6) -> FMC.LA_N(33),
+    (1, 1) -> FMC.LA_P(0),
+    (1, 2) -> FMC.LA_P(10),
+    (1, 3) -> FMC.LA_N(0),
+    (1, 4) -> FMC.LA_N(10),
+    (1, 5) -> FMC.LA_P(1),
+    (1, 6) -> FMC.LA_P(11),
+    (1, 7) -> FMC.LA_N(1),
+    (1, 8) -> FMC.LA_N(11),
+    (1, 9) -> FMC.LA_P(2),
+    (1, 10) -> FMC.LA_P(12),
+    (1, 11) -> FMC.LA_N(2),
+    (1, 12) -> FMC.LA_N(12),
+    (1, 13) -> FMC.LA_P(3),
+    (1, 14) -> FMC.LA_P(13),
+    (1, 15) -> FMC.LA_N(3),
+    (1, 16) -> FMC.LA_N(13),
+    (1, 17) -> FMC.LA_P(4),
+    (1, 18) -> FMC.LA_P(14),
+    (1, 19) -> FMC.LA_N(4),
+    (1, 20) -> FMC.LA_N(14),
+    (1, 21) -> FMC.LA_P(5),
+    (1, 22) -> FMC.LA_P(15),
+    (1, 23) -> FMC.LA_N(5),
+    (1, 24) -> FMC.LA_N(15),
+    (1, 25) -> FMC.LA_P(6),
+    (1, 26) -> FMC.LA_P(16),
+    (1, 27) -> FMC.LA_N(6),
+    (1, 28) -> FMC.LA_N(16),
+    (1, 29) -> FMC.LA_P(7),
+    (1, 30) -> FMC.LA_P(17),
+    (1, 31) -> FMC.LA_N(7),
+    (1, 32) -> FMC.LA_N(17),
+    (1, 33) -> FMC.LA_P(8),
+    (1, 34) -> FMC.LA_P(18),
+    (1, 35) -> FMC.LA_N(8),
+    (1, 36) -> FMC.LA_N(18),
+    (1, 37) -> FMC.LA_P(9),
+    (1, 38) -> FMC.LA_P(19),
+    (1, 39) -> FMC.LA_N(9),
+    (1, 40) -> FMC.LA_N(19),
+  )
+  def debug(n: Int, p: Int, FMC: FMCSakuraX) = {
+    npmap_debug(FMC)((n,p))
+  }
   def debug(n: Int, p: Int, c: Bool, get: Boolean, FMC: FMCSakuraX) = {
-
-    n match {
-      case 20 =>
-        p match {
-          case 1 => if(get) c := IOBUF(FMC.LA_P(20)) else IOBUF(FMC.LA_P(20), c)
-          case 2 => if(get) c := IOBUF(FMC.LA_P(24)) else IOBUF(FMC.LA_P(24), c)
-          case 3 => if(get) c := IOBUF(FMC.LA_N(20)) else IOBUF(FMC.LA_N(20), c)
-          case 4 => if(get) c := IOBUF(FMC.LA_N(24)) else IOBUF(FMC.LA_N(24), c)
-          case 5 => if(get) c := IOBUF(FMC.LA_P(21)) else IOBUF(FMC.LA_P(21), c)
-          case 6 => if(get) c := IOBUF(FMC.LA_P(25)) else IOBUF(FMC.LA_P(25), c)
-          case 7 => if(get) c := IOBUF(FMC.LA_N(21)) else IOBUF(FMC.LA_N(21), c)
-          case 8 => if(get) c := IOBUF(FMC.LA_N(25)) else IOBUF(FMC.LA_N(25), c)
-          case 9 => if(get) c := IOBUF(FMC.LA_P(22)) else IOBUF(FMC.LA_P(22), c)
-          case 10 => if(get) c := IOBUF(FMC.LA_P(26)) else IOBUF(FMC.LA_P(26), c)
-          case 11 => if(get) c := IOBUF(FMC.LA_N(22)) else IOBUF(FMC.LA_N(22), c)
-          case 12 => if(get) c := IOBUF(FMC.LA_N(26)) else IOBUF(FMC.LA_N(26), c)
-          case 13 => if(get) c := IOBUF(FMC.LA_P(23)) else IOBUF(FMC.LA_P(23), c)
-          case 14 => if(get) c := IOBUF(FMC.LA_P(27)) else IOBUF(FMC.LA_P(27), c)
-          case 15 => if(get) c := IOBUF(FMC.LA_N(23)) else IOBUF(FMC.LA_N(23), c)
-          case 16 => if(get) c := IOBUF(FMC.LA_N(27)) else IOBUF(FMC.LA_N(27), c)
-          case _ => throw new RuntimeException(s"J${n}_${p} does not exist")
-        }
-      case 16 =>
-        p match {
-          case 5 => if(get) c := IOBUF(FMC.LA_P(28)) else IOBUF(FMC.LA_P(28), c)
-          case 6 => if(get) c := IOBUF(FMC.LA_P(30)) else IOBUF(FMC.LA_P(30), c)
-          case 7 => if(get) c := IOBUF(FMC.LA_N(28)) else IOBUF(FMC.LA_N(28), c)
-          case 8 => if(get) c := IOBUF(FMC.LA_N(30)) else IOBUF(FMC.LA_N(30), c)
-          case 9 => if(get) c := IOBUF(FMC.LA_P(29)) else IOBUF(FMC.LA_P(29), c)
-          case 10 => if(get) c := IOBUF(FMC.LA_P(31)) else IOBUF(FMC.LA_P(31), c)
-          case 11 => if(get) c := IOBUF(FMC.LA_N(29)) else IOBUF(FMC.LA_N(29), c)
-          case 12 => if(get) c := IOBUF(FMC.LA_N(31)) else IOBUF(FMC.LA_N(31), c)
-          case _ => throw new RuntimeException(s"J${n}_${p} does not exist")
-        }
-      case 15 =>
-        p match {
-          case 3 => if(get) c := IOBUF(FMC.LA_P(32)) else IOBUF(FMC.LA_P(32), c)
-          case 4 => if(get) c := IOBUF(FMC.LA_N(32)) else IOBUF(FMC.LA_N(32), c)
-          case 5 => if(get) c := IOBUF(FMC.LA_P(33)) else IOBUF(FMC.LA_P(33), c)
-          case 6 => if(get) c := IOBUF(FMC.LA_N(33)) else IOBUF(FMC.LA_N(33), c)
-          case _ => throw new RuntimeException(s"J${n}_${p} does not exist")
-        }
-      case 1 =>
-        p match {
-          case 1 => if(get) c := IOBUF(FMC.LA_P(0)) else IOBUF(FMC.LA_P(0), c)
-          case 2 => if(get) c := IOBUF(FMC.LA_P(10)) else IOBUF(FMC.LA_P(10), c)
-          case 3 => if(get) c := IOBUF(FMC.LA_N(0)) else IOBUF(FMC.LA_N(0), c)
-          case 4 => if(get) c := IOBUF(FMC.LA_N(10)) else IOBUF(FMC.LA_N(10), c)
-          case 5 => if(get) c := IOBUF(FMC.LA_P(1)) else IOBUF(FMC.LA_P(1), c)
-          case 6 => if(get) c := IOBUF(FMC.LA_P(11)) else IOBUF(FMC.LA_P(11), c)
-          case 7 => if(get) c := IOBUF(FMC.LA_N(1)) else IOBUF(FMC.LA_N(1), c)
-          case 8 => if(get) c := IOBUF(FMC.LA_N(11)) else IOBUF(FMC.LA_N(11), c)
-          case 9 => if(get) c := IOBUF(FMC.LA_P(2)) else IOBUF(FMC.LA_P(2), c)
-          case 10 => if(get) c := IOBUF(FMC.LA_P(12)) else IOBUF(FMC.LA_P(12), c)
-          case 11 => if(get) c := IOBUF(FMC.LA_N(2)) else IOBUF(FMC.LA_N(2), c)
-          case 12 => if(get) c := IOBUF(FMC.LA_N(12)) else IOBUF(FMC.LA_N(12), c)
-          case 13 => if(get) c := IOBUF(FMC.LA_P(3)) else IOBUF(FMC.LA_P(3), c)
-          case 14 => if(get) c := IOBUF(FMC.LA_P(13)) else IOBUF(FMC.LA_P(13), c)
-          case 15 => if(get) c := IOBUF(FMC.LA_N(3)) else IOBUF(FMC.LA_N(3), c)
-          case 16 => if(get) c := IOBUF(FMC.LA_N(13)) else IOBUF(FMC.LA_N(13), c)
-          case 17 => if(get) c := IOBUF(FMC.LA_P(4)) else IOBUF(FMC.LA_P(4), c)
-          case 18 => if(get) c := IOBUF(FMC.LA_P(14)) else IOBUF(FMC.LA_P(14), c)
-          case 19 => if(get) c := IOBUF(FMC.LA_N(4)) else IOBUF(FMC.LA_N(4), c)
-          case 20 => if(get) c := IOBUF(FMC.LA_N(14)) else IOBUF(FMC.LA_N(14), c)
-          case 21 => if(get) c := IOBUF(FMC.LA_P(5)) else IOBUF(FMC.LA_P(5), c)
-          case 22 => if(get) c := IOBUF(FMC.LA_P(15)) else IOBUF(FMC.LA_P(15), c)
-          case 23 => if(get) c := IOBUF(FMC.LA_N(5)) else IOBUF(FMC.LA_N(5), c)
-          case 24 => if(get) c := IOBUF(FMC.LA_N(15)) else IOBUF(FMC.LA_N(15), c)
-          case 25 => if(get) c := IOBUF(FMC.LA_P(6)) else IOBUF(FMC.LA_P(6), c)
-          case 26 => if(get) c := IOBUF(FMC.LA_P(16)) else IOBUF(FMC.LA_P(16), c)
-          case 27 => if(get) c := IOBUF(FMC.LA_N(6)) else IOBUF(FMC.LA_N(6), c)
-          case 28 => if(get) c := IOBUF(FMC.LA_N(16)) else IOBUF(FMC.LA_N(16), c)
-          case 29 => if(get) c := IOBUF(FMC.LA_P(7)) else IOBUF(FMC.LA_P(7), c)
-          case 30 => if(get) c := IOBUF(FMC.LA_P(17)) else IOBUF(FMC.LA_P(17), c)
-          case 31 => if(get) c := IOBUF(FMC.LA_N(7)) else IOBUF(FMC.LA_N(7), c)
-          case 32 => if(get) c := IOBUF(FMC.LA_N(17)) else IOBUF(FMC.LA_N(17), c)
-          case 33 => if(get) c := IOBUF(FMC.LA_P(8)) else IOBUF(FMC.LA_P(8), c)
-          case 34 => if(get) c := IOBUF(FMC.LA_P(18)) else IOBUF(FMC.LA_P(18), c)
-          case 35 => if(get) c := IOBUF(FMC.LA_N(8)) else IOBUF(FMC.LA_N(8), c)
-          case 36 => if(get) c := IOBUF(FMC.LA_N(18)) else IOBUF(FMC.LA_N(18), c)
-          case 37 => if(get) c := IOBUF(FMC.LA_P(9)) else IOBUF(FMC.LA_P(9), c)
-          case 38 => if(get) c := IOBUF(FMC.LA_P(19)) else IOBUF(FMC.LA_P(19), c)
-          case 39 => if(get) c := IOBUF(FMC.LA_N(9)) else IOBUF(FMC.LA_N(9), c)
-          case 40 => if(get) c := IOBUF(FMC.LA_N(19)) else IOBUF(FMC.LA_N(19), c)
-          case _ => throw new RuntimeException(s"J${n}_${p} does not exist")
-        }
-      case _ => throw new RuntimeException(s"J${n}_${p} does not exist")
-    }
+    if(get) c := IOBUF(npmap_debug(FMC)((n,p))) else IOBUF(npmap_debug(FMC)((n,p)), c)
   }
 }
 
@@ -438,21 +421,15 @@ class FPGASakuraXInternalNoChip
       Seq(),
       Seq(),
       false)}
-  override def aclkn: Option[Int] = p(ExposeClocks).option(3)
+  override def aclkn: Int = if(p(ExposeClocks)) 3 else 0
   override def memserSourceBits: Option[Int] = p(ExtSerMem).map( A => idBits )
   override def extserSourceBits: Option[Int] = p(ExtSerBus).map( A => idBits )
   override def namedclocks: Seq[String] = if(p(ExposeClocks)) Seq("cryptobus", "tile_0", "tile_1") else Seq()
-  override def issdramclock: Boolean = p(SDRAMKey).nonEmpty
-  override def isChildClock: Boolean = (p(SbusToMbusXTypeKey) match {
-    case _: AsynchronousCrossing => true
-    case _ => false
-  })
-  override def isRTCclock: Boolean = p(RTCPort)
 }
 
 trait WithFPGASakuraXInternCreate {
   this: FPGASakuraXShell =>
-  val chip : WithTEEHWbaseShell with WithTEEHWbaseConnect
+  val chip : Any
   val intern = Module(new FPGASakuraXInternal(Some(chip)))
 }
 
@@ -481,65 +458,64 @@ trait WithFPGASakuraXInternConnect {
 
 trait WithFPGASakuraXPureConnect {
   this: FPGASakuraXShell =>
-  val chip : WithTEEHWbaseShell with WithTEEHWbaseConnect
-  def namedclocks: Seq[String] = chip.system.asInstanceOf[HasTEEHWClockGroupModuleImp].namedclocks
+  val chip: Any
+  def namedclocks: Seq[String] = chip.asInstanceOf[HasTEEHWClockGroupChipImp].system.namedclocks
   // This trait connects the chip to all essentials. This assumes no DDR is connected yet
 
-  chip.gpio_out.foreach{gpo =>
-    (gpo.asBools() zip K_LED).foreach{ case(gpo, led) =>
-      IOBUF(led, gpo)
-    }
+  // GPIO
+  val gpport = K_LED ++ K_DIPSW
+  chip.asInstanceOf[HasTEEHWPeripheryGPIOChipImp].gpio.zip(gpport).foreach{case(gp, i) =>
+    attach(gp, i)
   }
-  chip.gpio_in.foreach(gpi => gpi := K_DIPSW.asUInt())
-  chip.jtag.jtag_TCK := IBUFG(IOBUF(K_HEADER(5)).asClock()).asBool()
-  chip.jtag.jtag_TDI := IOBUF(K_HEADER(4))
-  PULLUP(K_HEADER(4))
-  IOBUF(K_HEADER(3), chip.jtag.jtag_TDO)
-  chip.jtag.jtag_TMS := IOBUF(K_HEADER(2))
-  PULLUP(K_HEADER(2))
-  chip.uart_rxd := IOBUF(K_HEADER(1))
-  IOBUF(K_HEADER(0), chip.uart_txd)
 
-
-
-  // Connected to K_FMC
-  chip.usb11hs.foreach{ case chipport =>
-    val USBWireDataIn = Wire(Vec(2, Bool()))
-    ConnectFMCLPCXilinxGPIO.debug(1, 1, USBWireDataIn(0), true, K_FMC)
-    ConnectFMCLPCXilinxGPIO.debug(1, 2, USBWireDataIn(1), true, K_FMC)
-    chipport.USBWireDataIn := USBWireDataIn.asUInt()
-    ConnectFMCLPCXilinxGPIO.debug(1, 3, chipport.USBWireDataOut(0), false, K_FMC)
-    ConnectFMCLPCXilinxGPIO.debug(1, 4, chipport.USBWireDataOut(1), false, K_FMC)
-    ConnectFMCLPCXilinxGPIO.debug(1, 5, chipport.USBWireCtrlOut, false, K_FMC)
-    ConnectFMCLPCXilinxGPIO.debug(1, 6, chipport.USBFullSpeed, false, K_FMC)
+  // JTAG
+  chip.asInstanceOf[DebugJTAGOnlyChipImp].jtag.foreach{ jtag =>
+    attach(jtag.TCK, K_HEADER(5))
+    attach(jtag.TDI, K_HEADER(4))
+    PULLUP(K_HEADER(4))
+    attach(K_HEADER(3), jtag.TDO)
+    attach(jtag.TMS, K_HEADER(2))
+    PULLUP(K_HEADER(2))
+    attach(ConnectFMCLPCXilinxGPIO.debug(1, 13, K_FMC), jtag.TRSTn)
+    PULLUP(ConnectFMCLPCXilinxGPIO.debug(1, 13, K_FMC))
   }
 
   // QSPI
-  (chip.qspi zip chip.allspicfg).zipWithIndex.foreach {
-    case ((qspiport: TEEHWQSPIBundle, _: SPIParams), i: Int) =>
+  (chip.asInstanceOf[HasTEEHWPeripherySPIChipImp].spi zip chip.asInstanceOf[HasTEEHWPeripherySPIChipImp].allspicfg).zipWithIndex.foreach {
+    case ((qspiport: SPIPIN, _: SPIParams), i: Int) =>
       if (i == 0) {
         // SD IO
-        IOBUF(K_HEADER(6), qspiport.qspi_sck)
-        IOBUF(K_HEADER(7), qspiport.qspi_mosi)
-        qspiport.qspi_miso := IOBUF(K_HEADER(8))
-        IOBUF(K_HEADER(9), qspiport.qspi_cs(0))
-      } else {
-        // Non-valid qspi. Just zero it
-        qspiport.qspi_miso := false.B
+        attach(K_HEADER(6), qspiport.SCK)
+        attach(K_HEADER(7), qspiport.DQ(0))
+        attach(qspiport.DQ(1), K_HEADER(8))
+        attach(K_HEADER(9), qspiport.CS(0))
       }
-    case ((qspi: TEEHWQSPIBundle, _: SPIFlashParams), _: Int) =>
-      ConnectFMCLPCXilinxGPIO.debug(1, 7, qspi.qspi_cs(0), false, K_FMC)
-      ConnectFMCLPCXilinxGPIO.debug(1, 8, qspi.qspi_sck, false, K_FMC)
-      ConnectFMCLPCXilinxGPIO.debug(1, 9, qspi.qspi_miso, true, K_FMC)
-      ConnectFMCLPCXilinxGPIO.debug(1, 10, qspi.qspi_mosi, false, K_FMC)
-      ConnectFMCLPCXilinxGPIO.debug(1, 11, true.B, false, K_FMC)
-      ConnectFMCLPCXilinxGPIO.debug(1, 12, true.B, false, K_FMC)
+    case ((qspi: SPIPIN, _: SPIFlashParams), _: Int) =>
+      attach(ConnectFMCLPCXilinxGPIO.debug(1, 7, K_FMC), qspi.CS(0))
+      attach(ConnectFMCLPCXilinxGPIO.debug(1, 8, K_FMC), qspi.SCK)
+      attach(ConnectFMCLPCXilinxGPIO.debug(1, 9, K_FMC), qspi.DQ(1))
+      attach(ConnectFMCLPCXilinxGPIO.debug(1, 10, K_FMC), qspi.DQ(0))
+      attach(ConnectFMCLPCXilinxGPIO.debug(1, 11, K_FMC), qspi.DQ(2))
+      attach(ConnectFMCLPCXilinxGPIO.debug(1, 12, K_FMC), qspi.DQ(3))
   }
 
-  // TODO Nullify this for now
-  chip.sdram.foreach{ sdram =>
-    sdram.sdram_data_i := 0.U
+  // UART
+  chip.asInstanceOf[HasTEEHWPeripheryUARTChipImp].uart.foreach { uart =>
+    attach(uart.RXD, K_HEADER(1))
+    attach(K_HEADER(0), uart.TXD)
   }
+
+  // Connected to K_FMC
+  chip.asInstanceOf[HasPeripheryUSB11HSChipImp].usb11hs.foreach{ case chipport =>
+    attach(ConnectFMCLPCXilinxGPIO.debug(1, 1, K_FMC), chipport.USBWireDataIn(0))
+    attach(ConnectFMCLPCXilinxGPIO.debug(1, 2, K_FMC), chipport.USBWireDataIn(1))
+    attach(ConnectFMCLPCXilinxGPIO.debug(1, 3, K_FMC), chipport.USBWireDataOut(0))
+    attach(ConnectFMCLPCXilinxGPIO.debug(1, 4, K_FMC), chipport.USBWireDataOut(1))
+    attach(ConnectFMCLPCXilinxGPIO.debug(1, 5, K_FMC), chipport.USBWireCtrlOut)
+    attach(ConnectFMCLPCXilinxGPIO.debug(1, 6, K_FMC), chipport.USBFullSpeed)
+  }
+
+  // TODO Nullify sdram
 }
 
 trait WithFPGASakuraXConnect extends WithFPGASakuraXPureConnect
@@ -551,8 +527,7 @@ trait WithFPGASakuraXConnect extends WithFPGASakuraXPureConnect
   intern.connectChipInternals(chip)
 
   // Platform connections (override)
-  // gpio_out := Cat(chip.gpio_out(chip.gpio_out.getWidth-1, 1), intern.init_calib_complete)
-  (chip.usb11hs zip intern.usbClk).foreach { case (chipport, uclk) =>
-    chipport.usbClk := uclk
+  (chip.asInstanceOf[HasPeripheryUSB11HSChipImp].usb11hs zip intern.usbClk).foreach { case (chipport, uclk) =>
+    PUT(uclk.asBool, chipport.usbClk)
   }
 }

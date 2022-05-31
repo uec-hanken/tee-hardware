@@ -6,9 +6,9 @@ import chisel3.experimental.{Analog, attach}
 import chisel3.util.HasBlackBoxResource
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.prci._
-import freechips.rocketchip.subsystem.BaseSubsystem
+import freechips.rocketchip.subsystem._
 import freechips.rocketchip.util._
-import uec.teehardware.{ExposeClocks, GenericIOLibraryParams, GenericTEEHWXTAL}
+import uec.teehardware.{CbusToCryptoBusXTypeKey, CbusToExtBusXTypeKey, ExposeClocks, GenericIOLibraryParams, GenericTEEHWXTAL}
 
 // Frequency
 case object FreqKeyMHz extends Field[Double](100.0)
@@ -56,17 +56,49 @@ trait HasTEEHWClockGroupModuleImp extends LazyModuleImp {
 
   // Create the actual port
   //val aclocks = IO(Vec(numClocks, Flipped(new ClockBundle(ClockBundleParameters()))))
-  val aclocks = IO(Vec(numClocks, Input(Clock())))
+  //val aclocks = IO(Vec(numClocks, Input(Clock())))
 
   // Information of the clocks
   val extclocks = outer.clockGroup.out.flatMap(_._1.member.data)
-  val namedclocks = outer.clocksAggregator.out.flatMap(_._1.member.elements).map(A => A._1)
+  val extnamedclocks = outer.clocksAggregator.out.flatMap(_._1.member.elements).map(A => A._1)
 
   // Connect the clocks in the hardware
-  (extclocks zip aclocks).foreach{ case (o, ai) =>
-    o.clock := ai
-    o.reset := ResetCatchAndSync(ai, reset.asBool, 5)
-  }
+  println("System Connections according to ClockGroup")
+  val (aclocks, namedclocks) = (extclocks zip extnamedclocks).flatMap{ case (o, name) =>
+    println(s"  Connecting: ${name}")
+    def connectHelper(in: ClockCrossingType): Option[(Clock, String)] = {
+      in match {
+        case _: AsynchronousCrossing =>
+          val ai = IO(Input(Clock()))
+          println("    Exposed")
+          o.clock := ai
+          o.reset := ResetCatchAndSync(ai, reset.asBool, 5)
+          Some((ai, name))
+        case _ =>
+          println("    Internal")
+          o.clock := clock
+          o.reset := ResetCatchAndSync(clock, reset.asBool, 5)
+          None
+      }
+    }
+    if(name.contains("fbus")) {
+      connectHelper(p(FbusToSbusXTypeKey))
+    } else if(name.contains("mbus")) {
+      connectHelper(p(SbusToMbusXTypeKey))
+    } else if(name.contains("cbus")) {
+      connectHelper(p(SbusToCbusXTypeKey))
+    } else if(name.contains("pbus")) {
+      connectHelper(p(CbusToPbusXTypeKey))
+    } else if(name.contains("cryptobus")) {
+      connectHelper(p(CbusToCryptoBusXTypeKey))
+    } else if(name.contains("extbus")) {
+      connectHelper(p(CbusToExtBusXTypeKey))
+    } else if(name.contains("sbus")) {
+      connectHelper(SynchronousCrossing()) // Connect the SBUS just like a sync
+    } else {
+      connectHelper(AsynchronousCrossing()) // Assume is async
+    }
+  }.unzip
 }
 
 trait HasTEEHWClockGroupChipImp extends RawModule {

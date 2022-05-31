@@ -153,6 +153,7 @@ class FPGAArtyA7Internal(chip: Option[Any])(implicit val p :Parameters) extends 
 
       p(SbusToMbusXTypeKey) match {
         case _: AsynchronousCrossing =>
+          println("Island connected to clk_out4 (10MHz)")
           mod.clock := pll.io.clk_out4.get
           mod.reset := reset_to_child
         case _ =>

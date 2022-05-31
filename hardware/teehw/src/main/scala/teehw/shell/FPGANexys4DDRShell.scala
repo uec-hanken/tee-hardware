@@ -129,11 +129,11 @@ class FPGANexys4DDRInternal(chip: Option[Any])(implicit val p :Parameters) exten
       pll.io.clk_out4.foreach(reset_to_child := ResetCatchAndSync(_, !pll.io.locked))
 
       // TileLink Interface from platform
-      mod.io.tlport.a <> chiptl.a
-      chiptl.d <> mod.io.tlport.d
+      mod.io.tlport <> chiptl
 
       p(SbusToMbusXTypeKey) match {
         case _: AsynchronousCrossing =>
+          println("Island connected to clk_out4 (10MHz)")
           mod.clock := pll.io.clk_out4.get
           mod.reset := reset_to_child
         case _ =>

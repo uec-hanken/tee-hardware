@@ -506,6 +506,7 @@ class TR4Config extends Config((new WithIbexSynthesizedNoICache).alter((site,her
   }
   /* The DDR memory supports 64 transactions. This is to avoid modifying chipyard*/
   case MemoryBusKey => up(MemoryBusKey).copy(blockBytes = 64)
+  case IOLibrary => AlteraIOLibraryParams()
 }))
 
 class TR5Config extends Config((new WithIbexSynthesizedNoICache).alter((site,here,up) => {
@@ -521,6 +522,7 @@ class TR5Config extends Config((new WithIbexSynthesizedNoICache).alter((site,her
   case MemoryBusKey => up(MemoryBusKey).copy(blockBytes = 64)
   case ExtMem => up(ExtMem).map{ext => ext.copy(master = ext.master.copy(size = x"0_8000_0000"))}
   case ExtSerMem => up(ExtSerMem).map{ext => ext.copy(master = ext.master.copy(size = x"0_8000_0000"))}
+  case IOLibrary => AlteraIOLibraryParams()
 }))
 
 class VC707Config extends Config((site,here,up) => {
@@ -535,6 +537,7 @@ class VC707Config extends Config((site,here,up) => {
   }
   /* The DDR memory supports 128 transactions. This is to avoid modifying chipyard*/
   case MemoryBusKey => up(MemoryBusKey).copy(blockBytes = 128)
+  case IOLibrary => XilinxIOLibraryParams()
 })
 
 class VCU118Config extends Config((site,here,up) => {
@@ -563,6 +566,7 @@ class VCU118Config extends Config((site,here,up) => {
   case XilinxVC707PCIe => None
   /* The DDR memory supports 256*8 transactions. This is to avoid modifying chipyard*/
   case MemoryBusKey => up(MemoryBusKey).copy(blockBytes = 256*8)
+  case IOLibrary => XilinxIOLibraryParams()
 })
 
 class ArtyA7Config extends Config((site,here,up) => {
@@ -581,6 +585,7 @@ class ArtyA7Config extends Config((site,here,up) => {
 
   // Not supported
   case ExtSerBus => None
+  case IOLibrary => XilinxIOLibraryParams()
 })
 
 class Nexys4DDRConfig extends Config((site,here,up) => {
@@ -599,6 +604,7 @@ class Nexys4DDRConfig extends Config((site,here,up) => {
 
   // Not supported
   case ExtSerBus => None
+  case IOLibrary => XilinxIOLibraryParams()
 })
 
 class SakuraXConfig extends Config((site,here,up) => {
@@ -618,6 +624,7 @@ class SakuraXConfig extends Config((site,here,up) => {
   }
   /* The DDR memory supports 128 transactions */
   case MemoryBusKey => up(MemoryBusKey).copy(blockBytes = 128)
+  case IOLibrary => XilinxIOLibraryParams()
 })
 
 class DE2Config extends Config((new WithIbexSynthesizedNoICache).alter((site,here,up) => {
@@ -643,6 +650,7 @@ class DE2Config extends Config((new WithIbexSynthesizedNoICache).alter((site,her
   // To avoid errors in cryptobus
   case PeripheryAESKey => List(
     AESParams(address = BigInt(0x64007000L)))
+  case IOLibrary => AlteraIOLibraryParams()
 }))
 
 // ***************** The simulation flag *****************

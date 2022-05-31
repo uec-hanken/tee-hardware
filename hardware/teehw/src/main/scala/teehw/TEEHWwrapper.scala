@@ -27,29 +27,6 @@ import uec.teehardware.shell._
 // **TEEHW chip - for doing the only-input/output chip
 // **********************************************************************
 
-class TEEHWQSPIBundle(val csWidth: Int = 1) extends Bundle {
-  val qspi_cs = (Output(UInt(csWidth.W)))
-  val qspi_sck = (Output(Bool()))
-  val qspi_miso = (Input(Bool()))
-  val qspi_mosi = (Output(Bool()))
-}
-
-// Deprecated SD bundle
-class TEEHWSDBundle extends Bundle {
-  val sdio_clk = (Output(Bool()))
-  val sdio_cmd = (Output(Bool()))
-  val sdio_dat_0 = (Input(Bool()))
-  val sdio_dat_1 = (Analog(1.W))
-  val sdio_dat_2 = (Analog(1.W))
-  val sdio_dat_3 = (Output(Bool()))
-  def connectFrom(from: TEEHWQSPIBundle) = {
-    sdio_clk := from.qspi_sck
-    sdio_dat_3 := from.qspi_cs(0)
-    from.qspi_miso := sdio_dat_0
-    sdio_cmd := from.qspi_mosi
-  }
-}
-
 class TEEHWbase(implicit val p :Parameters) extends RawModule {
   // All the modules declared here have this clock and reset
   val clock = Wire(Clock())

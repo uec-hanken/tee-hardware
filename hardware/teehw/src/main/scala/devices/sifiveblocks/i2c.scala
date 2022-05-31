@@ -6,7 +6,7 @@ import chisel3.experimental.{Analog, attach}
 import chisel3.util.HasBlackBoxResource
 import sifive.blocks.devices.i2c._
 import freechips.rocketchip.diplomacy._
-import sifive.blocks.devices.pinctrl.EnhancedPin
+import sifive.blocks.devices.pinctrl.{BasePin, EnhancedPin}
 import uec.teehardware.{GenericIOLibraryParams, TEEHWBaseSubsystem}
 
 trait HasTEEHWPeripheryI2C {
@@ -46,7 +46,7 @@ trait HasTEEHWPeripheryI2CChipImp extends RawModule {
     attach(i2c.SDA, SDA.pad)
     attach(i2c.SCL, SCL.pad)
 
-    val i2cpin = Wire(new I2CSignals(() => new EnhancedPin))
+    val i2cpin = Wire(new I2CSignals(() => new BasePin))
     withClockAndReset(clock, reset) { I2CPinsFromPort.apply(i2cpin, sysi2c, clock, reset, 3) }
 
     SDA.ConnectPin(i2cpin.sda)

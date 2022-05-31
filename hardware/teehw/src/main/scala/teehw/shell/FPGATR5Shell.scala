@@ -14,6 +14,7 @@ import uec.teehardware._
 import uec.teehardware.devices.sdram.SDRAMKey
 import uec.teehardware.devices.sifiveblocks._
 import uec.teehardware.devices.tlmemext._
+import uec.teehardware.devices.usb11hs.HasPeripheryUSB11HSChipImp
 
 class FMCTR5(val ext: Boolean = false, val xcvr: Boolean = false) extends Bundle {
   val CLK_M2C_p = Vec(2, Analog(1.W))
@@ -73,17 +74,17 @@ trait FPGATR5ChipShell {
   //////////// FMCD //////////
   val FMCD = IO(new FMCTR5(ext = true))
 
-  ///////// SW /////////
-  val SW = IO(Input(Bits(4.W)))
-
   ///////// LED /////////
-  val LED = IO(Output(Bits(4.W)))
+  val LED = IO(Vec(4, Analog(1.W)))
+
+  ///////// SW /////////
+  val SW = IO(Vec(4, Analog(1.W)))
 
   ///////// FAN /////////
   val FAN_ALERT_n = IO(Input(Bool()))
 
   //////////// SD Card //////////
-  val SD_CLK = IO(Output(Bool()))
+  val SD_CLK = IO(Analog(1.W))
   val SD_DATA = IO(Vec(4, Analog(1.W)))
   val SD_CMD = IO(Analog(1.W))
 
@@ -143,7 +144,7 @@ class FPGATR5Shell(implicit val p :Parameters) extends RawModule
   with FPGATR5ClockAndResetsAndDDR {
 }
 
-class FPGATR5Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConnect])(implicit val p :Parameters) extends RawModule
+class FPGATR5Internal(chip: Option[Any])(implicit val p :Parameters) extends RawModule
   with FPGAInternals
   with FPGATR5ClockAndResetsAndDDR {
   def outer = chip
@@ -171,47 +172,40 @@ class FPGATR5Internal(chip: Option[WithTEEHWbaseShell with WithTEEHWbaseConnect]
       clock := mod_io_ckrst.qsys_clk
       reset := reset_to_sys
       sys_clk := mod_io_ckrst.qsys_clk
-      ChildClock.foreach(_ := mod_io_ckrst.qsys_clk)
       mod_clock := mod_io_ckrst.qsys_clk
       mod_reset := reset_to_sys
       rst_n := !reset_to_sys
-      jrst_n := !reset_to_sys
       usbClk.foreach(_ := mod_io_ckrst.usb_clk)
-      sdramclock.foreach(_ := mod_io_ckrst.qsys_clk)
-      ChildReset.foreach(_ := reset_to_sys)
       DefaultRTC
 
       // Async clock connections
-      aclocks.foreach { aclocks =>
-        println(s"Connecting async clocks by default =>")
-        (aclocks zip namedclocks).foreach { case (aclk, nam) =>
-          println(s"  Detected clock ${nam}")
-          if(nam.contains("mbus")) {
-            p(SbusToMbusXTypeKey) match {
-              case _: AsynchronousCrossing =>
-                aclk := mod_io_ckrst.io_clk
-                println("    Connected to io_clk")
-                mod_clock := mod_io_ckrst.io_clk
-                mod_reset := reset_to_child
-                println("    Quartus Island clock also connected to io_clk")
-              case _ =>
-                aclk := mod_io_ckrst.qsys_clk
-                println("    Connected to qsys_clk")
-            }
+      println(s"Connecting ${aclkn} async clocks by default =>")
+      (aclocks zip namedclocks).foreach { case (aclk, nam) =>
+        println(s"  Detected clock ${nam}")
+        if(nam.contains("mbus")) {
+          p(SbusToMbusXTypeKey) match {
+            case _: AsynchronousCrossing =>
+              aclk := mod_io_ckrst.io_clk
+              println("    Connected to io_clk")
+              mod_clock := mod_io_ckrst.io_clk
+              mod_reset := reset_to_child
+              println("    Quartus Island clock also connected to io_clk")
+            case _ =>
+              aclk := mod_io_ckrst.qsys_clk
+              println("    Connected to qsys_clk")
           }
-          else {
-            aclk := mod_io_ckrst.qsys_clk
-            println("    Connected to qsys_clk")
-          }
+        }
+        else {
+          aclk := mod_io_ckrst.qsys_clk
+          println("    Connected to qsys_clk")
         }
       }
 
-      // Legacy ChildClock
-      ChildClock.foreach { cclk =>
-        println("Quartus Island and Child Clock connected to io_clk")
-        cclk := mod_io_ckrst.io_clk
-        mod_clock := mod_io_ckrst.io_clk
-        mod_reset := reset_to_child
+      p(SbusToMbusXTypeKey) match {
+        case _: AsynchronousCrossing =>
+          println("Quartus Island and Child Clock connected to io_clk")
+          mod_clock := mod_io_ckrst.io_clk
+          mod_reset := reset_to_child
       }
 
       mod_io_ckrst.ddr_ref_clk := OSC_50_B3B.asUInt()
@@ -314,21 +308,15 @@ class FPGATR5InternalNoChip
       Seq(),
       Seq(),
       false)}
-  override def aclkn: Option[Int] = p(ExposeClocks).option(3)
+  override def aclkn: Int = if(p(ExposeClocks)) 3 else 0
   override def memserSourceBits: Option[Int] = p(ExtSerMem).map( A => idBits )
   override def extserSourceBits: Option[Int] = p(ExtSerBus).map( A => idExtBits )
   override def namedclocks: Seq[String] = if(p(ExposeClocks)) Seq("cryptobus", "tile_0", "tile_1") else Seq()
-  override def issdramclock: Boolean = p(SDRAMKey).nonEmpty
-  override def isChildClock: Boolean = (p(SbusToMbusXTypeKey) match {
-    case _: AsynchronousCrossing => true
-    case _ => false
-  })
-  override def isRTCclock: Boolean = p(RTCPort)
 }
 
 trait WithFPGATR5InternCreate {
   this: FPGATR5Shell =>
-  val chip : WithTEEHWbaseShell with WithTEEHWbaseConnect
+  val chip: Any
   val intern = Module(new FPGATR5Internal(Some(chip)))
 }
 
@@ -382,55 +370,63 @@ trait WithFPGATR5InternConnect {
 
 trait WithFPGATR5PureConnect {
   this: FPGATR5Shell =>
-  val chip: WithTEEHWbaseShell with WithTEEHWbaseConnect
+  val chip: Any
 
-  def namedclocks: Seq[String] = chip.system.asInstanceOf[HasTEEHWClockGroupModuleImp].namedclocks
-  // This trait connects the chip to all essentials. This assumes no DDR is connected yet
-  chip.gpio_out.foreach{gpo =>
-    LED := Cat(gpo, BUTTON(2))
+  def namedclocks: Seq[String] = chip.asInstanceOf[HasTEEHWClockGroupChipImp].system.namedclocks
+
+  // GPIO
+  val gpport = SW ++ LED
+  chip.asInstanceOf[HasTEEHWPeripheryGPIOChipImp].gpio.zip(gpport).foreach{case(gp, i) =>
+    attach(gp, i)
   }
-  chip.gpio_in.foreach(gpi => gpi := Cat(BUTTON(3), BUTTON(1,0), SW(1,0)))
-  chip.jtag.jtag_TDI := ALT_IOBUF(GPIO(4))
-  chip.jtag.jtag_TMS := ALT_IOBUF(GPIO(6))
-  chip.jtag.jtag_TCK := ALT_IOBUF(GPIO(8))
-  ALT_IOBUF(GPIO(10), chip.jtag.jtag_TDO)
-  chip.uart_rxd := ALT_IOBUF(UART_RX)
-  ALT_IOBUF(UART_TX, chip.uart_txd) // UART_RXD
 
+  // JTAG
+  chip.asInstanceOf[DebugJTAGOnlyChipImp].jtag.foreach{ chipjtag =>
+    attach(chipjtag.TDI, GPIO(4))
+    attach(chipjtag.TMS, GPIO(6))
+    attach(chipjtag.TCK, GPIO(8))
+    attach(GPIO(10), chipjtag.TDO)
+    attach(chipjtag.TRSTn, GPIO(12))
+  }
 
   // QSPI
-  (chip.qspi zip chip.allspicfg).zipWithIndex.foreach {
-    case ((qspiport: TEEHWQSPIBundle, _: SPIParams), i: Int) =>
+  (chip.asInstanceOf[HasTEEHWPeripherySPIChipImp].spi zip chip.asInstanceOf[HasTEEHWPeripherySPIChipImp].allspicfg).zipWithIndex.foreach {
+    case ((qspiport: SPIPIN, _: SPIParams), i: Int) =>
       if (i == 0) {
         // SD IO
-        SD_CLK := qspiport.qspi_sck
-        ALT_IOBUF(SD_CMD, qspiport.qspi_mosi)
-        qspiport.qspi_miso := ALT_IOBUF(SD_DATA(0))
-        ALT_IOBUF(SD_DATA(3), qspiport.qspi_cs(0))
-      } else {
-        // Non-valid qspi. Just zero it
-        qspiport.qspi_miso := false.B
+        attach(SD_CLK, qspiport.SCK)
+        attach(SD_CMD, qspiport.DQ(0))
+        attach(qspiport.DQ(1), SD_DATA(0))
+        attach(SD_DATA(3), qspiport.CS(0))
+        attach(SD_DATA(1), qspiport.DQ(2))
+        attach(SD_DATA(2), qspiport.DQ(2))
       }
-    case ((qspiport: TEEHWQSPIBundle, _: SPIFlashParams), _: Int) =>
-      qspiport.qspi_miso := ALT_IOBUF(GPIO(1))
-      ALT_IOBUF(GPIO(3), qspiport.qspi_mosi)
-      ALT_IOBUF(GPIO(5), qspiport.qspi_cs(0))
-      ALT_IOBUF(GPIO(7), qspiport.qspi_sck)
+    case ((qspiport: SPIPIN, _: SPIFlashParams), _: Int) =>
+      attach(qspiport.DQ(1), GPIO(1))
+      attach(GPIO(3), qspiport.DQ(0))
+      attach(GPIO(5), qspiport.CS(0))
+      attach(GPIO(7), qspiport.SCK)
+      attach(GPIO(9), qspiport.DQ(2))
+      attach(GPIO(11), qspiport.DQ(3))
+  }
+
+  // UART
+  chip.asInstanceOf[HasTEEHWPeripheryUARTChipImp].uart.foreach { uart =>
+    attach(uart.RXD, UART_RX)
+    attach(UART_TX, uart.TXD)
   }
 
   // USB phy connections
-  chip.usb11hs.foreach{ case chipport =>
-    ALT_IOBUF(GPIO(17), chipport.USBFullSpeed)
-    chipport.USBWireDataIn := Cat(ALT_IOBUF(GPIO(24)), ALT_IOBUF(GPIO(26)))
-    ALT_IOBUF(GPIO(28), chipport.USBWireCtrlOut)
-    ALT_IOBUF(GPIO(16), chipport.USBWireDataOut(0))
-    ALT_IOBUF(GPIO(18), chipport.USBWireDataOut(1))
+  chip.asInstanceOf[HasPeripheryUSB11HSChipImp].usb11hs.foreach{ case chipport=>
+    attach(GPIO(17), chipport.USBFullSpeed)
+    attach(GPIO(24), chipport.USBWireDataIn(0))
+    attach(GPIO(26), chipport.USBWireDataIn(1))
+    attach(GPIO(28), chipport.USBWireCtrlOut)
+    attach(GPIO(16), chipport.USBWireDataOut(0))
+    attach(GPIO(18), chipport.USBWireDataOut(1))
   }
 
-  // TODO Nullify this for now
-  chip.sdram.foreach{ sdram =>
-    sdram.sdram_data_i := 0.U
-  }
+  // TODO Nullify sdram
 }
 
 trait WithFPGATR5Connect extends WithFPGATR5PureConnect 
@@ -442,15 +438,172 @@ trait WithFPGATR5Connect extends WithFPGATR5PureConnect
   intern.connectChipInternals(chip)
 
   // The rest of the platform connections
-  LED := Cat(
-    intern.mem_status_local_cal_fail,
-    intern.mem_status_local_cal_success,
-    intern.mem_status_local_init_done,
-    BUTTON(2)
-  )
+  PUT(intern.mem_status_local_cal_fail, LED(3))
+  PUT(intern.mem_status_local_cal_success, LED(2))
+  PUT(intern.mem_status_local_init_done, LED(1))
 }
 
 object ConnectFMCGPIO {
+  def npmap(FMC: FMCTR5): Map[(Int, Int), Analog] = {
+    val default = Map(
+      (0, 0) -> FMC.CLK_M2C_p(0),
+      (0, 1) -> FMC.CLK_M2C_n(0),
+      (0, 2) -> FMC.LA_TX_CLK_p,
+      (0, 3) -> FMC.LA_TX_CLK_n,
+      (0, 4) -> FMC.LA_TX_p(5),
+      (0, 5) -> FMC.LA_TX_n(5),
+      (0, 6) -> FMC.LA_TX_p(7),
+      (0, 7) -> FMC.LA_TX_n(7),
+      (0, 8) -> FMC.LA_TX_p(4),
+      (0, 9) -> FMC.LA_TX_n(4),
+      (0, 10) -> FMC.LA_TX_p(6),
+      (0, 11) -> FMC.LA_TX_n(6),
+      (0, 12) -> FMC.LA_TX_p(8),
+      (0, 13) -> FMC.LA_TX_n(8),
+      (0, 14) -> FMC.LA_TX_p(9),
+      (0, 15) -> FMC.LA_TX_n(9),
+      (0, 16) -> FMC.LA_TX_p(10),
+      (0, 17) -> FMC.LA_TX_n(10),
+      (0, 18) -> FMC.LA_TX_p(11),
+      (0, 19) -> FMC.LA_TX_n(11),
+      (0, 20) -> FMC.LA_TX_p(3),
+      (0, 21) -> FMC.LA_TX_n(3),
+      (0, 22) -> FMC.LA_TX_p(1),
+      (0, 23) -> FMC.LA_TX_n(1),
+      (0, 24) -> FMC.LA_TX_p(0),
+      (0, 25) -> FMC.LA_TX_n(0),
+      (0, 26) -> FMC.LA_TX_p(2),
+      (0, 27) -> FMC.LA_TX_n(2),
+      (0, 28) -> FMC.LA_TX_p(12),
+      (0, 29) -> FMC.LA_TX_n(12),
+      (0, 30) -> FMC.LA_TX_p(13),
+      (0, 31) -> FMC.LA_TX_n(13),
+      (0, 32) -> FMC.LA_TX_p(14),
+      (0, 33) -> FMC.LA_TX_n(14),
+      (0, 34) -> FMC.LA_TX_p(15),
+      (0, 35) -> FMC.LA_TX_n(15),
+      (1, 0) -> FMC.LA_RX_p(4),
+      (1, 1) -> FMC.LA_RX_n(4),
+      (1, 2) -> FMC.LA_RX_CLK_p,
+      (1, 3) -> FMC.LA_RX_CLK_n,
+      (1, 4) -> FMC.LA_RX_p(2),
+      (1, 5) -> FMC.LA_RX_n(2),
+      (1, 6) -> FMC.LA_RX_p(0),
+      (1, 7) -> FMC.LA_RX_n(0),
+      (1, 10) -> FMC.LA_RX_p(1),
+      (1, 11) -> FMC.LA_RX_n(1),
+      (1, 12) -> FMC.LA_RX_p(3),
+      (1, 13) -> FMC.LA_RX_n(3),
+      (1, 14) -> FMC.LA_RX_p(6),
+      (1, 15) -> FMC.LA_RX_n(6),
+      (1, 16) -> FMC.LA_RX_p(5),
+      (1, 17) -> FMC.LA_RX_n(5),
+      (1, 18) -> FMC.LA_RX_p(8),
+      (1, 19) -> FMC.LA_RX_n(8),
+      (1, 20) -> FMC.LA_RX_p(7),
+      (1, 21) -> FMC.LA_RX_n(7),
+      (1, 22) -> FMC.LA_RX_p(9),
+      (1, 23) -> FMC.LA_RX_n(9),
+      (1, 24) -> FMC.LA_RX_p(10),
+      (1, 25) -> FMC.LA_RX_n(10),
+      (1, 26) -> FMC.LA_RX_p(11),
+      (1, 27) -> FMC.LA_RX_n(11),
+      (1, 28) -> FMC.LA_RX_p(12),
+      (1, 29) -> FMC.LA_RX_n(12),
+      (1, 30) -> FMC.LA_RX_p(13),
+      (1, 31) -> FMC.LA_RX_n(13),
+      (1, 32) -> FMC.LA_RX_p(14),
+      (1, 33) -> FMC.LA_RX_n(14),
+      (1, 34) -> FMC.LA_TX_p(16),
+      (1, 35) -> FMC.LA_TX_n(16),
+    )
+    val ext = if(FMC.ext) Map (
+      (1, 8) -> FMC.HA_RX_p.get(8),
+      (1, 9) -> FMC.HA_RX_n.get(8),
+      (2, 0) -> FMC.HA_RX_CLK_p.get,
+      (2, 1) -> FMC.HA_RX_CLK_n.get,
+      (2, 2) -> FMC.HA_TX_CLK_p.get,
+      (2, 3) -> FMC.HA_TX_CLK_n.get,
+      (2, 4) -> FMC.HA_RX_p.get(0),
+      (2, 5) -> FMC.HA_RX_n.get(0),
+      (2, 6) -> FMC.HA_RX_p.get(1),
+      (2, 7) -> FMC.HA_RX_n.get(1),
+      (2, 8) -> FMC.HA_RX_p.get(2),
+      (2, 9) -> FMC.HA_RX_n.get(2),
+      (2, 10) -> FMC.HA_RX_p.get(3),
+      (2, 11) -> FMC.HA_RX_n.get(3),
+      (2, 12) -> FMC.HA_RX_p.get(4),
+      (2, 13) -> FMC.HA_RX_n.get(4),
+      (2, 14) -> FMC.HA_RX_p.get(5),
+      (2, 15) -> FMC.HA_RX_n.get(5),
+      (2, 16) -> FMC.HA_RX_p.get(6),
+      (2, 17) -> FMC.HA_RX_n.get(6),
+      (2, 18) -> FMC.HA_RX_p.get(7),
+      (2, 19) -> FMC.HA_RX_n.get(7),
+      (2, 20) -> FMC.HA_TX_p.get(0),
+      (2, 21) -> FMC.HA_TX_n.get(0),
+      (2, 22) -> FMC.HA_TX_p.get(1),
+      (2, 23) -> FMC.HA_TX_n.get(1),
+      (2, 24) -> FMC.HA_TX_p.get(2),
+      (2, 25) -> FMC.HA_TX_n.get(2),
+      (2, 26) -> FMC.HA_TX_p.get(3),
+      (2, 27) -> FMC.HA_TX_n.get(3),
+      (2, 28) -> FMC.HA_TX_p.get(4),
+      (2, 29) -> FMC.HA_TX_n.get(4),
+      (2, 30) -> FMC.HA_TX_p.get(5),
+      (2, 31) -> FMC.HA_TX_n.get(5),
+      (2, 32) -> FMC.HA_TX_p.get(6),
+      (2, 33) -> FMC.HA_TX_n.get(6),
+      (2, 34) -> FMC.HA_TX_p.get(7),
+      (2, 35) -> FMC.HA_TX_n.get(7),
+      (2, 0) -> FMC.HB_RX_CLK_p.get,
+      (2, 1) -> FMC.HB_RX_CLK_n.get,
+      (2, 2) -> FMC.HB_TX_CLK_p.get,
+      (2, 3) -> FMC.HB_TX_CLK_n.get,
+      (2, 4) -> FMC.HB_RX_p.get(0),
+      (2, 5) -> FMC.HB_RX_n.get(0),
+      (2, 6) -> FMC.HB_RX_p.get(1),
+      (2, 7) -> FMC.HB_RX_n.get(1),
+      (2, 8) -> FMC.HB_RX_p.get(2),
+      (2, 9) -> FMC.HB_RX_n.get(2),
+      (2, 10) -> FMC.HB_RX_p.get(3),
+      (2, 11) -> FMC.HB_RX_n.get(3),
+      (2, 12) -> FMC.HB_RX_p.get(4),
+      (2, 13) -> FMC.HB_RX_n.get(4),
+      (2, 14) -> FMC.HB_RX_p.get(5),
+      (2, 15) -> FMC.HB_RX_n.get(5),
+      (2, 16) -> FMC.HB_RX_p.get(6),
+      (2, 17) -> FMC.HB_RX_n.get(6),
+      (2, 18) -> FMC.HB_RX_p.get(7),
+      (2, 19) -> FMC.HB_RX_n.get(7),
+      (2, 20) -> FMC.HB_TX_p.get(0),
+      (2, 21) -> FMC.HB_TX_n.get(0),
+      (2, 22) -> FMC.HB_TX_p.get(1),
+      (2, 23) -> FMC.HB_TX_n.get(1),
+      (2, 24) -> FMC.HB_TX_p.get(2),
+      (2, 25) -> FMC.HB_TX_n.get(2),
+      (2, 26) -> FMC.HB_TX_p.get(3),
+      (2, 27) -> FMC.HB_TX_n.get(3),
+      (2, 28) -> FMC.HB_TX_p.get(4),
+      (2, 29) -> FMC.HB_TX_n.get(4),
+      (2, 30) -> FMC.HB_TX_p.get(5),
+      (2, 31) -> FMC.HB_TX_n.get(5),
+      (2, 32) -> FMC.HB_TX_p.get(6),
+      (2, 33) -> FMC.HB_TX_n.get(6),
+      (2, 34) -> FMC.HB_TX_p.get(7),
+      (2, 35) -> FMC.HB_TX_n.get(7),
+    ) else Map()
+    default ++ ext
+  }
+  def apply(n: Int, pu: Int, FMC: FMCTR5): Analog = {
+    val p:Int = pu match {
+      case it if 1 to 10 contains it => pu - 1
+      case it if 13 to 28 contains it => pu - 3
+      case it if 31 to 40 contains it => pu - 5
+      case _ => throw new RuntimeException(s"J${n}_${pu} is a VDD or a GND")
+    }
+    npmap(FMC)((n, p))
+  }
   def apply (n: Int, pu: Int, c: Bool, get: Boolean, FMC: FMCTR5) = {
     val p:Int = pu match {
       case it if 1 to 10 contains it => pu - 1
@@ -461,165 +614,11 @@ object ConnectFMCGPIO {
     n match {
       case 0 =>
         p match {
-          case 0 => if(get) c := GET(FMC.CLK_M2C_p(0)) else PUT(c, FMC.CLK_M2C_p(0)) // throw new RuntimeException(s"GPIO${n}_${p} can only be input")
-          case 1 => if(get) c := GET(FMC.CLK_M2C_n(0)) else PUT(c, FMC.CLK_M2C_n(0)) // throw new RuntimeException(s"GPIO${n}_${p} can only be input")
-          case 2 => if(get) c := ALT_IOBUF(FMC.LA_TX_CLK_p) else ALT_IOBUF(FMC.LA_TX_CLK_p, c) // throw new RuntimeException(s"GPIO${n}_${p} can only be input")
-          case 3 => if(get) c := ALT_IOBUF(FMC.LA_TX_CLK_n) else ALT_IOBUF(FMC.LA_TX_CLK_n, c) // throw new RuntimeException(s"GPIO${n}_${p} can only be input")
-          case 4 => if(get) c := ALT_IOBUF(FMC.LA_TX_p(5)) else ALT_IOBUF(FMC.LA_TX_p(5), c)
-          case 5 => if(get) c := ALT_IOBUF(FMC.LA_TX_n(5)) else ALT_IOBUF(FMC.LA_TX_n(5), c)
-          case 6 => if(get) c := ALT_IOBUF(FMC.LA_TX_p(7)) else ALT_IOBUF(FMC.LA_TX_p(7), c)
-          case 7 => if(get) c := ALT_IOBUF(FMC.LA_TX_n(7)) else ALT_IOBUF(FMC.LA_TX_n(7), c)
-          case 8 => if(get) c := ALT_IOBUF(FMC.LA_TX_p(4)) else ALT_IOBUF(FMC.LA_TX_p(4), c)
-          case 9 => if(get) c := ALT_IOBUF(FMC.LA_TX_n(4)) else ALT_IOBUF(FMC.LA_TX_n(4), c)
-          case 10 => if(get) c := ALT_IOBUF(FMC.LA_TX_p(6)) else ALT_IOBUF(FMC.LA_TX_p(6), c)
-          case 11 => if(get) c := ALT_IOBUF(FMC.LA_TX_n(6)) else ALT_IOBUF(FMC.LA_TX_n(6), c)
-          case 12 => if(get) c := ALT_IOBUF(FMC.LA_TX_p(8)) else ALT_IOBUF(FMC.LA_TX_p(8), c)
-          case 13 => if(get) c := ALT_IOBUF(FMC.LA_TX_n(8)) else ALT_IOBUF(FMC.LA_TX_n(8), c)
-          case 14 => if(get) c := ALT_IOBUF(FMC.LA_TX_p(9)) else ALT_IOBUF(FMC.LA_TX_p(9), c)
-          case 15 => if(get) c := ALT_IOBUF(FMC.LA_TX_n(9)) else ALT_IOBUF(FMC.LA_TX_n(9), c)
-          case 16 => if(get) c := ALT_IOBUF(FMC.LA_TX_p(10)) else ALT_IOBUF(FMC.LA_TX_p(10), c)
-          case 17 => if(get) c := ALT_IOBUF(FMC.LA_TX_n(10)) else ALT_IOBUF(FMC.LA_TX_n(10), c)
-          case 18 => if(get) c := ALT_IOBUF(FMC.LA_TX_p(11)) else ALT_IOBUF(FMC.LA_TX_p(11), c)
-          case 19 => if(get) c := ALT_IOBUF(FMC.LA_TX_n(11)) else ALT_IOBUF(FMC.LA_TX_n(11), c)
-          case 20 => if(get) c := ALT_IOBUF(FMC.LA_TX_p(3)) else ALT_IOBUF(FMC.LA_TX_p(3), c)
-          case 21 => if(get) c := ALT_IOBUF(FMC.LA_TX_n(3)) else ALT_IOBUF(FMC.LA_TX_n(3), c)
-          case 22 => if(get) c := ALT_IOBUF(FMC.LA_TX_p(1)) else ALT_IOBUF(FMC.LA_TX_p(1), c)
-          case 23 => if(get) c := ALT_IOBUF(FMC.LA_TX_n(1)) else ALT_IOBUF(FMC.LA_TX_n(1), c)
-          case 24 => if(get) c := ALT_IOBUF(FMC.LA_TX_p(0)) else ALT_IOBUF(FMC.LA_TX_p(0), c)
-          case 25 => if(get) c := ALT_IOBUF(FMC.LA_TX_n(0)) else ALT_IOBUF(FMC.LA_TX_n(0), c)
-          case 26 => if(get) c := ALT_IOBUF(FMC.LA_TX_p(2)) else ALT_IOBUF(FMC.LA_TX_p(2), c)
-          case 27 => if(get) c := ALT_IOBUF(FMC.LA_TX_n(2)) else ALT_IOBUF(FMC.LA_TX_n(2), c)
-          case 28 => if(get) c := ALT_IOBUF(FMC.LA_TX_p(12)) else ALT_IOBUF(FMC.LA_TX_p(12), c)
-          case 29 => if(get) c := ALT_IOBUF(FMC.LA_TX_n(12)) else ALT_IOBUF(FMC.LA_TX_n(12), c)
-          case 30 => if(get) c := ALT_IOBUF(FMC.LA_TX_p(13)) else ALT_IOBUF(FMC.LA_TX_p(13), c)
-          case 31 => if(get) c := ALT_IOBUF(FMC.LA_TX_n(13)) else ALT_IOBUF(FMC.LA_TX_n(13), c)
-          case 32 => if(get) c := ALT_IOBUF(FMC.LA_TX_p(14)) else ALT_IOBUF(FMC.LA_TX_p(14), c)
-          case 33 => if(get) c := ALT_IOBUF(FMC.LA_TX_n(14)) else ALT_IOBUF(FMC.LA_TX_n(14), c)
-          case 34 => if(get) c := ALT_IOBUF(FMC.LA_TX_p(15)) else ALT_IOBUF(FMC.LA_TX_p(15), c)
-          case 35 => if(get) c := ALT_IOBUF(FMC.LA_TX_n(15)) else ALT_IOBUF(FMC.LA_TX_n(15), c)
-          case _ => throw new RuntimeException(s"GPIO${n}_${p} does not exist")
+          case 0 => if (get) c := GET(FMC.CLK_M2C_p(0)) else PUT(c, FMC.CLK_M2C_p(0))
+          case 1 => if (get) c := GET(FMC.CLK_M2C_n(0)) else PUT(c, FMC.CLK_M2C_n(0))
+          case _ => if (get) c := ALT_IOBUF(npmap(FMC)((n, p))) else ALT_IOBUF(npmap(FMC)((n, p)), c)
         }
-      case 1 =>
-        p match {
-          case 0 => if(get) c := ALT_IOBUF(FMC.LA_RX_p(4)) else ALT_IOBUF(FMC.LA_RX_p(4), c)
-          case 1 => if(get) c := ALT_IOBUF(FMC.LA_RX_n(4)) else ALT_IOBUF(FMC.LA_RX_n(4), c)
-          case 2 => if(get) c := ALT_IOBUF(FMC.LA_RX_CLK_p) else ALT_IOBUF(FMC.LA_RX_CLK_p, c) //throw new RuntimeException(s"GPIO${n}_${p} can only be input")
-          case 3 => if(get) c := ALT_IOBUF(FMC.LA_RX_CLK_n) else ALT_IOBUF(FMC.LA_RX_CLK_n, c) //throw new RuntimeException(s"GPIO${n}_${p} can only be input")
-          case 4 => if(get) c := ALT_IOBUF(FMC.LA_RX_p(2)) else ALT_IOBUF(FMC.LA_RX_p(2), c)
-          case 5 => if(get) c := ALT_IOBUF(FMC.LA_RX_n(2)) else ALT_IOBUF(FMC.LA_RX_n(2), c)
-          case 6 => if(get) c := ALT_IOBUF(FMC.LA_RX_p(0)) else ALT_IOBUF(FMC.LA_RX_p(0), c)
-          case 7 => if(get) c := ALT_IOBUF(FMC.LA_RX_n(0)) else ALT_IOBUF(FMC.LA_RX_n(0), c)
-          case 8 => if(get) c := ALT_IOBUF(FMC.HA_RX_p.get(8)) else ALT_IOBUF(FMC.HA_RX_p.get(8), c)
-          case 9 => if(get) c := ALT_IOBUF(FMC.HA_RX_n.get(8)) else ALT_IOBUF(FMC.HA_RX_n.get(8), c)
-          case 10 => if(get) c := ALT_IOBUF(FMC.LA_RX_p(1)) else ALT_IOBUF(FMC.LA_RX_p(1), c)
-          case 11 => if(get) c := ALT_IOBUF(FMC.LA_RX_n(1)) else ALT_IOBUF(FMC.LA_RX_n(1), c)
-          case 12 => if(get) c := ALT_IOBUF(FMC.LA_RX_p(3)) else ALT_IOBUF(FMC.LA_RX_p(3), c)
-          case 13 => if(get) c := ALT_IOBUF(FMC.LA_RX_n(3)) else ALT_IOBUF(FMC.LA_RX_n(3), c)
-          case 14 => if(get) c := ALT_IOBUF(FMC.LA_RX_p(6)) else ALT_IOBUF(FMC.LA_RX_p(6), c)
-          case 15 => if(get) c := ALT_IOBUF(FMC.LA_RX_n(6)) else ALT_IOBUF(FMC.LA_RX_n(6), c)
-          case 16 => if(get) c := ALT_IOBUF(FMC.LA_RX_p(5)) else ALT_IOBUF(FMC.LA_RX_p(5), c)
-          case 17 => if(get) c := ALT_IOBUF(FMC.LA_RX_n(5)) else ALT_IOBUF(FMC.LA_RX_n(5), c)
-          case 18 => if(get) c := ALT_IOBUF(FMC.LA_RX_p(8)) else ALT_IOBUF(FMC.LA_RX_p(8), c)
-          case 19 => if(get) c := ALT_IOBUF(FMC.LA_RX_n(8)) else ALT_IOBUF(FMC.LA_RX_n(8), c)
-          case 20 => if(get) c := ALT_IOBUF(FMC.LA_RX_p(7)) else ALT_IOBUF(FMC.LA_RX_p(7), c)
-          case 21 => if(get) c := ALT_IOBUF(FMC.LA_RX_n(7)) else ALT_IOBUF(FMC.LA_RX_n(7), c)
-          case 22 => if(get) c := ALT_IOBUF(FMC.LA_RX_p(9)) else ALT_IOBUF(FMC.LA_RX_p(9), c)
-          case 23 => if(get) c := ALT_IOBUF(FMC.LA_RX_n(9)) else ALT_IOBUF(FMC.LA_RX_n(9), c)
-          case 24 => if(get) c := ALT_IOBUF(FMC.LA_RX_p(10)) else ALT_IOBUF(FMC.LA_RX_p(10), c)
-          case 25 => if(get) c := ALT_IOBUF(FMC.LA_RX_n(10)) else ALT_IOBUF(FMC.LA_RX_n(10), c)
-          case 26 => if(get) c := ALT_IOBUF(FMC.LA_RX_p(11)) else ALT_IOBUF(FMC.LA_RX_p(11), c)
-          case 27 => if(get) c := ALT_IOBUF(FMC.LA_RX_n(11)) else ALT_IOBUF(FMC.LA_RX_n(11), c)
-          case 28 => if(get) c := ALT_IOBUF(FMC.LA_RX_p(12)) else ALT_IOBUF(FMC.LA_RX_p(12), c)
-          case 29 => if(get) c := ALT_IOBUF(FMC.LA_RX_n(12)) else ALT_IOBUF(FMC.LA_RX_n(12), c)
-          case 30 => if(get) c := ALT_IOBUF(FMC.LA_RX_p(13)) else ALT_IOBUF(FMC.LA_RX_p(13), c)
-          case 31 => if(get) c := ALT_IOBUF(FMC.LA_RX_n(13)) else ALT_IOBUF(FMC.LA_RX_n(13), c)
-          case 32 => if(get) c := ALT_IOBUF(FMC.LA_RX_p(14)) else ALT_IOBUF(FMC.LA_RX_p(14), c)
-          case 33 => if(get) c := ALT_IOBUF(FMC.LA_RX_n(14)) else ALT_IOBUF(FMC.LA_RX_n(14), c)
-          case 34 => if(get) c := ALT_IOBUF(FMC.LA_TX_p(16)) else ALT_IOBUF(FMC.LA_TX_p(16), c)
-          case 35 => if(get) c := ALT_IOBUF(FMC.LA_TX_n(16)) else ALT_IOBUF(FMC.LA_TX_n(16), c)
-          case _ => throw new RuntimeException(s"GPIO${n}_${p} does not exist")
-        }
-      case 2 =>
-        p match {
-          case 0 => if(get) c := ALT_IOBUF(FMC.HA_RX_CLK_p.get) else ALT_IOBUF(FMC.HA_RX_CLK_p.get, c) // throw new RuntimeException(s"GPIO${n}_${p} can only be input")
-          case 1 => if(get) c := ALT_IOBUF(FMC.HA_RX_CLK_n.get) else ALT_IOBUF(FMC.HA_RX_CLK_n.get, c) // throw new RuntimeException(s"GPIO${n}_${p} can only be input")
-          case 2 => if(get) c := ALT_IOBUF(FMC.HA_TX_CLK_p.get) else ALT_IOBUF(FMC.HA_TX_CLK_p.get, c) // throw new RuntimeException(s"GPIO${n}_${p} can only be input")
-          case 3 => if(get) c := ALT_IOBUF(FMC.HA_TX_CLK_n.get) else ALT_IOBUF(FMC.HA_TX_CLK_n.get, c) // throw new RuntimeException(s"GPIO${n}_${p} can only be input")
-          case 4 => if(get) c := ALT_IOBUF(FMC.HA_RX_p.get(0)) else ALT_IOBUF(FMC.HA_RX_p.get(0), c)
-          case 5 => if(get) c := ALT_IOBUF(FMC.HA_RX_n.get(0)) else ALT_IOBUF(FMC.HA_RX_n.get(0), c)
-          case 6 => if(get) c := ALT_IOBUF(FMC.HA_RX_p.get(1)) else ALT_IOBUF(FMC.HA_RX_p.get(1), c)
-          case 7 => if(get) c := ALT_IOBUF(FMC.HA_RX_n.get(1)) else ALT_IOBUF(FMC.HA_RX_n.get(1), c)
-          case 8 => if(get) c := ALT_IOBUF(FMC.HA_RX_p.get(2)) else ALT_IOBUF(FMC.HA_RX_p.get(2), c)
-          case 9 => if(get) c := ALT_IOBUF(FMC.HA_RX_n.get(2)) else ALT_IOBUF(FMC.HA_RX_n.get(2), c)
-          case 10 => if(get) c := ALT_IOBUF(FMC.HA_RX_p.get(3)) else ALT_IOBUF(FMC.HA_RX_p.get(3), c)
-          case 11 => if(get) c := ALT_IOBUF(FMC.HA_RX_n.get(3)) else ALT_IOBUF(FMC.HA_RX_n.get(3), c)
-          case 12 => if(get) c := ALT_IOBUF(FMC.HA_RX_p.get(4)) else ALT_IOBUF(FMC.HA_RX_p.get(4), c)
-          case 13 => if(get) c := ALT_IOBUF(FMC.HA_RX_n.get(4)) else ALT_IOBUF(FMC.HA_RX_n.get(4), c)
-          case 14 => if(get) c := ALT_IOBUF(FMC.HA_RX_p.get(5)) else ALT_IOBUF(FMC.HA_RX_p.get(5), c)
-          case 15 => if(get) c := ALT_IOBUF(FMC.HA_RX_n.get(5)) else ALT_IOBUF(FMC.HA_RX_n.get(5), c)
-          case 16 => if(get) c := ALT_IOBUF(FMC.HA_RX_p.get(6)) else ALT_IOBUF(FMC.HA_RX_p.get(6), c)
-          case 17 => if(get) c := ALT_IOBUF(FMC.HA_RX_n.get(6)) else ALT_IOBUF(FMC.HA_RX_n.get(6), c)
-          case 18 => if(get) c := ALT_IOBUF(FMC.HA_RX_p.get(7)) else ALT_IOBUF(FMC.HA_RX_p.get(7), c)
-          case 19 => if(get) c := ALT_IOBUF(FMC.HA_RX_n.get(7)) else ALT_IOBUF(FMC.HA_RX_n.get(7), c)
-          case 20 => if(get) c := ALT_IOBUF(FMC.HA_TX_p.get(0)) else ALT_IOBUF(FMC.HA_TX_p.get(0), c)
-          case 21 => if(get) c := ALT_IOBUF(FMC.HA_TX_n.get(0)) else ALT_IOBUF(FMC.HA_TX_n.get(0), c)
-          case 22 => if(get) c := ALT_IOBUF(FMC.HA_TX_p.get(1)) else ALT_IOBUF(FMC.HA_TX_p.get(1), c)
-          case 23 => if(get) c := ALT_IOBUF(FMC.HA_TX_n.get(1)) else ALT_IOBUF(FMC.HA_TX_n.get(1), c)
-          case 24 => if(get) c := ALT_IOBUF(FMC.HA_TX_p.get(2)) else ALT_IOBUF(FMC.HA_TX_p.get(2), c)
-          case 25 => if(get) c := ALT_IOBUF(FMC.HA_TX_n.get(2)) else ALT_IOBUF(FMC.HA_TX_n.get(2), c)
-          case 26 => if(get) c := ALT_IOBUF(FMC.HA_TX_p.get(3)) else ALT_IOBUF(FMC.HA_TX_p.get(3), c)
-          case 27 => if(get) c := ALT_IOBUF(FMC.HA_TX_n.get(3)) else ALT_IOBUF(FMC.HA_TX_n.get(3), c)
-          case 28 => if(get) c := ALT_IOBUF(FMC.HA_TX_p.get(4)) else ALT_IOBUF(FMC.HA_TX_p.get(4), c)
-          case 29 => if(get) c := ALT_IOBUF(FMC.HA_TX_n.get(4)) else ALT_IOBUF(FMC.HA_TX_n.get(4), c)
-          case 30 => if(get) c := ALT_IOBUF(FMC.HA_TX_p.get(5)) else ALT_IOBUF(FMC.HA_TX_p.get(5), c)
-          case 31 => if(get) c := ALT_IOBUF(FMC.HA_TX_n.get(5)) else ALT_IOBUF(FMC.HA_TX_n.get(5), c)
-          case 32 => if(get) c := ALT_IOBUF(FMC.HA_TX_p.get(6)) else ALT_IOBUF(FMC.HA_TX_p.get(6), c)
-          case 33 => if(get) c := ALT_IOBUF(FMC.HA_TX_n.get(6)) else ALT_IOBUF(FMC.HA_TX_n.get(6), c)
-          case 34 => if(get) c := ALT_IOBUF(FMC.HA_TX_p.get(7)) else ALT_IOBUF(FMC.HA_TX_p.get(7), c)
-          case 35 => if(get) c := ALT_IOBUF(FMC.HA_TX_n.get(7)) else ALT_IOBUF(FMC.HA_TX_n.get(7), c)
-          case _ => throw new RuntimeException(s"GPIO${n}_${p} does not exist")
-        }
-      case 3 =>
-        p match {
-          case 0 => if(get) c := ALT_IOBUF(FMC.HB_RX_CLK_p.get) else ALT_IOBUF(FMC.HB_RX_CLK_p.get, c) // throw new RuntimeException(s"GPIO${n}_${p} can only be input")
-          case 1 => if(get) c := ALT_IOBUF(FMC.HB_RX_CLK_n.get) else ALT_IOBUF(FMC.HB_RX_CLK_n.get, c) // throw new RuntimeException(s"GPIO${n}_${p} can only be input")
-          case 2 => if(get) c := ALT_IOBUF(FMC.HB_TX_CLK_p.get) else ALT_IOBUF(FMC.HB_TX_CLK_p.get, c) // throw new RuntimeException(s"GPIO${n}_${p} can only be input")
-          case 3 => if(get) c := ALT_IOBUF(FMC.HB_TX_CLK_n.get) else ALT_IOBUF(FMC.HB_TX_CLK_n.get, c) // throw new RuntimeException(s"GPIO${n}_${p} can only be input")
-          case 4 => if(get) c := ALT_IOBUF(FMC.HB_RX_p.get(0)) else ALT_IOBUF(FMC.HB_RX_p.get(0), c)
-          case 5 => if(get) c := ALT_IOBUF(FMC.HB_RX_n.get(0)) else ALT_IOBUF(FMC.HB_RX_n.get(0), c)
-          case 6 => if(get) c := ALT_IOBUF(FMC.HB_RX_p.get(1)) else ALT_IOBUF(FMC.HB_RX_p.get(1), c)
-          case 7 => if(get) c := ALT_IOBUF(FMC.HB_RX_n.get(1)) else ALT_IOBUF(FMC.HB_RX_n.get(1), c)
-          case 8 => if(get) c := ALT_IOBUF(FMC.HB_RX_p.get(2)) else ALT_IOBUF(FMC.HB_RX_p.get(2), c)
-          case 9 => if(get) c := ALT_IOBUF(FMC.HB_RX_n.get(2)) else ALT_IOBUF(FMC.HB_RX_n.get(2), c)
-          case 10 => if(get) c := ALT_IOBUF(FMC.HB_RX_p.get(3)) else ALT_IOBUF(FMC.HB_RX_p.get(3), c)
-          case 11 => if(get) c := ALT_IOBUF(FMC.HB_RX_n.get(3)) else ALT_IOBUF(FMC.HB_RX_n.get(3), c)
-          case 12 => if(get) c := ALT_IOBUF(FMC.HB_RX_p.get(4)) else ALT_IOBUF(FMC.HB_RX_p.get(4), c)
-          case 13 => if(get) c := ALT_IOBUF(FMC.HB_RX_n.get(4)) else ALT_IOBUF(FMC.HB_RX_n.get(4), c)
-          case 14 => if(get) c := ALT_IOBUF(FMC.HB_RX_p.get(5)) else ALT_IOBUF(FMC.HB_RX_p.get(5), c)
-          case 15 => if(get) c := ALT_IOBUF(FMC.HB_RX_n.get(5)) else ALT_IOBUF(FMC.HB_RX_n.get(5), c)
-          case 16 => if(get) c := ALT_IOBUF(FMC.HB_RX_p.get(6)) else ALT_IOBUF(FMC.HB_RX_p.get(6), c)
-          case 17 => if(get) c := ALT_IOBUF(FMC.HB_RX_n.get(6)) else ALT_IOBUF(FMC.HB_RX_n.get(6), c)
-          case 18 => if(get) c := ALT_IOBUF(FMC.HB_RX_p.get(7)) else ALT_IOBUF(FMC.HB_RX_p.get(7), c)
-          case 19 => if(get) c := ALT_IOBUF(FMC.HB_RX_n.get(7)) else ALT_IOBUF(FMC.HB_RX_n.get(7), c)
-          case 20 => if(get) c := ALT_IOBUF(FMC.HB_TX_p.get(0)) else ALT_IOBUF(FMC.HB_TX_p.get(0), c)
-          case 21 => if(get) c := ALT_IOBUF(FMC.HB_TX_n.get(0)) else ALT_IOBUF(FMC.HB_TX_n.get(0), c)
-          case 22 => if(get) c := ALT_IOBUF(FMC.HB_TX_p.get(1)) else ALT_IOBUF(FMC.HB_TX_p.get(1), c)
-          case 23 => if(get) c := ALT_IOBUF(FMC.HB_TX_n.get(1)) else ALT_IOBUF(FMC.HB_TX_n.get(1), c)
-          case 24 => if(get) c := ALT_IOBUF(FMC.HB_TX_p.get(2)) else ALT_IOBUF(FMC.HB_TX_p.get(2), c)
-          case 25 => if(get) c := ALT_IOBUF(FMC.HB_TX_n.get(2)) else ALT_IOBUF(FMC.HB_TX_n.get(2), c)
-          case 26 => if(get) c := ALT_IOBUF(FMC.HB_TX_p.get(3)) else ALT_IOBUF(FMC.HB_TX_p.get(3), c)
-          case 27 => if(get) c := ALT_IOBUF(FMC.HB_TX_n.get(3)) else ALT_IOBUF(FMC.HB_TX_n.get(3), c)
-          case 28 => if(get) c := ALT_IOBUF(FMC.HB_TX_p.get(4)) else ALT_IOBUF(FMC.HB_TX_p.get(4), c)
-          case 29 => if(get) c := ALT_IOBUF(FMC.HB_TX_n.get(4)) else ALT_IOBUF(FMC.HB_TX_n.get(4), c)
-          case 30 => if(get) c := ALT_IOBUF(FMC.HB_TX_p.get(5)) else ALT_IOBUF(FMC.HB_TX_p.get(5), c)
-          case 31 => if(get) c := ALT_IOBUF(FMC.HB_TX_n.get(5)) else ALT_IOBUF(FMC.HB_TX_n.get(5), c)
-          case 32 => if(get) c := ALT_IOBUF(FMC.HB_TX_p.get(6)) else ALT_IOBUF(FMC.HB_TX_p.get(6), c)
-          case 33 => if(get) c := ALT_IOBUF(FMC.HB_TX_n.get(6)) else ALT_IOBUF(FMC.HB_TX_n.get(6), c)
-          case 34 => if(get) c := ALT_IOBUF(FMC.HB_TX_p.get(7)) else ALT_IOBUF(FMC.HB_TX_p.get(7), c)
-          case 35 => if(get) c := ALT_IOBUF(FMC.HB_TX_n.get(7)) else ALT_IOBUF(FMC.HB_TX_n.get(7), c)
-          case _ => throw new RuntimeException(s"GPIO${n}_${p} does not exist")
-        }
-      case _ => throw new RuntimeException(s"GPIO${n}_${p} does not exist")
+      case _ => if (get) c := ALT_IOBUF(npmap(FMC)((n, p))) else ALT_IOBUF(npmap(FMC)((n, p)), c)
     }
   }
 }
@@ -637,15 +636,11 @@ trait WithFPGATR5ToChipConnect extends WithFPGATR5InternNoChipCreate with WithFP
   def FMC = FMCA
 
   // From intern = Clocks and resets
-  intern.ChildClock.foreach{ a =>
-    ConnectFMCGPIO(GPIO2, 2, a.asBool(), false, FMC)
-  }
-  intern.ChildReset.foreach{ a =>
-    ConnectFMCGPIO(GPIO3, 2, a, false, FMC)
-  }
-  ConnectFMCGPIO(GPIO2, 4, intern.sys_clk.asBool(), false, FMC)
+  ConnectFMCGPIO(GPIO2, 2, intern.sys_clk.asBool, false, FMC) // Previous ChildClock
+  ConnectFMCGPIO(GPIO3, 2, !intern.rst_n, false, FMC) // Previous ChildReset
+  ConnectFMCGPIO(GPIO2, 4, intern.sys_clk.asBool, false, FMC)
   ConnectFMCGPIO(GPIO3, 4, intern.rst_n, false, FMC)
-  ConnectFMCGPIO(GPIO3, 5, intern.jrst_n, false, FMC)
+  ConnectFMCGPIO(GPIO3, 5, intern.rst_n, false, FMC) // Previous jrst_n
   // Memory port
   intern.tlport.foreach{ case tlport =>
     ConnectFMCGPIO(GPIO3, 1, tlport.a.valid, true, FMC)
@@ -655,19 +650,19 @@ trait WithFPGATR5ToChipConnect extends WithFPGATR5InternNoChipCreate with WithFP
     ConnectFMCGPIO(GPIO3, 3, a_opcode(2), true, FMC)
     ConnectFMCGPIO(GPIO3, 7, a_opcode(1), true, FMC)
     ConnectFMCGPIO(GPIO3, 8, a_opcode(0), true, FMC)
-    tlport.a.bits.opcode := a_opcode.asUInt()
+    tlport.a.bits.opcode := a_opcode.asUInt
     require(tlport.a.bits.param.getWidth == 3, s"${tlport.a.bits.param.getWidth}")
     val a_param = Wire(Vec(3, Bool()))
     ConnectFMCGPIO(GPIO3, 9, a_param(2), true, FMC)
     ConnectFMCGPIO(GPIO3, 10, a_param(1), true, FMC)
     ConnectFMCGPIO(GPIO3, 13, a_param(0), true, FMC)
-    tlport.a.bits.param := a_param.asUInt()
+    tlport.a.bits.param := a_param.asUInt
     val a_size = Wire(Vec(3, Bool()))
     require(tlport.a.bits.size.getWidth == 3, s"${tlport.a.bits.size.getWidth}")
     ConnectFMCGPIO(GPIO3, 14, a_size(2), true, FMC)
     ConnectFMCGPIO(GPIO3, 15, a_size(1), true, FMC)
     ConnectFMCGPIO(GPIO3, 16, a_size(0), true, FMC)
-    tlport.a.bits.size := a_size.asUInt()
+    tlport.a.bits.size := a_size.asUInt
     require(tlport.a.bits.source.getWidth == 6, s"${tlport.a.bits.source.getWidth}")
     val a_source = Wire(Vec(6, Bool()))
     ConnectFMCGPIO(GPIO3, 17, a_source(5), true, FMC)
@@ -676,7 +671,7 @@ trait WithFPGATR5ToChipConnect extends WithFPGATR5InternNoChipCreate with WithFP
     ConnectFMCGPIO(GPIO3, 20, a_source(2), true, FMC)
     ConnectFMCGPIO(GPIO3, 21, a_source(1), true, FMC)
     ConnectFMCGPIO(GPIO3, 22, a_source(0), true, FMC)
-    tlport.a.bits.source := a_source.asUInt()
+    tlport.a.bits.source := a_source.asUInt
     require(tlport.a.bits.address.getWidth == 32, s"${tlport.a.bits.address.getWidth}")
     val a_address = Wire(Vec(32, Bool()))
     ConnectFMCGPIO(GPIO3, 23, a_address(31), true, FMC)
@@ -711,14 +706,14 @@ trait WithFPGATR5ToChipConnect extends WithFPGATR5InternNoChipCreate with WithFP
     ConnectFMCGPIO(GPIO1, 16, a_address( 2), true, FMC)
     ConnectFMCGPIO(GPIO1, 17, a_address( 1), true, FMC)
     ConnectFMCGPIO(GPIO1, 18, a_address( 0), true, FMC)
-    tlport.a.bits.address := a_address.asUInt()
+    tlport.a.bits.address := a_address.asUInt
     require(tlport.a.bits.mask.getWidth == 4, s"${tlport.a.bits.mask.getWidth}")
     val a_mask = Wire(Vec(4, Bool()))
     ConnectFMCGPIO(GPIO1, 19, a_mask(3), true, FMC)
     ConnectFMCGPIO(GPIO1, 20, a_mask(2), true, FMC)
     ConnectFMCGPIO(GPIO1, 21, a_mask(1), true, FMC)
     ConnectFMCGPIO(GPIO1, 22, a_mask(0), true, FMC)
-    tlport.a.bits.mask := a_mask.asUInt()
+    tlport.a.bits.mask := a_mask.asUInt
     require(tlport.a.bits.data.getWidth == 32, s"${tlport.a.bits.data.getWidth}")
     val a_data = Wire(Vec(32, Bool()))
     ConnectFMCGPIO(GPIO1, 23, a_data(31), true, FMC)
@@ -753,7 +748,7 @@ trait WithFPGATR5ToChipConnect extends WithFPGATR5InternNoChipCreate with WithFP
     ConnectFMCGPIO(GPIO0, 16, a_data( 2), true, FMC)
     ConnectFMCGPIO(GPIO0, 17, a_data( 1), true, FMC)
     ConnectFMCGPIO(GPIO0, 18, a_data( 0), true, FMC)
-    tlport.a.bits.data := a_data.asUInt()
+    tlport.a.bits.data := a_data.asUInt
     ConnectFMCGPIO(GPIO0, 19, tlport.a.bits.corrupt, true, FMC)
     ConnectFMCGPIO(GPIO0, 20, tlport.d.ready, true, FMC)
     ConnectFMCGPIO(GPIO0, 21, tlport.d.valid, false, FMC)
@@ -823,11 +818,7 @@ trait WithFPGATR5ToChipConnect extends WithFPGATR5InternNoChipCreate with WithFP
     case 1 =>
       val MEMSER_GPIO = 0
       val EXTSER_GPIO = 1
-      PUT(intern.sys_clk.asBool(), FMCSER.CLK_M2C_p(1))
-      //ConnectFMCGPIO(MEMSER_GPIO, 1, intern.sys_clk.asBool(), false, FMCSER) //
-      //intern.ChildClock.foreach{ a => ConnectFMCGPIO(MEMSER_GPIO, 2, a.asBool(), false, FMCSER) }
-      //intern.usbClk.foreach{ a => ConnectFMCGPIO(MEMSER_GPIO, 3, a.asBool(), false, FMCSER) }
-      ConnectFMCGPIO(MEMSER_GPIO, 4, intern.jrst_n, false, FMCSER)
+      PUT(intern.sys_clk.asBool, FMCSER.CLK_M2C_p(1))
       ConnectFMCGPIO(MEMSER_GPIO, 5, intern.rst_n, false, FMCSER)
       // ExtSerMem
       intern.memser.foreach { memser =>
@@ -840,7 +831,7 @@ trait WithFPGATR5ToChipConnect extends WithFPGATR5InternNoChipCreate with WithFP
         ConnectFMCGPIO(MEMSER_GPIO, 16, in_bits(2), false, FMCSER)
         ConnectFMCGPIO(MEMSER_GPIO, 17, in_bits(1), false, FMCSER)
         ConnectFMCGPIO(MEMSER_GPIO, 18, in_bits(0), false, FMCSER)
-        in_bits := memser.in.bits.asBools()
+        in_bits := memser.in.bits.asBools
         ConnectFMCGPIO(MEMSER_GPIO, 19, memser.in.valid, false, FMCSER)
         ConnectFMCGPIO(MEMSER_GPIO, 20, memser.out.ready, false, FMCSER)
         ConnectFMCGPIO(MEMSER_GPIO, 21, memser.in.ready, true, FMCSER)
@@ -853,7 +844,7 @@ trait WithFPGATR5ToChipConnect extends WithFPGATR5InternNoChipCreate with WithFP
         ConnectFMCGPIO(MEMSER_GPIO, 27, out_bits(2), true, FMCSER)
         ConnectFMCGPIO(MEMSER_GPIO, 28, out_bits(1), true, FMCSER)
         ConnectFMCGPIO(MEMSER_GPIO, 31, out_bits(0), true, FMCSER)
-        memser.out.bits := out_bits.asUInt()
+        memser.out.bits := out_bits.asUInt
         ConnectFMCGPIO(MEMSER_GPIO, 32, memser.out.valid, true, FMCSER)
       }
       // ExtSerBus
@@ -867,7 +858,7 @@ trait WithFPGATR5ToChipConnect extends WithFPGATR5InternNoChipCreate with WithFP
         ConnectFMCGPIO(EXTSER_GPIO, 16, in_bits(2), false, FMCSER)
         ConnectFMCGPIO(EXTSER_GPIO, 17, in_bits(1), false, FMCSER)
         ConnectFMCGPIO(EXTSER_GPIO, 18, in_bits(0), false, FMCSER)
-        in_bits := extser.in.bits.asBools()
+        in_bits := extser.in.bits.asBools
         ConnectFMCGPIO(EXTSER_GPIO, 19, extser.in.valid, false, FMCSER)
         ConnectFMCGPIO(EXTSER_GPIO, 20, extser.out.ready, false, FMCSER)
         ConnectFMCGPIO(EXTSER_GPIO, 21, extser.in.ready, true, FMCSER)
@@ -880,14 +871,13 @@ trait WithFPGATR5ToChipConnect extends WithFPGATR5InternNoChipCreate with WithFP
         ConnectFMCGPIO(EXTSER_GPIO, 27, out_bits(2), true, FMCSER)
         ConnectFMCGPIO(EXTSER_GPIO, 28, out_bits(1), true, FMCSER)
         ConnectFMCGPIO(EXTSER_GPIO, 31, out_bits(0), true, FMCSER)
-        extser.out.bits := out_bits.asUInt()
+        extser.out.bits := out_bits.asUInt
         ConnectFMCGPIO(EXTSER_GPIO, 32, extser.out.valid, true, FMCSER)
       }
     case 0 =>
-      ConnectFMCGPIO(0, 1, intern.sys_clk.asBool(), false, FMCSER)
-      intern.ChildClock.foreach{ a => PUT(a.asBool(), FMCSER.CLK_M2C_n(1)) }
-      intern.usbClk.foreach{ a => PUT(a.asBool(), FMCSER.CLK_M2C_n(1)) }
-      ConnectFMCGPIO(0, 27, intern.jrst_n, false, FMCSER)
+      ConnectFMCGPIO(0, 1, intern.sys_clk.asBool, false, FMCSER)
+      // PUT(intern.sys_clk.asBool, FMCSER.CLK_M2C_n(1)) // Previous OtherClock
+      intern.usbClk.foreach{ a => PUT(a.asBool, FMCSER.CLK_M2C_n(1)) }
       ConnectFMCGPIO(1, 15, intern.rst_n, false, FMCSER)
       // ExtSerMem
       intern.memser.foreach { memser =>
@@ -949,24 +939,19 @@ trait WithFPGATR5ToChipConnect extends WithFPGATR5InternNoChipCreate with WithFP
   // ******** Misc part ********
 
   // LEDs
-  LED := Cat(
-    intern.mem_status_local_cal_fail,
-    intern.mem_status_local_cal_success,
-    intern.mem_status_local_init_done,
-    BUTTON(2)
-  )
+  PUT(intern.mem_status_local_cal_fail, LED(3))
+  PUT(intern.mem_status_local_cal_success, LED(2))
+  PUT(intern.mem_status_local_init_done, LED(1))
   // Clocks to the outside
-  ALT_IOBUF(SMA_CLKOUT_p, intern.sys_clk.asBool())
-  // NOTE: ChildClock and usbClk cannot exist at the same time
-  intern.ChildClock.foreach(A => ALT_IOBUF(SMA_CLKOUT_n, A.asBool()))
-  intern.usbClk.foreach(A => ALT_IOBUF(SMA_CLKOUT_n, A.asBool()))
-  SD_CLK := false.B
+  ALT_IOBUF(SMA_CLKOUT_p, intern.sys_clk.asBool)
+  ALT_IOBUF(SMA_CLKOUT_n, intern.sys_clk.asBool) // For async clock
+  // NOTE: usbClk cannot exist
 }
 
 // Trait which connects the FPGA the chip
 trait WithFPGATR5FromChipConnect extends WithFPGATR5PureConnect {
   this: FPGATR5Shell =>
-  
+
   // ******* Ahn-Dao section ******
   def FMCSER = FMCA
   def versionSer = 1
@@ -974,136 +959,109 @@ trait WithFPGATR5FromChipConnect extends WithFPGATR5PureConnect {
     case 1 =>
       val MEMSER_GPIO = 0
       val EXTSER_GPIO = 1
-      val sysclk = Wire(Bool())
-      sysclk := ALT_IOBUF(SMA_CLKOUT_p) // ConnectFMCGPIO(MEMSER_GPIO, 1, sysclk,  true, FMCSER)
-      chip.sys_clk := sysclk.asClock()
-      chip.ChildClock.foreach{ a =>
-        val clkwire = Wire(Bool())
-        clkwire := ALT_IOBUF(SMA_CLKOUT_n) // ConnectFMCGPIO(MEMSER_GPIO, 2, clkwire,  true, FMCSER)
-        a := clkwire.asClock()
+      attach(SMA_CLKOUT_p, chip.asInstanceOf[HasTEEHWClockGroupChipImp].clockxi)
+      chip.asInstanceOf[HasPeripheryUSB11HSChipImp].usb11hs.foreach{ a =>
+        attach(a.usbClk, SMA_CLKOUT_n)
       }
-      chip.usb11hs.foreach{ a =>
-        val clkwire = Wire(Bool())
-        clkwire := ALT_IOBUF(SMA_CLKOUT_n) // ConnectFMCGPIO(MEMSER_GPIO, 3, clkwire,  true, FMCSER)
-        a.usbClk := clkwire.asClock()
-      }
-      ConnectFMCGPIO(MEMSER_GPIO, 4, chip.jrst_n,  true, FMCSER)
-      ConnectFMCGPIO(MEMSER_GPIO, 5, chip.rst_n,  true, FMCSER)
+      attach(ConnectFMCGPIO(MEMSER_GPIO, 5, FMCSER), chip.asInstanceOf[HasTEEHWClockGroupChipImp].rstn)
       // ExtSerMem
-      chip.memser.foreach { memser =>
-        val in_bits = Wire(Vec(8, Bool()))
-        ConnectFMCGPIO(MEMSER_GPIO, 9, in_bits(7),  true, FMCSER)
-        ConnectFMCGPIO(MEMSER_GPIO, 10, in_bits(6),  true, FMCSER)
-        ConnectFMCGPIO(MEMSER_GPIO, 13, in_bits(5),  true, FMCSER)
-        ConnectFMCGPIO(MEMSER_GPIO, 14, in_bits(4),  true, FMCSER)
-        ConnectFMCGPIO(MEMSER_GPIO, 15, in_bits(3),  true, FMCSER)
-        ConnectFMCGPIO(MEMSER_GPIO, 16, in_bits(2),  true, FMCSER)
-        ConnectFMCGPIO(MEMSER_GPIO, 17, in_bits(1),  true, FMCSER)
-        ConnectFMCGPIO(MEMSER_GPIO, 18, in_bits(0),  true, FMCSER)
-        in_bits := memser.in.bits.asBools()
-        ConnectFMCGPIO(MEMSER_GPIO, 19, memser.in.valid,  true, FMCSER)
-        ConnectFMCGPIO(MEMSER_GPIO, 20, memser.out.ready,  true, FMCSER)
-        ConnectFMCGPIO(MEMSER_GPIO, 21, memser.in.ready,  false, FMCSER)
-        val out_bits = Wire(Vec(8, Bool()))
-        ConnectFMCGPIO(MEMSER_GPIO, 22, out_bits(7),  false, FMCSER)
-        ConnectFMCGPIO(MEMSER_GPIO, 23, out_bits(6),  false, FMCSER)
-        ConnectFMCGPIO(MEMSER_GPIO, 24, out_bits(5),  false, FMCSER)
-        ConnectFMCGPIO(MEMSER_GPIO, 25, out_bits(4),  false, FMCSER)
-        ConnectFMCGPIO(MEMSER_GPIO, 26, out_bits(3),  false, FMCSER)
-        ConnectFMCGPIO(MEMSER_GPIO, 27, out_bits(2),  false, FMCSER)
-        ConnectFMCGPIO(MEMSER_GPIO, 28, out_bits(1),  false, FMCSER)
-        ConnectFMCGPIO(MEMSER_GPIO, 31, out_bits(0),  false, FMCSER)
-        memser.out.bits := out_bits.asUInt()
-        ConnectFMCGPIO(MEMSER_GPIO, 32, memser.out.valid,  false, FMCSER)
+      chip.asInstanceOf[HasTEEHWPeripheryExtSerMemChipImp].memser.foreach { memser =>
+        attach(ConnectFMCGPIO(MEMSER_GPIO, 9, FMCSER), memser.in.bits(7))
+        attach(ConnectFMCGPIO(MEMSER_GPIO, 10, FMCSER), memser.in.bits(6))
+        attach(ConnectFMCGPIO(MEMSER_GPIO, 13, FMCSER), memser.in.bits(5))
+        attach(ConnectFMCGPIO(MEMSER_GPIO, 14, FMCSER), memser.in.bits(4))
+        attach(ConnectFMCGPIO(MEMSER_GPIO, 15, FMCSER), memser.in.bits(3))
+        attach(ConnectFMCGPIO(MEMSER_GPIO, 16, FMCSER), memser.in.bits(2))
+        attach(ConnectFMCGPIO(MEMSER_GPIO, 17, FMCSER), memser.in.bits(1))
+        attach(ConnectFMCGPIO(MEMSER_GPIO, 18, FMCSER), memser.in.bits(0))
+        attach(ConnectFMCGPIO(MEMSER_GPIO, 19, FMCSER), memser.in.valid)
+        attach(ConnectFMCGPIO(MEMSER_GPIO, 20, FMCSER), memser.out.ready)
+        attach(ConnectFMCGPIO(MEMSER_GPIO, 21, FMCSER), memser.in.ready)
+        attach(ConnectFMCGPIO(MEMSER_GPIO, 22, FMCSER), memser.out.bits(7))
+        attach(ConnectFMCGPIO(MEMSER_GPIO, 23, FMCSER), memser.out.bits(6))
+        attach(ConnectFMCGPIO(MEMSER_GPIO, 24, FMCSER), memser.out.bits(5))
+        attach(ConnectFMCGPIO(MEMSER_GPIO, 25, FMCSER), memser.out.bits(4))
+        attach(ConnectFMCGPIO(MEMSER_GPIO, 26, FMCSER), memser.out.bits(3))
+        attach(ConnectFMCGPIO(MEMSER_GPIO, 27, FMCSER), memser.out.bits(2))
+        attach(ConnectFMCGPIO(MEMSER_GPIO, 28, FMCSER), memser.out.bits(1))
+        attach(ConnectFMCGPIO(MEMSER_GPIO, 31, FMCSER), memser.out.bits(0))
+        attach(ConnectFMCGPIO(MEMSER_GPIO, 32, FMCSER), memser.out.valid)
       }
       // ExtSerBus
-      chip.extser.foreach{ extser =>
+      chip.asInstanceOf[HasTEEHWPeripheryExtSerBusChipImp].extser.foreach{ extser =>
         val in_bits = Wire(Vec(8, Bool()))
-        ConnectFMCGPIO(EXTSER_GPIO, 9, in_bits(7),  true, FMCSER)
-        ConnectFMCGPIO(EXTSER_GPIO, 10, in_bits(6),  true, FMCSER)
-        ConnectFMCGPIO(EXTSER_GPIO, 13, in_bits(5),  true, FMCSER)
-        ConnectFMCGPIO(EXTSER_GPIO, 14, in_bits(4),  true, FMCSER)
-        ConnectFMCGPIO(EXTSER_GPIO, 15, in_bits(3),  true, FMCSER)
-        ConnectFMCGPIO(EXTSER_GPIO, 16, in_bits(2),  true, FMCSER)
-        ConnectFMCGPIO(EXTSER_GPIO, 17, in_bits(1),  true, FMCSER)
-        ConnectFMCGPIO(EXTSER_GPIO, 18, in_bits(0),  true, FMCSER)
-        in_bits := extser.in.bits.asBools()
-        ConnectFMCGPIO(EXTSER_GPIO, 19, extser.in.valid,  true, FMCSER)
-        ConnectFMCGPIO(EXTSER_GPIO, 20, extser.out.ready,  true, FMCSER)
-        ConnectFMCGPIO(EXTSER_GPIO, 21, extser.in.ready,  false, FMCSER)
-        val out_bits = Wire(Vec(8, Bool()))
-        ConnectFMCGPIO(EXTSER_GPIO, 22, out_bits(7),  false, FMCSER)
-        ConnectFMCGPIO(EXTSER_GPIO, 23, out_bits(6),  false, FMCSER)
-        ConnectFMCGPIO(EXTSER_GPIO, 24, out_bits(5),  false, FMCSER)
-        ConnectFMCGPIO(EXTSER_GPIO, 25, out_bits(4),  false, FMCSER)
-        ConnectFMCGPIO(EXTSER_GPIO, 26, out_bits(3),  false, FMCSER)
-        ConnectFMCGPIO(EXTSER_GPIO, 27, out_bits(2),  false, FMCSER)
-        ConnectFMCGPIO(EXTSER_GPIO, 28, out_bits(1),  false, FMCSER)
-        ConnectFMCGPIO(EXTSER_GPIO, 31, out_bits(0),  false, FMCSER)
-        extser.out.bits := out_bits.asUInt()
-        ConnectFMCGPIO(EXTSER_GPIO, 32, extser.out.valid,  false, FMCSER)
+        attach(ConnectFMCGPIO(EXTSER_GPIO, 9, FMCSER), extser.in.bits(7))
+        attach(ConnectFMCGPIO(EXTSER_GPIO, 10, FMCSER), extser.in.bits(6))
+        attach(ConnectFMCGPIO(EXTSER_GPIO, 13, FMCSER), extser.in.bits(5))
+        attach(ConnectFMCGPIO(EXTSER_GPIO, 14, FMCSER), extser.in.bits(4))
+        attach(ConnectFMCGPIO(EXTSER_GPIO, 15, FMCSER), extser.in.bits(3))
+        attach(ConnectFMCGPIO(EXTSER_GPIO, 16, FMCSER), extser.in.bits(2))
+        attach(ConnectFMCGPIO(EXTSER_GPIO, 17, FMCSER), extser.in.bits(1))
+        attach(ConnectFMCGPIO(EXTSER_GPIO, 18, FMCSER), extser.in.bits(0))
+        attach(ConnectFMCGPIO(EXTSER_GPIO, 19, FMCSER), extser.in.valid)
+        attach(ConnectFMCGPIO(EXTSER_GPIO, 20, FMCSER), extser.out.ready)
+        attach(ConnectFMCGPIO(EXTSER_GPIO, 21, FMCSER), extser.in.ready)
+        attach(ConnectFMCGPIO(EXTSER_GPIO, 22, FMCSER), extser.out.bits(7))
+        attach(ConnectFMCGPIO(EXTSER_GPIO, 23, FMCSER), extser.out.bits(6))
+        attach(ConnectFMCGPIO(EXTSER_GPIO, 24, FMCSER), extser.out.bits(5))
+        attach(ConnectFMCGPIO(EXTSER_GPIO, 25, FMCSER), extser.out.bits(4))
+        attach(ConnectFMCGPIO(EXTSER_GPIO, 26, FMCSER), extser.out.bits(3))
+        attach(ConnectFMCGPIO(EXTSER_GPIO, 27, FMCSER), extser.out.bits(2))
+        attach(ConnectFMCGPIO(EXTSER_GPIO, 28, FMCSER), extser.out.bits(1))
+        attach(ConnectFMCGPIO(EXTSER_GPIO, 31, FMCSER), extser.out.bits(0))
+        attach(ConnectFMCGPIO(EXTSER_GPIO, 32, FMCSER), extser.out.valid)
       }
     case _ =>
-      val sysclk = Wire(Bool())
-      ConnectFMCGPIO(0, 1, sysclk,  true, FMCSER)
-      chip.sys_clk := sysclk.asClock()
-      chip.ChildClock.foreach{ a => a := GET(FMCSER.CLK_M2C_n(1)).asClock() }
-      chip.usb11hs.foreach{ a => a.usbClk := GET(FMCSER.CLK_M2C_n(1)).asClock() }
-      ConnectFMCGPIO(0, 27, chip.jrst_n,  true, FMCSER)
-      ConnectFMCGPIO(1, 15, chip.rst_n,  true, FMCSER)
+      attach(ConnectFMCGPIO(0, 1, FMCSER), chip.asInstanceOf[HasTEEHWClockGroupChipImp].clockxi)
+      chip.asInstanceOf[HasPeripheryUSB11HSChipImp].usb11hs.foreach{ a => attach(a.usbClk, FMCSER.CLK_M2C_n(1)) }
+      attach(ConnectFMCGPIO(1, 15, FMCSER), chip.asInstanceOf[HasTEEHWClockGroupChipImp].rstn)
       // ExtSerMem
-      chip.memser.foreach { memser =>
+      chip.asInstanceOf[HasTEEHWPeripheryExtSerMemChipImp].memser.foreach { memser =>
         val in_bits = Wire(Vec(8, Bool()))
-        ConnectFMCGPIO(0, 31, in_bits(7),  true, FMCSER)
-        ConnectFMCGPIO(0, 33, in_bits(6),  true, FMCSER)
-        ConnectFMCGPIO(0, 35, in_bits(5),  true, FMCSER)
-        ConnectFMCGPIO(0, 37, in_bits(4),  true, FMCSER)
-        ConnectFMCGPIO(0, 39, in_bits(3),  true, FMCSER)
-        ConnectFMCGPIO(1, 1, in_bits(2),  true, FMCSER)
-        ConnectFMCGPIO(1, 5, in_bits(1),  true, FMCSER)
-        ConnectFMCGPIO(1, 7, in_bits(0),  true, FMCSER)
-        in_bits := memser.in.bits.asBools()
-        ConnectFMCGPIO(1, 9, memser.in.valid,  true, FMCSER)
-        ConnectFMCGPIO(1, 13, memser.out.ready,  true, FMCSER)
-        ConnectFMCGPIO(2, 5, memser.in.ready,  false, FMCSER)
-        val out_bits = Wire(Vec(8, Bool()))
-        ConnectFMCGPIO(2, 7, out_bits(7),  false, FMCSER)
-        ConnectFMCGPIO(2, 9, out_bits(6),  false, FMCSER)
-        ConnectFMCGPIO(2, 13, out_bits(5),  false, FMCSER)
-        ConnectFMCGPIO(2, 15, out_bits(4),  false, FMCSER)
-        ConnectFMCGPIO(2, 17, out_bits(3),  false, FMCSER)
-        ConnectFMCGPIO(2, 19, out_bits(2),  false, FMCSER)
-        ConnectFMCGPIO(2, 21, out_bits(1),  false, FMCSER)
-        ConnectFMCGPIO(2, 23, out_bits(0),  false, FMCSER)
-        memser.out.bits := out_bits.asUInt()
-        ConnectFMCGPIO(2, 25, memser.out.valid,  false, FMCSER)
+        attach(ConnectFMCGPIO(0, 31, FMCSER), memser.in.bits(7))
+        attach(ConnectFMCGPIO(0, 33, FMCSER), memser.in.bits(6))
+        attach(ConnectFMCGPIO(0, 35, FMCSER), memser.in.bits(5))
+        attach(ConnectFMCGPIO(0, 37, FMCSER), memser.in.bits(4))
+        attach(ConnectFMCGPIO(0, 39, FMCSER), memser.in.bits(3))
+        attach(ConnectFMCGPIO(1, 1, FMCSER), memser.in.bits(2))
+        attach(ConnectFMCGPIO(1, 5, FMCSER), memser.in.bits(1))
+        attach(ConnectFMCGPIO(1, 7, FMCSER), memser.in.bits(0))
+        attach(ConnectFMCGPIO(1, 9, FMCSER), memser.in.valid)
+        attach(ConnectFMCGPIO(1, 13, FMCSER), memser.out.ready)
+        attach(ConnectFMCGPIO(2, 5, FMCSER), memser.in.ready)
+        attach(ConnectFMCGPIO(2, 7, FMCSER), memser.out.bits(7))
+        attach(ConnectFMCGPIO(2, 9, FMCSER), memser.out.bits(6))
+        attach(ConnectFMCGPIO(2, 13, FMCSER), memser.out.bits(5))
+        attach(ConnectFMCGPIO(2, 15, FMCSER), memser.out.bits(4))
+        attach(ConnectFMCGPIO(2, 17, FMCSER), memser.out.bits(3))
+        attach(ConnectFMCGPIO(2, 19, FMCSER), memser.out.bits(2))
+        attach(ConnectFMCGPIO(2, 21, FMCSER), memser.out.bits(1))
+        attach(ConnectFMCGPIO(2, 23, FMCSER), memser.out.bits(0))
+        attach(ConnectFMCGPIO(2, 25, FMCSER), memser.out.valid)
       }
       // ExtSerBus
-      chip.extser.foreach{ extser =>
+      chip.asInstanceOf[HasTEEHWPeripheryExtSerBusChipImp].extser.foreach{ extser =>
         val in_bits = Wire(Vec(8, Bool()))
-        ConnectFMCGPIO(0, 5, in_bits(7),  true, FMCSER)
-        ConnectFMCGPIO(0, 7, in_bits(6),  true, FMCSER)
-        ConnectFMCGPIO(0, 9, in_bits(5),  true, FMCSER)
-        ConnectFMCGPIO(0, 13, in_bits(4),  true, FMCSER)
-        ConnectFMCGPIO(0, 15, in_bits(3),  true, FMCSER)
-        ConnectFMCGPIO(0, 17, in_bits(2),  true, FMCSER)
-        ConnectFMCGPIO(0, 19, in_bits(1),  true, FMCSER)
-        ConnectFMCGPIO(0, 21, in_bits(0),  true, FMCSER)
-        in_bits := extser.in.bits.asBools()
-        ConnectFMCGPIO(0, 23, extser.in.valid,  true, FMCSER)
-        ConnectFMCGPIO(0, 25, extser.out.ready,  true, FMCSER)
-        ConnectFMCGPIO(1, 17, extser.in.ready,  false, FMCSER)
-        val out_bits = Wire(Vec(8, Bool()))
-        ConnectFMCGPIO(1, 19, out_bits(7),  false, FMCSER)
-        ConnectFMCGPIO(1, 21, out_bits(6),  false, FMCSER)
-        ConnectFMCGPIO(1, 25, out_bits(5),  false, FMCSER)
-        ConnectFMCGPIO(1, 27, out_bits(4),  false, FMCSER)
-        ConnectFMCGPIO(1, 31, out_bits(3),  false, FMCSER)
-        ConnectFMCGPIO(1, 33, out_bits(2),  false, FMCSER)
-        ConnectFMCGPIO(1, 35, out_bits(1),  false, FMCSER)
-        ConnectFMCGPIO(1, 37, out_bits(0),  false, FMCSER)
-        extser.out.bits := out_bits.asUInt()
-        ConnectFMCGPIO(1, 39, extser.out.valid,  false, FMCSER)
+        attach(ConnectFMCGPIO(0, 5, FMCSER), extser.in.bits(7))
+        attach(ConnectFMCGPIO(0, 7, FMCSER), extser.in.bits(6))
+        attach(ConnectFMCGPIO(0, 9, FMCSER), extser.in.bits(5))
+        attach(ConnectFMCGPIO(0, 13, FMCSER), extser.in.bits(4))
+        attach(ConnectFMCGPIO(0, 15, FMCSER), extser.in.bits(3))
+        attach(ConnectFMCGPIO(0, 17, FMCSER), extser.in.bits(2))
+        attach(ConnectFMCGPIO(0, 19, FMCSER), extser.in.bits(1))
+        attach(ConnectFMCGPIO(0, 21, FMCSER), extser.in.bits(0))
+        attach(ConnectFMCGPIO(0, 23, FMCSER), extser.in.valid)
+        attach(ConnectFMCGPIO(0, 25, FMCSER), extser.out.ready)
+        attach(ConnectFMCGPIO(1, 17, FMCSER), extser.in.ready)
+        attach(ConnectFMCGPIO(1, 19, FMCSER), extser.out.bits(7))
+        attach(ConnectFMCGPIO(1, 21, FMCSER), extser.out.bits(6))
+        attach(ConnectFMCGPIO(1, 25, FMCSER), extser.out.bits(5))
+        attach(ConnectFMCGPIO(1, 27, FMCSER), extser.out.bits(4))
+        attach(ConnectFMCGPIO(1, 31, FMCSER), extser.out.bits(3))
+        attach(ConnectFMCGPIO(1, 33, FMCSER), extser.out.bits(2))
+        attach(ConnectFMCGPIO(1, 35, FMCSER), extser.out.bits(1))
+        attach(ConnectFMCGPIO(1, 37, FMCSER), extser.out.bits(0))
+        attach(ConnectFMCGPIO(1, 39, FMCSER), extser.out.valid)
       }
   }
 }
