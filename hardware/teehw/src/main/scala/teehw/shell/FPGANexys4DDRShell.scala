@@ -153,8 +153,8 @@ class FPGANexys4DDRInternal(chip: Option[Any])(implicit val p :Parameters) exten
       ddr = Some(IO(new Nexys4DDRMIGIODDR(mod.depth)))
       ddr.get <> mod.io.ddrport
       // MIG connections, like resets and stuff
-      mod.io.ddrport.sys_clk_i := pll.io.clk_out2.get.asBool()
-      mod.io.ddrport.clk_ref_i := pll.io.clk_out3.get.asBool()
+      mod.io.ddrport.sys_clk_i := pll.io.clk_out2.get.asBool
+      mod.io.ddrport.clk_ref_i := pll.io.clk_out3.get.asBool
       mod.io.ddrport.aresetn := aresetn
       mod.io.ddrport.sys_rst := sys_rst
       reset_to_sys := ResetCatchAndSync(pll.io.clk_out1.get, mod.io.ddrport.ui_clk_sync_rst)

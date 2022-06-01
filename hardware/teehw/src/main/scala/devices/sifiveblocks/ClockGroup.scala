@@ -120,6 +120,7 @@ trait HasTEEHWClockGroupChipImp extends RawModule {
 
   attach(clockxi, CLOCK.xi)
   (CLOCK.xo zip clockxo).map{case (a, b) => attach(a, b)}
+  attach(rstn, RSTn.pad)
 
   clock := CLOCK.ConnectAsClock
   reset := !RSTn.ConnectAsInput(true) || system.ndreset.getOrElse(false.B)

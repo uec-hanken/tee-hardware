@@ -110,7 +110,7 @@ class XilinxGPIO extends RawModule with GenericTEEHWGPIO {
   val mod = Module(new IOBUF)
   attach(mod.io.IO, io.IO)
   mod.io.I := io.I
-  mod.io.T := io.T
+  mod.io.T := !io.T // TODO: This is opposite. If going to do a Blackbox, need to override all functions
   io.O := mod.io.O
   override def ConnectAsClock(): Clock = {
     i := false.B

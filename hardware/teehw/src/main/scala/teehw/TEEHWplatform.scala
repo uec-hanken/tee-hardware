@@ -30,6 +30,7 @@ class TEEHWSystem(implicit p: Parameters) extends TEEHWSubsystem
   with HasTEEHWPeripheryI2C
   with HasTEEHWPeripheryUART
   with HasTEEHWPeripherySPI
+  with HasTEEHWPeripheryRTC
   with HasTEEHWPeripheryXilinxVC707PCIeX1
   with HasTEEHWPeripheryXDMA
   // The TEEHW components
@@ -46,7 +47,6 @@ class TEEHWSystem(implicit p: Parameters) extends TEEHWSubsystem
   with HasSDRAM
   with CanHavePeripheryTLSerial // ONLY for simulations
   with HasTEEHWClockGroup
-  with HasTEEHWPeripheryRTC
 {
   // System module creation
   override lazy val module = new TEEHWSystemModule(this)
@@ -61,6 +61,7 @@ class TEEHWSystemModule[+L <: TEEHWSystem](_outer: L) extends TEEHWSubsystemModu
   with HasTEEHWPeripheryI2CModuleImp
   with HasTEEHWPeripheryUARTModuleImp
   with HasTEEHWPeripherySPIModuleImp
+  with HasTEEHWPeripheryRTCModuleImp
   with HasTEEHWPeripheryXilinxVC707PCIeX1ModuleImp
   with HasTEEHWPeripheryXDMAModuleImp
   // The TEEHW components
