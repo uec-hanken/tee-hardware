@@ -112,6 +112,11 @@ class XilinxGPIO extends RawModule with GenericTEEHWGPIO {
   mod.io.I := io.I
   mod.io.T := io.T
   io.O := mod.io.O
+  override def ConnectAsClock(): Clock = {
+    i := false.B
+    oe := true.B
+    IBUFG(o.asClock)
+  }
 }
 
 class XilinxXTAL extends RawModule with GenericTEEHWXTAL {

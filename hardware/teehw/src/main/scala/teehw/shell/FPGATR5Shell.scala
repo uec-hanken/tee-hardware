@@ -375,7 +375,7 @@ trait WithFPGATR5PureConnect {
   def namedclocks: Seq[String] = chip.asInstanceOf[HasTEEHWClockGroupChipImp].system.namedclocks
 
   // GPIO
-  val gpport = SW ++ LED
+  val gpport = SW ++ LED.slice(0, 1)
   chip.asInstanceOf[HasTEEHWPeripheryGPIOChipImp].gpio.zip(gpport).foreach{case(gp, i) =>
     attach(gp, i)
   }

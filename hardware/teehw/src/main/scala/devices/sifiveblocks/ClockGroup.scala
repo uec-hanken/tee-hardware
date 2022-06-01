@@ -8,7 +8,8 @@ import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.prci._
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.util._
-import uec.teehardware.{CbusToCryptoBusXTypeKey, CbusToExtBusXTypeKey, ExposeClocks, GenericIOLibraryParams, GenericTEEHWXTAL}
+import uec.teehardware.devices.tlmemext.{ExtMemDirect}
+import uec.teehardware.{CbusToCryptoBusXTypeKey, CbusToExtBusXTypeKey, ExposeClocks, GenericIOLibraryParams, GenericTEEHWXTAL, HasDigitalizable}
 
 // Frequency
 case object FreqKeyMHz extends Field[Double](100.0)
@@ -110,7 +111,8 @@ trait HasTEEHWClockGroupChipImp extends RawModule {
 
   // General clock and reset
   val CLOCK = IOGen.crystal()
-  val RSTn = IOGen.gpio()
+  // TODO: Make the RSTn also an exclusive config? For now is kinda ok to make it depend of the ExtMemDirect
+  val RSTn: HasDigitalizable = if(p(ExtMemDirect)) IOGen.analog() else IOGen.gpio()
 
   val clockxi = IO(Analog(1.W))
   val clockxo = CLOCK.xo.map(A => IO(Analog(1.W)))

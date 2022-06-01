@@ -9,13 +9,12 @@ import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.prci.{ClockSinkNode, ClockSinkParameters}
 import freechips.rocketchip.subsystem.MasterPortParams
 import freechips.rocketchip.tilelink._
-import uec.teehardware.{GenericIOLibraryParams, TEEHWBaseSubsystem}
+import uec.teehardware.{GenericIOLibraryParams, TEEHWBaseSubsystem, HasDigitalizable}
 import testchipip.{SerialIO, TLSerdes}
-
-
 
 case class MemorySerialPortParams(master: MasterPortParams, nMemoryChannels: Int, serWidth: Int)
 case object ExtSerMem extends Field[Option[MemorySerialPortParams]](None)
+case object ExtSerMemDirect extends Field[Boolean](false)
 
 trait HasTEEHWPeripheryExtSerMem {
   this: TEEHWBaseSubsystem =>
@@ -78,31 +77,31 @@ trait HasTEEHWPeripheryExtSerMemChipImp extends RawModule {
   val memser = system.memSerPorts.map{sysextser =>
     val memser = IO(new SerialIOChip(sysextser.w))
 
-    val out_valid = IOGen.gpio()
+    val out_valid: HasDigitalizable = if(p(ExtSerMemDirect)) IOGen.gpio() else IOGen.analog()
     out_valid.suggestName("out_valid")
     attach(out_valid.pad, memser.out.valid)
     out_valid.ConnectAsOutput(sysextser.out.valid)
-    val out_ready = IOGen.gpio()
+    val out_ready: HasDigitalizable = if(p(ExtSerMemDirect)) IOGen.gpio() else IOGen.analog()
     out_ready.suggestName("a_ready")
     attach(out_ready.pad, memser.out.ready)
     sysextser.out.ready := out_ready.ConnectAsInput()
     (sysextser.out.bits.asBools zip memser.out.bits).zipWithIndex.foreach{ case((a, b), i) =>
-      val pad = IOGen.gpio()
+      val pad: HasDigitalizable = if(p(ExtSerMemDirect)) IOGen.gpio() else IOGen.analog()
       pad.suggestName(s"out_bits_${i}")
       attach(pad.pad, b)
       pad.ConnectAsOutput(a)
     }
 
-    val in_valid = IOGen.gpio()
+    val in_valid: HasDigitalizable = if(p(ExtSerMemDirect)) IOGen.gpio() else IOGen.analog()
     in_valid.suggestName("in_valid")
     attach(in_valid.pad, memser.in.valid)
     sysextser.in.valid := in_valid.ConnectAsInput()
-    val in_ready = IOGen.gpio()
+    val in_ready: HasDigitalizable = if(p(ExtSerMemDirect)) IOGen.gpio() else IOGen.analog()
     in_ready.suggestName("in_ready")
     attach(in_ready.pad, memser.in.ready)
     in_ready.ConnectAsOutput(sysextser.in.ready)
     sysextser.in.bits := VecInit(memser.in.bits.zipWithIndex.map{ case(b, i) =>
-      val pad = IOGen.gpio()
+      val pad: HasDigitalizable = if(p(ExtSerMemDirect)) IOGen.gpio() else IOGen.analog()
       pad.suggestName(s"in_bits_${i}")
       attach(pad.pad, b)
       pad.ConnectAsInput()

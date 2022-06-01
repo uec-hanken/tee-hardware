@@ -24,7 +24,7 @@ PERMISSIVE_OFF=
 # This is for compiling all into the VRCS
 TOP_VERILOGS = $(TOP_FILE) $(HARNESS_FILE)
 TOP_VERILOG_MEMS = $(TOP_SMEMS_FILE) $(HARNESS_SMEMS_FILE)
-TOP_F = $(sim_top_blackboxes) $(sim_top_blackboxes)
+TOP_F = $(sim_top_blackboxes) $(sim_harness_blackboxes)
 
 VSRCS := \
 	$(TOP_VERILOGS) \

@@ -24,7 +24,7 @@ import uec.teehardware.devices.opentitan.otp_ctrl._
 import boom.common._
 import testchipip.{SerialTLAttachKey, SerialTLAttachParams, SerialTLKey, SerialTLParams}
 import freechips.rocketchip.util.BooleanToAugmentedBoolean
-import uec.teehardware.devices.clockctrl.{ClockCtrlParams, PeripheryClockCtrlKey}
+import uec.teehardware.devices.clockctrl._
 import uec.teehardware.devices.opentitan.nmi_gen._
 import uec.teehardware.devices.sdram._
 import uec.teehardware.devices.sifiveblocks._
@@ -482,19 +482,6 @@ class WExposeClk extends Config((site, here, up) => {
 })
 
 // *************** Board Config (BOARD) ***************
-class DE4Config extends Config((new WithIbexSynthesizedNoICache).alter((site,here,up) => {
-  case FreqKeyMHz => 50.0
-  case QSPICardMHz => 1.0
-  case SDCardMHz => 5.0
-  /* DE4 is not support PCIe (yet) */
-  case XilinxVC707PCIe => None
-  case PeripheryRandomKey => up(PeripheryRandomKey, site) map {r =>
-    r.copy(board = "Altera", impl = 0)
-  }
-  /* The DDR memory supports 128 transactions. This is to avoid modifying chipyard*/
-  case MemoryBusKey => up(MemoryBusKey).copy(blockBytes = 64)
-}))
-
 class TR4Config extends Config((new WithIbexSynthesizedNoICache).alter((site,here,up) => {
   case FreqKeyMHz => 50.0
   case QSPICardMHz => 1.0
@@ -506,7 +493,13 @@ class TR4Config extends Config((new WithIbexSynthesizedNoICache).alter((site,her
   }
   /* The DDR memory supports 64 transactions. This is to avoid modifying chipyard*/
   case MemoryBusKey => up(MemoryBusKey).copy(blockBytes = 64)
+  // Connections to the memory bus needs to be direct in FPGA case only
+  case ExtMemDirect => true
+  case ExtSerMemDirect => true
+  case ExtSerBusDirect => true
   case IOLibrary => AlteraIOLibraryParams()
+    // Limit the number of GPIOs
+  case PeripheryGPIOKey => up(PeripheryGPIOKey).map(_.copy(width = 5))
 }))
 
 class TR5Config extends Config((new WithIbexSynthesizedNoICache).alter((site,here,up) => {
@@ -522,7 +515,13 @@ class TR5Config extends Config((new WithIbexSynthesizedNoICache).alter((site,her
   case MemoryBusKey => up(MemoryBusKey).copy(blockBytes = 64)
   case ExtMem => up(ExtMem).map{ext => ext.copy(master = ext.master.copy(size = x"0_8000_0000"))}
   case ExtSerMem => up(ExtSerMem).map{ext => ext.copy(master = ext.master.copy(size = x"0_8000_0000"))}
+  // Connections to the memory bus needs to be direct in FPGA case only
+  case ExtMemDirect => true
+  case ExtSerMemDirect => true
+  case ExtSerBusDirect => true
   case IOLibrary => AlteraIOLibraryParams()
+  // Limit the number of GPIOs
+  case PeripheryGPIOKey => up(PeripheryGPIOKey).map(_.copy(width = 5))
 }))
 
 class VC707Config extends Config((site,here,up) => {
@@ -537,7 +536,13 @@ class VC707Config extends Config((site,here,up) => {
   }
   /* The DDR memory supports 128 transactions. This is to avoid modifying chipyard*/
   case MemoryBusKey => up(MemoryBusKey).copy(blockBytes = 128)
+  // Connections to the memory bus needs to be direct in FPGA case only
+  case ExtMemDirect => true
+  case ExtSerMemDirect => true
+  case ExtSerBusDirect => true
   case IOLibrary => XilinxIOLibraryParams()
+  // Limit the number of GPIOs
+  case PeripheryGPIOKey => up(PeripheryGPIOKey).map(_.copy(width = 16))
 })
 
 class VCU118Config extends Config((site,here,up) => {
@@ -566,7 +571,13 @@ class VCU118Config extends Config((site,here,up) => {
   case XilinxVC707PCIe => None
   /* The DDR memory supports 256*8 transactions. This is to avoid modifying chipyard*/
   case MemoryBusKey => up(MemoryBusKey).copy(blockBytes = 256*8)
+  // Connections to the memory bus needs to be direct in FPGA case only
+  case ExtMemDirect => true
+  case ExtSerMemDirect => true
+  case ExtSerBusDirect => true
   case IOLibrary => XilinxIOLibraryParams()
+  // Limit the number of GPIOs
+  case PeripheryGPIOKey => up(PeripheryGPIOKey).map(_.copy(width = 16))
 })
 
 class ArtyA7Config extends Config((site,here,up) => {
@@ -582,10 +593,16 @@ class ArtyA7Config extends Config((site,here,up) => {
   case ExtSerMem => up(ExtSerMem).map{ mem =>
     mem.copy(mem.master.copy(size = x"0_1000_0000"))
   }
+  // Connections to the memory bus needs to be direct in FPGA case only
+  case ExtMemDirect => true
+  case ExtSerMemDirect => true
+  case ExtSerBusDirect => true
 
   // Not supported
   case ExtSerBus => None
   case IOLibrary => XilinxIOLibraryParams()
+  // Limit the number of GPIOs
+  case PeripheryGPIOKey => up(PeripheryGPIOKey).map(_.copy(width = 6))
 })
 
 class Nexys4DDRConfig extends Config((site,here,up) => {
@@ -601,10 +618,16 @@ class Nexys4DDRConfig extends Config((site,here,up) => {
   case ExtSerMem => up(ExtSerMem).map{ mem =>
     mem.copy(mem.master.copy(size = x"0_0800_0000"))
   }
+  // Connections to the memory bus needs to be direct in FPGA case only
+  case ExtMemDirect => true
+  case ExtSerMemDirect => true
+  case ExtSerBusDirect => true
 
   // Not supported
   case ExtSerBus => None
   case IOLibrary => XilinxIOLibraryParams()
+  // Limit the number of GPIOs
+  case PeripheryGPIOKey => up(PeripheryGPIOKey).map(_.copy(width = 6))
 })
 
 class SakuraXConfig extends Config((site,here,up) => {
@@ -622,9 +645,15 @@ class SakuraXConfig extends Config((site,here,up) => {
   case ExtSerMem => up(ExtSerMem).map{ mem =>
     mem.copy(mem.master.copy(size = x"0_0800_0000"))
   }
+  // Connections to the memory bus needs to be direct in FPGA case only
+  case ExtMemDirect => true
+  case ExtSerMemDirect => true
+  case ExtSerBusDirect => true
   /* The DDR memory supports 128 transactions */
   case MemoryBusKey => up(MemoryBusKey).copy(blockBytes = 128)
   case IOLibrary => XilinxIOLibraryParams()
+  // Limit the number of GPIOs
+  case PeripheryGPIOKey => up(PeripheryGPIOKey).map(_.copy(width = 16))
 })
 
 class DE2Config extends Config((new WithIbexSynthesizedNoICache).alter((site,here,up) => {
@@ -647,10 +676,16 @@ class DE2Config extends Config((new WithIbexSynthesizedNoICache).alter((site,her
   case ExtMem => None
   case ExtSerMem => None
   case ExtSerBus => None
+  // Connections to the memory bus needs to be direct in FPGA case only
+  case ExtMemDirect => true
+  case ExtSerMemDirect => true
+  case ExtSerBusDirect => true
   // To avoid errors in cryptobus
   case PeripheryAESKey => List(
     AESParams(address = BigInt(0x64007000L)))
   case IOLibrary => AlteraIOLibraryParams()
+  // Limit the number of GPIOs
+  case PeripheryGPIOKey => up(PeripheryGPIOKey).map(_.copy(width = 21))
 }))
 
 // ***************** The simulation flag *****************

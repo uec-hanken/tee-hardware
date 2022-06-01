@@ -6,7 +6,18 @@ import chisel3.util._
 import chisel3.experimental._
 import sifive.blocks.devices.pinctrl._
 
-trait GenericTEEHWGPIO extends BaseModule {
+trait HasDigitalizable extends BaseModule {
+  //def ConnectPin(pin: BasePin, pullup: Boolean = false): Unit
+  //def ConnectPin(pin: EnhancedPin): Unit
+  //def ConnectTristate(in: Bool, en: Bool): Bool
+  val pad: Analog
+  def ConnectAsOutput(in: Bool): Unit
+  def ConnectAsInput(pullup: Boolean = false): Bool
+  def ConnectAsClock(): Clock
+  def ConnectAsClock(en: Bool): Clock
+}
+
+trait GenericTEEHWGPIO extends BaseModule with HasDigitalizable {
   val pad: Analog
   val i: Bool
   val o: Bool
@@ -40,7 +51,7 @@ trait GenericTEEHWGPIO extends BaseModule {
     pue.foreach(_ := false.B)
     ie.foreach(_ := false.B)
   }
-  def ConnectTristate(in: Bool, en: Bool): UInt = {
+  def ConnectTristate(in: Bool, en: Bool): Bool = {
     i := in
     oe := en
     ds.foreach(_ := false.B)
@@ -74,11 +85,12 @@ trait GenericTEEHWGPIO extends BaseModule {
   }
 }
 
-trait GenericTEEHWXTAL extends BaseModule {
+trait GenericTEEHWXTAL extends BaseModule with HasDigitalizable {
   val xi: Analog
   val xo: Option[Analog]
   val xc: Clock
   val xe: Option[Bool]
+  val pad = xi
   def ConnectPin(pin: BasePin): Unit = {
     //pin.o.oval
     //pin.o.oe
@@ -91,7 +103,7 @@ trait GenericTEEHWXTAL extends BaseModule {
     xe.foreach(_ := pin.o.ie)
     pin.i.po.foreach(_ := false.B)
   }
-  def ConnectAsInput(): Bool = {
+  def ConnectAsInput(pullup: Boolean = false): Bool = {
     xe.foreach(_ := true.B)
     xc.asBool
   }
@@ -103,21 +115,36 @@ trait GenericTEEHWXTAL extends BaseModule {
     xe.foreach(_ := en)
     xc
   }
+  def ConnectAsOutput(in: Bool): Unit = {
+    // Nothing
+  }
 }
 
-trait GenericTEEHWAnalog extends BaseModule {
+trait GenericTEEHWAnalog extends BaseModule with HasDigitalizable {
   val pad: Analog
   val core: Option[Analog]
   def ConnectCore(ana: Analog): Unit = {
-    if(core.isDefined) core.foreach(attach(_, ana)) else attach(pad, ana)
+    attach(core.getOrElse(pad), ana)
+  }
+  def ConnectAsOutput(in: Bool): Unit = {
+    PUT(in, core.getOrElse(pad))
+  }
+  def ConnectAsInput(pullup: Boolean = false): Bool = {
+    GET(core.getOrElse(pad))
+  }
+  def ConnectAsClock(): Clock = {
+    GET(core.getOrElse(pad)).asClock
+  }
+  def ConnectAsClock(en: Bool): Clock = {
+    GET(core.getOrElse(pad)).asClock
   }
 }
 
 trait GenericIOLibraryParams {
-  def analog(): GenericTEEHWAnalog
-  def gpio():   GenericTEEHWGPIO
-  def input():  GenericTEEHWGPIO
-  def output(): GenericTEEHWGPIO
+  def analog():  GenericTEEHWAnalog
+  def gpio():    GenericTEEHWGPIO
+  def input():   GenericTEEHWGPIO
+  def output():  GenericTEEHWGPIO
   def crystal(): GenericTEEHWXTAL
 }
 
@@ -162,6 +189,7 @@ class TEEHWANALOG extends BlackBox with HasBlackBoxInline with GenericTEEHWAnalo
   setInline("TEEHWANALOG.v",
     s"""module TEEHWANALOG (PAD);
        |	inout PAD;
+       |  assign PAD = 1'bz;
        |endmodule
        |""".stripMargin)
 }

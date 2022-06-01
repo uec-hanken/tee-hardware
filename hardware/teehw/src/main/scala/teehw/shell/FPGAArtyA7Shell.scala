@@ -294,6 +294,8 @@ trait WithFPGAArtyA7Connect {
         attach(ja(1), qspiport.DQ(0))
         attach(qspiport.DQ(1), ja(2))
         attach(ja(3), qspiport.SCK)
+        attach(ja(4), qspiport.DQ(2))
+        attach(ja(5), qspiport.DQ(3))
       }
     case ((qspiport: SPIPIN, _: SPIFlashParams), _: Int) =>
       attach(qspi_sck, qspiport.SCK)
