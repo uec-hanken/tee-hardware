@@ -21,8 +21,9 @@ trait CanHavePeripheryTLSerialChipImp extends RawModule {
   val system: CanHavePeripheryTLSerialModuleImp
 
   // NOTE: This is a mock. Does not represent actual IO instantiations
-  (system.serial_tl zip system.outer.serdesser).map{ case(ioser, serdesser) =>
-    val outer_io = IO(new SerialIO(ioser.bits.w)).suggestName("serial_tl")
+  val tlserial = system.serial_tl.map(A => IO(new SerialIO(A.bits.w)).suggestName("serial_tl") )
+
+  ((system.serial_tl zip system.outer.serdesser) zip tlserial).foreach{ case((ioser, serdesser), outer_io) =>
     val bits = SerialAdapter.asyncQueue(ioser, clock, reset)
     val ram = withClockAndReset(clock, reset) {
       SerialAdapter.connectHarnessRAM(serdesser, bits, reset)

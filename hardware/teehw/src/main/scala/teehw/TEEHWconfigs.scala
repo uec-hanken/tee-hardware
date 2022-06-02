@@ -714,6 +714,7 @@ class WithSimulation extends Config((site, here, up) => {
   case PeripheryUSB11HSKey => List()
   // Random only should include the TRNG version
   case PeripheryRandomKey => up(PeripheryRandomKey, site) map {case r => r.copy(impl = 0) }
+  case IOLibrary => IOLibraryParams()
 })
 
 class Explanation extends Config(

@@ -79,9 +79,10 @@ class SerialIOChip(val w: Int) extends Bundle {
   val out = new SerialIOModChip(w)
   def ConnectIn(bundle: SerialIO): Unit = {
     bundle.out.valid := GET(out.valid)
-    PUT(bundle.out.valid, out.valid)
+    PUT(bundle.out.ready, out.ready)
     bundle.out.bits := VecInit(out.bits.map{a => GET(a)}).asUInt
     PUT(bundle.in.valid, in.valid)
+    bundle.in.ready := GET(out.ready)
     (bundle.in.bits.asBools zip in.bits).foreach{ case (a, b) => PUT(a, b)}
   }
 }
