@@ -189,6 +189,9 @@ class TEEHWANALOG extends BlackBox with HasBlackBoxInline with GenericTEEHWAnalo
   setInline("TEEHWANALOG.v",
     s"""module TEEHWANALOG (PAD);
        |	inout PAD;
+       | `ifdef SYNTHESIS
+       |  assign PAD = 1'bz;
+       | `endif
        |endmodule
        |""".stripMargin)
 }

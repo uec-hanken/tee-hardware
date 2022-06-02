@@ -29,7 +29,9 @@ trait HasTEEHWPeripheryExtMem {
         supportsGet = TransferSizes(1, mbus.blockBytes),
         supportsPutFull = TransferSizes(1, mbus.blockBytes),
         supportsPutPartial = TransferSizes(1, mbus.blockBytes),
-      )),
+        fifoId = Some(0),
+        mayDenyPut = true,
+        mayDenyGet = true)),
       beatBytes = A.master.beatBytes
     )
     val memTLNode = TLManagerNode(Seq(mainMemParam))

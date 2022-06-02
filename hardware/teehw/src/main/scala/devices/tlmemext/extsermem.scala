@@ -29,7 +29,10 @@ trait HasTEEHWPeripheryExtSerMem {
       executable = true,
       supportsGet = TransferSizes(1, mbus.blockBytes),
       supportsPutFull = TransferSizes(1, mbus.blockBytes),
-      supportsPutPartial = TransferSizes(1, mbus.blockBytes)))
+      supportsPutPartial = TransferSizes(1, mbus.blockBytes),
+      fifoId = Some(0),
+      mayDenyPut = true,
+      mayDenyGet = true))
     println(s"SERDES in mbus added to the system ${mbus.blockBytes}")
     val serdes = LazyModule(new TLSerdes(
       w = A.serWidth,
