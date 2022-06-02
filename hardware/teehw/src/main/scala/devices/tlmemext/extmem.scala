@@ -29,15 +29,12 @@ trait HasTEEHWPeripheryExtMem {
         supportsGet = TransferSizes(1, mbus.blockBytes),
         supportsPutFull = TransferSizes(1, mbus.blockBytes),
         supportsPutPartial = TransferSizes(1, mbus.blockBytes),
-        fifoId = Some(0),
-        mayDenyPut = true,
-        mayDenyGet = true
       )),
       beatBytes = A.master.beatBytes
     )
     val memTLNode = TLManagerNode(Seq(mainMemParam))
     val buffer = LazyModule(new TLBuffer)
-    memTLNode := buffer.node := mbus.toDRAMController(Some("tl"))()
+    memTLNode := buffer.node := TLSourceShrinker(1 << A.master.idBits) := mbus.toDRAMController(Some("tl"))()
     memTLNode
   }
 }

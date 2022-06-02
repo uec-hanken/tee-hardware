@@ -153,10 +153,11 @@ class SertoSimDRAM(w: Int, cacheBlockBytes: Int, idBits: Int = 6)(implicit p :Pa
 
   lazy val module = new LazyModuleImp(this) {
     val io = IO(new Bundle {
-      val serport = Flipped(new SerialIO(w))
+      val serport = new SerialIO(w)
     })
 
     // Connect the serport
+    println(s"Harness Serial Memory with ${idBits} ID bits")
     io.serport <> desser.module.io.ser.head
 
     // axinode connection to the simulated memory provided by chipyard
@@ -217,11 +218,11 @@ trait WithTEEHWHarnessConnect {
     val simdram = LazyModule(new SertoSimDRAM(
       p(ExtSerMem).get.serWidth,
       p(CacheBlockBytes),
-      A.w))
+      chip.asInstanceOf[HasTEEHWPeripheryExtSerMemChipImp].system.serSourceBits.get))
     val simdrammod = Module(simdram.module)
     simdrammod.reset := reset
     simdram.suggestName("simdrammod")
-    A.ConnectIn(simdrammod.io.serport)
+    A.flipConnect(simdrammod.io.serport)
   }
 
   // Debug connections (JTAG)

@@ -350,7 +350,7 @@ class MBus32 extends Config((site, here, up) => {
     base = x"0_8000_0000",
     size = x"0_4000_0000",
     beatBytes = 4,
-    idBits = 4), 1))
+    idBits = 1), 1))
   case ExtSerMem => None
 })
 
@@ -359,7 +359,7 @@ class MBus64 extends Config((site, here, up) => {
     base = x"0_8000_0000",
     size = x"0_4000_0000",
     beatBytes = 8,
-    idBits = 4), 1))
+    idBits = 1), 1))
   case ExtSerMem => None
 })
 
@@ -369,7 +369,7 @@ class SBus4 extends Config((site, here, up) => {
     base = x"0_8000_0000",
     size = x"0_4000_0000",
     beatBytes = 4,
-    idBits = 4), 1, 4))
+    idBits = 1), 1, 4))
 })
 
 class SBus8 extends Config((site, here, up) => {
@@ -378,7 +378,7 @@ class SBus8 extends Config((site, here, up) => {
     base = x"0_8000_0000",
     size = x"0_4000_0000",
     beatBytes = 4,
-    idBits = 4), 1, 8))
+    idBits = 1), 1, 8))
 })
 
 class SBus16 extends Config((site, here, up) => {
@@ -387,7 +387,7 @@ class SBus16 extends Config((site, here, up) => {
     base = x"0_8000_0000",
     size = x"0_4000_0000",
     beatBytes = 4,
-    idBits = 4), 1, 16))
+    idBits = 1), 1, 16))
 })
 
 class MBusNone extends Config((site, here, up) => {
@@ -434,7 +434,7 @@ class EBus8 extends Config((site, here, up) => {
     base = x"0_6401_0000",
     size = x"0_0002_0000",
     beatBytes = 4,
-    idBits = 4), 1, 8))
+    idBits = 1), 1, 8))
   case ExtBusKey => ExtBusParams(4, 64)
 })
 
@@ -443,7 +443,7 @@ class EBus16 extends Config((site, here, up) => {
     base = x"0_6401_0000",
     size = x"0_0002_0000",
     beatBytes = 4,
-    idBits = 4), 1, 16))
+    idBits = 1), 1, 16))
   case ExtBusKey => ExtBusParams(4, 64)
 })
 

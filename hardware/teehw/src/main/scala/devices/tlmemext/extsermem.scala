@@ -29,16 +29,13 @@ trait HasTEEHWPeripheryExtSerMem {
       executable = true,
       supportsGet = TransferSizes(1, mbus.blockBytes),
       supportsPutFull = TransferSizes(1, mbus.blockBytes),
-      supportsPutPartial = TransferSizes(1, mbus.blockBytes),
-      fifoId = Some(0),
-      mayDenyPut = true,
-      mayDenyGet = true))
+      supportsPutPartial = TransferSizes(1, mbus.blockBytes)))
     println(s"SERDES in mbus added to the system ${mbus.blockBytes}")
     val serdes = LazyModule(new TLSerdes(
       w = A.serWidth,
       params = mainMemParam,
       beatBytes = A.master.beatBytes))
-    serdes.node := TLBuffer() := mbus.toDRAMController(Some("ser"))()
+    serdes.node := TLBuffer() := TLSourceShrinker(1 << A.master.idBits) := mbus.toDRAMController(Some("ser"))()
     // Request a clock node
     val clkNode = ClockSinkNode(Seq(ClockSinkParameters()))
     clkNode := mbus.fixedClockNode
@@ -63,6 +60,7 @@ trait HasTEEHWPeripheryExtSerMemModuleImp extends LazyModuleImp {
     ser
   }
   val serSourceBits = outer.memserctl.map { A =>
+    println(s"Publishing Serial Memory with ${A.node.in.head._1.params.sourceBits} source bits")
     A.node.in.head._1.params.sourceBits
   }
 }

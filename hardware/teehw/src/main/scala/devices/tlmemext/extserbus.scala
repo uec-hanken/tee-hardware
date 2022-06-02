@@ -28,17 +28,14 @@ trait HasTEEHWPeripheryExtSerBus {
       executable = true,
       supportsGet = TransferSizes(1, cbus.blockBytes),
       supportsPutFull = TransferSizes(1, cbus.blockBytes),
-      supportsPutPartial = TransferSizes(1, cbus.blockBytes),
-      fifoId = Some(0),
-      mayDenyPut = true,
-      mayDenyGet = true))
+      supportsPutPartial = TransferSizes(1, cbus.blockBytes)))
     println(s"SERDES in sbus added to the system ${cbus.blockBytes}")
     val serdes = LazyModule(new TLSerdes(
       w = A.serWidth,
       params = mainMemParam,
       beatBytes = A.master.beatBytes))
     cbus.coupleTo("ser") {
-      serdes.node := TLBuffer() := TLWidthWidget(cbus.beatBytes) := _
+      serdes.node := TLBuffer() := TLSourceShrinker(1 << A.master.idBits) := TLWidthWidget(cbus.beatBytes) := _
     }
     // Request a clock node
     val clkNode = ClockSinkNode(Seq(ClockSinkParameters()))
@@ -84,6 +81,11 @@ class SerialIOChip(val w: Int) extends Bundle {
     PUT(bundle.in.valid, in.valid)
     bundle.in.ready := GET(out.ready)
     (bundle.in.bits.asBools zip in.bits).foreach{ case (a, b) => PUT(a, b)}
+  }
+  def flipConnect(other: SerialIO) {
+    val bundle = Wire(new SerialIO(other.w))
+    ConnectIn(bundle)
+    other.flipConnect(bundle)
   }
 }
 

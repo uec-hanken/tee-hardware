@@ -189,7 +189,6 @@ class TEEHWANALOG extends BlackBox with HasBlackBoxInline with GenericTEEHWAnalo
   setInline("TEEHWANALOG.v",
     s"""module TEEHWANALOG (PAD);
        |	inout PAD;
-       |  assign PAD = 1'bz;
        |endmodule
        |""".stripMargin)
 }
@@ -212,7 +211,7 @@ class TEEHWXTAL extends BlackBox with HasBlackBoxInline with GenericTEEHWXTAL {
        |	output XC;
        |	inout XI, XO;
        |
-       |  assign XC  = XE ? XI : 1'b0;
+       |  assign XC  = XI; // TODO: This => XE ? XI : 1'b0;
        |  assign XO  = XE ? !XI : 1'b0;
        |
        |endmodule
