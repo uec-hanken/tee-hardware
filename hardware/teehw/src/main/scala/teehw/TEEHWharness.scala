@@ -55,7 +55,7 @@ class TLULtoSimDRAM
     TLMasterPortParameters.v1(
       clients = Seq(TLMasterParameters.v1(
         name = "dummy",
-        sourceId = IdRange(0, 64), // CKDUR: The maximum ID possible goes here.
+        sourceId = IdRange(0, 1 << TLparams.sourceBits),
       ))
     )
   })
@@ -95,10 +95,7 @@ class TLULtoSimDRAM
     })
 
     // External TL port connection to the node
-    node.out.foreach {
-      case  (bundle, _) =>
-        bundle := io.tlport
-    }
+    node.out.foreach { case  (bundle, _) => bundle <> io.tlport }
 
     // axinode connection to the simulated memory provided by chipyard
     val clockFrequency = p(PeripheryBusKey).dtsFrequency.get // TODO: Should be MemoryBusKey
@@ -156,7 +153,7 @@ class SertoSimDRAM(w: Int, cacheBlockBytes: Int, idBits: Int = 6)(implicit p :Pa
 
   lazy val module = new LazyModuleImp(this) {
     val io = IO(new Bundle {
-      val serport = new SerialIO(w)
+      val serport = Flipped(new SerialIO(w))
     })
 
     // Connect the serport
@@ -190,9 +187,6 @@ trait WithTEEHWHarnessConnect {
   // Initial association with io.success
   io.success := false.B
 
-  // A delayed reset to be handled properly, as the internal reset is embedded with the same sync
-  val del_reset = ResetCatchAndSync(clock, reset.asBool, 5)
-
   // IMPORTANT NOTE:
   // The old version yields the debugger and loads using the fevsr. This does not work anymore
   // now, the people from berkeley just decided to directly load the program into a SimDRAM
@@ -203,25 +197,30 @@ trait WithTEEHWHarnessConnect {
 
   // This is the new way (just look at chipyard.IOBinders package about details)
 
-  // Async clocks and resets
+  // Clocks and resets
+  PUT(clock.asBool, chip.asInstanceOf[HasTEEHWClockGroupChipImp].clockxi)
   chip.asInstanceOf[HasTEEHWClockGroupChipImp].aclockxi.foreach( PUT(clock.asBool, _) )
+  PUT(!reset.asBool, chip.asInstanceOf[HasTEEHWClockGroupChipImp].rstn)
 
   // Simulated memory.
   chip.asInstanceOf[HasTEEHWPeripheryExtMemChipImp].mem_tl.foreach{ ioi =>
     // Step 1: Our conversion
     val simdram = LazyModule(new uec.teehardware.TLULtoSimDRAM(p(CacheBlockBytes), ioi.params))
     val simdrammod = Module(simdram.module)
+    simdrammod.reset := reset
     // Step 2: Perform the conversion from TL to our TLBundle port (Remember we do in this way because chip)
     ioi.ConnectTLIn(simdrammod.io.tlport)
   }
 
   chip.asInstanceOf[HasTEEHWPeripheryExtSerMemChipImp].memser.foreach{ A =>
     // Step 1: Our conversion
-    val simdram = LazyModule(new uec.teehardware.SertoSimDRAM(
+    val simdram = LazyModule(new SertoSimDRAM(
       p(ExtSerMem).get.serWidth,
       p(CacheBlockBytes),
       A.w))
     val simdrammod = Module(simdram.module)
+    simdrammod.reset := reset
+    simdram.suggestName("simdrammod")
     A.ConnectIn(simdrammod.io.serport)
   }
 
@@ -236,9 +235,9 @@ trait WithTEEHWHarnessConnect {
     simjtag.io.jtag.TDO.driven := true.B // TODO: We do not have access to this signal anymore
 
     simjtag.io.clock := clock
-    simjtag.io.reset := del_reset
+    simjtag.io.reset := reset
     simjtag.io.enable := PlusArg("jtag_rbb_enable", 0, "Enable SimJTAG for JTAG Connections. Simulation will pause until connection is made.")
-    simjtag.io.init_done := !del_reset.asBool
+    simjtag.io.init_done := !reset.asBool
     when (simjtag.io.exit === 1.U) { io.success := true.B }
     when (simjtag.io.exit >= 2.U) {
       printf("*** FAILED *** (exit code = %d)\n", simjtag.io.exit >> 1.U)
@@ -249,8 +248,16 @@ trait WithTEEHWHarnessConnect {
 
   // Serial interface (if existent) will be connected here
   def connectSimSerial(serial: SerialIO, clock: Clock, reset: Reset): Bool
-  chip.asInstanceOf[CanHavePeripheryTLSerialChipImp].tlserial.foreach{ port =>
-    val ser_success = connectSimSerial(port, clock, del_reset)
+  val tlserial = chip.asInstanceOf[CanHavePeripheryTLSerialChipImp].tlserial
+  val serdesser = chip.asInstanceOf[CanHavePeripheryTLSerialChipImp].serdesser
+  (tlserial zip serdesser).foreach{ case(port, serdesser) =>
+    val bits = SerialAdapter.asyncQueue(port, clock, reset)
+    val ram = withClockAndReset(clock, reset) {
+      SerialAdapter.connectHarnessRAM(serdesser, bits, reset)
+    }
+    println(s"Connected SerialAdapter Async with, iwidth=${port.bits.w} bwidth=${bits.w} tsiwidth=${ram.module.io.tsi_ser.w}")
+
+    val ser_success = connectSimSerial(ram.module.io.tsi_ser, clock, reset)
     when (ser_success) { io.success := true.B }
   }
 
@@ -289,7 +296,7 @@ trait WithTEEHWHarnessConnect {
         spi_mem.io.dq.zip(port.DQ).foreach { case (x, y) =>
           attach(x, y)
         }
-        spi_mem.io.reset := del_reset.asBool
+        spi_mem.io.reset := reset.asBool
       case _ =>
         println(s"QSPI connection on port ${i} ignored")
     }

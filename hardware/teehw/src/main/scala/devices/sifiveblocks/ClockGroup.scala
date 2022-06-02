@@ -73,12 +73,12 @@ trait HasTEEHWClockGroupModuleImp extends LazyModuleImp {
           val ai = IO(Input(Clock()))
           println("    Exposed")
           o.clock := ai
-          o.reset := ResetCatchAndSync(ai, reset.asBool, 5)
+          o.reset := ResetCatchAndSync(ai, reset.asBool, 5, s"sync_clocknamed_${name}")
           Some((ai, name))
         case _ =>
           println("    Internal")
           o.clock := clock
-          o.reset := ResetCatchAndSync(clock, reset.asBool, 5)
+          o.reset := reset
           None
       }
     }
@@ -123,7 +123,8 @@ trait HasTEEHWClockGroupChipImp extends RawModule {
   attach(rstn, RSTn.pad)
 
   clock := CLOCK.ConnectAsClock
-  reset := !RSTn.ConnectAsInput(true) || system.ndreset.getOrElse(false.B)
+  val int_reset = !RSTn.ConnectAsInput(true) || system.ndreset.getOrElse(false.B)
+  reset := ResetCatchAndSync(clock, int_reset, 5, "sys_reset_sync")
 
   // Another Clock Exposition
   val aclkn = p(ExposeClocks).option(system.asInstanceOf[HasTEEHWClockGroupModuleImp].aclocks.size).getOrElse(0)
