@@ -6,7 +6,7 @@ import chisel3.experimental.{Analog, attach}
 import chisel3.util._
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.diplomacy._
-import freechips.rocketchip.prci.{ClockSinkNode, ClockSinkParameters}
+import freechips.rocketchip.prci.{ClockGroup, ClockSinkDomain, ClockSinkNode, ClockSinkParameters}
 import freechips.rocketchip.subsystem.MasterPortParams
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.util._
@@ -15,6 +15,7 @@ import testchipip.{SerialIO, TLSerdes}
 
 case object ExtSerBus extends Field[Option[MemorySerialPortParams]](None)
 case object ExtSerBusDirect extends Field[Boolean](false)
+case object MbusToExtSerBusXTypeKey extends Field[ClockCrossingType](SynchronousCrossing())
 
 trait HasTEEHWPeripheryExtSerBus {
   this: TEEHWBaseSubsystem =>
@@ -33,23 +34,29 @@ trait HasTEEHWPeripheryExtSerBus {
       mayDenyPut = true,
       mayDenyGet = true))
     println(s"SERDES in sbus added to the system ${cbus.blockBytes}")
-    val serdes = LazyModule(new TLSerdes(
-      w = A.serWidth,
-      params = mainMemParam,
-      beatBytes = A.master.beatBytes))
-    cbus.coupleTo("ser") {
-      serdes.node := TLBuffer() := TLSourceShrinker(1 << A.master.idBits) := TLWidthWidget(cbus.beatBytes) := _
+    val serdesXType = p(MbusToExtSerBusXTypeKey)
+    val serdesDomainWrapper = LazyModule(new ClockSinkDomain(take = None))
+    val serdes = serdesDomainWrapper {
+      LazyModule(new TLSerdes(
+        w = A.serWidth,
+        params = mainMemParam,
+        beatBytes = A.master.beatBytes))
     }
-    // Request a clock node
-    val clkNode = ClockSinkNode(Seq(ClockSinkParameters()))
-    clkNode := cbus.fixedClockNode
-    InModuleBody {
-      clkNode.in.foreach { case (n, _) =>
-        serdes.module.clock := n.clock
-        serdes.module.reset := n.reset
-      }
+    serdesDomainWrapper.clockNode := (serdesXType match {
+      case _: SynchronousCrossing =>
+        mbus.fixedClockNode
+      case _: RationalCrossing =>
+        mbus.clockNode
+      case _: AsynchronousCrossing =>
+        val serdesClockGroup = ClockGroup()
+        serdesClockGroup := asyncClockGroupsNode
+        serdesClockGroup
+    })
+
+    cbus.coupleTo("serbus") {
+      (serdesDomainWrapper.crossIn(serdes.node)(ValName("extserbus_serCross")))(serdesXType) :=
+        TLBuffer() := TLSourceShrinker(1 << A.master.idBits) := TLWidthWidget(cbus.beatBytes) := _
     }
-    // TODO: The clock separation for this is obviously not done
     serdes
   }
 }

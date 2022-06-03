@@ -127,7 +127,7 @@ trait HasTEEHWClockGroupChipImp extends RawModule {
   reset := ResetCatchAndSync(clock, int_reset, 5, "sys_reset_sync")
 
   // Another Clock Exposition
-  val aclkn = p(ExposeClocks).option(system.asInstanceOf[HasTEEHWClockGroupModuleImp].aclocks.size).getOrElse(0)
+  val aclkn = system.asInstanceOf[HasTEEHWClockGroupModuleImp].aclocks.size
   val ACLOCK = Seq.tabulate(aclkn)(_ => IOGen.crystal())
   val aclockxi = ACLOCK.map(A => IO(Analog(1.W)))
   val aclockxo = ACLOCK.flatMap(A => A.xo.map(B => IO(Analog(1.W))))
@@ -135,12 +135,7 @@ trait HasTEEHWClockGroupChipImp extends RawModule {
   (ACLOCK zip aclockxi).map{case (a, b) => attach(a.xi, b)}
   (ACLOCK zip aclockxo).map{case (a, b) => a.xo.foreach(attach(_, b))}
 
-  if(p(ExposeClocks)) {
-    (system.asInstanceOf[HasTEEHWClockGroupModuleImp].aclocks zip ACLOCK).foreach{case(sysclk, aclk) =>
-      sysclk := aclk.ConnectAsClock
-    }
-  }
-  else {
-    system.asInstanceOf[HasTEEHWClockGroupModuleImp].aclocks.foreach(_ := clock)
+  (system.asInstanceOf[HasTEEHWClockGroupModuleImp].aclocks zip ACLOCK).foreach{case(sysclk, aclk) =>
+    sysclk := aclk.ConnectAsClock
   }
 }

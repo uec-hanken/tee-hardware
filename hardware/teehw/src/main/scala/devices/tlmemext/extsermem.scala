@@ -2,25 +2,27 @@ package uec.teehardware.devices.tlmemext
 
 import chipsalliance.rocketchip.config.Field
 import chisel3._
-import chisel3.experimental.attach
+import chisel3.experimental.{IO, attach}
 import chisel3.util._
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.diplomacy._
-import freechips.rocketchip.prci.{ClockSinkNode, ClockSinkParameters}
+import freechips.rocketchip.prci.{ClockGroup, ClockSinkDomain, ClockSinkNode, ClockSinkParameters}
 import freechips.rocketchip.subsystem.MasterPortParams
 import freechips.rocketchip.tilelink._
-import uec.teehardware.{GenericIOLibraryParams, TEEHWBaseSubsystem, HasDigitalizable}
-import testchipip.{SerialIO, TLSerdes}
+import freechips.rocketchip.util.ResetCatchAndSync
+import uec.teehardware.{GenericIOLibraryParams, HasDigitalizable, TEEHWBaseSubsystem}
+import testchipip.{ClockedIO, SerialAdapter, SerialIO, TLSerdes}
 
 case class MemorySerialPortParams(master: MasterPortParams, nMemoryChannels: Int, serWidth: Int)
 case object ExtSerMem extends Field[Option[MemorySerialPortParams]](None)
 case object ExtSerMemDirect extends Field[Boolean](false)
+case object MbusToExtSerMemXTypeKey extends Field[ClockCrossingType](SynchronousCrossing())
 
 trait HasTEEHWPeripheryExtSerMem {
   this: TEEHWBaseSubsystem =>
 
   // Main memory serialized controller (TL serial memory controller)
-  val memserctl = p(ExtSerMem).map {A =>
+  val (memserctl, memser_io) = p(ExtSerMem).map {A =>
     val memdevice = new MemoryDevice
     val mainMemParam = Seq(TLSlaveParameters.v1(
       address = AddressSet.misaligned(A.master.base, A.master.size),
@@ -34,34 +36,42 @@ trait HasTEEHWPeripheryExtSerMem {
       mayDenyPut = true,
       mayDenyGet = true))
     println(s"SERDES in mbus added to the system ${mbus.blockBytes}")
-    val serdes = LazyModule(new TLSerdes(
-      w = A.serWidth,
-      params = mainMemParam,
-      beatBytes = A.master.beatBytes))
-    serdes.node := TLBuffer() := TLSourceShrinker(1 << A.master.idBits) := mbus.toDRAMController(Some("ser"))()
-    // Request a clock node
-    val clkNode = ClockSinkNode(Seq(ClockSinkParameters()))
-    clkNode := mbus.fixedClockNode
-    InModuleBody {
-      clkNode.in.foreach { case (n, _) =>
-        serdes.module.clock := n.clock
-        serdes.module.reset := n.reset
-      }
+    val serdesXType = p(MbusToExtSerMemXTypeKey)
+    val serdesDomainWrapper = LazyModule(new ClockSinkDomain(take = None))
+    val serdes = serdesDomainWrapper {
+      LazyModule(new TLSerdes(
+        w = A.serWidth,
+        params = mainMemParam,
+        beatBytes = A.master.beatBytes))
     }
-    // The clock separation for memser is done through the aclocks
-    serdes
-  }
+    serdesDomainWrapper.clockNode := (serdesXType match {
+      case _: SynchronousCrossing =>
+        mbus.fixedClockNode
+      case _: RationalCrossing =>
+        mbus.clockNode
+      case _: AsynchronousCrossing =>
+        val serdesClockGroup = ClockGroup()
+        serdesClockGroup := asyncClockGroupsNode
+        serdesClockGroup
+    })
+    (serdesDomainWrapper.crossIn(serdes.node)(ValName("extsermem_serCross")))(serdesXType) :=
+      TLBuffer() := TLSourceShrinker(1 << A.master.idBits) := mbus.toDRAMController(Some("ser"))()
+    val io = serdesDomainWrapper { InModuleBody {
+      val io = IO(new SerialIO(serdes.module.io.ser.head.w))
+      io.suggestName("memser_io")
+      io <> serdes.module.io.ser.head
+      io
+    } }
+
+    (serdes, io)
+  }.getOrElse((None, None))
 }
 
 trait HasTEEHWPeripheryExtSerMemModuleImp extends LazyModuleImp {
   val outer: HasTEEHWPeripheryExtSerMem
 
   // Main memory serial controller
-  val memSerPorts = outer.memserctl.map { A =>
-    val ser = IO(new SerialIO(A.module.io.ser.head.w))
-    ser <> A.module.io.ser.head
-    ser
-  }
+  val memSerPorts = outer.memser_io
   val serSourceBits = outer.memserctl.map { A =>
     println(s"Publishing Serial Memory with ${A.node.in.head._1.params.sourceBits} source bits")
     A.node.in.head._1.params.sourceBits
