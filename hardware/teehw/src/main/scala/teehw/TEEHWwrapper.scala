@@ -141,6 +141,9 @@ trait FPGAInternals {
   def isCBusClk: Boolean = namedclocks.exists(p => p.contains("cbus"))
   def isExtSerMemClk: Boolean = namedclocks.exists(p => p.contains("extsermem")) || isMBusClk
   def isExtSerBusClk: Boolean = namedclocks.exists(p => p.contains("extserbus")) || isCBusClk
+  println(s"isOtherClk = ${isOtherClk}")
+  println(s"isMBusClk = ${isMBusClk}")
+  println(s"isExtSerMemClk = ${isExtSerMemClk}")
 }
 
 // ********************************************************************

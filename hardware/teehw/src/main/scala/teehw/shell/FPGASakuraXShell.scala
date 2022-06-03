@@ -175,14 +175,8 @@ class FPGASakuraXInternal(chip: Option[Any])(implicit val p :Parameters) extends
     println(s"Connecting ${aclkn} async clocks by default =>")
     (aclocks zip namedclocks).foreach { case (aclk, nam) =>
       println(s"  Detected clock ${nam}")
-      if(nam.contains("mbus")) {
-        aclk := pll.io.clk_out2.get
-        println("    Connected to clk_out2 (10 MHz)")
-      }
-      else {
-        aclk := pll.io.clk_out1.get
-        println("    Connected to clk_out1")
-      }
+      aclk := pll.io.clk_out2.get
+      println("    Connected to clk_out2 (10 MHz)")
     }
 
     // Clock controller
@@ -191,6 +185,12 @@ class FPGASakuraXInternal(chip: Option[Any])(implicit val p :Parameters) extends
 
       // Serial port
       mod.serport.flipConnect(es)
+
+      if (isExtSerBusClk) {
+        println("Island connected to clk_out2 (10MHz)")
+        mod.clock := pll.io.clk_out2.get
+        mod.reset := reset_to_child
+      }
 
       println(s"Connecting clock for CryptoBus from clock controller =>")
       (aclocks zip namedclocks).foreach{ case (aclk, nam) =>
