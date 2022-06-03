@@ -50,28 +50,31 @@ trait HasTEEHWPeripheryExtSerMem {
       case _: RationalCrossing =>
         mbus.clockNode
       case _: AsynchronousCrossing =>
-        val serdesClockGroup = ClockGroup()
+        val serdesClockGroup = ClockGroup()(p, ValName("extsermem_clock"))
         serdesClockGroup := asyncClockGroupsNode
         serdesClockGroup
     })
     (serdesDomainWrapper.crossIn(serdes.node)(ValName("extsermem_serCross")))(serdesXType) :=
       TLBuffer() := TLSourceShrinker(1 << A.master.idBits) := mbus.toDRAMController(Some("ser"))()
-    val io = serdesDomainWrapper { InModuleBody {
-      val io = IO(new SerialIO(serdes.module.io.ser.head.w))
-      io.suggestName("memser_io")
-      io <> serdes.module.io.ser.head
-      io
+    val inner_io = serdesDomainWrapper { InModuleBody {
+      val inner_io = IO(new SerialIO(serdes.module.io.ser.head.w)).suggestName("memser_inner_io")
+      inner_io <> serdes.module.io.ser.head
+      inner_io
     } }
-
-    (serdes, io)
-  }.getOrElse((None, None))
+    val outer_io = InModuleBody {
+      val outer_io = IO(new SerialIO(serdes.module.io.ser.head.w)).suggestName("memser_outer_io")
+      outer_io <> inner_io
+      outer_io
+    }
+    (Some(serdes), Some(outer_io))
+  }.getOrElse(None, None)
 }
 
 trait HasTEEHWPeripheryExtSerMemModuleImp extends LazyModuleImp {
   val outer: HasTEEHWPeripheryExtSerMem
 
   // Main memory serial controller
-  val memSerPorts = outer.memser_io
+  val memSerPorts = outer.memser_io.map(_.getWrappedValue)
   val serSourceBits = outer.memserctl.map { A =>
     println(s"Publishing Serial Memory with ${A.node.in.head._1.params.sourceBits} source bits")
     A.node.in.head._1.params.sourceBits

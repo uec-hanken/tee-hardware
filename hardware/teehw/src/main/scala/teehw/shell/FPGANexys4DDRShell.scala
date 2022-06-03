@@ -87,11 +87,6 @@ class FPGANexys4DDRInternal(chip: Option[Any])(implicit val p :Parameters) exten
   val clock = Wire(Clock())
   val reset = Wire(Bool())
 
-  val isOtherClk = (p(SbusToMbusXTypeKey) match {
-    case _: AsynchronousCrossing => true
-    case _ => false
-  })
-
   withClockAndReset(clock, reset) {
     // PLL instance
     val c = new PLLParameters(
@@ -131,13 +126,12 @@ class FPGANexys4DDRInternal(chip: Option[Any])(implicit val p :Parameters) exten
       // TileLink Interface from platform
       mod.io.tlport <> chiptl
 
-      p(SbusToMbusXTypeKey) match {
-        case _: AsynchronousCrossing =>
-          println("Island connected to clk_out4 (10MHz)")
-          mod.clock := pll.io.clk_out4.get
-          mod.reset := reset_to_child
-        case _ =>
-          mod.clock := pll.io.clk_out1.get
+      if (isMBusClk) {
+        println("Island connected to clk_out4 (10MHz)")
+        mod.clock := pll.io.clk_out4.get
+        mod.reset := reset_to_child
+      } else {
+        mod.clock := pll.io.clk_out1.get
       }
 
       init_calib_complete := mod.io.ddrport.init_calib_complete
@@ -160,12 +154,11 @@ class FPGANexys4DDRInternal(chip: Option[Any])(implicit val p :Parameters) exten
       reset_to_sys := ResetCatchAndSync(pll.io.clk_out1.get, mod.io.ddrport.ui_clk_sync_rst)
       pll.io.clk_out4.foreach(reset_to_child := ResetCatchAndSync(_, !pll.io.locked))
 
-      p(SbusToMbusXTypeKey) match {
-        case _: AsynchronousCrossing =>
-          mod.clock := pll.io.clk_out4.get
-          mod.reset := reset_to_child
-        case _ =>
-          mod.clock := pll.io.clk_out1.get
+      if (isExtSerMemClk) {
+        mod.clock := pll.io.clk_out4.get
+        mod.reset := reset_to_child
+      } else {
+        mod.clock := pll.io.clk_out1.get
       }
 
       init_calib_complete := mod.io.ddrport.init_calib_complete
@@ -184,22 +177,12 @@ class FPGANexys4DDRInternal(chip: Option[Any])(implicit val p :Parameters) exten
     (aclocks zip namedclocks).foreach { case (aclk, nam) =>
       println(s"  Detected clock ${nam}")
       if(nam.contains("mbus")) {
-        p(SbusToMbusXTypeKey) match {
-          case _: AsynchronousCrossing =>
-            aclk := pll.io.clk_out4.get
-            println("    Connected to clk_out4 (10 MHz)")
-          case _ =>
-            aclk := pll.io.clk_out3.get
-            println("    Connected to clk_out3")
-        }
-      }
-      else if(nam.contains("sdramClockGroup")) {
-        println("    Connected to clk_out1")
-        aclk := pll.io.clk_out1.get
+        aclk := pll.io.clk_out4.get
+        println("    Connected to clk_out4 (10 MHz)")
       }
       else {
-        aclk := pll.io.clk_out3.get
-        println("    Connected to clk_out3")
+        aclk := pll.io.clk_out1.get
+        println("    Connected to clk_out1")
       }
     }
 

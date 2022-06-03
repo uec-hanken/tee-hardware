@@ -472,6 +472,14 @@ class WSepaMBusClk extends Config((site, here, up) => {
   case SbusToMbusXTypeKey => AsynchronousCrossing() // The MBus clock will be separated
 })
 
+class WAsyncSBusClk extends Config((site, here, up) => {
+  case MbusToExtSerMemXTypeKey => AsynchronousCrossing() // The serial bus memory clock will be separated
+})
+
+class WAsyncEBusClk extends Config((site, here, up) => {
+  case MbusToExtSerBusXTypeKey => AsynchronousCrossing() // The serial bus clock will be separated
+})
+
 class WRTC extends Config((site, here, up) => {
   case RTCPort => true
   case DTSTimebase => BigInt(32768) // TODO: Maybe put another configuration for this

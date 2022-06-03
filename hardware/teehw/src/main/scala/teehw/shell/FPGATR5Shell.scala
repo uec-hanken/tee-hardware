@@ -183,29 +183,16 @@ class FPGATR5Internal(chip: Option[Any])(implicit val p :Parameters) extends Raw
       (aclocks zip namedclocks).foreach { case (aclk, nam) =>
         println(s"  Detected clock ${nam}")
         if(nam.contains("mbus")) {
-          p(SbusToMbusXTypeKey) match {
-            case _: AsynchronousCrossing =>
-              aclk := mod_io_ckrst.io_clk
-              println("    Connected to io_clk")
-              mod_clock := mod_io_ckrst.io_clk
-              mod_reset := reset_to_child
-              println("    Quartus Island clock also connected to io_clk")
-            case _ =>
-              aclk := mod_io_ckrst.qsys_clk
-              println("    Connected to qsys_clk")
-          }
+          aclk := mod_io_ckrst.io_clk
+          println("    Connected to io_clk")
+          mod_clock := mod_io_ckrst.io_clk
+          mod_reset := reset_to_child
+          println("    Quartus Island clock also connected to io_clk")
         }
         else {
           aclk := mod_io_ckrst.qsys_clk
           println("    Connected to qsys_clk")
         }
-      }
-
-      p(SbusToMbusXTypeKey) match {
-        case _: AsynchronousCrossing =>
-          println("Quartus Island and Child Clock connected to io_clk")
-          mod_clock := mod_io_ckrst.io_clk
-          mod_reset := reset_to_child
       }
 
       mod_io_ckrst.ddr_ref_clk := OSC_50_B3B.asUInt()

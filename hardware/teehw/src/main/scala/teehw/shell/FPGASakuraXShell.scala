@@ -85,11 +85,6 @@ class FPGASakuraXInternal(chip: Option[Any])(implicit val p :Parameters) extends
   val clock = Wire(Clock())
   val reset = Wire(Bool())
 
-  val isOtherClk = (p(SbusToMbusXTypeKey) match {
-    case _: AsynchronousCrossing => true
-    case _ => false
-  }) || p(PeripheryUSB11HSKey).nonEmpty
-
   // PLL instance
   val c = new PLLParameters(
     name = "pll",
@@ -130,12 +125,12 @@ class FPGASakuraXInternal(chip: Option[Any])(implicit val p :Parameters) extends
       mod.io.tlport <> chiptl
 
       // Legacy ChildClock
-      p(SbusToMbusXTypeKey) match {
-        case _: AsynchronousCrossing =>
-          mod.clock := pll.io.clk_out2.get
-          mod.reset := reset_to_child
-        case _ =>
-          mod.clock := pll.io.clk_out1.get
+      if (isMBusClk) {
+        println("Island connected to clk_out2 (10MHz)")
+        mod.clock := pll.io.clk_out2.get
+        mod.reset := reset_to_child
+      } else {
+        mod.clock := pll.io.clk_out1.get
       }
 
       init_calib_complete := mod.io.ddrport.init_calib_complete
@@ -157,12 +152,12 @@ class FPGASakuraXInternal(chip: Option[Any])(implicit val p :Parameters) extends
       mod.io.ddrport.sys_rst := sys_rst
       reset_to_sys := ResetCatchAndSync(pll.io.clk_out1.get, mod.io.ddrport.ui_clk_sync_rst)
 
-      p(SbusToMbusXTypeKey) match {
-        case _: AsynchronousCrossing =>
-          mod.clock := pll.io.clk_out2.get
-          mod.reset := reset_to_child
-        case _ =>
-          mod.clock := pll.io.clk_out1.get
+      if (isExtSerMemClk) {
+        println("Island connected to clk_out2 (10MHz)")
+        mod.clock := pll.io.clk_out2.get
+        mod.reset := reset_to_child
+      } else {
+        mod.clock := pll.io.clk_out1.get
       }
 
       init_calib_complete := mod.io.ddrport.init_calib_complete
@@ -181,14 +176,8 @@ class FPGASakuraXInternal(chip: Option[Any])(implicit val p :Parameters) extends
     (aclocks zip namedclocks).foreach { case (aclk, nam) =>
       println(s"  Detected clock ${nam}")
       if(nam.contains("mbus")) {
-        p(SbusToMbusXTypeKey) match {
-          case _: AsynchronousCrossing =>
-            aclk := pll.io.clk_out2.get
-            println("    Connected to clk_out2 (10 MHz)")
-          case _ =>
-            aclk := pll.io.clk_out1.get
-            println("    Connected to clk_out1")
-        }
+        aclk := pll.io.clk_out2.get
+        println("    Connected to clk_out2 (10 MHz)")
       }
       else {
         aclk := pll.io.clk_out1.get

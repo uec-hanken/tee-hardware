@@ -2,7 +2,7 @@ package uec.teehardware.devices.tlmemext
 
 import chipsalliance.rocketchip.config.Field
 import chisel3._
-import chisel3.experimental.{Analog, attach}
+import chisel3.experimental.{Analog, IO, attach}
 import chisel3.util._
 import freechips.rocketchip.config.Parameters
 import freechips.rocketchip.diplomacy._
@@ -20,7 +20,7 @@ case object MbusToExtSerBusXTypeKey extends Field[ClockCrossingType](Synchronous
 trait HasTEEHWPeripheryExtSerBus {
   this: TEEHWBaseSubsystem =>
 
-  val extserctl = p(ExtSerBus).map {A =>
+  val (extserctl, extser_io) = p(ExtSerBus).map {A =>
     val device = new SimpleBus("ext_mmio".kebab, Nil)
     val mainMemParam = Seq(TLSlaveParameters.v1(
       address = AddressSet.misaligned(A.master.base, A.master.size),
@@ -48,7 +48,7 @@ trait HasTEEHWPeripheryExtSerBus {
       case _: RationalCrossing =>
         mbus.clockNode
       case _: AsynchronousCrossing =>
-        val serdesClockGroup = ClockGroup()
+        val serdesClockGroup = ClockGroup()(p, ValName("extserbus_clock"))
         serdesClockGroup := asyncClockGroupsNode
         serdesClockGroup
     })
@@ -57,19 +57,25 @@ trait HasTEEHWPeripheryExtSerBus {
       (serdesDomainWrapper.crossIn(serdes.node)(ValName("extserbus_serCross")))(serdesXType) :=
         TLBuffer() := TLSourceShrinker(1 << A.master.idBits) := TLWidthWidget(cbus.beatBytes) := _
     }
-    serdes
-  }
+    val inner_io = serdesDomainWrapper { InModuleBody {
+      val inner_io = IO(new SerialIO(serdes.module.io.ser.head.w)).suggestName("extser_inner_io")
+      inner_io <> serdes.module.io.ser.head
+      inner_io
+    } }
+    val outer_io = InModuleBody {
+      val outer_io = IO(new SerialIO(serdes.module.io.ser.head.w)).suggestName("extser_outer_io")
+      outer_io <> inner_io
+      outer_io
+    }
+    (Some(serdes), Some(outer_io))
+  }.getOrElse(None, None)
 }
 
 trait HasTEEHWPeripheryExtSerBusModuleImp extends LazyModuleImp {
   val outer: HasTEEHWPeripheryExtSerBus
 
   // MMIO external serial controller
-  val extSerPorts = outer.extserctl.map { A =>
-    val ser = IO(new SerialIO(A.module.io.ser.head.w))
-    ser <> A.module.io.ser.head
-    ser
-  }
+  val extSerPorts = outer.extser_io.map(_.getWrappedValue)
   val extSourceBits = outer.extserctl.map { A =>
     A.node.in.head._1.params.sourceBits
   }

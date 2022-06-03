@@ -135,6 +135,12 @@ trait FPGAInternals {
       }
     }
   }
+
+  def isOtherClk: Boolean = namedclocks.exists(p => !p.contains("rtc_clock"))
+  def isMBusClk: Boolean = namedclocks.exists(p => p.contains("mbus"))
+  def isCBusClk: Boolean = namedclocks.exists(p => p.contains("cbus"))
+  def isExtSerMemClk: Boolean = namedclocks.exists(p => p.contains("extsermem")) || isMBusClk
+  def isExtSerBusClk: Boolean = namedclocks.exists(p => p.contains("extserbus")) || isCBusClk
 }
 
 // ********************************************************************

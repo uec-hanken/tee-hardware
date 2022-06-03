@@ -116,11 +116,6 @@ class FPGAVC707Internal(chip: Option[Any])(implicit val p :Parameters) extends R
   val clock = Wire(Clock())
   val reset = Wire(Bool())
 
-  val isOtherClk = (p(SbusToMbusXTypeKey) match {
-    case _: AsynchronousCrossing => true
-    case _ => false
-  }) || p(PeripheryUSB11HSKey).nonEmpty
-
   // PLL instance
   val c = new PLLParameters(
     name = "pll",
@@ -160,12 +155,12 @@ class FPGAVC707Internal(chip: Option[Any])(implicit val p :Parameters) extends R
       // TileLink Interface from platform
       mod.io.tlport <> chiptl
 
-      p(SbusToMbusXTypeKey) match {
-        case _: AsynchronousCrossing =>
-          mod.clock := pll.io.clk_out2.get
-          mod.reset := reset_to_child
-        case _ =>
-          mod.clock := pll.io.clk_out1.get
+      if (isMBusClk) {
+        println("Island connected to clk_out2 (10MHz)")
+        mod.clock := pll.io.clk_out2.get
+        mod.reset := reset_to_child
+      } else {
+        mod.clock := pll.io.clk_out1.get
       }
 
       init_calib_complete := mod.io.ddrport.init_calib_complete
@@ -187,13 +182,12 @@ class FPGAVC707Internal(chip: Option[Any])(implicit val p :Parameters) extends R
       mod.io.ddrport.sys_rst := sys_rst
       reset_to_sys := ResetCatchAndSync(pll.io.clk_out1.get, mod.io.ddrport.ui_clk_sync_rst)
 
-      p(SbusToMbusXTypeKey) match {
-        case _: AsynchronousCrossing =>
-          println("Island connected to clk_out2 (10MHz)")
-          mod.clock := pll.io.clk_out2.get
-          mod.reset := reset_to_child
-        case _ =>
-          mod.clock := pll.io.clk_out1.get
+      if (isExtSerMemClk) {
+        println("Island connected to clk_out2 (10MHz)")
+        mod.clock := pll.io.clk_out2.get
+        mod.reset := reset_to_child
+      } else {
+        mod.clock := pll.io.clk_out1.get
       }
 
       init_calib_complete := mod.io.ddrport.init_calib_complete
@@ -205,21 +199,15 @@ class FPGAVC707Internal(chip: Option[Any])(implicit val p :Parameters) extends R
     reset := reset_to_sys
     sys_clk := pll.io.clk_out1.get
     rst_n := !reset_to_sys
-    usbClk.foreach(_ := pll.io.clk_out3.getOrElse(false.B))
+    usbClk.foreach(_ := pll.io.clk_out3.get)
     DefaultRTC
 
     println(s"Connecting ${aclkn} async clocks by default =>")
     (aclocks zip namedclocks).foreach { case (aclk, nam) =>
       println(s"  Detected clock ${nam}")
       if(nam.contains("mbus")) {
-        p(SbusToMbusXTypeKey) match {
-          case _: AsynchronousCrossing =>
-            aclk := pll.io.clk_out2.get
-            println("    Connected to clk_out2 (10 MHz)")
-          case _ =>
-            aclk := pll.io.clk_out1.get
-            println("    Connected to clk_out1")
-        }
+        aclk := pll.io.clk_out2.get
+        println("    Connected to clk_out2 (10 MHz)")
       }
       else {
         aclk := pll.io.clk_out1.get
