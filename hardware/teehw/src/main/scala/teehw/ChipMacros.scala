@@ -234,12 +234,12 @@ case object IOLibrary extends Field[GenericIOLibraryParams](IOLibraryParams())
 object BasePinToRegular {
   def apply(pin: BasePin) : Bool = {
     pin.i.ival := false.B
-    pin.i.po.foreach(_ := false.B) // TODO: What is this? This is new, and there is no info in GPIO or similar
+    pin.i.po.foreach(_ := false.B)
     pin.o.oval
   }
   def apply(pin: BasePin, b: Bool) = {
     pin.i.ival := b
-    pin.i.po.foreach(_ := false.B) // TODO: What is this? This is new, and there is no info in GPIO or similar
+    pin.i.po.foreach(_ := false.B)
   }
   def asVec(pins: Vec[BasePin]) : Vec[Bool] = {
     val bools = Wire(Vec(pins.length, Bool()))
