@@ -12,10 +12,7 @@ trait HasPeripheryAES { this: BaseSubsystem =>
   }
 }
 
-trait HasPeripheryAESBundle {
-}
-
-trait HasPeripheryAESModuleImp extends LazyModuleImp with HasPeripheryAESBundle {
+trait HasPeripheryAESModuleImp extends LazyModuleImp {
   val outer: HasPeripheryAES
   val aes = outer.aesNodes.zipWithIndex.map{ case (node,i) =>
     node.makeIO()(ValName(s"aes_" + i))

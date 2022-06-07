@@ -54,18 +54,13 @@ abstract class SHA3(busWidthBytes: Int, val c: SHA3Params)
       base = c.address,
       beatBytes = busWidthBytes),
     new SHA3PortIO
-  )
-    with HasInterruptSources {
-
-  def nInterrupts = 1
+  ) {
 
   ResourceBinding {
     Resource(ResourceAnchors.aliases, "sha3").bind(ResourceAlias(device.label))
   }
 
   lazy val module = new LazyModuleImp(this) {
-    interrupts(0) := false.B
-
     // The input value
     val data = Wire(UInt(64.W))
     val datas = Reg(Vec(2, UInt(32.W)))
@@ -200,12 +195,6 @@ case class SHA3AttachParams(
         := TLFragmenter(cbus)
         := blockerOpt.map { _.node := bus } .getOrElse { bus })
     }
-
-    (intXType match {
-      case _: SynchronousCrossing => where.ibus.fromSync
-      case _: RationalCrossing => where.ibus.fromRational
-      case _: AsynchronousCrossing => where.ibus.fromAsync
-    }) := sha3.intXing(intXType)
 
     LogicalModuleTree.add(where.logicalTreeNode, sha3.logicalTreeNode)
 

@@ -87,14 +87,14 @@ trait HasTEEHWPeripherySPIChipImp extends RawModule {
     attach(SCK.pad, spi.SCK)
     SCK.ConnectPin(spipin.sck)
     val CS = Seq.tabulate(sysspi.c.csWidth){j =>
-      val c = IOGen.output()
+      val c = IOGen.gpio()
       c.suggestName(s"CS_${i}_${j}")
       attach(c.pad, spi.CS(j))
       c.ConnectPin(spipin.cs(j))
       c
     }
     val DQ = Seq.tabulate(sysspi.dq.size){j =>
-      val c = IOGen.output()
+      val c = IOGen.gpio()
       c.suggestName(s"DQ_${i}_${j}")
       attach(c.pad, spi.DQ(j))
       c.ConnectPin(spipin.dq(j))

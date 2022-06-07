@@ -59,18 +59,13 @@ abstract class AES(busWidthBytes: Int, val c: AESParams, divisorInit: Int = 0)
       base = c.address,
       beatBytes = busWidthBytes),
     new AESPortIO
-  )
-    with HasInterruptSources {
-
-  def nInterrupts = 1
+  ) {
 
   ResourceBinding {
     Resource(ResourceAnchors.aliases, "aes").bind(ResourceAlias(device.label))
   }
 
   lazy val module = new LazyModuleImp(this) {
-    interrupts(0) := false.B
-
     // Data
     val block = Reg(Vec(4, UInt(32.W)))
     val key = Reg(Vec(8, UInt(32.W)))
@@ -183,12 +178,6 @@ case class AESAttachParams(
         := TLFragmenter(cbus)
         := blockerOpt.map { _.node := bus } .getOrElse { bus })
     }
-
-    (intXType match {
-      case _: SynchronousCrossing => where.ibus.fromSync
-      case _: RationalCrossing => where.ibus.fromRational
-      case _: AsynchronousCrossing => where.ibus.fromAsync
-    }) := aes.intXing(intXType)
 
     LogicalModuleTree.add(where.logicalTreeNode, aes.logicalTreeNode)
 

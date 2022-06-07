@@ -12,10 +12,7 @@ trait HasPeripherySHA3 { this: BaseSubsystem =>
   }
 }
 
-trait HasPeripherySHA3Bundle {
-}
-
-trait HasPeripherySHA3ModuleImp extends LazyModuleImp with HasPeripherySHA3Bundle {
+trait HasPeripherySHA3ModuleImp extends LazyModuleImp {
   val outer: HasPeripherySHA3
   val sha3 = outer.sha3Nodes.zipWithIndex.map{ case (node, i) =>
     node.makeIO()(ValName(s"sha3_" + i))

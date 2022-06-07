@@ -93,18 +93,13 @@ abstract class ed25519(busWidthBytes: Int, val c: ed25519Params)
       base = c.address,
       beatBytes = busWidthBytes),
     new ed25519PortIO
-  )
-    with HasInterruptSources {
-
-  def nInterrupts = 1
+  ) {
 
   ResourceBinding {
     Resource(ResourceAnchors.aliases, "ed25519").bind(ResourceAlias(device.label))
   }
 
   lazy val module = new LazyModuleImp(this) {
-    interrupts(0) := false.B
-
     // First, create the utilities
 
     class mem32IO(val abits : Int = 3) extends Bundle {
@@ -456,12 +451,6 @@ case class ed25519AttachParams(
         := TLFragmenter(cbus)
         := blockerOpt.map { _.node := bus } .getOrElse { bus })
     }
-
-    (intXType match {
-      case _: SynchronousCrossing => where.ibus.fromSync
-      case _: RationalCrossing => where.ibus.fromRational
-      case _: AsynchronousCrossing => where.ibus.fromAsync
-    }) := ed25519.intXing(intXType)
 
     LogicalModuleTree.add(where.logicalTreeNode, ed25519.logicalTreeNode)
 

@@ -193,18 +193,13 @@ abstract class ClockCtrl(busWidthBytes: Int, val c: ClockCtrlParams, divisorInit
       base = c.address,
       beatBytes = busWidthBytes),
     new ClockCtrlPortIO
-  )
-    with HasInterruptSources {
-
-  def nInterrupts = 1
+  ) {
 
   ResourceBinding {
     Resource(ResourceAnchors.aliases, "clockctrl").bind(ResourceAlias(device.label))
   }
 
   lazy val module = new LazyModuleImp(this) {
-    interrupts(0) := false.B
-
     // BA 15/02/2021 #2
     val drpclkfbReg = RegInit(0.U(17.W))
     val drpclk0dReg = RegInit(0.U(18.W))
@@ -346,12 +341,6 @@ case class ClockCtrlAttachParams
         := TLFragmenter(cbus)
         := blockerOpt.map { _.node := bus } .getOrElse { bus })
     }
-
-    (intXType match {
-      case _: SynchronousCrossing => where.ibus.fromSync
-      case _: RationalCrossing => where.ibus.fromRational
-      case _: AsynchronousCrossing => where.ibus.fromAsync
-    }) := clockctrl.intXing(intXType)
 
     LogicalModuleTree.add(where.logicalTreeNode, clockctrl.logicalTreeNode)
 
