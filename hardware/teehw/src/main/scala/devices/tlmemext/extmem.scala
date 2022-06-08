@@ -143,40 +143,40 @@ trait HasTEEHWPeripheryExtMemChipImp extends RawModule {
     val mem_tl = IO(new TLULChip(sysmem.params))
 
     val a_valid: HasDigitalizable = if(p(ExtMemDirect)) IOGen.analog() else IOGen.output()
-    a_valid.suggestName("a_valid")
+    a_valid.suggestName("pad_a_valid")
     attach(a_valid.pad, mem_tl.a.valid)
     a_valid.ConnectAsOutput(sysmem.a.valid)
     val a_ready: HasDigitalizable = if(p(ExtMemDirect)) IOGen.analog() else IOGen.input()
-    a_ready.suggestName("a_ready")
+    a_ready.suggestName("pad_a_ready")
     attach(a_ready.pad, mem_tl.a.ready)
     sysmem.a.ready := a_ready.ConnectAsInput()
     (sysmem.a.bits.opcode.asBools zip mem_tl.a.opcode).zipWithIndex.foreach{ case((a, b), i) =>
       val pad: HasDigitalizable = if(p(ExtMemDirect)) IOGen.analog() else IOGen.output()
-      pad.suggestName(s"a_opcode_${i}")
+      pad.suggestName(s"pad_a_opcode_${i}")
       attach(pad.pad, b)
       pad.ConnectAsOutput(a)
     }
     (sysmem.a.bits.param.asBools zip mem_tl.a.param).zipWithIndex.foreach{ case((a, b), i) =>
       val pad: HasDigitalizable = if(p(ExtMemDirect)) IOGen.analog() else IOGen.output()
-      pad.suggestName(s"a_param_${i}")
+      pad.suggestName(s"pad_a_param_${i}")
       attach(pad.pad, b)
       pad.ConnectAsOutput(a)
     }
     (sysmem.a.bits.size.asBools zip mem_tl.a.size).zipWithIndex.foreach{ case((a, b), i) =>
       val pad: HasDigitalizable = if(p(ExtMemDirect)) IOGen.analog() else IOGen.output()
-      pad.suggestName(s"a_size_${i}")
+      pad.suggestName(s"pad_a_size_${i}")
       attach(pad.pad, b)
       pad.ConnectAsOutput(a)
     }
     (sysmem.a.bits.source.asBools zip mem_tl.a.source).zipWithIndex.foreach{ case((a, b), i) =>
       val pad: HasDigitalizable = if(p(ExtMemDirect)) IOGen.analog() else IOGen.output()
-      pad.suggestName(s"a_source_${i}")
+      pad.suggestName(s"pad_a_source_${i}")
       attach(pad.pad, b)
       pad.ConnectAsOutput(a)
     }
     (sysmem.a.bits.address.asBools zip mem_tl.a.address).zipWithIndex.foreach{ case((a, b), i) =>
       val pad: HasDigitalizable = if(p(ExtMemDirect)) IOGen.analog() else IOGen.output()
-      pad.suggestName(s"a_address_${i}")
+      pad.suggestName(s"pad_a_address_${i}")
       attach(pad.pad, b)
       pad.ConnectAsOutput(a)
     }
@@ -184,73 +184,73 @@ trait HasTEEHWPeripheryExtMemChipImp extends RawModule {
     mem_tl.a.echo := sysmem.a.bits.echo
     (sysmem.a.bits.mask.asBools zip mem_tl.a.mask).zipWithIndex.foreach{ case((a, b), i) =>
       val pad: HasDigitalizable = if(p(ExtMemDirect)) IOGen.analog() else IOGen.output()
-      pad.suggestName(s"a_mask_${i}")
+      pad.suggestName(s"pad_a_mask_${i}")
       attach(pad.pad, b)
       pad.ConnectAsOutput(a)
     }
     (sysmem.a.bits.data.asBools zip mem_tl.a.data).zipWithIndex.foreach{ case((a, b), i) =>
       val pad: HasDigitalizable = if(p(ExtMemDirect)) IOGen.analog() else IOGen.output()
-      pad.suggestName(s"a_data_${i}")
+      pad.suggestName(s"pad_a_data_${i}")
       attach(pad.pad, b)
       pad.ConnectAsOutput(a)
     }
     val a_corrupt: HasDigitalizable = if(p(ExtMemDirect)) IOGen.analog() else IOGen.output()
-    a_corrupt.suggestName("a_corrupt")
+    a_corrupt.suggestName("pad_a_corrupt")
     attach(a_corrupt.pad, mem_tl.a.corrupt)
     a_corrupt.ConnectAsOutput(sysmem.a.bits.corrupt)
 
     val d_valid: HasDigitalizable = if(p(ExtMemDirect)) IOGen.analog() else IOGen.input()
-    d_valid.suggestName("d_valid")
+    d_valid.suggestName("pad_d_valid")
     attach(d_valid.pad, mem_tl.d.valid)
     sysmem.d.valid := d_valid.ConnectAsInput()
     val d_ready: HasDigitalizable = if(p(ExtMemDirect)) IOGen.analog() else IOGen.output()
-    d_ready.suggestName("d_ready")
+    d_ready.suggestName("pad_d_ready")
     attach(d_ready.pad, mem_tl.d.ready)
     d_ready.ConnectAsOutput(sysmem.d.ready)
     sysmem.d.bits.opcode := VecInit(mem_tl.d.opcode.zipWithIndex.map{ case(b, i) =>
       val pad: HasDigitalizable = if(p(ExtMemDirect)) IOGen.analog() else IOGen.input()
-      pad.suggestName(s"d_opcode_${i}")
+      pad.suggestName(s"pad_d_opcode_${i}")
       attach(pad.pad, b)
       pad.ConnectAsInput()
     }).asUInt
     sysmem.d.bits.param := VecInit(mem_tl.d.param.zipWithIndex.map{ case(b, i) =>
       val pad: HasDigitalizable = if(p(ExtMemDirect)) IOGen.analog() else IOGen.input()
-      pad.suggestName(s"d_param_${i}")
+      pad.suggestName(s"pad_d_param_${i}")
       attach(pad.pad, b)
       pad.ConnectAsInput()
     }).asUInt
     sysmem.d.bits.size := VecInit(mem_tl.d.size.zipWithIndex.map{ case(b, i) =>
       val pad: HasDigitalizable = if(p(ExtMemDirect)) IOGen.analog() else IOGen.input()
-      pad.suggestName(s"d_size_${i}")
+      pad.suggestName(s"pad_d_size_${i}")
       attach(pad.pad, b)
       pad.ConnectAsInput()
     }).asUInt
     sysmem.d.bits.source := VecInit(mem_tl.d.source.zipWithIndex.map{ case(b, i) =>
       val pad: HasDigitalizable = if(p(ExtMemDirect)) IOGen.analog() else IOGen.input()
-      pad.suggestName(s"d_source_${i}")
+      pad.suggestName(s"pad_d_source_${i}")
       attach(pad.pad, b)
       pad.ConnectAsInput()
     }).asUInt
     sysmem.d.bits.sink := VecInit(mem_tl.d.sink.zipWithIndex.map{ case(b, i) =>
       val pad: HasDigitalizable = if(p(ExtMemDirect)) IOGen.analog() else IOGen.input()
-      pad.suggestName(s"d_sink_${i}")
+      pad.suggestName(s"pad_d_sink_${i}")
       attach(pad.pad, b)
       pad.ConnectAsInput()
     }).asUInt
     val d_denied: HasDigitalizable = if(p(ExtMemDirect)) IOGen.analog() else IOGen.input()
-    d_denied.suggestName("d_denied")
+    d_denied.suggestName("pad_d_denied")
     attach(d_denied.pad, mem_tl.d.denied)
     sysmem.d.bits.denied := d_denied.ConnectAsInput()
     sysmem.d.bits.user := mem_tl.d.user
     sysmem.d.bits.echo := mem_tl.d.echo
     sysmem.d.bits.data := VecInit(mem_tl.d.data.zipWithIndex.map{ case(b, i) =>
       val pad: HasDigitalizable = if(p(ExtMemDirect)) IOGen.analog() else IOGen.input()
-      pad.suggestName(s"d_data_${i}")
+      pad.suggestName(s"pad_d_data_${i}")
       attach(pad.pad, b)
       pad.ConnectAsInput()
     }).asUInt
     val d_corrupt: HasDigitalizable = if(p(ExtMemDirect)) IOGen.analog() else IOGen.input()
-    d_corrupt.suggestName("d_corrupt")
+    d_corrupt.suggestName("pad_d_corrupt")
     attach(d_corrupt.pad, mem_tl.d.corrupt)
     sysmem.d.bits.corrupt := d_corrupt.ConnectAsInput()
 

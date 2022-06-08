@@ -92,31 +92,31 @@ trait HasTEEHWPeripheryExtSerMemChipImp extends RawModule {
     val memser = IO(new SerialIOChip(sysextser.w))
 
     val out_valid: HasDigitalizable = if(p(ExtSerMemDirect)) IOGen.analog() else IOGen.output()
-    out_valid.suggestName("out_valid")
+    out_valid.suggestName("pad_out_valid")
     attach(out_valid.pad, memser.out.valid)
     out_valid.ConnectAsOutput(sysextser.out.valid)
     val out_ready: HasDigitalizable = if(p(ExtSerMemDirect)) IOGen.analog() else IOGen.input()
-    out_ready.suggestName("a_ready")
+    out_ready.suggestName("pad_out_ready")
     attach(out_ready.pad, memser.out.ready)
     sysextser.out.ready := out_ready.ConnectAsInput()
     (sysextser.out.bits.asBools zip memser.out.bits).zipWithIndex.foreach{ case((a, b), i) =>
       val pad: HasDigitalizable = if(p(ExtSerMemDirect)) IOGen.analog() else IOGen.output()
-      pad.suggestName(s"out_bits_${i}")
+      pad.suggestName(s"pad_out_bits_${i}")
       attach(pad.pad, b)
       pad.ConnectAsOutput(a)
     }
 
     val in_valid: HasDigitalizable = if(p(ExtSerMemDirect)) IOGen.analog() else IOGen.input()
-    in_valid.suggestName("in_valid")
+    in_valid.suggestName("pad_in_valid")
     attach(in_valid.pad, memser.in.valid)
     sysextser.in.valid := in_valid.ConnectAsInput()
     val in_ready: HasDigitalizable = if(p(ExtSerMemDirect)) IOGen.analog() else IOGen.output()
-    in_ready.suggestName("in_ready")
+    in_ready.suggestName("pad_in_ready")
     attach(in_ready.pad, memser.in.ready)
     in_ready.ConnectAsOutput(sysextser.in.ready)
     sysextser.in.bits := VecInit(memser.in.bits.zipWithIndex.map{ case(b, i) =>
       val pad: HasDigitalizable = if(p(ExtSerMemDirect)) IOGen.analog() else IOGen.input()
-      pad.suggestName(s"in_bits_${i}")
+      pad.suggestName(s"pad_in_bits_${i}")
       attach(pad.pad, b)
       pad.ConnectAsInput()
     }).asUInt

@@ -106,11 +106,11 @@ trait DebugJTAGOnlyChipImp extends RawModule {
     val TDO = IOGen.output()
     val TRSTn = IOGen.input()
 
-    TMS.suggestName("TMS")
-    TCK.suggestName("TCK")
-    TDI.suggestName("TDI")
-    TDO.suggestName("TDO")
-    TRSTn.suggestName("TRSTn")
+    TMS.suggestName("tms")
+    TCK.suggestName("tck")
+    TDI.suggestName("tdi")
+    TDO.suggestName("tdo")
+    TRSTn.suggestName("trstn")
 
     attach(jtag.TMS, TMS.pad)
     attach(jtag.TCK, TCK.pad)

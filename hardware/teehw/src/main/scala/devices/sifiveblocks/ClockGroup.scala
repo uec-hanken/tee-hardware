@@ -111,8 +111,10 @@ trait HasTEEHWClockGroupChipImp extends RawModule {
 
   // General clock and reset
   val CLOCK = IOGen.crystal()
+  CLOCK.suggestName("sys_clock")
   // TODO: Make the RSTn also an exclusive config? For now is kinda ok to make it depend of the ExtMemDirect
   val RSTn: HasDigitalizable = if(p(ExtMemDirect)) IOGen.analog() else IOGen.gpio()
+  RSTn.suggestName("sys_rstn")
 
   val clockxi = IO(Analog(1.W))
   val clockxo = CLOCK.xo.map(A => IO(Analog(1.W)))
@@ -128,7 +130,7 @@ trait HasTEEHWClockGroupChipImp extends RawModule {
 
   // Another Clock Exposition
   val aclkn = system.asInstanceOf[HasTEEHWClockGroupModuleImp].aclocks.size
-  val ACLOCK = Seq.tabulate(aclkn)(_ => IOGen.crystal())
+  val ACLOCK = Seq.tabulate(aclkn)(i => IOGen.crystal().suggestName(s"clock_${system.namedclocks(i)}"))
   val aclockxi = ACLOCK.map(A => IO(Analog(1.W)))
   val aclockxo = ACLOCK.flatMap(A => A.xo.map(B => IO(Analog(1.W))))
 
