@@ -21,6 +21,8 @@ else ifeq ($(ISACONF),RV32GC)
 CFLAGS:=-march=rv32imafdc -mabi=ilp32d -mcmodel=medany $(CFLAGS)
 else ifeq ($(ISACONF),RV32IMC)
 CFLAGS:=-march=rv32imc -mabi=ilp32 -mcmodel=medany $(CFLAGS)
+else ifeq ($(ISACONF),RV32IM)
+CFLAGS:=-march=rv32im -mabi=ilp32 -mcmodel=medany $(CFLAGS)
 else #RV32IMAC
 CFLAGS:=-march=rv32imac -mabi=ilp32 -mcmodel=medany $(CFLAGS)
 endif
