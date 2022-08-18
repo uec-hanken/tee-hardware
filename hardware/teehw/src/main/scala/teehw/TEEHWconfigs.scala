@@ -539,6 +539,7 @@ class VC707Config extends Config((site,here,up) => {
     MaskROMParams(address = BigInt(0x20000000), depth = 0x4000, name = "BootROM"))
   case TEEHWResetVector => 0x20000000
   case PeripherySPIFlashKey => List() // disable SPIFlash
+  case PeripheryI2CKey => List() // disable I2C
   case PeripheryRandomKey => up(PeripheryRandomKey, site) map {r =>
     r.copy(board = "Xilinx")
   }
@@ -586,6 +587,7 @@ class VCU118Config extends Config((site,here,up) => {
   case IOLibrary => XilinxIOLibraryParams()
   // Limit the number of GPIOs
   case PeripheryGPIOKey => up(PeripheryGPIOKey).map(_.copy(width = 16))
+  case PeripheryI2CKey => List() // disable I2C
 })
 
 class ArtyA7Config extends Config((site,here,up) => {

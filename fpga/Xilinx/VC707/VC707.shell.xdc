@@ -36,10 +36,8 @@ set_clock_groups -asynchronous \
       mod_1/clockctrlClockDomainWrapper/clockctrl_0/mmcme2_adv_inst/CLKOUT0 \
     }]]]
 
-# Nah, definitelly quit here. Going to put the false path in the clock
-
-
 set_property CLOCK_DEDICATED_ROUTE {FALSE} [get_nets [get_ports {jtag_jtag_TCK}]]
+set_property CLOCK_DEDICATED_ROUTE FALSE [get_nets chip/jtag_tck/mod/O]
 set_property PACKAGE_PIN {BB23} [get_ports {jtag_jtag_TCK}]
 set_property IOSTANDARD {LVCMOS18} [get_ports {jtag_jtag_TCK}]
 set_property PULLUP {TRUE} [get_ports {jtag_jtag_TCK}]

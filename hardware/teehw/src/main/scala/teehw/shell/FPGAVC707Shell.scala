@@ -691,6 +691,8 @@ trait WithFPGAVC707PureConnect {
         attach(sdio.sdio_cmd, qspiport.DQ(0))
         attach(qspiport.DQ(1), sdio.sdio_dat_0)
         attach(sdio.sdio_dat_3, qspiport.CS(0))
+        attach(ConnectFMCXilinxGPIO.debug(1, 14, MISCPORT), qspiport.DQ(2))
+        attach(ConnectFMCXilinxGPIO.debug(1, 15, MISCPORT), qspiport.DQ(3))
       }
     case ((qspi: SPIPIN, _: SPIFlashParams), _: Int) =>
       attach(ConnectFMCXilinxGPIO.debug(1, 7, MISCPORT), qspi.CS(0))
