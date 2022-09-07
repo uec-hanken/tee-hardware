@@ -91,19 +91,23 @@ def iterate_by_n(it, n):
         ...
     ValueError: Iterable length not evenly divisible by 4
     """
-    it = iter(it)
+    ite = iter(it)
     while True:
         batch = ()
         for i in range(n):
             try:
-                batch += (next(it),)
+                batch += (next(ite),)
             except StopIteration:
                 if batch:  # If this is not the first iteration
                     raise ValueError(
                         'Iterable length not evenly divisible by {}'.format(n)
                     )
                 else:
-                    raise
+                    # https://peps.python.org/pep-0479/
+                    if sys.version_info < (3, 7):
+                        raise
+                    else:
+                        return
         yield batch
 
 
