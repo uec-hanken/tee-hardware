@@ -485,10 +485,6 @@ class WRTC extends Config((site, here, up) => {
   case DTSTimebase => BigInt(32768) // TODO: Maybe put another configuration for this
 })
 
-class WExposeClk extends Config((site, here, up) => {
-  case ExposeClocks => true
-})
-
 // *************** Board Config (BOARD) ***************
 class TR4Config extends Config((new WithIbexSynthesizedNoICache).alter((site,here,up) => {
   case FreqKeyMHz => 50.0

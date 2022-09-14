@@ -36,7 +36,17 @@ case object ExtBusKey extends Field[ExtBusParams]
 case object CbusToExtBusXTypeKey extends Field[ClockCrossingType](SynchronousCrossing())
 
 // Async clock exposure
-case object ExposeClocks extends Field[Boolean](false)
+//case object ExposeClocks extends Field[Boolean](false) // DEPRECATED
+case object ExposedClocks extends Field[Seq[String]](Nil)
+case class ExternConnSpec
+(
+  idBits: Int = 6,
+  idExtBits: Int = 6,
+  widthBits: Int = 32,
+  sinkBits: Int = 1,
+  version: Int = 0
+)
+case object ExternConn extends Field[ExternConnSpec](ExternConnSpec())
 
 // TODO: This is used in the full version. Do not use here.
 case object DummySPIFlashKey extends Field[Seq[SPIFlashParams]](Nil)

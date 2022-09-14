@@ -170,7 +170,6 @@ class FPGASakuraXInternal(chip: Option[Any])(implicit val p :Parameters) extends
     sys_clk := pll.io.clk_out1.get
     rst_n := !reset_to_sys
     usbClk.foreach(_ := pll.io.clk_out3.get)
-    DefaultRTC
 
     println(s"Connecting ${aclkn} async clocks by default =>")
     (aclocks zip namedclocks).foreach { case (aclk, nam) =>
@@ -178,6 +177,7 @@ class FPGASakuraXInternal(chip: Option[Any])(implicit val p :Parameters) extends
       aclk := pll.io.clk_out2.get
       println("    Connected to clk_out2 (10 MHz)")
     }
+    DefaultRTC
 
     // Clock controller
     (extser zip extserSourceBits).foreach { case(es, sourceBits) =>
@@ -391,30 +391,8 @@ object ConnectFMCLPCXilinxGPIO {
   }
 }
 
-class FPGASakuraXInternalNoChip
-(
-  val idBits: Int = 4,
-  val widthBits: Int = 32,
-  val sinkBits: Int = 1
-)(implicit p :Parameters) extends FPGASakuraXInternal(None)(p) {
-  // TODO: Reconfirm all of this
-  override def otherId = Some(idBits)
-  override def tlparam = p(ExtMem).map { A =>
-    TLBundleParameters(
-      widthBits,
-      A.master.beatBytes * 8,
-      idBits,
-      sinkBits,
-      log2Up(log2Ceil(p(MemoryBusKey).blockBytes)+1),
-      Seq(),
-      Seq(),
-      Seq(),
-      false)}
-  override def aclkn: Int = if(p(ExposeClocks)) 3 else 0
-  override def memserSourceBits: Option[Int] = p(ExtSerMem).map( A => idBits )
-  override def extserSourceBits: Option[Int] = p(ExtSerBus).map( A => idBits )
-  override def namedclocks: Seq[String] = if(p(ExposeClocks)) Seq("cryptobus", "tile_0", "tile_1") else Seq()
-}
+class FPGASakuraXInternalNoChip ()(implicit p :Parameters) extends FPGASakuraXInternal(None)(p)
+  with FPGAInternalNoChipDef
 
 trait WithFPGASakuraXInternCreate {
   this: FPGASakuraXShell =>
@@ -424,10 +402,7 @@ trait WithFPGASakuraXInternCreate {
 
 trait WithFPGASakuraXInternNoChipCreate {
   this: FPGASakuraXShell =>
-  def idBits = 4
-  def widthBits = 32
-  def sinkBits = 1
-  val intern = Module(new FPGASakuraXInternalNoChip(idBits, widthBits, sinkBits))
+  val intern = Module(new FPGASakuraXInternalNoChip())
 }
 
 trait WithFPGASakuraXInternConnect {

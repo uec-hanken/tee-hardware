@@ -200,7 +200,6 @@ class FPGAVC707Internal(chip: Option[Any])(implicit val p :Parameters) extends R
     sys_clk := pll.io.clk_out1.get
     rst_n := !reset_to_sys
     usbClk.foreach(_ := pll.io.clk_out3.get)
-    DefaultRTC
 
     println(s"Connecting ${aclkn} async clocks by default =>")
     (aclocks zip namedclocks).foreach { case (aclk, nam) =>
@@ -208,6 +207,7 @@ class FPGAVC707Internal(chip: Option[Any])(implicit val p :Parameters) extends R
       aclk := pll.io.clk_out2.get
       println("    Connected to clk_out2 (10 MHz)")
     }
+    DefaultRTC
 
     // Clock controller
     (extser zip extserSourceBits).foreach { case(es, sourceBits) =>
@@ -596,31 +596,8 @@ object ConnectFMCXilinxGPIO {
   }
 }
 
-class FPGAVC707InternalNoChip
-(
-  val idBits: Int = 4,
-  val idExtBits: Int = 3,
-  val widthBits: Int = 32,
-  val sinkBits: Int = 1
-)(implicit p :Parameters) extends FPGAVC707Internal(None)(p) {
-  // TODO: Reconfirm all of this
-  override def otherId = Some(idBits)
-  override def tlparam = p(ExtMem).map { A =>
-    TLBundleParameters(
-      widthBits,
-      A.master.beatBytes * 8,
-      idBits,
-      sinkBits,
-      log2Up(log2Ceil(p(MemoryBusKey).blockBytes)+1),
-      Seq(),
-      Seq(),
-      Seq(),
-      false)}
-  override def aclkn: Int = if(p(ExposeClocks)) 3 else 0
-  override def memserSourceBits: Option[Int] = p(ExtSerMem).map( A => idBits )
-  override def extserSourceBits: Option[Int] = p(ExtSerBus).map( A => idExtBits )
-  override def namedclocks: Seq[String] = if(p(ExposeClocks)) Seq("cryptobus", "tile_0", "tile_1") else Seq()
-}
+class FPGAVC707InternalNoChip()(implicit p :Parameters) extends FPGAVC707Internal(None)(p)
+  with FPGAInternalNoChipDef
 
 trait WithFPGAVC707InternCreate {
   this: FPGAVC707Shell =>
@@ -630,11 +607,7 @@ trait WithFPGAVC707InternCreate {
 
 trait WithFPGAVC707InternNoChipCreate {
   this: FPGAVC707Shell =>
-  def idBits = 4
-  def idExtBits = 4
-  def widthBits = 32
-  def sinkBits = 1
-  val intern = Module(new FPGAVC707InternalNoChip(idBits, idExtBits, widthBits, sinkBits))
+  val intern = Module(new FPGAVC707InternalNoChip())
 }
 
 trait WithFPGAVC707InternConnect {

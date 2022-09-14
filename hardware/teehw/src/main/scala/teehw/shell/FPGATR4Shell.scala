@@ -119,7 +119,6 @@ class FPGATR4Internal(chip: Option[Any])(implicit val p :Parameters) extends Raw
   with FPGAInternals
   with FPGATR4ClockAndResetsAndDDR {
   def outer = chip
-  override def otherId: Option[Int] = Some(6)
 
   val mem_status_local_cal_fail = IO(Output(Bool()))
   val mem_status_local_cal_success = IO(Output(Bool()))
@@ -147,7 +146,6 @@ class FPGATR4Internal(chip: Option[Any])(implicit val p :Parameters) extends Raw
       mod_reset := reset_to_sys
       rst_n := !reset_to_sys
       usbClk.foreach(_ := mod_io_ckrst.usb_clk)
-      DefaultRTC
 
       // Async clock connections
       println(s"Connecting ${aclkn} async clocks by default =>")
@@ -165,6 +163,7 @@ class FPGATR4Internal(chip: Option[Any])(implicit val p :Parameters) extends Raw
           println("    Connected to qsys_clk")
         }
       }
+      DefaultRTC
 
       mod_io_ckrst.ddr_ref_clk := OSC_50_BANK1.asUInt()
       mod_io_ckrst.qsys_ref_clk := OSC_50_BANK4.asUInt() // TODO: This is okay?
@@ -239,30 +238,8 @@ class FPGATR4Internal(chip: Option[Any])(implicit val p :Parameters) extends Raw
   }
 }
 
-class FPGATR4InternalNoChip
-(
-  val idBits: Int = 6,
-  val idExtBits: Int = 6,
-  val widthBits: Int = 32,
-  val sinkBits: Int = 1
-)(implicit p :Parameters) extends FPGATR4Internal(None)(p) {
-  override def otherId = Some(6)
-  override def tlparam = p(ExtMem).map { A =>
-    TLBundleParameters(
-      32,
-      A.master.beatBytes * 8,
-      6,
-      1,
-      log2Up(log2Ceil(p(MemoryBusKey).blockBytes)+1),
-      Seq(),
-      Seq(),
-      Seq(),
-      false)}
-  override def aclkn: Int = 0
-  override def memserSourceBits: Option[Int] = p(ExtSerMem).map( A => idBits )
-  override def extserSourceBits: Option[Int] = p(ExtSerBus).map( A => idExtBits )
-  override def namedclocks: Seq[String] = Seq()
-}
+class FPGATR4InternalNoChip()(implicit p :Parameters) extends FPGATR4Internal(None)(p)
+  with FPGAInternalNoChipDef
 
 trait WithFPGATR4InternCreate {
   this: FPGATR4Shell =>
@@ -502,197 +479,196 @@ object ConnectHSMCGPIO {
 // Based on layout of the TR4.sch done by Duy
 trait WithFPGATR4ToChipConnect extends WithFPGATR4InternNoChipCreate with WithFPGATR4InternConnect {
   this: FPGATR4Shell =>
-
-  // ******* Duy section ******
-  // NOTES:
-  // JP19 -> J2 / JP18 -> J3 belongs to HSMB
-  // JP20 -> J2 / JP21 -> J3 belongs to HSMA
-  def HSMC_JP19_18 = HSMB
-  def HSMC_JP20_21 = HSMA
-  def JP18 = 1 // GPIO1 (J3)
-  def JP19 = 0 // GPIO0 (J2)
-  def JP20 = 0 // GPIO0 (J2)
-  def JP21 = 1 // GPIO1 (J3)
-
-  // From intern = Clocks and resets
-  ConnectHSMCGPIO(JP21, 2, intern.sys_clk.asBool, false, HSMC_JP20_21) // Previous ChildClock
-  ConnectHSMCGPIO(JP18, 5, !intern.rst_n, false, HSMC_JP20_21) // Previous ChildReset
-  ConnectHSMCGPIO(JP21, 4, intern.sys_clk.asBool, false, HSMC_JP20_21)
-  ConnectHSMCGPIO(JP18, 2, intern.rst_n, false, HSMC_JP19_18)
-  ConnectHSMCGPIO(JP18, 6, intern.rst_n, false, HSMC_JP19_18) // Previous jrst_n
-  // Memory port
-  intern.tlport.foreach{ case tlport =>
-    ConnectHSMCGPIO(JP18, 1, tlport.a.valid, true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP18, 4, tlport.a.ready, false, HSMC_JP19_18)
-    require(tlport.a.bits.opcode.getWidth == 3, s"${tlport.a.bits.opcode.getWidth}")
-    val a_opcode = Wire(Vec(3, Bool()))
-    ConnectHSMCGPIO(JP18, 3, a_opcode(2), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP18, 7, a_opcode(1), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP18, 8, a_opcode(0), true, HSMC_JP19_18)
-    tlport.a.bits.opcode := a_opcode.asUInt
-    require(tlport.a.bits.param.getWidth == 3, s"${tlport.a.bits.param.getWidth}")
-    val a_param = Wire(Vec(3, Bool()))
-    ConnectHSMCGPIO(JP18, 9, a_param(2), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP18, 10, a_param(1), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP18, 13, a_param(0), true, HSMC_JP19_18)
-    tlport.a.bits.param := a_param.asUInt
-    val a_size = Wire(Vec(3, Bool()))
-    require(tlport.a.bits.size.getWidth == 3, s"${tlport.a.bits.size.getWidth}")
-    ConnectHSMCGPIO(JP18, 14, a_size(2), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP18, 15, a_size(1), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP18, 16, a_size(0), true, HSMC_JP19_18)
-    tlport.a.bits.size := a_size.asUInt
-    require(tlport.a.bits.source.getWidth == 6, s"${tlport.a.bits.source.getWidth}")
-    val a_source = Wire(Vec(6, Bool()))
-    ConnectHSMCGPIO(JP18, 17, a_source(5), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP18, 18, a_source(4), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP18, 19, a_source(3), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP18, 20, a_source(2), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP18, 21, a_source(1), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP18, 22, a_source(0), true, HSMC_JP19_18)
-    tlport.a.bits.source := a_source.asUInt
-    require(tlport.a.bits.address.getWidth == 32, s"${tlport.a.bits.address.getWidth}")
-    val a_address = Wire(Vec(32, Bool()))
-    ConnectHSMCGPIO(JP18, 23, a_address(31), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP18, 24, a_address(30), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP18, 25, a_address(29), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP18, 26, a_address(28), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP18, 27, a_address(27), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP18, 28, a_address(26), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP18, 31, a_address(25), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP18, 32, a_address(24), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP18, 33, a_address(23), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP18, 34, a_address(22), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP18, 35, a_address(21), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP18, 36, a_address(20), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP18, 37, a_address(19), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP18, 38, a_address(18), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP18, 39, a_address(17), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP18, 40, a_address(16), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP19,  1, a_address(15), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP19,  2, a_address(14), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP19,  2, a_address(13), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP19,  4, a_address(12), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP19,  5, a_address(11), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP19,  6, a_address(10), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP19,  7, a_address( 9), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP19,  8, a_address( 8), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP19,  9, a_address( 7), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP19, 10, a_address( 6), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP19, 13, a_address( 5), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP19, 14, a_address( 4), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP19, 15, a_address( 3), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP19, 16, a_address( 2), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP19, 17, a_address( 1), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP19, 18, a_address( 0), true, HSMC_JP19_18)
-    tlport.a.bits.address := a_address.asUInt
-    require(tlport.a.bits.mask.getWidth == 4, s"${tlport.a.bits.mask.getWidth}")
-    val a_mask = Wire(Vec(4, Bool()))
-    ConnectHSMCGPIO(JP19, 19, a_mask(3), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP19, 20, a_mask(2), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP19, 21, a_mask(1), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP19, 22, a_mask(0), true, HSMC_JP19_18)
-    tlport.a.bits.mask := a_mask.asUInt
-    require(tlport.a.bits.data.getWidth == 32, s"${tlport.a.bits.data.getWidth}")
-    val a_data = Wire(Vec(32, Bool()))
-    ConnectHSMCGPIO(JP19, 23, a_data(31), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP19, 24, a_data(30), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP19, 25, a_data(29), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP19, 26, a_data(28), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP19, 27, a_data(27), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP19, 28, a_data(26), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP19, 31, a_data(25), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP19, 32, a_data(24), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP19, 33, a_data(23), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP19, 34, a_data(22), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP19, 35, a_data(21), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP19, 36, a_data(20), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP19, 37, a_data(19), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP19, 38, a_data(18), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP19, 39, a_data(17), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP19, 40, a_data(16), true, HSMC_JP19_18)
-    ConnectHSMCGPIO(JP20, 10, a_data(15), true, HSMC_JP20_21)
-    ConnectHSMCGPIO(JP20,  9, a_data(14), true, HSMC_JP20_21)
-    ConnectHSMCGPIO(JP20,  8, a_data(13), true, HSMC_JP20_21)
-    ConnectHSMCGPIO(JP20,  7, a_data(12), true, HSMC_JP20_21)
-    ConnectHSMCGPIO(JP20,  6, a_data(11), true, HSMC_JP20_21)
-    ConnectHSMCGPIO(JP20,  5, a_data(10), true, HSMC_JP20_21)
-    ConnectHSMCGPIO(JP20,  4, a_data( 9), true, HSMC_JP20_21)
-    ConnectHSMCGPIO(JP20,  3, a_data( 8), true, HSMC_JP20_21)
-    ConnectHSMCGPIO(JP20,  2, a_data( 7), true, HSMC_JP20_21)
-    ConnectHSMCGPIO(JP20,  1, a_data( 6), true, HSMC_JP20_21)
-    ConnectHSMCGPIO(JP20, 13, a_data( 5), true, HSMC_JP20_21)
-    ConnectHSMCGPIO(JP20, 14, a_data( 4), true, HSMC_JP20_21)
-    ConnectHSMCGPIO(JP20, 15, a_data( 3), true, HSMC_JP20_21)
-    ConnectHSMCGPIO(JP20, 16, a_data( 2), true, HSMC_JP20_21)
-    ConnectHSMCGPIO(JP20, 17, a_data( 1), true, HSMC_JP20_21)
-    ConnectHSMCGPIO(JP20, 18, a_data( 0), true, HSMC_JP20_21)
-    tlport.a.bits.data := a_data.asUInt
-    ConnectHSMCGPIO(JP20, 19, tlport.a.bits.corrupt, true, HSMC_JP20_21)
-    ConnectHSMCGPIO(JP20, 20, tlport.d.ready, true, HSMC_JP20_21)
-    ConnectHSMCGPIO(JP20, 21, tlport.d.valid, false, HSMC_JP20_21)
-    require(tlport.d.bits.opcode.getWidth == 3, s"${tlport.d.bits.opcode.getWidth}")
-    ConnectHSMCGPIO(JP20, 22, tlport.d.bits.opcode(2), false, HSMC_JP20_21)
-    ConnectHSMCGPIO(JP20, 23, tlport.d.bits.opcode(1), false, HSMC_JP20_21)
-    ConnectHSMCGPIO(JP20, 24, tlport.d.bits.opcode(0), false, HSMC_JP20_21)
-    require(tlport.d.bits.param.getWidth == 2, s"${tlport.d.bits.param.getWidth}")
-    ConnectHSMCGPIO(JP20, 25, tlport.d.bits.param(1), false, HSMC_JP20_21)
-    ConnectHSMCGPIO(JP20, 26, tlport.d.bits.param(0), false, HSMC_JP20_21)
-    require(tlport.d.bits.size.getWidth == 3, s"${tlport.d.bits.size.getWidth}")
-    ConnectHSMCGPIO(JP20, 27, tlport.d.bits.size(2), false, HSMC_JP20_21)
-    ConnectHSMCGPIO(JP20, 28, tlport.d.bits.size(1), false, HSMC_JP20_21)
-    ConnectHSMCGPIO(JP20, 31, tlport.d.bits.size(0), false, HSMC_JP20_21)
-    require(tlport.d.bits.source.getWidth == 6, s"${tlport.d.bits.source.getWidth}")
-    ConnectHSMCGPIO(JP20, 32, tlport.d.bits.source(5), false, HSMC_JP20_21)
-    ConnectHSMCGPIO(JP20, 33, tlport.d.bits.source(4), false, HSMC_JP20_21)
-    ConnectHSMCGPIO(JP20, 34, tlport.d.bits.source(3), false, HSMC_JP20_21)
-    ConnectHSMCGPIO(JP20, 35, tlport.d.bits.source(2), false, HSMC_JP20_21)
-    ConnectHSMCGPIO(JP20, 36, tlport.d.bits.source(1), false, HSMC_JP20_21)
-    ConnectHSMCGPIO(JP20, 37, tlport.d.bits.source(0), false, HSMC_JP20_21)
-    require(tlport.d.bits.sink.getWidth == 1, s"${tlport.d.bits.sink.getWidth}")
-    ConnectHSMCGPIO(JP20, 38, tlport.d.bits.sink(0), false, HSMC_JP20_21)
-    ConnectHSMCGPIO(JP20, 39, tlport.d.bits.denied, false, HSMC_JP20_21)
-    ConnectHSMCGPIO(JP20, 40, tlport.d.bits.corrupt, false, HSMC_JP20_21)
-    require(tlport.d.bits.data.getWidth == 32, s"${tlport.d.bits.data.getWidth}")
-    ConnectHSMCGPIO(JP21, 5, tlport.d.bits.data(31), false, HSMC_JP20_21)
-    ConnectHSMCGPIO(JP21, 6, tlport.d.bits.data(30), false, HSMC_JP20_21)
-    ConnectHSMCGPIO(JP21, 7, tlport.d.bits.data(29), false, HSMC_JP20_21)
-    ConnectHSMCGPIO(JP21, 8, tlport.d.bits.data(28), false, HSMC_JP20_21)
-    ConnectHSMCGPIO(JP21, 9, tlport.d.bits.data(27), false, HSMC_JP20_21)
-    ConnectHSMCGPIO(JP21, 10, tlport.d.bits.data(26), false, HSMC_JP20_21)
-    ConnectHSMCGPIO(JP21, 13, tlport.d.bits.data(25), false, HSMC_JP20_21)
-    ConnectHSMCGPIO(JP21, 14, tlport.d.bits.data(24), false, HSMC_JP20_21)
-    ConnectHSMCGPIO(JP21, 15, tlport.d.bits.data(23), false, HSMC_JP20_21)
-    ConnectHSMCGPIO(JP21, 16, tlport.d.bits.data(22), false, HSMC_JP20_21)
-    ConnectHSMCGPIO(JP21, 17, tlport.d.bits.data(21), false, HSMC_JP20_21)
-    ConnectHSMCGPIO(JP21, 18, tlport.d.bits.data(20), false, HSMC_JP20_21)
-    ConnectHSMCGPIO(JP21, 19, tlport.d.bits.data(19), false, HSMC_JP20_21)
-    ConnectHSMCGPIO(JP21, 20, tlport.d.bits.data(18), false, HSMC_JP20_21)
-    ConnectHSMCGPIO(JP21, 21, tlport.d.bits.data(17), false, HSMC_JP20_21)
-    ConnectHSMCGPIO(JP21, 22, tlport.d.bits.data(16), false, HSMC_JP20_21)
-    ConnectHSMCGPIO(JP21, 23, tlport.d.bits.data(15), false, HSMC_JP20_21)
-    ConnectHSMCGPIO(JP21, 24, tlport.d.bits.data(14), false, HSMC_JP20_21)
-    ConnectHSMCGPIO(JP21, 25, tlport.d.bits.data(13), false, HSMC_JP20_21)
-    ConnectHSMCGPIO(JP21, 26, tlport.d.bits.data(12), false, HSMC_JP20_21)
-    ConnectHSMCGPIO(JP21, 27, tlport.d.bits.data(11), false, HSMC_JP20_21)
-    ConnectHSMCGPIO(JP21, 28, tlport.d.bits.data(10), false, HSMC_JP20_21)
-    ConnectHSMCGPIO(JP21, 31, tlport.d.bits.data( 9), false, HSMC_JP20_21)
-    ConnectHSMCGPIO(JP21, 32, tlport.d.bits.data( 8), false, HSMC_JP20_21)
-    ConnectHSMCGPIO(JP21, 33, tlport.d.bits.data( 7), false, HSMC_JP20_21)
-    ConnectHSMCGPIO(JP21, 34, tlport.d.bits.data( 6), false, HSMC_JP20_21)
-    ConnectHSMCGPIO(JP21, 35, tlport.d.bits.data( 5), false, HSMC_JP20_21)
-    ConnectHSMCGPIO(JP21, 36, tlport.d.bits.data( 4), false, HSMC_JP20_21)
-    ConnectHSMCGPIO(JP21, 37, tlport.d.bits.data( 3), false, HSMC_JP20_21)
-    ConnectHSMCGPIO(JP21, 38, tlport.d.bits.data( 2), false, HSMC_JP20_21)
-    ConnectHSMCGPIO(JP21, 39, tlport.d.bits.data( 1), false, HSMC_JP20_21)
-    ConnectHSMCGPIO(JP21, 40, tlport.d.bits.data( 0), false, HSMC_JP20_21)
-  }
   
   // ******* Ahn-Dao section ******
   def HSMCSER = HSMA
-  def versionSer = 1
-  versionSer match {
-    case _ => // TODO: There is no such thing as versions in TR4
+  p(ExternConn).version match {
+    case 0 =>
+      // ******* Duy section ******
+      // NOTES:
+      // JP19 -> J2 / JP18 -> J3 belongs to HSMB
+      // JP20 -> J2 / JP21 -> J3 belongs to HSMA
+      def HSMC_JP19_18 = HSMB
+      def HSMC_JP20_21 = HSMA
+      def JP18 = 1 // GPIO1 (J3)
+      def JP19 = 0 // GPIO0 (J2)
+      def JP20 = 0 // GPIO0 (J2)
+      def JP21 = 1 // GPIO1 (J3)
+
+      // From intern = Clocks and resets
+      ConnectHSMCGPIO(JP21, 2, intern.sys_clk.asBool, false, HSMC_JP20_21) // Previous ChildClock
+      ConnectHSMCGPIO(JP18, 5, !intern.rst_n, false, HSMC_JP20_21) // Previous ChildReset
+      ConnectHSMCGPIO(JP21, 4, intern.sys_clk.asBool, false, HSMC_JP20_21)
+      ConnectHSMCGPIO(JP18, 2, intern.rst_n, false, HSMC_JP19_18)
+      ConnectHSMCGPIO(JP18, 6, intern.rst_n, false, HSMC_JP19_18) // Previous jrst_n
+      // Memory port
+      intern.tlport.foreach{ case tlport =>
+        ConnectHSMCGPIO(JP18, 1, tlport.a.valid, true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP18, 4, tlport.a.ready, false, HSMC_JP19_18)
+        require(tlport.a.bits.opcode.getWidth == 3, s"${tlport.a.bits.opcode.getWidth}")
+        val a_opcode = Wire(Vec(3, Bool()))
+        ConnectHSMCGPIO(JP18, 3, a_opcode(2), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP18, 7, a_opcode(1), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP18, 8, a_opcode(0), true, HSMC_JP19_18)
+        tlport.a.bits.opcode := a_opcode.asUInt
+        require(tlport.a.bits.param.getWidth == 3, s"${tlport.a.bits.param.getWidth}")
+        val a_param = Wire(Vec(3, Bool()))
+        ConnectHSMCGPIO(JP18, 9, a_param(2), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP18, 10, a_param(1), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP18, 13, a_param(0), true, HSMC_JP19_18)
+        tlport.a.bits.param := a_param.asUInt
+        val a_size = Wire(Vec(3, Bool()))
+        require(tlport.a.bits.size.getWidth == 3, s"${tlport.a.bits.size.getWidth}")
+        ConnectHSMCGPIO(JP18, 14, a_size(2), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP18, 15, a_size(1), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP18, 16, a_size(0), true, HSMC_JP19_18)
+        tlport.a.bits.size := a_size.asUInt
+        require(tlport.a.bits.source.getWidth == 6, s"${tlport.a.bits.source.getWidth}")
+        val a_source = Wire(Vec(6, Bool()))
+        ConnectHSMCGPIO(JP18, 17, a_source(5), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP18, 18, a_source(4), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP18, 19, a_source(3), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP18, 20, a_source(2), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP18, 21, a_source(1), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP18, 22, a_source(0), true, HSMC_JP19_18)
+        tlport.a.bits.source := a_source.asUInt
+        require(tlport.a.bits.address.getWidth == 32, s"${tlport.a.bits.address.getWidth}")
+        val a_address = Wire(Vec(32, Bool()))
+        ConnectHSMCGPIO(JP18, 23, a_address(31), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP18, 24, a_address(30), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP18, 25, a_address(29), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP18, 26, a_address(28), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP18, 27, a_address(27), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP18, 28, a_address(26), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP18, 31, a_address(25), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP18, 32, a_address(24), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP18, 33, a_address(23), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP18, 34, a_address(22), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP18, 35, a_address(21), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP18, 36, a_address(20), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP18, 37, a_address(19), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP18, 38, a_address(18), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP18, 39, a_address(17), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP18, 40, a_address(16), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP19,  1, a_address(15), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP19,  2, a_address(14), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP19,  2, a_address(13), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP19,  4, a_address(12), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP19,  5, a_address(11), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP19,  6, a_address(10), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP19,  7, a_address( 9), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP19,  8, a_address( 8), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP19,  9, a_address( 7), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP19, 10, a_address( 6), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP19, 13, a_address( 5), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP19, 14, a_address( 4), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP19, 15, a_address( 3), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP19, 16, a_address( 2), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP19, 17, a_address( 1), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP19, 18, a_address( 0), true, HSMC_JP19_18)
+        tlport.a.bits.address := a_address.asUInt
+        require(tlport.a.bits.mask.getWidth == 4, s"${tlport.a.bits.mask.getWidth}")
+        val a_mask = Wire(Vec(4, Bool()))
+        ConnectHSMCGPIO(JP19, 19, a_mask(3), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP19, 20, a_mask(2), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP19, 21, a_mask(1), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP19, 22, a_mask(0), true, HSMC_JP19_18)
+        tlport.a.bits.mask := a_mask.asUInt
+        require(tlport.a.bits.data.getWidth == 32, s"${tlport.a.bits.data.getWidth}")
+        val a_data = Wire(Vec(32, Bool()))
+        ConnectHSMCGPIO(JP19, 23, a_data(31), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP19, 24, a_data(30), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP19, 25, a_data(29), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP19, 26, a_data(28), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP19, 27, a_data(27), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP19, 28, a_data(26), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP19, 31, a_data(25), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP19, 32, a_data(24), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP19, 33, a_data(23), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP19, 34, a_data(22), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP19, 35, a_data(21), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP19, 36, a_data(20), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP19, 37, a_data(19), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP19, 38, a_data(18), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP19, 39, a_data(17), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP19, 40, a_data(16), true, HSMC_JP19_18)
+        ConnectHSMCGPIO(JP20, 10, a_data(15), true, HSMC_JP20_21)
+        ConnectHSMCGPIO(JP20,  9, a_data(14), true, HSMC_JP20_21)
+        ConnectHSMCGPIO(JP20,  8, a_data(13), true, HSMC_JP20_21)
+        ConnectHSMCGPIO(JP20,  7, a_data(12), true, HSMC_JP20_21)
+        ConnectHSMCGPIO(JP20,  6, a_data(11), true, HSMC_JP20_21)
+        ConnectHSMCGPIO(JP20,  5, a_data(10), true, HSMC_JP20_21)
+        ConnectHSMCGPIO(JP20,  4, a_data( 9), true, HSMC_JP20_21)
+        ConnectHSMCGPIO(JP20,  3, a_data( 8), true, HSMC_JP20_21)
+        ConnectHSMCGPIO(JP20,  2, a_data( 7), true, HSMC_JP20_21)
+        ConnectHSMCGPIO(JP20,  1, a_data( 6), true, HSMC_JP20_21)
+        ConnectHSMCGPIO(JP20, 13, a_data( 5), true, HSMC_JP20_21)
+        ConnectHSMCGPIO(JP20, 14, a_data( 4), true, HSMC_JP20_21)
+        ConnectHSMCGPIO(JP20, 15, a_data( 3), true, HSMC_JP20_21)
+        ConnectHSMCGPIO(JP20, 16, a_data( 2), true, HSMC_JP20_21)
+        ConnectHSMCGPIO(JP20, 17, a_data( 1), true, HSMC_JP20_21)
+        ConnectHSMCGPIO(JP20, 18, a_data( 0), true, HSMC_JP20_21)
+        tlport.a.bits.data := a_data.asUInt
+        ConnectHSMCGPIO(JP20, 19, tlport.a.bits.corrupt, true, HSMC_JP20_21)
+        ConnectHSMCGPIO(JP20, 20, tlport.d.ready, true, HSMC_JP20_21)
+        ConnectHSMCGPIO(JP20, 21, tlport.d.valid, false, HSMC_JP20_21)
+        require(tlport.d.bits.opcode.getWidth == 3, s"${tlport.d.bits.opcode.getWidth}")
+        ConnectHSMCGPIO(JP20, 22, tlport.d.bits.opcode(2), false, HSMC_JP20_21)
+        ConnectHSMCGPIO(JP20, 23, tlport.d.bits.opcode(1), false, HSMC_JP20_21)
+        ConnectHSMCGPIO(JP20, 24, tlport.d.bits.opcode(0), false, HSMC_JP20_21)
+        require(tlport.d.bits.param.getWidth == 2, s"${tlport.d.bits.param.getWidth}")
+        ConnectHSMCGPIO(JP20, 25, tlport.d.bits.param(1), false, HSMC_JP20_21)
+        ConnectHSMCGPIO(JP20, 26, tlport.d.bits.param(0), false, HSMC_JP20_21)
+        require(tlport.d.bits.size.getWidth == 3, s"${tlport.d.bits.size.getWidth}")
+        ConnectHSMCGPIO(JP20, 27, tlport.d.bits.size(2), false, HSMC_JP20_21)
+        ConnectHSMCGPIO(JP20, 28, tlport.d.bits.size(1), false, HSMC_JP20_21)
+        ConnectHSMCGPIO(JP20, 31, tlport.d.bits.size(0), false, HSMC_JP20_21)
+        require(tlport.d.bits.source.getWidth == 6, s"${tlport.d.bits.source.getWidth}")
+        ConnectHSMCGPIO(JP20, 32, tlport.d.bits.source(5), false, HSMC_JP20_21)
+        ConnectHSMCGPIO(JP20, 33, tlport.d.bits.source(4), false, HSMC_JP20_21)
+        ConnectHSMCGPIO(JP20, 34, tlport.d.bits.source(3), false, HSMC_JP20_21)
+        ConnectHSMCGPIO(JP20, 35, tlport.d.bits.source(2), false, HSMC_JP20_21)
+        ConnectHSMCGPIO(JP20, 36, tlport.d.bits.source(1), false, HSMC_JP20_21)
+        ConnectHSMCGPIO(JP20, 37, tlport.d.bits.source(0), false, HSMC_JP20_21)
+        require(tlport.d.bits.sink.getWidth == 1, s"${tlport.d.bits.sink.getWidth}")
+        ConnectHSMCGPIO(JP20, 38, tlport.d.bits.sink(0), false, HSMC_JP20_21)
+        ConnectHSMCGPIO(JP20, 39, tlport.d.bits.denied, false, HSMC_JP20_21)
+        ConnectHSMCGPIO(JP20, 40, tlport.d.bits.corrupt, false, HSMC_JP20_21)
+        require(tlport.d.bits.data.getWidth == 32, s"${tlport.d.bits.data.getWidth}")
+        ConnectHSMCGPIO(JP21, 5, tlport.d.bits.data(31), false, HSMC_JP20_21)
+        ConnectHSMCGPIO(JP21, 6, tlport.d.bits.data(30), false, HSMC_JP20_21)
+        ConnectHSMCGPIO(JP21, 7, tlport.d.bits.data(29), false, HSMC_JP20_21)
+        ConnectHSMCGPIO(JP21, 8, tlport.d.bits.data(28), false, HSMC_JP20_21)
+        ConnectHSMCGPIO(JP21, 9, tlport.d.bits.data(27), false, HSMC_JP20_21)
+        ConnectHSMCGPIO(JP21, 10, tlport.d.bits.data(26), false, HSMC_JP20_21)
+        ConnectHSMCGPIO(JP21, 13, tlport.d.bits.data(25), false, HSMC_JP20_21)
+        ConnectHSMCGPIO(JP21, 14, tlport.d.bits.data(24), false, HSMC_JP20_21)
+        ConnectHSMCGPIO(JP21, 15, tlport.d.bits.data(23), false, HSMC_JP20_21)
+        ConnectHSMCGPIO(JP21, 16, tlport.d.bits.data(22), false, HSMC_JP20_21)
+        ConnectHSMCGPIO(JP21, 17, tlport.d.bits.data(21), false, HSMC_JP20_21)
+        ConnectHSMCGPIO(JP21, 18, tlport.d.bits.data(20), false, HSMC_JP20_21)
+        ConnectHSMCGPIO(JP21, 19, tlport.d.bits.data(19), false, HSMC_JP20_21)
+        ConnectHSMCGPIO(JP21, 20, tlport.d.bits.data(18), false, HSMC_JP20_21)
+        ConnectHSMCGPIO(JP21, 21, tlport.d.bits.data(17), false, HSMC_JP20_21)
+        ConnectHSMCGPIO(JP21, 22, tlport.d.bits.data(16), false, HSMC_JP20_21)
+        ConnectHSMCGPIO(JP21, 23, tlport.d.bits.data(15), false, HSMC_JP20_21)
+        ConnectHSMCGPIO(JP21, 24, tlport.d.bits.data(14), false, HSMC_JP20_21)
+        ConnectHSMCGPIO(JP21, 25, tlport.d.bits.data(13), false, HSMC_JP20_21)
+        ConnectHSMCGPIO(JP21, 26, tlport.d.bits.data(12), false, HSMC_JP20_21)
+        ConnectHSMCGPIO(JP21, 27, tlport.d.bits.data(11), false, HSMC_JP20_21)
+        ConnectHSMCGPIO(JP21, 28, tlport.d.bits.data(10), false, HSMC_JP20_21)
+        ConnectHSMCGPIO(JP21, 31, tlport.d.bits.data( 9), false, HSMC_JP20_21)
+        ConnectHSMCGPIO(JP21, 32, tlport.d.bits.data( 8), false, HSMC_JP20_21)
+        ConnectHSMCGPIO(JP21, 33, tlport.d.bits.data( 7), false, HSMC_JP20_21)
+        ConnectHSMCGPIO(JP21, 34, tlport.d.bits.data( 6), false, HSMC_JP20_21)
+        ConnectHSMCGPIO(JP21, 35, tlport.d.bits.data( 5), false, HSMC_JP20_21)
+        ConnectHSMCGPIO(JP21, 36, tlport.d.bits.data( 4), false, HSMC_JP20_21)
+        ConnectHSMCGPIO(JP21, 37, tlport.d.bits.data( 3), false, HSMC_JP20_21)
+        ConnectHSMCGPIO(JP21, 38, tlport.d.bits.data( 2), false, HSMC_JP20_21)
+        ConnectHSMCGPIO(JP21, 39, tlport.d.bits.data( 1), false, HSMC_JP20_21)
+        ConnectHSMCGPIO(JP21, 40, tlport.d.bits.data( 0), false, HSMC_JP20_21)
+      }
+    case _ =>
       val MEMSER_GPIO = 0
       val EXTSER_GPIO = 1
       //ConnectHSMCGPIO(MEMSER_GPIO, 1, intern.sys_clk.asBool(), false, HSMCSER)

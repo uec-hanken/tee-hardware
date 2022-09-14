@@ -143,6 +143,25 @@ trait FPGAInternals {
   def isExtSerBusClk: Boolean = namedclocks.exists(p => p.contains("extserbus")) || isCBusClk
 }
 
+trait FPGAInternalNoChipDef extends FPGAInternals {
+  override def otherId = Some(p(ExternConn).idBits)
+  override def tlparam = p(ExtMem).map { A =>
+    TLBundleParameters(
+      p(ExternConn).widthBits,
+      A.master.beatBytes * 8,
+      p(ExternConn).idBits,
+      p(ExternConn).sinkBits,
+      log2Up(log2Ceil(p(MemoryBusKey).blockBytes)+1),
+      Seq(),
+      Seq(),
+      Seq(),
+      false)}
+  override def aclkn: Int = p(ExposedClocks).size
+  override def memserSourceBits: Option[Int] = p(ExtSerMem).map( A => p(ExternConn).idBits )
+  override def extserSourceBits: Option[Int] = p(ExtSerBus).map( A => p(ExternConn).idExtBits )
+  override def namedclocks: Seq[String] = p(ExposedClocks)
+}
+
 // ********************************************************************
 // FPGAVC707 - Demo on VC707 FPGA board
 // ********************************************************************

@@ -148,7 +148,6 @@ class FPGATR5Internal(chip: Option[Any])(implicit val p :Parameters) extends Raw
   with FPGAInternals
   with FPGATR5ClockAndResetsAndDDR {
   def outer = chip
-  override def otherId: Option[Int] = Some(6)
 
   val mem_status_local_cal_fail = IO(Output(Bool()))
   val mem_status_local_cal_success = IO(Output(Bool()))
@@ -176,7 +175,6 @@ class FPGATR5Internal(chip: Option[Any])(implicit val p :Parameters) extends Raw
       mod_reset := reset_to_sys
       rst_n := !reset_to_sys
       usbClk.foreach(_ := mod_io_ckrst.usb_clk)
-      DefaultRTC
 
       // Async clock connections
       println(s"Connecting ${aclkn} async clocks by default =>")
@@ -194,9 +192,10 @@ class FPGATR5Internal(chip: Option[Any])(implicit val p :Parameters) extends Raw
           println("    Connected to qsys_clk")
         }
       }
+      DefaultRTC
 
-      mod_io_ckrst.ddr_ref_clk := OSC_50_B3B.asUInt()
-      mod_io_ckrst.qsys_ref_clk := OSC_50_B4A.asUInt() // TODO: This is okay?
+      mod_io_ckrst.ddr_ref_clk := OSC_50_B3B.asUInt
+      mod_io_ckrst.qsys_ref_clk := OSC_50_B4A.asUInt // TODO: This is okay?
       mod_io_ckrst.system_reset_n := BUTTON(2)
     }
 
@@ -276,30 +275,8 @@ class FPGATR5Internal(chip: Option[Any])(implicit val p :Parameters) extends Raw
   }
 }
 
-class FPGATR5InternalNoChip
-(
-  val idBits: Int = 6,
-  val idExtBits: Int = 6,
-  val widthBits: Int = 32,
-  val sinkBits: Int = 1
-)(implicit p :Parameters) extends FPGATR5Internal(None)(p) {
-  override def otherId = Some(idBits)
-  override def tlparam = p(ExtMem).map { A =>
-    TLBundleParameters(
-      widthBits,
-      A.master.beatBytes * 8,
-      idBits,
-      sinkBits,
-      log2Up(log2Ceil(p(MemoryBusKey).blockBytes)+1),
-      Seq(),
-      Seq(),
-      Seq(),
-      false)}
-  override def aclkn: Int = if(p(ExposeClocks)) 3 else 0
-  override def memserSourceBits: Option[Int] = p(ExtSerMem).map( A => idBits )
-  override def extserSourceBits: Option[Int] = p(ExtSerBus).map( A => idExtBits )
-  override def namedclocks: Seq[String] = if(p(ExposeClocks)) Seq("cryptobus", "tile_0", "tile_1") else Seq()
-}
+class FPGATR5InternalNoChip()(implicit p :Parameters) extends FPGATR5Internal(None)(p)
+  with FPGAInternalNoChipDef
 
 trait WithFPGATR5InternCreate {
   this: FPGATR5Shell =>
@@ -309,11 +286,7 @@ trait WithFPGATR5InternCreate {
 
 trait WithFPGATR5InternNoChipCreate {
   this: FPGATR5Shell =>
-  def idBits = 6
-  def idExtBits = 6
-  def widthBits = 32
-  def sinkBits = 1
-  val intern = Module(new FPGATR5InternalNoChip(idBits, idExtBits, widthBits, sinkBits))
+  val intern = Module(new FPGATR5InternalNoChip())
 }
 
 trait WithFPGATR5InternConnect {
@@ -614,313 +587,380 @@ object ConnectFMCGPIO {
 trait WithFPGATR5ToChipConnect extends WithFPGATR5InternNoChipCreate with WithFPGATR5InternConnect {
   this: FPGATR5Shell =>
 
-  // ******* Duy section ******
-  // NOTES:
-  def GPIO0 = 0
-  def GPIO1 = 1
-  def GPIO2 = 2
-  def GPIO3 = 3
-  def FMC = FMCA
-
-  // From intern = Clocks and resets
-  ConnectFMCGPIO(GPIO2, 2, intern.sys_clk.asBool, false, FMC) // Previous ChildClock
-  ConnectFMCGPIO(GPIO3, 2, !intern.rst_n, false, FMC) // Previous ChildReset
-  ConnectFMCGPIO(GPIO2, 4, intern.sys_clk.asBool, false, FMC)
-  ConnectFMCGPIO(GPIO3, 4, intern.rst_n, false, FMC)
-  ConnectFMCGPIO(GPIO3, 5, intern.rst_n, false, FMC) // Previous jrst_n
-  // Memory port
-  intern.tlport.foreach{ case tlport =>
-    ConnectFMCGPIO(GPIO3, 1, tlport.a.valid, true, FMC)
-    ConnectFMCGPIO(GPIO3, 6, tlport.a.ready, false, FMC)
-    require(tlport.a.bits.opcode.getWidth == 3, s"${tlport.a.bits.opcode.getWidth}")
-    val a_opcode = Wire(Vec(3, Bool()))
-    ConnectFMCGPIO(GPIO3, 3, a_opcode(2), true, FMC)
-    ConnectFMCGPIO(GPIO3, 7, a_opcode(1), true, FMC)
-    ConnectFMCGPIO(GPIO3, 8, a_opcode(0), true, FMC)
-    tlport.a.bits.opcode := a_opcode.asUInt
-    require(tlport.a.bits.param.getWidth == 3, s"${tlport.a.bits.param.getWidth}")
-    val a_param = Wire(Vec(3, Bool()))
-    ConnectFMCGPIO(GPIO3, 9, a_param(2), true, FMC)
-    ConnectFMCGPIO(GPIO3, 10, a_param(1), true, FMC)
-    ConnectFMCGPIO(GPIO3, 13, a_param(0), true, FMC)
-    tlport.a.bits.param := a_param.asUInt
-    val a_size = Wire(Vec(3, Bool()))
-    require(tlport.a.bits.size.getWidth == 3, s"${tlport.a.bits.size.getWidth}")
-    ConnectFMCGPIO(GPIO3, 14, a_size(2), true, FMC)
-    ConnectFMCGPIO(GPIO3, 15, a_size(1), true, FMC)
-    ConnectFMCGPIO(GPIO3, 16, a_size(0), true, FMC)
-    tlport.a.bits.size := a_size.asUInt
-    require(tlport.a.bits.source.getWidth == 6, s"${tlport.a.bits.source.getWidth}")
-    val a_source = Wire(Vec(6, Bool()))
-    ConnectFMCGPIO(GPIO3, 17, a_source(5), true, FMC)
-    ConnectFMCGPIO(GPIO3, 18, a_source(4), true, FMC)
-    ConnectFMCGPIO(GPIO3, 19, a_source(3), true, FMC)
-    ConnectFMCGPIO(GPIO3, 20, a_source(2), true, FMC)
-    ConnectFMCGPIO(GPIO3, 21, a_source(1), true, FMC)
-    ConnectFMCGPIO(GPIO3, 22, a_source(0), true, FMC)
-    tlport.a.bits.source := a_source.asUInt
-    require(tlport.a.bits.address.getWidth == 32, s"${tlport.a.bits.address.getWidth}")
-    val a_address = Wire(Vec(32, Bool()))
-    ConnectFMCGPIO(GPIO3, 23, a_address(31), true, FMC)
-    ConnectFMCGPIO(GPIO3, 24, a_address(30), true, FMC)
-    ConnectFMCGPIO(GPIO3, 25, a_address(29), true, FMC)
-    ConnectFMCGPIO(GPIO3, 26, a_address(28), true, FMC)
-    ConnectFMCGPIO(GPIO3, 27, a_address(27), true, FMC)
-    ConnectFMCGPIO(GPIO3, 28, a_address(26), true, FMC)
-    ConnectFMCGPIO(GPIO3, 31, a_address(25), true, FMC)
-    ConnectFMCGPIO(GPIO3, 32, a_address(24), true, FMC)
-    ConnectFMCGPIO(GPIO3, 33, a_address(23), true, FMC)
-    ConnectFMCGPIO(GPIO3, 34, a_address(22), true, FMC)
-    ConnectFMCGPIO(GPIO3, 35, a_address(21), true, FMC)
-    ConnectFMCGPIO(GPIO3, 36, a_address(20), true, FMC)
-    ConnectFMCGPIO(GPIO3, 37, a_address(19), true, FMC)
-    ConnectFMCGPIO(GPIO3, 38, a_address(18), true, FMC)
-    ConnectFMCGPIO(GPIO3, 39, a_address(17), true, FMC)
-    ConnectFMCGPIO(GPIO3, 40, a_address(16), true, FMC)
-    ConnectFMCGPIO(GPIO1,  1, a_address(15), true, FMC)
-    ConnectFMCGPIO(GPIO1,  2, a_address(14), true, FMC)
-    ConnectFMCGPIO(GPIO1,  3, a_address(13), true, FMC)
-    ConnectFMCGPIO(GPIO1,  4, a_address(12), true, FMC)
-    ConnectFMCGPIO(GPIO1,  5, a_address(11), true, FMC)
-    ConnectFMCGPIO(GPIO1,  6, a_address(10), true, FMC)
-    ConnectFMCGPIO(GPIO1,  7, a_address( 9), true, FMC)
-    ConnectFMCGPIO(GPIO1,  8, a_address( 8), true, FMC)
-    ConnectFMCGPIO(GPIO1,  9, a_address( 7), true, FMC)
-    ConnectFMCGPIO(GPIO1, 10, a_address( 6), true, FMC)
-    ConnectFMCGPIO(GPIO1, 13, a_address( 5), true, FMC)
-    ConnectFMCGPIO(GPIO1, 14, a_address( 4), true, FMC)
-    ConnectFMCGPIO(GPIO1, 15, a_address( 3), true, FMC)
-    ConnectFMCGPIO(GPIO1, 16, a_address( 2), true, FMC)
-    ConnectFMCGPIO(GPIO1, 17, a_address( 1), true, FMC)
-    ConnectFMCGPIO(GPIO1, 18, a_address( 0), true, FMC)
-    tlport.a.bits.address := a_address.asUInt
-    require(tlport.a.bits.mask.getWidth == 4, s"${tlport.a.bits.mask.getWidth}")
-    val a_mask = Wire(Vec(4, Bool()))
-    ConnectFMCGPIO(GPIO1, 19, a_mask(3), true, FMC)
-    ConnectFMCGPIO(GPIO1, 20, a_mask(2), true, FMC)
-    ConnectFMCGPIO(GPIO1, 21, a_mask(1), true, FMC)
-    ConnectFMCGPIO(GPIO1, 22, a_mask(0), true, FMC)
-    tlport.a.bits.mask := a_mask.asUInt
-    require(tlport.a.bits.data.getWidth == 32, s"${tlport.a.bits.data.getWidth}")
-    val a_data = Wire(Vec(32, Bool()))
-    ConnectFMCGPIO(GPIO1, 23, a_data(31), true, FMC)
-    ConnectFMCGPIO(GPIO1, 24, a_data(30), true, FMC)
-    ConnectFMCGPIO(GPIO1, 25, a_data(29), true, FMC)
-    ConnectFMCGPIO(GPIO1, 26, a_data(28), true, FMC)
-    ConnectFMCGPIO(GPIO1, 27, a_data(27), true, FMC)
-    ConnectFMCGPIO(GPIO1, 28, a_data(26), true, FMC)
-    ConnectFMCGPIO(GPIO1, 31, a_data(25), true, FMC)
-    ConnectFMCGPIO(GPIO1, 32, a_data(24), true, FMC)
-    ConnectFMCGPIO(GPIO1, 33, a_data(23), true, FMC)
-    ConnectFMCGPIO(GPIO1, 34, a_data(22), true, FMC)
-    ConnectFMCGPIO(GPIO1, 35, a_data(21), true, FMC)
-    ConnectFMCGPIO(GPIO1, 36, a_data(20), true, FMC)
-    ConnectFMCGPIO(GPIO1, 37, a_data(19), true, FMC)
-    ConnectFMCGPIO(GPIO1, 38, a_data(18), true, FMC)
-    ConnectFMCGPIO(GPIO1, 39, a_data(17), true, FMC)
-    ConnectFMCGPIO(GPIO1, 40, a_data(16), true, FMC)
-    ConnectFMCGPIO(GPIO0,  1, a_data(15), true, FMC)
-    ConnectFMCGPIO(GPIO0,  2, a_data(14), true, FMC)
-    ConnectFMCGPIO(GPIO0,  3, a_data(13), true, FMC)
-    ConnectFMCGPIO(GPIO0,  4, a_data(12), true, FMC)
-    ConnectFMCGPIO(GPIO0,  5, a_data(11), true, FMC)
-    ConnectFMCGPIO(GPIO0,  6, a_data(10), true, FMC)
-    ConnectFMCGPIO(GPIO0,  7, a_data( 9), true, FMC)
-    ConnectFMCGPIO(GPIO0,  8, a_data( 8), true, FMC)
-    ConnectFMCGPIO(GPIO0,  9, a_data( 7), true, FMC)
-    ConnectFMCGPIO(GPIO0, 10, a_data( 6), true, FMC)
-    ConnectFMCGPIO(GPIO0, 13, a_data( 5), true, FMC)
-    ConnectFMCGPIO(GPIO0, 14, a_data( 4), true, FMC)
-    ConnectFMCGPIO(GPIO0, 15, a_data( 3), true, FMC)
-    ConnectFMCGPIO(GPIO0, 16, a_data( 2), true, FMC)
-    ConnectFMCGPIO(GPIO0, 17, a_data( 1), true, FMC)
-    ConnectFMCGPIO(GPIO0, 18, a_data( 0), true, FMC)
-    tlport.a.bits.data := a_data.asUInt
-    ConnectFMCGPIO(GPIO0, 19, tlport.a.bits.corrupt, true, FMC)
-    ConnectFMCGPIO(GPIO0, 20, tlport.d.ready, true, FMC)
-    ConnectFMCGPIO(GPIO0, 21, tlport.d.valid, false, FMC)
-    require(tlport.d.bits.opcode.getWidth == 3, s"${tlport.d.bits.opcode.getWidth}")
-    ConnectFMCGPIO(GPIO0, 22, tlport.d.bits.opcode(2), false, FMC)
-    ConnectFMCGPIO(GPIO0, 23, tlport.d.bits.opcode(1), false, FMC)
-    ConnectFMCGPIO(GPIO0, 24, tlport.d.bits.opcode(0), false, FMC)
-    require(tlport.d.bits.param.getWidth == 2, s"${tlport.d.bits.param.getWidth}")
-    ConnectFMCGPIO(GPIO0, 25, tlport.d.bits.param(1), false, FMC)
-    ConnectFMCGPIO(GPIO0, 26, tlport.d.bits.param(0), false, FMC)
-    require(tlport.d.bits.size.getWidth == 3, s"${tlport.d.bits.size.getWidth}")
-    ConnectFMCGPIO(GPIO0, 27, tlport.d.bits.size(2), false, FMC)
-    ConnectFMCGPIO(GPIO0, 40, tlport.d.bits.size(1), false, FMC)
-    ConnectFMCGPIO(GPIO0, 39, tlport.d.bits.size(0), false, FMC)
-    require(tlport.d.bits.source.getWidth == 6, s"${tlport.d.bits.source.getWidth}")
-    ConnectFMCGPIO(GPIO0, 37, tlport.d.bits.source(5), false, FMC)
-    ConnectFMCGPIO(GPIO0, 38, tlport.d.bits.source(4), false, FMC)
-    ConnectFMCGPIO(GPIO0, 35, tlport.d.bits.source(3), false, FMC)
-    ConnectFMCGPIO(GPIO0, 36, tlport.d.bits.source(2), false, FMC)
-    ConnectFMCGPIO(GPIO0, 33, tlport.d.bits.source(1), false, FMC)
-    ConnectFMCGPIO(GPIO0, 34, tlport.d.bits.source(0), false, FMC)
-    require(tlport.d.bits.sink.getWidth == 1, s"${tlport.d.bits.sink.getWidth}")
-    ConnectFMCGPIO(GPIO0, 32, tlport.d.bits.sink(0), false, FMC)
-    ConnectFMCGPIO(GPIO0, 31, tlport.d.bits.denied, false, FMC)
-    ConnectFMCGPIO(GPIO0, 28, tlport.d.bits.corrupt, false, FMC)
-    require(tlport.d.bits.data.getWidth == 32, s"${tlport.d.bits.data.getWidth}")
-    ConnectFMCGPIO(GPIO2, 5, tlport.d.bits.data(31), false, FMC)
-    ConnectFMCGPIO(GPIO2, 6, tlport.d.bits.data(30), false, FMC)
-    ConnectFMCGPIO(GPIO2, 7, tlport.d.bits.data(29), false, FMC)
-    ConnectFMCGPIO(GPIO2, 8, tlport.d.bits.data(28), false, FMC)
-    ConnectFMCGPIO(GPIO2, 9, tlport.d.bits.data(27), false, FMC)
-    ConnectFMCGPIO(GPIO2, 10, tlport.d.bits.data(26), false, FMC)
-    ConnectFMCGPIO(GPIO2, 13, tlport.d.bits.data(25), false, FMC)
-    ConnectFMCGPIO(GPIO2, 14, tlport.d.bits.data(24), false, FMC)
-    ConnectFMCGPIO(GPIO2, 15, tlport.d.bits.data(23), false, FMC)
-    ConnectFMCGPIO(GPIO2, 16, tlport.d.bits.data(22), false, FMC)
-    ConnectFMCGPIO(GPIO2, 17, tlport.d.bits.data(21), false, FMC)
-    ConnectFMCGPIO(GPIO2, 18, tlport.d.bits.data(20), false, FMC)
-    ConnectFMCGPIO(GPIO2, 19, tlport.d.bits.data(19), false, FMC)
-    ConnectFMCGPIO(GPIO2, 20, tlport.d.bits.data(18), false, FMC)
-    ConnectFMCGPIO(GPIO2, 21, tlport.d.bits.data(17), false, FMC)
-    ConnectFMCGPIO(GPIO2, 22, tlport.d.bits.data(16), false, FMC)
-    ConnectFMCGPIO(GPIO2, 23, tlport.d.bits.data(15), false, FMC)
-    ConnectFMCGPIO(GPIO2, 24, tlport.d.bits.data(14), false, FMC)
-    ConnectFMCGPIO(GPIO2, 25, tlport.d.bits.data(13), false, FMC)
-    ConnectFMCGPIO(GPIO2, 26, tlport.d.bits.data(12), false, FMC)
-    ConnectFMCGPIO(GPIO2, 27, tlport.d.bits.data(11), false, FMC)
-    ConnectFMCGPIO(GPIO2, 28, tlport.d.bits.data(10), false, FMC)
-    ConnectFMCGPIO(GPIO2, 31, tlport.d.bits.data( 9), false, FMC)
-    ConnectFMCGPIO(GPIO2, 32, tlport.d.bits.data( 8), false, FMC)
-    ConnectFMCGPIO(GPIO2, 33, tlport.d.bits.data( 7), false, FMC)
-    ConnectFMCGPIO(GPIO2, 34, tlport.d.bits.data( 6), false, FMC)
-    ConnectFMCGPIO(GPIO2, 35, tlport.d.bits.data( 5), false, FMC)
-    ConnectFMCGPIO(GPIO2, 36, tlport.d.bits.data( 4), false, FMC)
-    ConnectFMCGPIO(GPIO2, 37, tlport.d.bits.data( 3), false, FMC)
-    ConnectFMCGPIO(GPIO2, 38, tlport.d.bits.data( 2), false, FMC)
-    ConnectFMCGPIO(GPIO2, 39, tlport.d.bits.data( 1), false, FMC)
-    ConnectFMCGPIO(GPIO2, 40, tlport.d.bits.data( 0), false, FMC)
-  }
-
   // ******* Ahn-Dao section ******
-  def FMCSER = FMCA
-  def versionSer = 2 // TODO: A way to decide this
-  override def idBits: Int = 6 // 5 TODO: Make it depend on configs
-  override def idExtBits: Int = 3 // TODO: Make it depend on configs
-  versionSer match {
+  def FMC = FMCA
+  p(ExternConn).version match {
     case 1 =>
       val MEMSER_GPIO = 0
       val EXTSER_GPIO = 1
-      PUT(intern.sys_clk.asBool, FMCSER.CLK_M2C_p(1))
-      ConnectFMCGPIO(MEMSER_GPIO, 5, intern.rst_n, false, FMCSER)
+      PUT(intern.sys_clk.asBool, FMC.CLK_M2C_p(1))
+      ConnectFMCGPIO(MEMSER_GPIO, 5, intern.rst_n, false, FMC)
       // ExtSerMem
       intern.memser.foreach { memser =>
         val in_bits = Wire(Vec(8, Bool()))
-        ConnectFMCGPIO(MEMSER_GPIO, 9, in_bits(7), false, FMCSER)
-        ConnectFMCGPIO(MEMSER_GPIO, 10, in_bits(6), false, FMCSER)
-        ConnectFMCGPIO(MEMSER_GPIO, 13, in_bits(5), false, FMCSER)
-        ConnectFMCGPIO(MEMSER_GPIO, 14, in_bits(4), false, FMCSER)
-        ConnectFMCGPIO(MEMSER_GPIO, 15, in_bits(3), false, FMCSER)
-        ConnectFMCGPIO(MEMSER_GPIO, 16, in_bits(2), false, FMCSER)
-        ConnectFMCGPIO(MEMSER_GPIO, 17, in_bits(1), false, FMCSER)
-        ConnectFMCGPIO(MEMSER_GPIO, 18, in_bits(0), false, FMCSER)
+        ConnectFMCGPIO(MEMSER_GPIO, 9, in_bits(7), false, FMC)
+        ConnectFMCGPIO(MEMSER_GPIO, 10, in_bits(6), false, FMC)
+        ConnectFMCGPIO(MEMSER_GPIO, 13, in_bits(5), false, FMC)
+        ConnectFMCGPIO(MEMSER_GPIO, 14, in_bits(4), false, FMC)
+        ConnectFMCGPIO(MEMSER_GPIO, 15, in_bits(3), false, FMC)
+        ConnectFMCGPIO(MEMSER_GPIO, 16, in_bits(2), false, FMC)
+        ConnectFMCGPIO(MEMSER_GPIO, 17, in_bits(1), false, FMC)
+        ConnectFMCGPIO(MEMSER_GPIO, 18, in_bits(0), false, FMC)
         in_bits := memser.in.bits.asBools
-        ConnectFMCGPIO(MEMSER_GPIO, 19, memser.in.valid, false, FMCSER)
-        ConnectFMCGPIO(MEMSER_GPIO, 20, memser.out.ready, false, FMCSER)
-        ConnectFMCGPIO(MEMSER_GPIO, 21, memser.in.ready, true, FMCSER)
+        ConnectFMCGPIO(MEMSER_GPIO, 19, memser.in.valid, false, FMC)
+        ConnectFMCGPIO(MEMSER_GPIO, 20, memser.out.ready, false, FMC)
+        ConnectFMCGPIO(MEMSER_GPIO, 21, memser.in.ready, true, FMC)
         val out_bits = Wire(Vec(8, Bool()))
-        ConnectFMCGPIO(MEMSER_GPIO, 22, out_bits(7), true, FMCSER)
-        ConnectFMCGPIO(MEMSER_GPIO, 23, out_bits(6), true, FMCSER)
-        ConnectFMCGPIO(MEMSER_GPIO, 24, out_bits(5), true, FMCSER)
-        ConnectFMCGPIO(MEMSER_GPIO, 25, out_bits(4), true, FMCSER)
-        ConnectFMCGPIO(MEMSER_GPIO, 26, out_bits(3), true, FMCSER)
-        ConnectFMCGPIO(MEMSER_GPIO, 27, out_bits(2), true, FMCSER)
-        ConnectFMCGPIO(MEMSER_GPIO, 28, out_bits(1), true, FMCSER)
-        ConnectFMCGPIO(MEMSER_GPIO, 31, out_bits(0), true, FMCSER)
+        ConnectFMCGPIO(MEMSER_GPIO, 22, out_bits(7), true, FMC)
+        ConnectFMCGPIO(MEMSER_GPIO, 23, out_bits(6), true, FMC)
+        ConnectFMCGPIO(MEMSER_GPIO, 24, out_bits(5), true, FMC)
+        ConnectFMCGPIO(MEMSER_GPIO, 25, out_bits(4), true, FMC)
+        ConnectFMCGPIO(MEMSER_GPIO, 26, out_bits(3), true, FMC)
+        ConnectFMCGPIO(MEMSER_GPIO, 27, out_bits(2), true, FMC)
+        ConnectFMCGPIO(MEMSER_GPIO, 28, out_bits(1), true, FMC)
+        ConnectFMCGPIO(MEMSER_GPIO, 31, out_bits(0), true, FMC)
         memser.out.bits := out_bits.asUInt
-        ConnectFMCGPIO(MEMSER_GPIO, 32, memser.out.valid, true, FMCSER)
+        ConnectFMCGPIO(MEMSER_GPIO, 32, memser.out.valid, true, FMC)
       }
       // ExtSerBus
       intern.extser.foreach{ extser =>
         val in_bits = Wire(Vec(8, Bool()))
-        ConnectFMCGPIO(EXTSER_GPIO, 9, in_bits(7), false, FMCSER)
-        ConnectFMCGPIO(EXTSER_GPIO, 10, in_bits(6), false, FMCSER)
-        ConnectFMCGPIO(EXTSER_GPIO, 13, in_bits(5), false, FMCSER)
-        ConnectFMCGPIO(EXTSER_GPIO, 14, in_bits(4), false, FMCSER)
-        ConnectFMCGPIO(EXTSER_GPIO, 15, in_bits(3), false, FMCSER)
-        ConnectFMCGPIO(EXTSER_GPIO, 16, in_bits(2), false, FMCSER)
-        ConnectFMCGPIO(EXTSER_GPIO, 17, in_bits(1), false, FMCSER)
-        ConnectFMCGPIO(EXTSER_GPIO, 18, in_bits(0), false, FMCSER)
+        ConnectFMCGPIO(EXTSER_GPIO, 9, in_bits(7), false, FMC)
+        ConnectFMCGPIO(EXTSER_GPIO, 10, in_bits(6), false, FMC)
+        ConnectFMCGPIO(EXTSER_GPIO, 13, in_bits(5), false, FMC)
+        ConnectFMCGPIO(EXTSER_GPIO, 14, in_bits(4), false, FMC)
+        ConnectFMCGPIO(EXTSER_GPIO, 15, in_bits(3), false, FMC)
+        ConnectFMCGPIO(EXTSER_GPIO, 16, in_bits(2), false, FMC)
+        ConnectFMCGPIO(EXTSER_GPIO, 17, in_bits(1), false, FMC)
+        ConnectFMCGPIO(EXTSER_GPIO, 18, in_bits(0), false, FMC)
         in_bits := extser.in.bits.asBools
-        ConnectFMCGPIO(EXTSER_GPIO, 19, extser.in.valid, false, FMCSER)
-        ConnectFMCGPIO(EXTSER_GPIO, 20, extser.out.ready, false, FMCSER)
-        ConnectFMCGPIO(EXTSER_GPIO, 21, extser.in.ready, true, FMCSER)
+        ConnectFMCGPIO(EXTSER_GPIO, 19, extser.in.valid, false, FMC)
+        ConnectFMCGPIO(EXTSER_GPIO, 20, extser.out.ready, false, FMC)
+        ConnectFMCGPIO(EXTSER_GPIO, 21, extser.in.ready, true, FMC)
         val out_bits = Wire(Vec(8, Bool()))
-        ConnectFMCGPIO(EXTSER_GPIO, 22, out_bits(7), true, FMCSER)
-        ConnectFMCGPIO(EXTSER_GPIO, 23, out_bits(6), true, FMCSER)
-        ConnectFMCGPIO(EXTSER_GPIO, 24, out_bits(5), true, FMCSER)
-        ConnectFMCGPIO(EXTSER_GPIO, 25, out_bits(4), true, FMCSER)
-        ConnectFMCGPIO(EXTSER_GPIO, 26, out_bits(3), true, FMCSER)
-        ConnectFMCGPIO(EXTSER_GPIO, 27, out_bits(2), true, FMCSER)
-        ConnectFMCGPIO(EXTSER_GPIO, 28, out_bits(1), true, FMCSER)
-        ConnectFMCGPIO(EXTSER_GPIO, 31, out_bits(0), true, FMCSER)
+        ConnectFMCGPIO(EXTSER_GPIO, 22, out_bits(7), true, FMC)
+        ConnectFMCGPIO(EXTSER_GPIO, 23, out_bits(6), true, FMC)
+        ConnectFMCGPIO(EXTSER_GPIO, 24, out_bits(5), true, FMC)
+        ConnectFMCGPIO(EXTSER_GPIO, 25, out_bits(4), true, FMC)
+        ConnectFMCGPIO(EXTSER_GPIO, 26, out_bits(3), true, FMC)
+        ConnectFMCGPIO(EXTSER_GPIO, 27, out_bits(2), true, FMC)
+        ConnectFMCGPIO(EXTSER_GPIO, 28, out_bits(1), true, FMC)
+        ConnectFMCGPIO(EXTSER_GPIO, 31, out_bits(0), true, FMC)
         extser.out.bits := out_bits.asUInt
-        ConnectFMCGPIO(EXTSER_GPIO, 32, extser.out.valid, true, FMCSER)
+        ConnectFMCGPIO(EXTSER_GPIO, 32, extser.out.valid, true, FMC)
       }
     case 0 =>
-      ConnectFMCGPIO(0, 1, intern.sys_clk.asBool, false, FMCSER)
+      ConnectFMCGPIO(0, 1, intern.sys_clk.asBool, false, FMC)
       // PUT(intern.sys_clk.asBool, FMCSER.CLK_M2C_n(1)) // Previous OtherClock
-      intern.usbClk.foreach{ a => PUT(a.asBool, FMCSER.CLK_M2C_n(1)) }
-      ConnectFMCGPIO(1, 15, intern.rst_n, false, FMCSER)
+      intern.usbClk.foreach{ a => PUT(a.asBool, FMC.CLK_M2C_n(1)) }
+      ConnectFMCGPIO(1, 15, intern.rst_n, false, FMC)
       // ExtSerMem
       intern.memser.foreach { memser =>
         val in_bits = Wire(Vec(8, Bool()))
-        ConnectFMCGPIO(0, 31, in_bits(7), false, FMCSER)
-        ConnectFMCGPIO(0, 33, in_bits(6), false, FMCSER)
-        ConnectFMCGPIO(0, 35, in_bits(5), false, FMCSER)
-        ConnectFMCGPIO(0, 37, in_bits(4), false, FMCSER)
-        ConnectFMCGPIO(0, 39, in_bits(3), false, FMCSER)
-        ConnectFMCGPIO(1, 1, in_bits(2), false, FMCSER)
-        ConnectFMCGPIO(1, 5, in_bits(1), false, FMCSER)
-        ConnectFMCGPIO(1, 7, in_bits(0), false, FMCSER)
-        in_bits := memser.in.bits.asBools()
-        ConnectFMCGPIO(1, 9, memser.in.valid, false, FMCSER)
-        ConnectFMCGPIO(1, 13, memser.out.ready, false, FMCSER)
-        ConnectFMCGPIO(2, 5, memser.in.ready, true, FMCSER)
+        ConnectFMCGPIO(0, 31, in_bits(7), false, FMC)
+        ConnectFMCGPIO(0, 33, in_bits(6), false, FMC)
+        ConnectFMCGPIO(0, 35, in_bits(5), false, FMC)
+        ConnectFMCGPIO(0, 37, in_bits(4), false, FMC)
+        ConnectFMCGPIO(0, 39, in_bits(3), false, FMC)
+        ConnectFMCGPIO(1, 1, in_bits(2), false, FMC)
+        ConnectFMCGPIO(1, 5, in_bits(1), false, FMC)
+        ConnectFMCGPIO(1, 7, in_bits(0), false, FMC)
+        in_bits := memser.in.bits.asBools
+        ConnectFMCGPIO(1, 9, memser.in.valid, false, FMC)
+        ConnectFMCGPIO(1, 13, memser.out.ready, false, FMC)
+        ConnectFMCGPIO(2, 5, memser.in.ready, true, FMC)
         val out_bits = Wire(Vec(8, Bool()))
-        ConnectFMCGPIO(2, 7, out_bits(7), true, FMCSER)
-        ConnectFMCGPIO(2, 9, out_bits(6), true, FMCSER)
-        ConnectFMCGPIO(2, 13, out_bits(5), true, FMCSER)
-        ConnectFMCGPIO(2, 15, out_bits(4), true, FMCSER)
-        ConnectFMCGPIO(2, 17, out_bits(3), true, FMCSER)
-        ConnectFMCGPIO(2, 19, out_bits(2), true, FMCSER)
-        ConnectFMCGPIO(2, 21, out_bits(1), true, FMCSER)
-        ConnectFMCGPIO(2, 23, out_bits(0), true, FMCSER)
-        memser.out.bits := out_bits.asUInt()
-        ConnectFMCGPIO(2, 25, memser.out.valid, true, FMCSER)
+        ConnectFMCGPIO(2, 7, out_bits(7), true, FMC)
+        ConnectFMCGPIO(2, 9, out_bits(6), true, FMC)
+        ConnectFMCGPIO(2, 13, out_bits(5), true, FMC)
+        ConnectFMCGPIO(2, 15, out_bits(4), true, FMC)
+        ConnectFMCGPIO(2, 17, out_bits(3), true, FMC)
+        ConnectFMCGPIO(2, 19, out_bits(2), true, FMC)
+        ConnectFMCGPIO(2, 21, out_bits(1), true, FMC)
+        ConnectFMCGPIO(2, 23, out_bits(0), true, FMC)
+        memser.out.bits := out_bits.asUInt
+        ConnectFMCGPIO(2, 25, memser.out.valid, true, FMC)
       }
       // ExtSerBus
       intern.extser.foreach{ extser =>
         val in_bits = Wire(Vec(8, Bool()))
-        ConnectFMCGPIO(0, 5, in_bits(7), false, FMCSER)
-        ConnectFMCGPIO(0, 7, in_bits(6), false, FMCSER)
-        ConnectFMCGPIO(0, 9, in_bits(5), false, FMCSER)
-        ConnectFMCGPIO(0, 13, in_bits(4), false, FMCSER)
-        ConnectFMCGPIO(0, 15, in_bits(3), false, FMCSER)
-        ConnectFMCGPIO(0, 17, in_bits(2), false, FMCSER)
-        ConnectFMCGPIO(0, 19, in_bits(1), false, FMCSER)
-        ConnectFMCGPIO(0, 21, in_bits(0), false, FMCSER)
-        in_bits := extser.in.bits.asBools()
-        ConnectFMCGPIO(0, 23, extser.in.valid, false, FMCSER)
-        ConnectFMCGPIO(0, 25, extser.out.ready, false, FMCSER)
-        ConnectFMCGPIO(1, 17, extser.in.ready, true, FMCSER)
+        ConnectFMCGPIO(0, 5, in_bits(7), false, FMC)
+        ConnectFMCGPIO(0, 7, in_bits(6), false, FMC)
+        ConnectFMCGPIO(0, 9, in_bits(5), false, FMC)
+        ConnectFMCGPIO(0, 13, in_bits(4), false, FMC)
+        ConnectFMCGPIO(0, 15, in_bits(3), false, FMC)
+        ConnectFMCGPIO(0, 17, in_bits(2), false, FMC)
+        ConnectFMCGPIO(0, 19, in_bits(1), false, FMC)
+        ConnectFMCGPIO(0, 21, in_bits(0), false, FMC)
+        in_bits := extser.in.bits.asBools
+        ConnectFMCGPIO(0, 23, extser.in.valid, false, FMC)
+        ConnectFMCGPIO(0, 25, extser.out.ready, false, FMC)
+        ConnectFMCGPIO(1, 17, extser.in.ready, true, FMC)
         val out_bits = Wire(Vec(8, Bool()))
-        ConnectFMCGPIO(1, 19, out_bits(7), true, FMCSER)
-        ConnectFMCGPIO(1, 21, out_bits(6), true, FMCSER)
-        ConnectFMCGPIO(1, 25, out_bits(5), true, FMCSER)
-        ConnectFMCGPIO(1, 27, out_bits(4), true, FMCSER)
-        ConnectFMCGPIO(1, 31, out_bits(3), true, FMCSER)
-        ConnectFMCGPIO(1, 33, out_bits(2), true, FMCSER)
-        ConnectFMCGPIO(1, 35, out_bits(1), true, FMCSER)
-        ConnectFMCGPIO(1, 37, out_bits(0), true, FMCSER)
-        extser.out.bits := out_bits.asUInt()
-        ConnectFMCGPIO(1, 39, extser.out.valid, true, FMCSER)
+        ConnectFMCGPIO(1, 19, out_bits(7), true, FMC)
+        ConnectFMCGPIO(1, 21, out_bits(6), true, FMC)
+        ConnectFMCGPIO(1, 25, out_bits(5), true, FMC)
+        ConnectFMCGPIO(1, 27, out_bits(4), true, FMC)
+        ConnectFMCGPIO(1, 31, out_bits(3), true, FMC)
+        ConnectFMCGPIO(1, 33, out_bits(2), true, FMC)
+        ConnectFMCGPIO(1, 35, out_bits(1), true, FMC)
+        ConnectFMCGPIO(1, 37, out_bits(0), true, FMC)
+        extser.out.bits := out_bits.asUInt
+        ConnectFMCGPIO(1, 39, extser.out.valid, true, FMC)
       }
-    case _ =>
+    case 2 =>
+      // ROHM 180 2021 4 period 2nd chip (214R4252) (TEE HW "TRASIO" chip)
+      def GPIO1 = 1 // GPIO 1 of PCB is connected to GPIO-1 of F2G
+      def GPIO2 = 3 // GPIO 2 of PCB is connected to GPIO-3 of F2G
+
+      // Phase 1 - Clocks and Resets
+      ConnectFMCGPIO(GPIO2, 39, intern.sys_clk.asBool, false, FMC)
+      (intern.aclocks zip intern.namedclocks).filter(_._2.contains("mbus")).foreach {
+        case (aclk, anam) =>
+          ConnectFMCGPIO(GPIO2, 40, aclk.asBool, false, FMC) // For ChildClock
+      }
+      (intern.aclocks zip intern.namedclocks).filter(_._2.contains("rtc_clock")).foreach {
+        case (aclk, anam) =>
+          ConnectFMCGPIO(GPIO2, 38, aclk.asBool, false, FMC)
+      }
+      ConnectFMCGPIO(GPIO2, 37, intern.sys_clk.asBool, false, FMC) // For SDRAMClock
+      ConnectFMCGPIO(GPIO2, 36, intern.rst_n, false, FMC) // For jrst_n
+      ConnectFMCGPIO(GPIO2, 35, intern.rst_n, false, FMC)
+
+      // Phase 2 - ExtSerMem
+      intern.memser.foreach { memser =>
+        val in_bits = Wire(Vec(8, Bool()))
+        ConnectFMCGPIO(GPIO1, 5, in_bits(7), false, FMC)
+        ConnectFMCGPIO(GPIO1, 6, in_bits(6), false, FMC)
+        ConnectFMCGPIO(GPIO1, 7, in_bits(5), false, FMC)
+        ConnectFMCGPIO(GPIO1, 8, in_bits(4), false, FMC)
+        ConnectFMCGPIO(GPIO1, 9, in_bits(3), false, FMC)
+        ConnectFMCGPIO(GPIO1, 10, in_bits(2), false, FMC)
+        ConnectFMCGPIO(GPIO1, 13, in_bits(1), false, FMC)
+        ConnectFMCGPIO(GPIO1, 14, in_bits(0), false, FMC)
+        in_bits := memser.in.bits.asBools
+        ConnectFMCGPIO(GPIO1, 4, memser.in.valid, false, FMC)
+        ConnectFMCGPIO(GPIO1, 2, memser.in.ready, true, FMC)
+        val out_bits = Wire(Vec(8, Bool()))
+        ConnectFMCGPIO(GPIO1, 17, out_bits(7), true, FMC)
+        ConnectFMCGPIO(GPIO1, 18, out_bits(6), true, FMC)
+        ConnectFMCGPIO(GPIO1, 19, out_bits(5), true, FMC)
+        ConnectFMCGPIO(GPIO1, 20, out_bits(4), true, FMC)
+        ConnectFMCGPIO(GPIO1, 21, out_bits(3), true, FMC)
+        ConnectFMCGPIO(GPIO1, 22, out_bits(2), true, FMC)
+        ConnectFMCGPIO(GPIO1, 23, out_bits(1), true, FMC)
+        ConnectFMCGPIO(GPIO1, 24, out_bits(0), true, FMC)
+        memser.out.bits := out_bits.asUInt
+        ConnectFMCGPIO(GPIO1, 15, memser.out.ready, false, FMC)
+        ConnectFMCGPIO(GPIO1, 16, memser.out.valid, true, FMC)
+      }
+      // Phase 3 - ExtSerBus
+      intern.extser.foreach{ extser =>
+        val in_bits = Wire(Vec(8, Bool()))
+        ConnectFMCGPIO(GPIO1, 27, in_bits(7), false, FMC)
+        ConnectFMCGPIO(GPIO1, 28, in_bits(6), false, FMC)
+        ConnectFMCGPIO(GPIO1, 31, in_bits(5), false, FMC)
+        ConnectFMCGPIO(GPIO1, 32, in_bits(4), false, FMC)
+        ConnectFMCGPIO(GPIO1, 33, in_bits(3), false, FMC)
+        ConnectFMCGPIO(GPIO1, 34, in_bits(2), false, FMC)
+        ConnectFMCGPIO(GPIO1, 35, in_bits(1), false, FMC)
+        ConnectFMCGPIO(GPIO1, 36, in_bits(0), false, FMC)
+        in_bits := extser.in.bits.asBools
+        ConnectFMCGPIO(GPIO1, 25, extser.in.ready, true, FMC)
+        ConnectFMCGPIO(GPIO1, 26, extser.in.valid, false, FMC)
+        val out_bits = Wire(Vec(8, Bool()))
+        ConnectFMCGPIO(GPIO1, 39, out_bits(7), true, FMC)
+        ConnectFMCGPIO(GPIO1, 40, out_bits(6), true, FMC)
+        ConnectFMCGPIO(GPIO2, 2, out_bits(5), true, FMC)
+        ConnectFMCGPIO(GPIO2, 4, out_bits(4), true, FMC)
+        ConnectFMCGPIO(GPIO2, 5, out_bits(3), true, FMC)
+        ConnectFMCGPIO(GPIO2, 6, out_bits(2), true, FMC)
+        ConnectFMCGPIO(GPIO2, 7, out_bits(1), true, FMC)
+        ConnectFMCGPIO(GPIO2, 8, out_bits(0), true, FMC)
+        extser.out.bits := out_bits.asUInt
+        ConnectFMCGPIO(GPIO1, 37, extser.out.ready, false, FMC)
+        ConnectFMCGPIO(GPIO1, 38, extser.out.valid, true, FMC)
+      }
+    case _ =>// ******* Duy section ******
+      // NOTES:
+      def GPIO0 = 0
+      def GPIO1 = 1
+      def GPIO2 = 2
+      def GPIO3 = 3
+
+      // From intern = Clocks and resets
+      ConnectFMCGPIO(GPIO2, 2, intern.sys_clk.asBool, false, FMC) // Previous ChildClock
+      ConnectFMCGPIO(GPIO3, 2, !intern.rst_n, false, FMC) // Previous ChildReset
+      ConnectFMCGPIO(GPIO2, 4, intern.sys_clk.asBool, false, FMC)
+      ConnectFMCGPIO(GPIO3, 4, intern.rst_n, false, FMC)
+      ConnectFMCGPIO(GPIO3, 5, intern.rst_n, false, FMC) // Previous jrst_n
+      // Memory port
+      intern.tlport.foreach{ case tlport =>
+        ConnectFMCGPIO(GPIO3, 1, tlport.a.valid, true, FMC)
+        ConnectFMCGPIO(GPIO3, 6, tlport.a.ready, false, FMC)
+        require(tlport.a.bits.opcode.getWidth == 3, s"${tlport.a.bits.opcode.getWidth}")
+        val a_opcode = Wire(Vec(3, Bool()))
+        ConnectFMCGPIO(GPIO3, 3, a_opcode(2), true, FMC)
+        ConnectFMCGPIO(GPIO3, 7, a_opcode(1), true, FMC)
+        ConnectFMCGPIO(GPIO3, 8, a_opcode(0), true, FMC)
+        tlport.a.bits.opcode := a_opcode.asUInt
+        require(tlport.a.bits.param.getWidth == 3, s"${tlport.a.bits.param.getWidth}")
+        val a_param = Wire(Vec(3, Bool()))
+        ConnectFMCGPIO(GPIO3, 9, a_param(2), true, FMC)
+        ConnectFMCGPIO(GPIO3, 10, a_param(1), true, FMC)
+        ConnectFMCGPIO(GPIO3, 13, a_param(0), true, FMC)
+        tlport.a.bits.param := a_param.asUInt
+        val a_size = Wire(Vec(3, Bool()))
+        require(tlport.a.bits.size.getWidth == 3, s"${tlport.a.bits.size.getWidth}")
+        ConnectFMCGPIO(GPIO3, 14, a_size(2), true, FMC)
+        ConnectFMCGPIO(GPIO3, 15, a_size(1), true, FMC)
+        ConnectFMCGPIO(GPIO3, 16, a_size(0), true, FMC)
+        tlport.a.bits.size := a_size.asUInt
+        require(tlport.a.bits.source.getWidth == 6, s"${tlport.a.bits.source.getWidth}")
+        val a_source = Wire(Vec(6, Bool()))
+        ConnectFMCGPIO(GPIO3, 17, a_source(5), true, FMC)
+        ConnectFMCGPIO(GPIO3, 18, a_source(4), true, FMC)
+        ConnectFMCGPIO(GPIO3, 19, a_source(3), true, FMC)
+        ConnectFMCGPIO(GPIO3, 20, a_source(2), true, FMC)
+        ConnectFMCGPIO(GPIO3, 21, a_source(1), true, FMC)
+        ConnectFMCGPIO(GPIO3, 22, a_source(0), true, FMC)
+        tlport.a.bits.source := a_source.asUInt
+        require(tlport.a.bits.address.getWidth == 32, s"${tlport.a.bits.address.getWidth}")
+        val a_address = Wire(Vec(32, Bool()))
+        ConnectFMCGPIO(GPIO3, 23, a_address(31), true, FMC)
+        ConnectFMCGPIO(GPIO3, 24, a_address(30), true, FMC)
+        ConnectFMCGPIO(GPIO3, 25, a_address(29), true, FMC)
+        ConnectFMCGPIO(GPIO3, 26, a_address(28), true, FMC)
+        ConnectFMCGPIO(GPIO3, 27, a_address(27), true, FMC)
+        ConnectFMCGPIO(GPIO3, 28, a_address(26), true, FMC)
+        ConnectFMCGPIO(GPIO3, 31, a_address(25), true, FMC)
+        ConnectFMCGPIO(GPIO3, 32, a_address(24), true, FMC)
+        ConnectFMCGPIO(GPIO3, 33, a_address(23), true, FMC)
+        ConnectFMCGPIO(GPIO3, 34, a_address(22), true, FMC)
+        ConnectFMCGPIO(GPIO3, 35, a_address(21), true, FMC)
+        ConnectFMCGPIO(GPIO3, 36, a_address(20), true, FMC)
+        ConnectFMCGPIO(GPIO3, 37, a_address(19), true, FMC)
+        ConnectFMCGPIO(GPIO3, 38, a_address(18), true, FMC)
+        ConnectFMCGPIO(GPIO3, 39, a_address(17), true, FMC)
+        ConnectFMCGPIO(GPIO3, 40, a_address(16), true, FMC)
+        ConnectFMCGPIO(GPIO1,  1, a_address(15), true, FMC)
+        ConnectFMCGPIO(GPIO1,  2, a_address(14), true, FMC)
+        ConnectFMCGPIO(GPIO1,  3, a_address(13), true, FMC)
+        ConnectFMCGPIO(GPIO1,  4, a_address(12), true, FMC)
+        ConnectFMCGPIO(GPIO1,  5, a_address(11), true, FMC)
+        ConnectFMCGPIO(GPIO1,  6, a_address(10), true, FMC)
+        ConnectFMCGPIO(GPIO1,  7, a_address( 9), true, FMC)
+        ConnectFMCGPIO(GPIO1,  8, a_address( 8), true, FMC)
+        ConnectFMCGPIO(GPIO1,  9, a_address( 7), true, FMC)
+        ConnectFMCGPIO(GPIO1, 10, a_address( 6), true, FMC)
+        ConnectFMCGPIO(GPIO1, 13, a_address( 5), true, FMC)
+        ConnectFMCGPIO(GPIO1, 14, a_address( 4), true, FMC)
+        ConnectFMCGPIO(GPIO1, 15, a_address( 3), true, FMC)
+        ConnectFMCGPIO(GPIO1, 16, a_address( 2), true, FMC)
+        ConnectFMCGPIO(GPIO1, 17, a_address( 1), true, FMC)
+        ConnectFMCGPIO(GPIO1, 18, a_address( 0), true, FMC)
+        tlport.a.bits.address := a_address.asUInt
+        require(tlport.a.bits.mask.getWidth == 4, s"${tlport.a.bits.mask.getWidth}")
+        val a_mask = Wire(Vec(4, Bool()))
+        ConnectFMCGPIO(GPIO1, 19, a_mask(3), true, FMC)
+        ConnectFMCGPIO(GPIO1, 20, a_mask(2), true, FMC)
+        ConnectFMCGPIO(GPIO1, 21, a_mask(1), true, FMC)
+        ConnectFMCGPIO(GPIO1, 22, a_mask(0), true, FMC)
+        tlport.a.bits.mask := a_mask.asUInt
+        require(tlport.a.bits.data.getWidth == 32, s"${tlport.a.bits.data.getWidth}")
+        val a_data = Wire(Vec(32, Bool()))
+        ConnectFMCGPIO(GPIO1, 23, a_data(31), true, FMC)
+        ConnectFMCGPIO(GPIO1, 24, a_data(30), true, FMC)
+        ConnectFMCGPIO(GPIO1, 25, a_data(29), true, FMC)
+        ConnectFMCGPIO(GPIO1, 26, a_data(28), true, FMC)
+        ConnectFMCGPIO(GPIO1, 27, a_data(27), true, FMC)
+        ConnectFMCGPIO(GPIO1, 28, a_data(26), true, FMC)
+        ConnectFMCGPIO(GPIO1, 31, a_data(25), true, FMC)
+        ConnectFMCGPIO(GPIO1, 32, a_data(24), true, FMC)
+        ConnectFMCGPIO(GPIO1, 33, a_data(23), true, FMC)
+        ConnectFMCGPIO(GPIO1, 34, a_data(22), true, FMC)
+        ConnectFMCGPIO(GPIO1, 35, a_data(21), true, FMC)
+        ConnectFMCGPIO(GPIO1, 36, a_data(20), true, FMC)
+        ConnectFMCGPIO(GPIO1, 37, a_data(19), true, FMC)
+        ConnectFMCGPIO(GPIO1, 38, a_data(18), true, FMC)
+        ConnectFMCGPIO(GPIO1, 39, a_data(17), true, FMC)
+        ConnectFMCGPIO(GPIO1, 40, a_data(16), true, FMC)
+        ConnectFMCGPIO(GPIO0,  1, a_data(15), true, FMC)
+        ConnectFMCGPIO(GPIO0,  2, a_data(14), true, FMC)
+        ConnectFMCGPIO(GPIO0,  3, a_data(13), true, FMC)
+        ConnectFMCGPIO(GPIO0,  4, a_data(12), true, FMC)
+        ConnectFMCGPIO(GPIO0,  5, a_data(11), true, FMC)
+        ConnectFMCGPIO(GPIO0,  6, a_data(10), true, FMC)
+        ConnectFMCGPIO(GPIO0,  7, a_data( 9), true, FMC)
+        ConnectFMCGPIO(GPIO0,  8, a_data( 8), true, FMC)
+        ConnectFMCGPIO(GPIO0,  9, a_data( 7), true, FMC)
+        ConnectFMCGPIO(GPIO0, 10, a_data( 6), true, FMC)
+        ConnectFMCGPIO(GPIO0, 13, a_data( 5), true, FMC)
+        ConnectFMCGPIO(GPIO0, 14, a_data( 4), true, FMC)
+        ConnectFMCGPIO(GPIO0, 15, a_data( 3), true, FMC)
+        ConnectFMCGPIO(GPIO0, 16, a_data( 2), true, FMC)
+        ConnectFMCGPIO(GPIO0, 17, a_data( 1), true, FMC)
+        ConnectFMCGPIO(GPIO0, 18, a_data( 0), true, FMC)
+        tlport.a.bits.data := a_data.asUInt
+        ConnectFMCGPIO(GPIO0, 19, tlport.a.bits.corrupt, true, FMC)
+        ConnectFMCGPIO(GPIO0, 20, tlport.d.ready, true, FMC)
+        ConnectFMCGPIO(GPIO0, 21, tlport.d.valid, false, FMC)
+        require(tlport.d.bits.opcode.getWidth == 3, s"${tlport.d.bits.opcode.getWidth}")
+        ConnectFMCGPIO(GPIO0, 22, tlport.d.bits.opcode(2), false, FMC)
+        ConnectFMCGPIO(GPIO0, 23, tlport.d.bits.opcode(1), false, FMC)
+        ConnectFMCGPIO(GPIO0, 24, tlport.d.bits.opcode(0), false, FMC)
+        require(tlport.d.bits.param.getWidth == 2, s"${tlport.d.bits.param.getWidth}")
+        ConnectFMCGPIO(GPIO0, 25, tlport.d.bits.param(1), false, FMC)
+        ConnectFMCGPIO(GPIO0, 26, tlport.d.bits.param(0), false, FMC)
+        require(tlport.d.bits.size.getWidth == 3, s"${tlport.d.bits.size.getWidth}")
+        ConnectFMCGPIO(GPIO0, 27, tlport.d.bits.size(2), false, FMC)
+        ConnectFMCGPIO(GPIO0, 40, tlport.d.bits.size(1), false, FMC)
+        ConnectFMCGPIO(GPIO0, 39, tlport.d.bits.size(0), false, FMC)
+        require(tlport.d.bits.source.getWidth == 6, s"${tlport.d.bits.source.getWidth}")
+        ConnectFMCGPIO(GPIO0, 37, tlport.d.bits.source(5), false, FMC)
+        ConnectFMCGPIO(GPIO0, 38, tlport.d.bits.source(4), false, FMC)
+        ConnectFMCGPIO(GPIO0, 35, tlport.d.bits.source(3), false, FMC)
+        ConnectFMCGPIO(GPIO0, 36, tlport.d.bits.source(2), false, FMC)
+        ConnectFMCGPIO(GPIO0, 33, tlport.d.bits.source(1), false, FMC)
+        ConnectFMCGPIO(GPIO0, 34, tlport.d.bits.source(0), false, FMC)
+        require(tlport.d.bits.sink.getWidth == 1, s"${tlport.d.bits.sink.getWidth}")
+        ConnectFMCGPIO(GPIO0, 32, tlport.d.bits.sink(0), false, FMC)
+        ConnectFMCGPIO(GPIO0, 31, tlport.d.bits.denied, false, FMC)
+        ConnectFMCGPIO(GPIO0, 28, tlport.d.bits.corrupt, false, FMC)
+        require(tlport.d.bits.data.getWidth == 32, s"${tlport.d.bits.data.getWidth}")
+        ConnectFMCGPIO(GPIO2, 5, tlport.d.bits.data(31), false, FMC)
+        ConnectFMCGPIO(GPIO2, 6, tlport.d.bits.data(30), false, FMC)
+        ConnectFMCGPIO(GPIO2, 7, tlport.d.bits.data(29), false, FMC)
+        ConnectFMCGPIO(GPIO2, 8, tlport.d.bits.data(28), false, FMC)
+        ConnectFMCGPIO(GPIO2, 9, tlport.d.bits.data(27), false, FMC)
+        ConnectFMCGPIO(GPIO2, 10, tlport.d.bits.data(26), false, FMC)
+        ConnectFMCGPIO(GPIO2, 13, tlport.d.bits.data(25), false, FMC)
+        ConnectFMCGPIO(GPIO2, 14, tlport.d.bits.data(24), false, FMC)
+        ConnectFMCGPIO(GPIO2, 15, tlport.d.bits.data(23), false, FMC)
+        ConnectFMCGPIO(GPIO2, 16, tlport.d.bits.data(22), false, FMC)
+        ConnectFMCGPIO(GPIO2, 17, tlport.d.bits.data(21), false, FMC)
+        ConnectFMCGPIO(GPIO2, 18, tlport.d.bits.data(20), false, FMC)
+        ConnectFMCGPIO(GPIO2, 19, tlport.d.bits.data(19), false, FMC)
+        ConnectFMCGPIO(GPIO2, 20, tlport.d.bits.data(18), false, FMC)
+        ConnectFMCGPIO(GPIO2, 21, tlport.d.bits.data(17), false, FMC)
+        ConnectFMCGPIO(GPIO2, 22, tlport.d.bits.data(16), false, FMC)
+        ConnectFMCGPIO(GPIO2, 23, tlport.d.bits.data(15), false, FMC)
+        ConnectFMCGPIO(GPIO2, 24, tlport.d.bits.data(14), false, FMC)
+        ConnectFMCGPIO(GPIO2, 25, tlport.d.bits.data(13), false, FMC)
+        ConnectFMCGPIO(GPIO2, 26, tlport.d.bits.data(12), false, FMC)
+        ConnectFMCGPIO(GPIO2, 27, tlport.d.bits.data(11), false, FMC)
+        ConnectFMCGPIO(GPIO2, 28, tlport.d.bits.data(10), false, FMC)
+        ConnectFMCGPIO(GPIO2, 31, tlport.d.bits.data( 9), false, FMC)
+        ConnectFMCGPIO(GPIO2, 32, tlport.d.bits.data( 8), false, FMC)
+        ConnectFMCGPIO(GPIO2, 33, tlport.d.bits.data( 7), false, FMC)
+        ConnectFMCGPIO(GPIO2, 34, tlport.d.bits.data( 6), false, FMC)
+        ConnectFMCGPIO(GPIO2, 35, tlport.d.bits.data( 5), false, FMC)
+        ConnectFMCGPIO(GPIO2, 36, tlport.d.bits.data( 4), false, FMC)
+        ConnectFMCGPIO(GPIO2, 37, tlport.d.bits.data( 3), false, FMC)
+        ConnectFMCGPIO(GPIO2, 38, tlport.d.bits.data( 2), false, FMC)
+        ConnectFMCGPIO(GPIO2, 39, tlport.d.bits.data( 1), false, FMC)
+        ConnectFMCGPIO(GPIO2, 40, tlport.d.bits.data( 0), false, FMC)
+      }
   }
 
   // ******** Misc part ********

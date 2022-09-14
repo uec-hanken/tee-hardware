@@ -9,7 +9,7 @@ import freechips.rocketchip.prci._
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.util._
 import uec.teehardware.devices.tlmemext.{ExtMemDirect}
-import uec.teehardware.{CbusToCryptoBusXTypeKey, CbusToExtBusXTypeKey, ExposeClocks, GenericIOLibraryParams, GenericTEEHWXTAL, HasDigitalizable}
+import uec.teehardware.{CbusToCryptoBusXTypeKey, CbusToExtBusXTypeKey, GenericIOLibraryParams, GenericTEEHWXTAL, HasDigitalizable}
 
 // Frequency
 case object FreqKeyMHz extends Field[Double](100.0)
