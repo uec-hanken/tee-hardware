@@ -95,8 +95,16 @@ class SerialIOChip(val w: Int) extends Bundle {
     PUT(bundle.out.ready, out.ready)
     bundle.out.bits := VecInit(out.bits.map{a => GET(a)}).asUInt
     PUT(bundle.in.valid, in.valid)
-    bundle.in.ready := GET(out.ready)
+    bundle.in.ready := GET(in.ready)
     (bundle.in.bits.asBools zip in.bits).foreach{ case (a, b) => PUT(a, b)}
+  }
+  def ConnectOut(bundle: SerialIO): Unit = {
+    PUT(bundle.out.valid, out.valid)
+    bundle.out.ready := GET(out.ready)
+    (bundle.out.bits.asBools zip out.bits).foreach{ case (a, b) => PUT(a, b)}
+    bundle.in.valid := GET(in.valid)
+    PUT(bundle.in.ready, in.ready)
+    bundle.in.bits := VecInit(in.bits.map{a => GET(a)}).asUInt
   }
   def flipConnect(other: SerialIO) {
     val bundle = Wire(new SerialIO(other.w))

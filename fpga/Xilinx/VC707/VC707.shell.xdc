@@ -38,6 +38,7 @@ set_clock_groups -asynchronous \
 
 set_property CLOCK_DEDICATED_ROUTE {FALSE} [get_nets [get_ports {jtag_jtag_TCK}]]
 set_property CLOCK_DEDICATED_ROUTE FALSE [get_nets chip/jtag_tck/mod/O]
+set_property CLOCK_DEDICATED_ROUTE FALSE [get_nets jtag_jtag_TCK_IOBUF_inst/O]
 set_property PACKAGE_PIN {BB23} [get_ports {jtag_jtag_TCK}]
 set_property IOSTANDARD {LVCMOS18} [get_ports {jtag_jtag_TCK}]
 set_property PULLUP {TRUE} [get_ports {jtag_jtag_TCK}]

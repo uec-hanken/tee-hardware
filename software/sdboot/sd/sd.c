@@ -24,7 +24,7 @@
 // SD card initialization must happen at 100-400kHz
 #define SD_POWER_ON_FREQ_KHZ 400L
 // SD cards normally support reading/writing at 20MHz
-long int sd_clk_freq = 5000L;
+long int sd_clk_freq = 1000L;
 #define SD_POST_INIT_CLK_KHZ sd_clk_freq
 
 // Command frame starts by asserting low and then high for first two clock edges
@@ -211,6 +211,7 @@ int sd_copy(void* dst, uint32_t src_lba, size_t size)
   volatile uint8_t *p = dst;
   long i = size;
   int rc = 0;
+  kprintf("sd_copy: %x <- %x (%d) \n", (uint32_t)dst, src_lba, size);
 
   uint8_t crc = 0;
   crc = crc7(crc, SD_CMD(SD_CMD_READ_BLOCK_MULTIPLE));

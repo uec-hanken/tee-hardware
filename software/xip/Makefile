@@ -1,5 +1,6 @@
 # RISCV environment variable must be set
 
+teehw_sdboot := $(abspath ../sdboot)
 CROSSCOMPILE?=riscv64-unknown-elf
 CC=$(CROSSCOMPILE)-gcc
 OBJCOPY=$(CROSSCOMPILE)-objcopy
@@ -17,20 +18,7 @@ CFLAGS=$(CFLAGS_ARCH) -O2 -std=gnu11 -Wall -I. -nostartfiles -fno-common -g $(AD
 LFLAGS=-static -nostdlib
 XIP_TARGET_ADDR?=0x20000000
 
-dts := $(BUILD_DIR)/$(long_name).dts
-dtb := $(BUILD_DIR)/$(long_name).dtb
-clk := $(BUILD_DIR)/$(long_name).tl_clock.h
-
-$(clk): $(dts)
-	awk '/tlclk {/ && !f{f=1; next}; f && match($$0, /^.*clock-frequency.*<(.*)>.*/, arr) { print "#define TL_CLK " arr[1] "UL"}' $< > $@.tmp
-	awk '/cpu@/{++cnt} END {print "#define NUM_CORES",cnt, "\n#define MAX_HART_ID",cnt*2}' $< >> $@.tmp
-	mv $@.tmp $@
-
-$(dtb): $(dts)
-	dtc -I dts -O dtb -o $@ $<
-
-.PHONY: dtb
-dtb: $(dtb)
+include $(teehw_sdboot)/dts.mk
 
 elf := $(BUILD_DIR)/xip.elf
 $(elf): xip.S linker.ld $(clk) $(dtb)
