@@ -17,6 +17,8 @@
 
 #ifdef DERIVE_FROM_TIMESCALE
 #include "encoding.h"
+
+unsigned long timescale_freq = TIMEBASE_FREQ;
 static unsigned long mtime_lo(void)
 {
   return *(volatile unsigned long *)(CLINT_CTRL_ADDR + CLINT_MTIME);
