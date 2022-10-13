@@ -100,11 +100,11 @@ trait DebugJTAGOnlyChipImp extends RawModule {
 
   val jtag = system.asInstanceOf[DebugJTAGOnlyModuleImp].jtag.map{sysjtag =>
     val jtag = IO(new JTAGPIN)
-    val TMS = IOGen.input()
-    val TCK = IOGen.input()
-    val TDI = IOGen.input()
-    val TDO = IOGen.output()
-    val TRSTn = IOGen.input()
+    val TMS = IOGen.gpio()
+    val TCK = IOGen.gpio()
+    val TDI = IOGen.gpio()
+    val TDO = IOGen.gpio()
+    val TRSTn = IOGen.gpio()
 
     TMS.suggestName("tms")
     TCK.suggestName("tck")

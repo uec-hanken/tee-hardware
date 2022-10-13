@@ -39,15 +39,23 @@ trait HasTEEHWTiles extends HasTiles { this: TEEHWBaseSubsystem =>
   val IbexExists = tileAttachParams.exists { case _: IbexTileParams => true; case _ => false }
   if(!IbexExists) EscEmpty.applySink := escnode
 
-  // Creation of the Crypto-core bus
-  // We do not use the regular instantiate() and connect() functions from the configuration (see BaseSubsystem.scala:63)
-  // The reason is to modify the bus tree as little as possible
-  p(CryptoBusKey).instantiate(this, CRYPTOBUS)
-  val cryptobus = locateTLBusWrapper(CRYPTOBUS)
-  //cryptobus.clockGroupNode := asyncMux(p(CbusToCryptoBusXTypeKey), this.asyncClockGroupsNode, locateTLBusWrapper(CBUS).clockGroupNode) // BusWrapper.scala:182
-  cryptobus.crossInHelper(p(CbusToCryptoBusXTypeKey))(p) :=
-    TLWidthWidget(locateTLBusWrapper(CBUS).beatBytes) :=
-    locateTLBusWrapper(CBUS).outwardNode // BusWrapper.scala:125 & BusWrapper.scala:187
+  val cryptobus = if(p(IsCryptoBus)) {
+    // Creation of the Crypto-core bus
+    // We do not use the regular instantiate() and connect() functions from the configuration (see BaseSubsystem.scala:63)
+    // The reason is to modify the bus tree as little as possible
+    p(CryptoBusKey).instantiate(this, CRYPTOBUS)
+    val cryptobus = locateTLBusWrapper(CRYPTOBUS)
+    //cryptobus.clockGroupNode := asyncMux(p(CbusToCryptoBusXTypeKey), this.asyncClockGroupsNode, locateTLBusWrapper(CBUS).clockGroupNode) // BusWrapper.scala:182
+    cryptobus.crossInHelper(p(CbusToCryptoBusXTypeKey))(p) :=
+      TLWidthWidget(locateTLBusWrapper(CBUS).beatBytes) :=
+      locateTLBusWrapper(CBUS).outwardNode // BusWrapper.scala:125 & BusWrapper.scala:187
+
+    cryptobus.clockGroupNode := asyncClockGroupsNode
+
+    cryptobus
+  } else {
+    pbus
+  }
 
   // Relying on [[TLBusWrapperConnection]].driveClockFromMaster for
   // bus-couplings that are not asynchronous strips the bus name from the sink
@@ -64,7 +72,7 @@ trait HasTEEHWTiles extends HasTiles { this: TEEHWBaseSubsystem =>
   // form "subsystem_cbus_[0-9]*". The assignment below provides the latter names in all cases.
   // NOTE: This relies on the fact of using HierarchicalMulticlockBusTopologyParams inside of the
   // TLNetworkTopologyLocated Key (See CustomBusTopologies.scala:38 & 56 inside chipyard)
-  Seq(PBUS, FBUS, MBUS, CBUS, CRYPTOBUS).foreach { loc =>
+  Seq(PBUS, FBUS, MBUS, CBUS).foreach { loc =>
     tlBusWrapperLocationMap.lift(loc).foreach { _.clockGroupNode := asyncClockGroupsNode }
   }
 

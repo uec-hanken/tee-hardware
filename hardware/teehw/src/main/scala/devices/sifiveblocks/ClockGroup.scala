@@ -4,12 +4,14 @@ import chipsalliance.rocketchip.config.{Field, Parameters}
 import chisel3._
 import chisel3.experimental.{Analog, attach}
 import chisel3.util.HasBlackBoxResource
+import freechips.rocketchip.devices.tilelink.PLICKey
 import freechips.rocketchip.diplomacy._
+import freechips.rocketchip.interrupts._
 import freechips.rocketchip.prci._
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.util._
-import uec.teehardware.devices.tlmemext.{ExtMemDirect}
-import uec.teehardware.{CbusToCryptoBusXTypeKey, CbusToExtBusXTypeKey, GenericIOLibraryParams, GenericTEEHWXTAL, HasDigitalizable}
+import uec.teehardware.devices.tlmemext.ExtMemDirect
+import uec.teehardware.{CbusToCryptoBusXTypeKey, CbusToExtBusXTypeKey, GenericIOLibraryParams, GenericTEEHWXTAL, HasDigitalizable, HasTEEHWTilesModuleImp}
 
 // Frequency
 case object FreqKeyMHz extends Field[Double](100.0)
@@ -47,6 +49,17 @@ trait HasTEEHWClockGroup {
   val clocksAggregator = LazyModule(new ClockGroupAggregator("allClocks")).node
   // Connect it to the asyncClockGroupsNode, with the aggregator
   asyncClockGroupsNode :*= clocksAggregator := clockGroup
+
+  // Create a nexus node for accepting all Ints.
+  val intnode = p(PLICKey).isEmpty.option {
+    val intnode = IntNexusNode(
+      sourceFn = { _ => IntSourcePortParameters(Seq(IntSourceParameters(1))) },
+      sinkFn = { _ => IntSinkPortParameters(Seq(IntSinkParameters())) },
+      outputRequiresInput = false,
+      inputRequiresOutput = false)
+    intnode :=* ibus.toPLIC
+    intnode
+  }
 }
 
 trait HasTEEHWClockGroupModuleImp extends LazyModuleImp {
@@ -100,6 +113,11 @@ trait HasTEEHWClockGroupModuleImp extends LazyModuleImp {
       connectHelper(AsynchronousCrossing()) // Assume is async
     }
   }.unzip
+
+  val ignoredInterrupts = outer.intnode.map{A =>
+    println(s"Interrupt map lost because ignored PLIC\n")
+    A.in.flatMap { case (i, e) => i.take(e.source.num) }
+  }
 }
 
 trait HasTEEHWClockGroupChipImp extends RawModule {
@@ -107,7 +125,7 @@ trait HasTEEHWClockGroupChipImp extends RawModule {
   val clock : Clock
   val reset : Bool
   val IOGen: GenericIOLibraryParams
-  val system: HasTEEHWClockGroupModuleImp with DebugJTAGOnlyModuleImp
+  val system: HasTEEHWClockGroupModuleImp with DebugJTAGOnlyModuleImp with HasTEEHWTilesModuleImp
 
   // General clock and reset
   val CLOCK = IOGen.crystal()
@@ -139,5 +157,31 @@ trait HasTEEHWClockGroupChipImp extends RawModule {
 
   (system.asInstanceOf[HasTEEHWClockGroupModuleImp].aclocks zip ACLOCK).foreach{case(sysclk, aclk) =>
     sysclk := aclk.ConnectAsClock
+  }
+
+  // Publication of the MEIP and SEIP if PLIC not present
+  val meip = system.meip.map { ip =>
+    ip.zipWithIndex.map{ case(ipi, i) =>
+      val MEIP = IOGen.gpio()
+      MEIP.suggestName(s"meip_${i}")
+      ipi := MEIP.ConnectAsInput()
+
+      val meipio = IO(Analog(1.W))
+      meipio.suggestName(s"meipio_${i}")
+      attach(MEIP.pad, meipio)
+      meipio
+    }
+  }
+  val seip = system.seip.map { ip =>
+    ip.zipWithIndex.map{ case(ipi, i) =>
+      val SEIP = IOGen.gpio()
+      SEIP.suggestName(s"seip_${i}")
+      ipi := SEIP.ConnectAsInput()
+
+      val seipio = IO(Analog(1.W))
+      seipio.suggestName(s"seipio_${i}")
+      attach(SEIP.pad, seipio)
+      seipio
+    }
   }
 }

@@ -29,6 +29,7 @@ case object TEEHWResetVector extends Field[Int](0x10040)
 case object CRYPTOBUS extends TLBusWrapperLocation("subsystem_cryptobus")
 case object CryptoBusKey extends Field[CryptoBusParams]
 case object CbusToCryptoBusXTypeKey extends Field[ClockCrossingType](SynchronousCrossing())
+case object IsCryptoBus extends Field[Boolean](true)
 
 // The new external bus config traits
 case object EXTBUS extends TLBusWrapperLocation("subsystem_extbus")

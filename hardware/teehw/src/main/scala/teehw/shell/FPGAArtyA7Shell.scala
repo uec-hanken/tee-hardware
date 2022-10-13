@@ -197,8 +197,10 @@ class FPGAArtyA7Internal(chip: Option[Any])(implicit val p :Parameters) extends 
     println(s"Connecting ${aclkn} async clocks by default =>")
     (aclocks zip namedclocks).foreach { case (aclk, nam) =>
       println(s"  Detected clock ${nam}")
-      aclk := pll.io.clk_out4.get
-      println("    Connected to clk_out4 (10 MHz)")
+      if(isOtherClk) {
+        aclk := pll.io.clk_out4.get
+        println("    Connected to clk_out4 (10 MHz)")
+      } else println("     Not connected in this phase")
     }
 
     // Clock controller
