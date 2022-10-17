@@ -150,6 +150,23 @@ class IbexTile private
   masterNode :=* tlOtherMastersNode
   DisableMonitors { implicit p => tlSlaveXbar.node :*= slaveNode }
 
+  // Creation of the scratchpad
+  val tlram = ibexParams.dcache.map{
+    case i =>
+      require(i.scratch.nonEmpty, "The only dcache possible in Ibex is a scratchpad")
+      val size = i.nSets * i.nWays * cacheBlockBytes
+      val tlram = LazyModule(new TLRAM(
+        address = AddressSet(i.scratch.get, size-1),
+        beatBytes = p(SystemBusKey).beatBytes,
+        cacheable = false,
+        devName = Some(s"InternalRAM_Ibex${ibexParams.hartId}")))
+      tlram.node := tlSlaveXbar.node
+
+      tlram
+  }
+  val tlramProperty = tlram.map(d => Map(
+    "sifive,dtim" -> d.device.asProperty)).getOrElse(Nil)
+
   val cpuDevice: SimpleDevice = new SimpleDevice("cpu", Seq("lowRISC,ibex", "riscv")) {
     override def parent = Some( ResourceAnchors.cpus )
     override def describe(resources: ResourceBindings): Description = {
@@ -158,6 +175,7 @@ class IbexTile private
         cpuProperties ++
         nextLevelCacheProperty ++
         tileProperties ++
+        tlramProperty ++
         Map(
           "riscv,isa"            -> "rv32imc".asProperty
         ))
