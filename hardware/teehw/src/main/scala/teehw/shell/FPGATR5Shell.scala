@@ -713,6 +713,7 @@ trait WithFPGATR5ToChipConnect extends WithFPGATR5InternNoChipCreate with WithFP
       println("Measure: ROHM 180 2021 4 period 2nd chip (214R4252) (TEE HW \"TRASIO\" chip)")
       def GPIO1 = 1 // GPIO 1 of PCB is connected to GPIO-1 of F2G
       def GPIO2 = 3 // GPIO 2 of PCB is connected to GPIO-3 of F2G
+      def GPIOX = 0 // GPIO X is just for the external JTAG
 
       // Phase 1 - Clocks and Resets
       ConnectFMCGPIO(GPIO2, 39, intern.sys_clk.asBool, false, FMC)
@@ -781,6 +782,22 @@ trait WithFPGATR5ToChipConnect extends WithFPGATR5InternNoChipCreate with WithFP
         extser.out.bits := out_bits.asUInt
         ConnectFMCGPIO(GPIO1, 37, extser.out.ready, false, FMC)
         ConnectFMCGPIO(GPIO1, 38, extser.out.valid, true, FMC)
+      }
+
+      // JTAG direct buffering connect
+      withClockAndReset(intern.sys_clk, !intern.rst_n) {
+        val int_jtag_tck = Wire(Bool())
+        val int_jtag_tdi = Wire(Bool())
+        val int_jtag_tms = Wire(Bool())
+        val int_jtag_tdo = Wire(Bool())
+        int_jtag_tdi := AntiBump(intern.sys_clk, ALT_IOBUF(GPIO(32)))
+        int_jtag_tms := AntiBump(intern.sys_clk, ALT_IOBUF(GPIO(33)))
+        int_jtag_tck := ShiftRegister(AntiBump(intern.sys_clk, ALT_IOBUF(GPIO(34))), 10)
+        ALT_IOBUF(GPIO(35), AntiBump(intern.sys_clk, int_jtag_tdo))
+        ConnectFMCGPIO(GPIOX, 37, int_jtag_tdi, false, FMC)
+        ConnectFMCGPIO(GPIOX, 38, int_jtag_tms, false, FMC)
+        ConnectFMCGPIO(GPIOX, 39, int_jtag_tck, false, FMC)
+        ConnectFMCGPIO(GPIOX, 40, int_jtag_tdo, true, FMC)
       }
     case _ =>// ******* Duy section ******
       // NOTES:

@@ -179,3 +179,36 @@ case class AlteraIOLibraryParams() extends GenericIOLibraryParams {
   def output() = Module(new AlteraGPIO)
   def crystal() = Module(new TEEHWXTAL)
 }
+
+class AntiBump(val n: Int) extends Module {
+  val io = IO(new Bundle{
+    val data = Input(Bool())
+    val out = Output(Bool())
+  })
+
+  val regs = Reg(Vec(n, Bool()))
+  regs(n-1) := io.data
+  (0 until n-1) foreach (x => regs(x) := regs(x+1))
+  val regs_and = regs.foldLeft(true.B)(_ && _)
+  val regs_or = regs.foldLeft(false.B)(_ || _)
+  val out_latch = Reg(Bool())
+  val out_next = Wire(Bool())
+  when(out_latch) {
+    out_next := regs_or
+  }.otherwise {
+    out_next := regs_and
+  }
+  out_latch := out_next
+  io.out := out_latch // Or out_next?
+}
+
+object AntiBump {
+  def apply(clock: Clock, data: Bool, n: Int = 10, name: Option[String] = None): Bool = {
+    withClockAndReset(clock, false.B) {
+      val m = Module(new AntiBump(n))
+      name.foreach(m.suggestName(_))
+      m.io.data := data
+      m.io.out
+    }
+  }
+}
