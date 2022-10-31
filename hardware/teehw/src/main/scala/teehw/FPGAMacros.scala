@@ -153,11 +153,11 @@ class AlteraGPIO extends RawModule with GenericTEEHWGPIO {
   val ie = None
   val ds = None
   val pue = None
-  val mod = Module(new IOBUF)
-  attach(mod.io.IO, io.io)
-  mod.io.I := io.i
-  mod.io.T := io.oe
-  io.o := mod.io.O
+  val mod = Module(new ALT_IOBUF)
+  attach(mod.io.io, io.io)
+  mod.io.i := io.i
+  mod.io.oe := io.oe
+  io.o := mod.io.o
 }
 
 class AlteraXTAL extends RawModule with GenericTEEHWXTAL {

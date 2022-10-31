@@ -359,7 +359,7 @@ trait WithFPGATR5PureConnect {
         attach(qspiport.DQ(1), SD_DATA(0))
         attach(SD_DATA(3), qspiport.CS(0))
         attach(SD_DATA(1), qspiport.DQ(2))
-        attach(SD_DATA(2), qspiport.DQ(2))
+        attach(SD_DATA(2), qspiport.DQ(3))
       }
     case ((qspiport: SPIPIN, _: SPIFlashParams), _: Int) =>
       attach(qspiport.DQ(1), GPIO(1))
