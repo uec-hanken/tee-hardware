@@ -157,7 +157,7 @@ class IbexTile private
       val size = i.nSets * i.nWays * cacheBlockBytes
       val tlram = LazyModule(new TLRAM(
         address = AddressSet(i.scratch.get, size-1),
-        beatBytes = p(SystemBusKey).beatBytes,
+        beatBytes = cacheBlockBytes,
         cacheable = false,
         devName = Some(s"InternalRAM_Ibex${ibexParams.hartId}")))
       tlram.node := tlSlaveXbar.node
